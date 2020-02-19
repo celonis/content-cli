@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "lib": ["es2015", "es6", "dom", "esnext"],
+    "outDir": "./dist/",
+    "declarationDir": "./dist/lib",
+    "noImplicitAny": false,
+    "target": "es2015",
+    "sourceMap": false,
+    "declaration": true,
+    "stripInternal": true,
+    "module": "umd",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
+  }
+}

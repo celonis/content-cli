@@ -1,0 +1,22 @@
+{
+    "extends": [
+        "tslint:recommended",
+        "tslint-consistent-codestyle",
+        "tslint-config-prettier"
+    ],
+    "rules": {
+        "interface-name": false,
+        "member-ordering": false,
+        "no-use-before-declare": false,
+        "object-literal-shorthand": false,
+        "object-literal-sort-keys": false,
+        "ordered-imports": false,
+        "quotemark": [
+            true,
+            "double",
+            "avoid-escape",
+            "avoid-template"
+        ],
+        "variable-name": [true, "allow-leading-underscore"]
+    }
+}

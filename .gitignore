@@ -1,0 +1,16 @@
+/node_modules
+/doc
+.bowerrc
+/dist
+npm-debug.log
+/.scannerwork
+
+*.scss.ngstyle.ts
+*.scss.shim.ngstyle.ts
+*.ngsummary.json
+*.ngfactory.ts
+*.ngfactory.d.ts
+/.vscode
+.idea
+*.iml
+.DS_Store
