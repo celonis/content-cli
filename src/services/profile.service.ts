@@ -1,6 +1,7 @@
 import { Profile } from "../interfaces/profile.interface";
 import * as path from "path";
 import * as fs from "fs";
+import { FatalError, logger } from "../util/logger";
 
 const homedir = require("os").homedir();
 
@@ -24,9 +25,13 @@ export class ProfileService {
     public static storeProfile(profile: Profile): void {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
-        fs.writeFileSync(path.resolve(this.PROFILE_CONTAINER_PATH, newProfileFileName), JSON.stringify(profile), {
-            encoding: "utf-8",
-        });
+        fs.writeFileSync(
+            path.resolve(ProfileService.PROFILE_CONTAINER_PATH, newProfileFileName),
+            JSON.stringify(profile),
+            {
+                encoding: "utf-8",
+            }
+        );
     }
 
     private static createProfileContainerIfNotExists(): void {
@@ -37,5 +42,28 @@ export class ProfileService {
 
     private static constructProfileFileName(profileName: string): string {
         return profileName + ".json";
+    }
+
+    public static readAllProfiles(): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+            const profiles = this.getAllFilesInDirectory();
+            resolve(profiles);
+        });
+    }
+
+    public static getAllFilesInDirectory(): string[] {
+        let fileNames: [] = [];
+        try {
+            if (fs.existsSync(ProfileService.PROFILE_CONTAINER_PATH)) {
+                fileNames = fs
+                    // @ts-ignore
+                    .readdirSync(ProfileService.PROFILE_CONTAINER_PATH, { withFileTypes: true })
+                    .filter(dirent => !dirent.isDirectory() && dirent.name.endsWith(".json"))
+                    .map(dirent => dirent.name.replace(".json", ""));
+            }
+        } catch (err) {
+            logger.error(new FatalError(err));
+        }
+        return fileNames;
     }
 }

@@ -12,4 +12,14 @@ export class ProfileCommand {
         await ProfileValidator.validateProfile(profile);
         ProfileService.storeProfile(profile);
     }
+
+    public static async listProfiles() {
+        ProfileService.readAllProfiles().then((profiles: string[]) => {
+            if (profiles) {
+                profiles.forEach(profile => {
+                    console.log(profile);
+                });
+            }
+        });
+    }
 }

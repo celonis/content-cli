@@ -12,11 +12,11 @@ export class AnalysisCommand {
                 .then((profile: Profile) => {
                     this.downloadAnalysisContent(analysisId, profile).then(results => {
                         try {
-                            fs.writeFileSync(
-                                path.resolve(process.cwd(), results.analysis.name + ".json"),
-                                JSON.stringify(results),
-                                { encoding: "utf-8" }
-                            );
+                            const filename = results.analysis.name + ".json";
+                            fs.writeFileSync(path.resolve(process.cwd(), filename), JSON.stringify(results), {
+                                encoding: "utf-8",
+                            });
+                            logger.info("File downloaded. New filename: " + filename);
                             resolve();
                         } catch (e) {
                             logger.error(new FatalError(e));
