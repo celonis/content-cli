@@ -1,0 +1,50 @@
+{
+  "name": "@celonis/celonis-content-cli",
+  "version": "0.0.1",
+  "description": "CLI Tools for Celonis Content",
+  "main": "index.js",
+  "bin": {
+    "content-cli": "./index.js"
+  },
+  "author": "Genc Blakqori <g.blakqori@celonis.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "./node_modules/.bin/tsc && cp package.json dist/package.json",
+    "lint": "tslint -p ."
+  },
+  "dependencies": {
+    "commander": "^2.19.0",
+    "compare-versions": "^3.5.1",
+    "jszip": "^3.2.2",
+    "npm": "^6.13.7",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.5",
+    "winston": "^3.1.0",
+    "yaml": "^1.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "~8.9.4",
+    "@types/request": "~2.48.1",
+    "husky": "^4.0.3",
+    "lint-staged": "^9.5.0",
+    "prettier": "^1.19.1",
+    "tslint": "^5.20.1",
+    "tslint-config-prettier": "^1.18.0",
+    "tslint-consistent-codestyle": "^1.16.0",
+    "typescript": "3.1.6"
+  },
+  "publishConfig": {
+    "registry": "http://scs.corp.celonis.de:8081/repository/npm-celonis/"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "prettier --write",
+      "git add"
+    ]
+  }
+}
