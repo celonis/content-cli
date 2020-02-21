@@ -1,4 +1,5 @@
 import { BaseManager } from "./base.manager";
+import { ManagerConfig } from "./interfaces/manager-config.interface";
 
 export class SkillManager extends BaseManager {
     private static BASE_URL = "/action-engine/api/projects/";
@@ -29,15 +30,18 @@ export class SkillManager extends BaseManager {
         this._projectId = value;
     }
 
-    public getPullUrl(): string {
-        return this.profile.team.replace(
-            /\/?$/,
-            `${SkillManager.BASE_URL}/${this.projectId}/skills/${this.skillId}/export`
-        );
-    }
-
-    public getPushUrl(): string {
-        return this.profile.team.replace(/\/?$/, `${SkillManager.BASE_URL}/${this.projectId}/skills/import-file`);
+    public getConfig(): ManagerConfig {
+        return {
+            pushUrl: this.profile.team.replace(/\/?$/, `${SkillManager.BASE_URL}/${this.projectId}/skills/import-file`),
+            pullUrl: this.profile.team.replace(
+                /\/?$/,
+                `${SkillManager.BASE_URL}/${this.projectId}/skills/${this.skillId}/export`
+            ),
+            exportFileName: "skill_" + this.skillId + ".json",
+            onPushSuccessMessage: (skill: any): string => {
+                return "Skill was pushed successfully. New ID: " + skill.id;
+            },
+        };
     }
 
     public getBody(): any {
@@ -46,22 +50,6 @@ export class SkillManager extends BaseManager {
                 file: this.content,
             },
         };
-    }
-
-    public getUpdateUrl(): string {
-        return null;
-    }
-
-    protected getExportFileName(): string {
-        return "skill_" + this.skillId + ".json";
-    }
-
-    protected getSuccessPushMessage(skill: any): string {
-        return "Skill was pushed successfully. New ID: " + skill.id;
-    }
-
-    protected getSuccessUpdateMessage(): string {
-        return null;
     }
 
     protected getSerializedFileContent(data: any): string {
