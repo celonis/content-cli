@@ -25,6 +25,20 @@
   dependencies:
     regenerator-runtime "^0.13.2"
 
+"@celonis/celonis-content-cli@^0.0.1":
+  version "0.0.1"
+  resolved "http://scs.corp.celonis.de:8081/repository/npm-celonis/@celonis/celonis-content-cli/-/celonis-content-cli-0.0.1.tgz#8222bcca43a121a9beb94f9d7b392a0eada6a6ae"
+  integrity sha512-A+ysXcVsocnvwMhvA4Ucurlm5d6zv1lcMYu+SbKh1fn9LJf5l1S3lvGGXA8bFHvGX67pErnwlkPnI0dr4P9PVA==
+  dependencies:
+    commander "^2.19.0"
+    compare-versions "^3.5.1"
+    jszip "^3.2.2"
+    npm "^6.13.7"
+    request "^2.88.0"
+    request-promise-native "^1.0.5"
+    valid-url "^1.0.9"
+    winston "^3.1.0"
+
 "@fimbul/bifrost@^0.21.0":
   version "0.21.0"
   resolved "https://registry.yarnpkg.com/@fimbul/bifrost/-/bifrost-0.21.0.tgz#d0fafa25938fda475657a6a1e407a21bbe02c74e"

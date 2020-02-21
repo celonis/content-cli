@@ -13,16 +13,16 @@ program.version(version);
 program
     .command("profiles")
     .description("Command to create a new profile")
-    .action(async cmd => {
-        await ProfileCommand.listProfiles.call(ProfileCommand);
+    .action(async () => {
+        await new ProfileCommand().listProfiles();
         process.exit();
     });
 
 program
     .command("create-profile")
     .description("Command to create a new profile")
-    .action(async cmd => {
-        await ProfileCommand.createProfile.call(ProfileCommand);
+    .action(async () => {
+        await new ProfileCommand().createProfile();
         process.exit();
     });
 
@@ -32,7 +32,7 @@ program
     .option("--profile <profile>", "Profile which you want to use to pull the analysis")
     .option("--analysisId <analysisId>", "Id of the analysis you want to pull")
     .action(async cmd => {
-        await AnalysisCommand.pullAnalysis.call(AnalysisCommand, cmd.profile, cmd.analysisId);
+        await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.analysisId);
         process.exit();
     });
 
@@ -43,7 +43,7 @@ program
     .option("--projectId <projectId>", "Id of the project you want to pull")
     .option("--skillId <skillId>", "Id of the skill you want to pull")
     .action(async cmd => {
-        await SkillCommand.pullSkill.call(SkillCommand, cmd.profile, cmd.projectId, cmd.skillId);
+        await new SkillCommand().pullSkill(cmd.profile, cmd.projectId, cmd.skillId);
         process.exit();
     });
 
@@ -54,7 +54,7 @@ program
     .option("--projectId <projectId>", "Id of the project you want to push")
     .option("--file <file>", "The file you want to push")
     .action(async cmd => {
-        await SkillCommand.pushSkill.call(SkillCommand, cmd.profile, cmd.projectId, cmd.file);
+        await new SkillCommand().pushSkill(cmd.profile, cmd.projectId, cmd.file);
         process.exit();
     });
 
@@ -64,7 +64,7 @@ program
     .option("--profile <profile>", "Profile which you want to use to pull the objective")
     .option("--objective <objectiveId>", "Id of the objective you want to pull")
     .action(async cmd => {
-        await ObjectiveCommand.pullObjective.call(ObjectiveCommand, cmd.profile, cmd.objective);
+        await new ObjectiveCommand().pullObjective(cmd.profile, cmd.objective);
         process.exit();
     });
 
@@ -74,7 +74,7 @@ program
 //     .option("--profile <profile>", "Profile which you want to use to pull the objective")
 //     .option("--file <file>", "The file you want to push")
 //     .action(async cmd => {
-//         await ObjectiveCommand.pushObjective.call(ObjectiveCommand, cmd.profile, cmd.file);
+//         await (new ObjectiveCommand).pushObjective(cmd.profile, cmd.file);
 //         process.exit();
 //     });
 
@@ -84,7 +84,7 @@ program
     .option("--profile <profile>", "Profile which you want to use to pull the objective")
     .option("--id <id>", "Id of the configuration file you want to pull")
     .action(async cmd => {
-        await MetadataConfigCommand.pullMetadataConfig.call(MetadataConfigCommand, cmd.profile, cmd.id);
+        await new MetadataConfigCommand().pullMetadataConfig(cmd.profile, cmd.id);
         process.exit();
     });
 
@@ -95,7 +95,7 @@ program
     .option("--id <id>", "Id of the configuration file you want to pull")
     .option("--file <file>", "The file you want to push")
     .action(async cmd => {
-        await MetadataConfigCommand.updateMetadataConfig.call(MetadataConfigCommand, cmd.profile, cmd.id, cmd.file);
+        await new MetadataConfigCommand().updateMetadataConfig(cmd.profile, cmd.id, cmd.file);
         process.exit();
     });
 
@@ -105,7 +105,7 @@ program
     .option("--profile <profile>", "Profile which you want to use to pull the objective")
     .option("--file <file>", "The file you want to push")
     .action(async cmd => {
-        await MetadataConfigCommand.pushMetadataConfig.call(MetadataConfigCommand, cmd.profile, cmd.file);
+        await new MetadataConfigCommand().pushMetadataConfig(cmd.profile, cmd.file);
         process.exit();
     });
 

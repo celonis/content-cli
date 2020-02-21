@@ -1,5 +1,5 @@
 {
-  "name": "@celonis/celonis-content-cli",
+  "name": "@celonis/content-cli",
   "version": "0.0.1",
   "description": "CLI Tools for Celonis Content",
   "main": "index.js",

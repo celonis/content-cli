@@ -2,17 +2,16 @@ import { Profile } from "../interfaces/profile.interface";
 import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../util/logger";
-
 const homedir = require("os").homedir();
 
 export class ProfileService {
-    private static PROFILE_CONTAINER_PATH = path.resolve(homedir, ".celonis-content-cli-profiles");
+    private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
 
-    public static async findProfile(profileName: string): Promise<Profile> {
+    public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
             try {
                 const file = fs.readFileSync(
-                    path.resolve(ProfileService.PROFILE_CONTAINER_PATH, this.constructProfileFileName(profileName)),
+                    path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                     { encoding: "utf-8" }
                 );
                 resolve(JSON.parse(file));
@@ -22,42 +21,38 @@ export class ProfileService {
         });
     }
 
-    public static storeProfile(profile: Profile): void {
+    public storeProfile(profile: Profile): void {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
-        fs.writeFileSync(
-            path.resolve(ProfileService.PROFILE_CONTAINER_PATH, newProfileFileName),
-            JSON.stringify(profile),
-            {
-                encoding: "utf-8",
-            }
-        );
+        fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
+            encoding: "utf-8",
+        });
     }
 
-    private static createProfileContainerIfNotExists(): void {
-        if (!fs.existsSync(ProfileService.PROFILE_CONTAINER_PATH)) {
-            fs.mkdirSync(ProfileService.PROFILE_CONTAINER_PATH);
+    private createProfileContainerIfNotExists(): void {
+        if (!fs.existsSync(this.profileContainerPath)) {
+            fs.mkdirSync(this.profileContainerPath);
         }
     }
 
-    private static constructProfileFileName(profileName: string): string {
+    private constructProfileFileName(profileName: string): string {
         return profileName + ".json";
     }
 
-    public static readAllProfiles(): Promise<string[]> {
+    public readAllProfiles(): Promise<string[]> {
         return new Promise((resolve, reject) => {
             const profiles = this.getAllFilesInDirectory();
             resolve(profiles);
         });
     }
 
-    public static getAllFilesInDirectory(): string[] {
+    public getAllFilesInDirectory(): string[] {
         let fileNames: [] = [];
         try {
-            if (fs.existsSync(ProfileService.PROFILE_CONTAINER_PATH)) {
+            if (fs.existsSync(this.profileContainerPath)) {
                 fileNames = fs
                     // @ts-ignore
-                    .readdirSync(ProfileService.PROFILE_CONTAINER_PATH, { withFileTypes: true })
+                    .readdirSync(this.profileContainerPath, { withFileTypes: true })
                     .filter(dirent => !dirent.isDirectory() && dirent.name.endsWith(".json"))
                     .map(dirent => dirent.name.replace(".json", ""));
             }

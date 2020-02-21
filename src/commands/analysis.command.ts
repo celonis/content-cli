@@ -6,9 +6,12 @@ import * as path from "path";
 import * as fs from "fs";
 
 export class AnalysisCommand {
-    public static async pullAnalysis(profile: string, analysisId: string) {
+    private profileService = new ProfileService();
+
+    public async pullAnalysis(profile: string, analysisId: string) {
         return new Promise((resolve, reject) => {
-            ProfileService.findProfile(profile)
+            this.profileService
+                .findProfile(profile)
                 .then((profile: Profile) => {
                     this.downloadAnalysisContent(analysisId, profile).then(results => {
                         try {
@@ -30,7 +33,7 @@ export class AnalysisCommand {
         });
     }
 
-    private static async downloadAnalysisContent(analysisId: string, profile: Profile): Promise<any> {
+    private async downloadAnalysisContent(analysisId: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             const options = {
                 headers: {

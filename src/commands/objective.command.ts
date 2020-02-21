@@ -6,9 +6,12 @@ import * as path from "path";
 import * as fs from "fs";
 
 export class ObjectiveCommand {
-    public static async pullObjective(profile: string, objectiveId: string) {
+    private profileService = new ProfileService();
+
+    public async pullObjective(profile: string, objectiveId: string) {
         return new Promise((resolve, reject) => {
-            ProfileService.findProfile(profile)
+            this.profileService
+                .findProfile(profile)
                 .then((profile: Profile) => {
                     this.downloadObjectiveContent(objectiveId, profile).then(results => {
                         const objective = results[0];
@@ -31,9 +34,10 @@ export class ObjectiveCommand {
         });
     }
 
-    public static async pushObjective(profile: string, filename: string) {
+    public async pushObjective(profile: string, filename: string) {
         return new Promise((resolve, reject) => {
-            ProfileService.findProfile(profile)
+            this.profileService
+                .findProfile(profile)
                 .then((profile: Profile) => {
                     this.uploadObjectiveContent(filename, profile)
                         .then(() => {
@@ -50,7 +54,7 @@ export class ObjectiveCommand {
         });
     }
 
-    private static async downloadObjectiveContent(objectiveId: string, profile: Profile): Promise<any> {
+    private async downloadObjectiveContent(objectiveId: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             const options = {
                 headers: {
@@ -84,7 +88,7 @@ export class ObjectiveCommand {
         });
     }
 
-    private static async uploadObjectiveContent(filename: string, profile: Profile): Promise<any> {
+    private async uploadObjectiveContent(filename: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             if (!fs.existsSync(path.resolve(process.cwd(), filename))) {
                 logger.error(new FatalError("The provided file does not exit"));
