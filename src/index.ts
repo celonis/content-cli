@@ -3,6 +3,8 @@ import * as program from "commander";
 import { ProfileCommand } from "./commands/profile.command";
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
+import { ObjectiveCommand } from "./commands/objective.command";
+import { MetadataConfigCommand } from "./commands/metadata-config.command";
 
 const version = require("./package.json").version;
 
@@ -53,6 +55,57 @@ program
     .option("--file <file>", "The file you want to push")
     .action(async cmd => {
         await SkillCommand.pushSkill.call(SkillCommand, cmd.profile, cmd.projectId, cmd.file);
+        process.exit();
+    });
+
+program
+    .command("pull-objective")
+    .description("Command to pull an objective using a specific profile")
+    .option("--profile <profile>", "Profile which you want to use to pull the objective")
+    .option("--objective <objectiveId>", "Id of the objective you want to pull")
+    .action(async cmd => {
+        await ObjectiveCommand.pullObjective.call(ObjectiveCommand, cmd.profile, cmd.objective);
+        process.exit();
+    });
+
+// program
+//     .command("push-objective")
+//     .description("Command to push an objective using a specific profile")
+//     .option("--profile <profile>", "Profile which you want to use to pull the objective")
+//     .option("--file <file>", "The file you want to push")
+//     .action(async cmd => {
+//         await ObjectiveCommand.pushObjective.call(ObjectiveCommand, cmd.profile, cmd.file);
+//         process.exit();
+//     });
+
+program
+    .command("pull-semantic-metadata")
+    .description("Command to pull a metadata configuration file using a specific profile")
+    .option("--profile <profile>", "Profile which you want to use to pull the objective")
+    .option("--id <id>", "Id of the configuration file you want to pull")
+    .action(async cmd => {
+        await MetadataConfigCommand.pullMetadataConfig.call(MetadataConfigCommand, cmd.profile, cmd.id);
+        process.exit();
+    });
+
+program
+    .command("update-semantic-metadata")
+    .description("Command to pull a metadata configuration file using a specific profile")
+    .option("--profile <profile>", "Profile which you want to use to pull the objective")
+    .option("--id <id>", "Id of the configuration file you want to pull")
+    .option("--file <file>", "The file you want to push")
+    .action(async cmd => {
+        await MetadataConfigCommand.updateMetadataConfig.call(MetadataConfigCommand, cmd.profile, cmd.id, cmd.file);
+        process.exit();
+    });
+
+program
+    .command("push-semantic-metadata")
+    .description("Command to push a metadata configuration file using a specific profile")
+    .option("--profile <profile>", "Profile which you want to use to pull the objective")
+    .option("--file <file>", "The file you want to push")
+    .action(async cmd => {
+        await MetadataConfigCommand.pushMetadataConfig.call(MetadataConfigCommand, cmd.profile, cmd.file);
         process.exit();
     });
 

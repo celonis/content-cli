@@ -12,7 +12,7 @@ export class AnalysisCommand {
                 .then((profile: Profile) => {
                     this.downloadAnalysisContent(analysisId, profile).then(results => {
                         try {
-                            const filename = results.analysis.name + ".json";
+                            const filename = "analysis_" + results.analysis.name + ".json";
                             fs.writeFileSync(path.resolve(process.cwd(), filename), JSON.stringify(results), {
                                 encoding: "utf-8",
                             });

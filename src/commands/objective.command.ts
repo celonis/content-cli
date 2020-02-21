@@ -1,19 +1,19 @@
 import { ProfileService } from "../services/profile.service";
 import { Profile } from "../interfaces/profile.interface";
 import { FatalError, logger } from "../util/logger";
-
 const request = require("request");
 import * as path from "path";
 import * as fs from "fs";
 
-export class SkillCommand {
-    public static async pullSkill(profile: string, projectId: string, skillId: string) {
+export class ObjectiveCommand {
+    public static async pullObjective(profile: string, objectiveId: string) {
         return new Promise((resolve, reject) => {
             ProfileService.findProfile(profile)
                 .then((profile: Profile) => {
-                    this.downloadSkillContent(projectId, skillId, profile).then(results => {
+                    this.downloadObjectiveContent(objectiveId, profile).then(results => {
+                        const objective = results[0];
                         try {
-                            const filename = "skill_" + results.name + ".json";
+                            const filename = "objective_" + objective.objective.name + ".json";
                             fs.writeFileSync(path.resolve(process.cwd(), filename), JSON.stringify(results), {
                                 encoding: "utf-8",
                             });
@@ -31,13 +31,13 @@ export class SkillCommand {
         });
     }
 
-    public static async pushSkill(profile: string, projectId: string, filename: string) {
+    public static async pushObjective(profile: string, filename: string) {
         return new Promise((resolve, reject) => {
             ProfileService.findProfile(profile)
                 .then((profile: Profile) => {
-                    this.uploadSkillContent(projectId, filename, profile)
-                        .then(skill => {
-                            logger.info("Skill uploaded successfully. New skill ID: " + skill.id);
+                    this.uploadObjectiveContent(filename, profile)
+                        .then(() => {
+                            logger.info("Objective uploaded successfully!");
                             resolve();
                         })
                         .catch(() => {
@@ -50,15 +50,18 @@ export class SkillCommand {
         });
     }
 
-    private static async downloadSkillContent(projectId: string, skillId: string, profile: Profile): Promise<any> {
+    private static async downloadObjectiveContent(objectiveId: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             const options = {
                 headers: {
                     authorization: `Bearer ${profile.apiToken}`,
                 },
+                qs: {
+                    id: objectiveId,
+                },
             };
 
-            let url = profile.team.replace(/\/?$/, `/action-engine/api/projects/${projectId}/skills/${skillId}/export`);
+            let url = profile.team.replace(/\/?$/, `/transformation-center/api/objectives/import`);
             request.get(url, options, (err, res) => {
                 if (res.statusCode >= 400) {
                     logger.error(new FatalError(res.body));
@@ -81,7 +84,7 @@ export class SkillCommand {
         });
     }
 
-    private static async uploadSkillContent(projectId: string, filename: string, profile: Profile): Promise<any> {
+    private static async uploadObjectiveContent(filename: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             if (!fs.existsSync(path.resolve(process.cwd(), filename))) {
                 logger.error(new FatalError("The provided file does not exit"));
@@ -91,13 +94,17 @@ export class SkillCommand {
             const options = {
                 headers: {
                     authorization: `Bearer ${profile.apiToken}`,
+                    "content-type": "application/json",
                 },
-                formData: {
-                    file: fs.createReadStream(path.resolve(process.cwd(), filename), { encoding: "binary" }),
-                },
+                body: JSON.stringify({
+                    useDataModelId: "dummy",
+                    serializedObjectiveExports: fs.readFileSync(path.resolve(process.cwd(), filename), {
+                        encoding: "utf-8",
+                    }),
+                }),
             };
 
-            let url = profile.team.replace(/\/?$/, `/action-engine/api/projects/${projectId}/skills/import-file`);
+            let url = profile.team.replace(/\/?$/, `/transformation-center/api/objective-kpis/import`);
             request.post(url, options, (err, res) => {
                 if (res.statusCode >= 400) {
                     logger.error(new FatalError(res.body));
