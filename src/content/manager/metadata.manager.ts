@@ -24,8 +24,8 @@ export class MetadataManager extends BaseManager {
 
     public getConfig(): ManagerConfig {
         return {
-            pushUrl: `${MetadataManager.BASE_URL}/`,
-            pullUrl: `${MetadataManager.BASE_URL}/${this.id}`,
+            pushUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/`),
+            pullUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
             updateUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
             exportFileName: "metadata_" + this.id + ".yaml",
             onPushSuccessMessage: (data: any): string => {

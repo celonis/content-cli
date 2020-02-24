@@ -9,7 +9,7 @@ export class ContentService {
     public async pull(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(profile)
+                .findProfile(this.resolveProfile(profile))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.pull().then(
@@ -26,7 +26,7 @@ export class ContentService {
     public async push(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(profile)
+                .findProfile(this.resolveProfile(profile))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.push().then(
@@ -43,7 +43,7 @@ export class ContentService {
     public async update(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(profile)
+                .findProfile(this.resolveProfile(profile))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.update().then(
@@ -55,5 +55,16 @@ export class ContentService {
                     logger.error(new FatalError(err));
                 });
         });
+    }
+
+    private resolveProfile(profile: string): string {
+        if (profile) {
+            return profile;
+        }
+        const defaultProfile = this.profileService.getDefaultProfile();
+        if (defaultProfile) {
+            return defaultProfile;
+        }
+        logger.error(new FatalError("No profile provided and no default profile set."));
     }
 }
