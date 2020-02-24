@@ -39,9 +39,9 @@ program
     .command("pull-analysis")
     .description("Command to pull an analysis using a specific profile")
     .option("--profile <profile>", "Profile which you want to use to pull the analysis")
-    .option("--analysisId <analysisId>", "Id of the analysis you want to pull")
+    .option("--id <id>", "Id of the analysis you want to pull")
     .action(async cmd => {
-        await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.analysisId);
+        await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.id);
         process.exit();
     });
 

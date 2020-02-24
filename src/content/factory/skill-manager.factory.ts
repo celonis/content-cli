@@ -6,13 +6,13 @@ import { Stream } from "stream";
 
 export class SkillManagerFactory {
     public createManager(projectId: string, skillId: string, filename: string): SkillManager {
-        const metaDataManager = new SkillManager();
-        metaDataManager.skillId = skillId;
-        metaDataManager.projectId = projectId;
+        const skillManager = new SkillManager();
+        skillManager.skillId = skillId;
+        skillManager.projectId = projectId;
         if (filename !== null) {
-            metaDataManager.content = this.readFile(filename);
+            skillManager.content = this.readFile(filename);
         }
-        return metaDataManager;
+        return skillManager;
     }
 
     private readFile(filename: string): Stream {
