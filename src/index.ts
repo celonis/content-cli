@@ -21,8 +21,17 @@ program
 program
     .command("create-profile")
     .description("Command to create a new profile")
-    .action(async () => {
-        await new ProfileCommand().createProfile();
+    .option("--setAsDefault", "Set this profile as default")
+    .action(async cmd => {
+        await new ProfileCommand().createProfile(cmd.setAsDefault);
+        process.exit();
+    });
+
+program
+    .command("default-profile <profile>")
+    .description("Command to set a profile as default")
+    .action(async profile => {
+        await new ProfileCommand().makeDefaultProfile(profile);
         process.exit();
     });
 
