@@ -1,16 +1,17 @@
 import { BaseManager } from "./base.manager";
-import { ManagerConfig } from "./interfaces/manager-config.interface";
+import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
 export class AnalysisManager extends BaseManager {
     private static BASE_URL = "/process-mining/api/analysis";
     private _id: string;
-    private _content: string;
+    private _processId: string;
+    private _content: any;
 
-    public get content(): string {
+    public get content(): any {
         return this._content;
     }
 
-    public set content(value: string) {
+    public set content(value: any) {
         this._content = value;
     }
 
@@ -22,23 +23,33 @@ export class AnalysisManager extends BaseManager {
         this._id = value;
     }
 
+    public get processId(): string {
+        return this._processId;
+    }
+
+    public set processId(value: string) {
+        this._processId = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
-            pushUrl: this.profile.team.replace(/\/?$/, `${AnalysisManager.BASE_URL}/`),
-            pullUrl: this.profile.team.replace(/\/?$/, `${AnalysisManager.BASE_URL}/${this.id}`),
+            pushUrl: this.profile.team.replace(
+                /\/?$/,
+                `${AnalysisManager.BASE_URL}/import?processId=${this.processId}`
+            ),
+            pullUrl: this.profile.team.replace(/\/?$/, `${AnalysisManager.BASE_URL}/export?id=${this.id}`),
             exportFileName: "analysis_" + this.id + ".json",
             onPushSuccessMessage: (data: any): string => {
-                return "Analysis was pushed successfully. New ID: " + data.analysis.id;
-            },
-            onUpdateSuccessMessage: (): string => {
-                return "Analysis was updated successfully!";
+                return "Analysis was pushed successfully. New ID: " + data.id;
             },
         };
     }
 
     public getBody(): any {
         return {
-            body: JSON.stringify(this.content),
+            formData: {
+                file: this.content,
+            },
         };
     }
 

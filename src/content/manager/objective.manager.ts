@@ -1,8 +1,8 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
-export class MetadataManager extends BaseManager {
-    private static BASE_URL = "/semantic-layer/api/yaml-metadata";
+export class ObjectiveManager extends BaseManager {
+    private static BASE_URL = "/transformation-center/api";
     private _id: string;
     private _content: string;
 
@@ -24,15 +24,11 @@ export class MetadataManager extends BaseManager {
 
     public getConfig(): ManagerConfig {
         return {
-            pushUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/`),
-            pullUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
-            updateUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
-            exportFileName: "metadata_" + this.id + ".yaml",
+            pushUrl: this.profile.team.replace(/\/?$/, `${ObjectiveManager.BASE_URL}/objective-kpis/import`),
+            pullUrl: this.profile.team.replace(/\/?$/, `${ObjectiveManager.BASE_URL}/objectives/export?id=${this.id}`),
+            exportFileName: "objective_" + this.id + ".json",
             onPushSuccessMessage: (data: any): string => {
-                return "Metadata was pushed successfully. New ID: " + data.id;
-            },
-            onUpdateSuccessMessage: (): string => {
-                return "Metadata was updated successfully!";
+                return "Objective was pushed successfully. New ID: " + data.analysis.id;
             },
         };
     }
@@ -40,13 +36,13 @@ export class MetadataManager extends BaseManager {
     public getBody(): any {
         return {
             body: JSON.stringify({
-                id: this.id,
-                content: this.content,
+                useDataModelId: "dummy",
+                serializedObjectiveExports: this.content,
             }),
         };
     }
 
     protected getSerializedFileContent(data: any): string {
-        return data.content;
+        return data;
     }
 }

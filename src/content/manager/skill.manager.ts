@@ -1,5 +1,5 @@
 import { BaseManager } from "./base.manager";
-import { ManagerConfig } from "./interfaces/manager-config.interface";
+import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
 export class SkillManager extends BaseManager {
     private static BASE_URL = "/action-engine/api/projects/";
@@ -53,6 +53,6 @@ export class SkillManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
-        return JSON.stringify(data);
+        return data;
     }
 }

@@ -3,7 +3,7 @@ import { FatalError, logger } from "../../util/logger";
 import { HttpClientService } from "../../services/http-client.service";
 import * as fs from "fs";
 import * as path from "path";
-import { ManagerConfig } from "./interfaces/manager-config.interface";
+import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
 export abstract class BaseManager {
     private httpClientService = new HttpClientService();

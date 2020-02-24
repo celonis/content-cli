@@ -46,6 +46,17 @@ program
     });
 
 program
+    .command("push-analysis")
+    .description("Command to push an analysis to a workspace")
+    .option("--profile <profile>", "Profile which you want to use to pull the analysis")
+    .option("--workspaceId <workspaceId>", "Id of the workspace to which you want to push")
+    .option("--file <file>", "The file you want to push")
+    .action(async cmd => {
+        await new AnalysisCommand().pushAnalysis(cmd.profile, cmd.workspaceId, cmd.file);
+        process.exit();
+    });
+
+program
     .command("pull-skill")
     .description("Command to pull a skill using a specific profile")
     .option("--profile <profile>", "Profile which you want to use to pull the analysis")
@@ -71,21 +82,21 @@ program
     .command("pull-objective")
     .description("Command to pull an objective using a specific profile")
     .option("--profile <profile>", "Profile which you want to use to pull the objective")
-    .option("--objective <objectiveId>", "Id of the objective you want to pull")
+    .option("--id <id>", "Id of the objective you want to pull")
     .action(async cmd => {
-        await new ObjectiveCommand().pullObjective(cmd.profile, cmd.objective);
+        await new ObjectiveCommand().pullObjective(cmd.profile, cmd.id);
         process.exit();
     });
 
-// program
-//     .command("push-objective")
-//     .description("Command to push an objective using a specific profile")
-//     .option("--profile <profile>", "Profile which you want to use to pull the objective")
-//     .option("--file <file>", "The file you want to push")
-//     .action(async cmd => {
-//         await (new ObjectiveCommand).pushObjective(cmd.profile, cmd.file);
-//         process.exit();
-//     });
+program
+    .command("push-objective")
+    .description("Command to push an objective using a specific profile")
+    .option("--profile <profile>", "Profile which you want to use to pull the objective")
+    .option("--file <file>", "The file you want to push")
+    .action(async cmd => {
+        await new ObjectiveCommand().pushObjective(cmd.profile, cmd.file);
+        process.exit();
+    });
 
 program
     .command("pull-semantic-metadata")
