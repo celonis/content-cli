@@ -3,14 +3,15 @@ const version = require("../package.json").version;
 
 var program = require("commander");
 
-program.command("profile", "Command for profiles").version(version);
+program.command("profile", "Commands related to profiles.");
 
-program.command("pull", "Command to pull content").version(version);
+program.command("pull", "Commands to pull content.");
 
-program.command("push", "Command to push content").version(version);
+program.command("push", "Commands to push content.");
 
-program.command("update", "Command to push content").version(version);
+program.command("update", "Commands to push content.");
 
+program.version(version);
 program.parse(process.argv);
 
 if (!process.argv.slice(2).length) {

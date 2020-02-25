@@ -7,7 +7,7 @@ class Profile {
     public static listProfile(program) {
         program
             .command("list")
-            .description("List all profiles")
+            .description("Command to list all stored profiles")
             .action(async () => {
                 await new ProfileCommand().listProfiles();
                 process.exit();
