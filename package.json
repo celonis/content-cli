@@ -1,10 +1,10 @@
 {
-  "name": "@celonis/celonis-content-cli",
-  "version": "0.0.1",
+  "name": "@celonis/content-cli",
+  "version": "0.0.2",
   "description": "CLI Tools for Celonis Content",
   "main": "index.js",
   "bin": {
-    "content-cli": "./index.js"
+    "content-cli": "./bin/content-cli.js"
   },
   "author": "Genc Blakqori <g.blakqori@celonis.com>",
   "license": "MIT",
@@ -19,8 +19,8 @@
     "npm": "^6.13.7",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5",
-    "winston": "^3.1.0",
-    "yaml": "^1.7.2"
+    "valid-url": "^1.0.9",
+    "winston": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "~8.9.4",
