@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { MetadataConfigCommand } from "../commands/metadata-config.command";
 
 var program = require("commander");

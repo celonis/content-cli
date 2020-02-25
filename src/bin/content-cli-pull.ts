@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { AnalysisCommand } from "../commands/analysis.command";
 import { SkillCommand } from "../commands/skill.command";
 import { ObjectiveCommand } from "../commands/objective.command";

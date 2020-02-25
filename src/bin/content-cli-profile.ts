@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { ProfileCommand } from "../commands/profile.command";
 
 var program = require("commander");
