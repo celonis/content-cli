@@ -7,7 +7,7 @@ var program = require("commander");
 class Push {
     public static analysis(program) {
         program
-            .command("push")
+            .command("analysis")
             .description("Command to push an analysis to a workspace")
             .option("--profile <profile>", "Profile which you want to use to pull the analysis")
             .option("--workspaceId <workspaceId>", "Id of the workspace to which you want to push")
