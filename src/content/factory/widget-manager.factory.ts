@@ -30,23 +30,10 @@ export class WidgetManagerFactory {
         const manifest = this.fetchManifest();
 
         if (!manifest) {
-            logger.error(new FatalError("Manifest file is not provided."));
+            logger.error(new FatalError("Missing manifest file."));
         }
 
-        if (!fs.existsSync(manifest.bundle)) {
-            logger.error(new FatalError("Bundle file does not exist."));
-        }
-
-        if (
-            fs.existsSync(path.resolve(process.cwd(), "assets")) &&
-            !fs.existsSync(path.resolve(process.cwd(), "assets", "widgets", manifest.key))
-        ) {
-            logger.error(
-                new FatalError(
-                    "Assets directory does not exist. Assets should live under 'assets/widgets/" + manifest.key + "."
-                )
-            );
-        }
+        this.validateManifest(manifest);
 
         const zip = new AdmZip();
         const zipFileName = path.resolve(process.cwd(), "output.zip");
@@ -73,5 +60,38 @@ export class WidgetManagerFactory {
         }
 
         return null;
+    }
+
+    private validateManifest(manifest: Manifest) {
+        if (!manifest.bundle) {
+            logger.error(new FatalError("Missing 'bundle' attribute."));
+        }
+
+        if (!manifest.name) {
+            logger.error(new FatalError("Missing 'name' attribute."));
+        }
+
+        if (!manifest.key) {
+            logger.error(new FatalError("Missing 'key' attribute."));
+        }
+
+        if (!manifest.key) {
+            logger.error(new FatalError("Missing 'key' attribute."));
+        }
+
+        if (!fs.existsSync(manifest.bundle)) {
+            logger.error(new FatalError("Missing bundle."));
+        }
+
+        if (
+            fs.existsSync(path.resolve(process.cwd(), "assets")) &&
+            !fs.existsSync(path.resolve(process.cwd(), "assets", "widgets", manifest.key))
+        ) {
+            logger.error(
+                new FatalError(
+                    "Assets directory does not exist. Assets should live under 'assets/widgets/" + manifest.key + "'."
+                )
+            );
+        }
     }
 }
