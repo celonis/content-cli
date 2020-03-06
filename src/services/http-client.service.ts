@@ -46,9 +46,11 @@ export class HttpClientService {
                 reject("Backend responded with status code " + res.statusCode);
             }
         } else {
-            let body;
+            let body = {};
             try {
-                body = JSON.parse(res.body);
+                if (res.body) {
+                    body = JSON.parse(res.body);
+                }
             } catch (e) {
                 reject("Something went wrong. Please check that you have the right url and api key.");
             }

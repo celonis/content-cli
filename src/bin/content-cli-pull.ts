@@ -2,6 +2,7 @@ import { AnalysisCommand } from "../commands/analysis.command";
 import { SkillCommand } from "../commands/skill.command";
 import { ObjectiveCommand } from "../commands/objective.command";
 import { MetadataConfigCommand } from "../commands/metadata-config.command";
+import { BoardCommand } from "../commands/board.command";
 
 var program = require("commander");
 
@@ -24,7 +25,7 @@ class Pull {
         program
             .command("skill")
             .description("Command to pull a skill using a specific profile")
-            .option("--profile <profile>", "Profile which you want to use to pull the analysis")
+            .option("--profile <profile>", "Profile which you want to use to pull the skill")
             .option("--projectId <projectId>", "Id of the project you want to pull")
             .option("--skillId <skillId>", "Id of the skill you want to pull")
             .action(async cmd => {
@@ -53,10 +54,24 @@ class Pull {
         program
             .command("semantic-metadata")
             .description("Command to pull a metadata configuration file using a specific profile")
-            .option("--profile <profile>", "Profile which you want to use to pull the objective")
+            .option("--profile <profile>", "Profile which you want to use to pull the metadata")
             .option("--id <id>", "Id of the configuration file you want to pull")
             .action(async cmd => {
                 await new MetadataConfigCommand().pullMetadataConfig(cmd.profile, cmd.id);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static board(program) {
+        program
+            .command("board")
+            .description("Command to pull a board configuration file using a specific profile")
+            .option("--profile <profile>", "Profile which you want to use to pull the board")
+            .option("--id <id>", "Id of the board configuration file you want to pull")
+            .action(async cmd => {
+                await new BoardCommand().pullBoard(cmd.profile, cmd.id);
                 process.exit();
             });
 
@@ -68,6 +83,7 @@ Pull.analysis(program);
 Pull.skill(program);
 Pull.objective(program);
 Pull.semanticMetadata(program);
+Pull.board(program);
 
 program.parse(process.argv);
 
