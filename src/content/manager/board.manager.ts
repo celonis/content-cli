@@ -1,8 +1,9 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
+import * as YAML from "yaml";
 
-export class MetadataManager extends BaseManager {
-    private static BASE_URL = "/semantic-layer/api/yaml-metadata";
+export class BoardManager extends BaseManager {
+    private static BASE_URL = "/blueprint/api/boards";
     private _id: string;
     private _content: string;
 
@@ -24,15 +25,15 @@ export class MetadataManager extends BaseManager {
 
     public getConfig(): ManagerConfig {
         return {
-            pushUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}`),
-            pullUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
-            updateUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
-            exportFileName: "metadata_" + this.id + ".yaml",
+            pushUrl: this.profile.team.replace(/\/?$/, `${BoardManager.BASE_URL}`),
+            pullUrl: this.profile.team.replace(/\/?$/, `${BoardManager.BASE_URL}/${this.id}`),
+            updateUrl: this.profile.team.replace(/\/?$/, `${BoardManager.BASE_URL}/${this.id}`),
+            exportFileName: "board_" + this.id + ".yaml",
             onPushSuccessMessage: (data: any): string => {
-                return "Metadata was pushed successfully. New ID: " + data.id;
+                return "Board was pushed successfully. New ID: " + data.id;
             },
             onUpdateSuccessMessage: (): string => {
-                return "Metadata was updated successfully!";
+                return "Board was updated successfully!";
             },
         };
     }
@@ -41,12 +42,12 @@ export class MetadataManager extends BaseManager {
         return {
             body: JSON.stringify({
                 id: this.id,
-                content: this.content,
+                configuration: this.content,
             }),
         };
     }
 
     protected getSerializedFileContent(data: any): string {
-        return data.content;
+        return YAML.stringify(data.configuration);
     }
 }

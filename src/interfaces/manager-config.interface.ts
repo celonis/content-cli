@@ -1,8 +1,8 @@
 export interface ManagerConfig {
     pushUrl: string;
-    pullUrl: string;
+    pullUrl?: string;
     updateUrl?: string;
-    exportFileName: string;
+    exportFileName?: string;
     onPushSuccessMessage: (data: any) => string;
     onUpdateSuccessMessage?: () => string;
 }

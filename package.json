@@ -13,14 +13,15 @@
     "lint": "tslint -p ."
   },
   "dependencies": {
+    "adm-zip": "^0.4.14",
     "commander": "^2.19.0",
     "compare-versions": "^3.5.1",
-    "jszip": "^3.2.2",
     "npm": "^6.13.7",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5",
     "valid-url": "^1.0.9",
-    "winston": "^3.1.0"
+    "winston": "^3.1.0",
+    "yaml": "^1.7.2"
   },
   "devDependencies": {
     "@types/node": "~8.9.4",
