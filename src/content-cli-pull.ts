@@ -1,8 +1,8 @@
-import { AnalysisCommand } from "../commands/analysis.command";
-import { SkillCommand } from "../commands/skill.command";
-import { ObjectiveCommand } from "../commands/objective.command";
-import { MetadataConfigCommand } from "../commands/metadata-config.command";
-import { BoardCommand } from "../commands/board.command";
+import { AnalysisCommand } from "./commands/analysis.command";
+import { SkillCommand } from "./commands/skill.command";
+import { ObjectiveCommand } from "./commands/objective.command";
+import { MetadataConfigCommand } from "./commands/metadata-config.command";
+import { BoardCommand } from "./commands/board.command";
 
 var program = require("commander");
 

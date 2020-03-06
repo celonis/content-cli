@@ -1,10 +1,10 @@
 {
   "name": "@celonis/content-cli",
-  "version": "0.0.3",
+  "version": "0.0.1",
   "description": "CLI Tools for Celonis Content",
-  "main": "index.js",
+  "main": "content-cli.js",
   "bin": {
-    "content-cli": "./bin/content-cli.js"
+    "content-cli": "./content-cli.js"
   },
   "author": "Genc Blakqori <g.blakqori@celonis.com>",
   "license": "MIT",

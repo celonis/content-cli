@@ -1,4 +1,4 @@
-import { ProfileCommand } from "../commands/profile.command";
+import { ProfileCommand } from "./commands/profile.command";
 
 var program = require("commander");
 

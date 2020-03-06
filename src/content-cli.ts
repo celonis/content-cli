@@ -1,6 +1,7 @@
-const version = require("../package.json").version;
+#!/usr/bin/env node
 
-var program = require("commander");
+const version = require("./package.json").version;
+import * as program from "commander";
 
 program.command("profile", "Commands related to profiles.");
 

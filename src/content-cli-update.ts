@@ -1,5 +1,5 @@
-import { MetadataConfigCommand } from "../commands/metadata-config.command";
-import { BoardCommand } from "../commands/board.command";
+import { MetadataConfigCommand } from "./commands/metadata-config.command";
+import { BoardCommand } from "./commands/board.command";
 
 var program = require("commander");
 
