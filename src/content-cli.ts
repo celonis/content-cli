@@ -9,7 +9,7 @@ program.command("pull", "Commands to pull content.");
 
 program.command("push", "Commands to push content.");
 
-program.command("update", "Commands to push content.");
+program.command("update", "Commands to update content.");
 
 program.version(version);
 program.parse(process.argv);

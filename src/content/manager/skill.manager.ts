@@ -53,6 +53,6 @@ export class SkillManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
-        return data;
+        return JSON.stringify(data);
     }
 }
