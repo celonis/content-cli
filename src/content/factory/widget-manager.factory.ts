@@ -37,7 +37,11 @@ export class WidgetManagerFactory {
 
         const zip = new AdmZip();
         const zipFileName = path.resolve(process.cwd(), "output.zip");
-        zip.addLocalFolder(path.resolve(process.cwd(), "assets"), "assets");
+
+        if (fs.existsSync(path.resolve(process.cwd(), "assets"))) {
+            zip.addLocalFolder(path.resolve(process.cwd(), "assets"), "assets");
+        }
+
         if (fs.existsSync(path.resolve(process.cwd(), "manifest.yaml"))) {
             zip.addLocalFile(path.resolve(process.cwd(), "manifest.yaml"));
         } else {

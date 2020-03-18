@@ -10,7 +10,7 @@ class Pull {
     public static analysis(program) {
         program
             .command("analysis")
-            .description("Command to pull an analysis using a specific profile")
+            .description("Command to pull an analysis")
             .option("--profile <profile>", "Profile which you want to use to pull the analysis")
             .option("--id <id>", "Id of the analysis you want to pull")
             .action(async cmd => {
@@ -24,7 +24,7 @@ class Pull {
     public static skill(program) {
         program
             .command("skill")
-            .description("Command to pull a skill using a specific profile")
+            .description("Command to pull a skill")
             .option("--profile <profile>", "Profile which you want to use to pull the skill")
             .option("--projectId <projectId>", "Id of the project you want to pull")
             .option("--skillId <skillId>", "Id of the skill you want to pull")
@@ -39,7 +39,7 @@ class Pull {
     public static objective(program) {
         program
             .command("objective")
-            .description("Command to pull an objective using a specific profile")
+            .description("Command to pull an objective")
             .option("--profile <profile>", "Profile which you want to use to pull the objective")
             .option("--id <id>", "Id of the objective you want to pull")
             .action(async cmd => {
@@ -53,7 +53,7 @@ class Pull {
     public static semanticMetadata(program) {
         program
             .command("semantic-metadata")
-            .description("Command to pull a metadata configuration file using a specific profile")
+            .description("Command to pull a metadata configuration file from semantic layer")
             .option("--profile <profile>", "Profile which you want to use to pull the metadata")
             .option("--id <id>", "Id of the configuration file you want to pull")
             .action(async cmd => {
@@ -67,7 +67,7 @@ class Pull {
     public static board(program) {
         program
             .command("board")
-            .description("Command to pull a board configuration file using a specific profile")
+            .description("Command to pull a board")
             .option("--profile <profile>", "Profile which you want to use to pull the board")
             .option("--id <id>", "Id of the board configuration file you want to pull")
             .action(async cmd => {

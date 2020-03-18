@@ -25,7 +25,7 @@ class Push {
     public static skill(program) {
         program
             .command("skill")
-            .description("Command to push a skill using a specific profile")
+            .description("Command to push a skill to a project")
             .option("--profile <profile>", "Profile which you want to use to push the skill")
             .option("--projectId <projectId>", "Id of the project you want to push")
             .option("--file <file>", "The file you want to push")
@@ -40,7 +40,7 @@ class Push {
     public static semanticMetadata(program) {
         program
             .command("semantic-metadata")
-            .description("Command to push a metadata configuration file using a specific profile")
+            .description("Command to push a metadata configuration to semantic layer")
             .option("--profile <profile>", "Profile which you want to use to push the metadata")
             .option("--file <file>", "The file you want to push")
             .action(async cmd => {
@@ -54,7 +54,7 @@ class Push {
     public static widget(program) {
         program
             .command("widget")
-            .description("Command to push a widget using a specific profile")
+            .description("Command to push a widget")
             .option("--profile <profile>", "Profile which you want to use to push the widget")
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile);
@@ -67,7 +67,7 @@ class Push {
     public static board(program) {
         program
             .command("board")
-            .description("Command to push a board using a specific profile")
+            .description("Command to push a board")
             .option("--profile <profile>", "Profile which you want to use to push the board")
             .option("--file <file>", "The file you want to push")
             .action(async cmd => {
