@@ -13,6 +13,24 @@ export class MetadataManagerFactory {
         return metaDataManager;
     }
 
+    public createManagers(): MetadataManager[] {
+        const semanticModels = fs.readdirSync(process.cwd());
+        return semanticModels
+            .filter(filePath => {
+                if (!filePath.endsWith("yml") && !filePath.endsWith("yaml")) {
+                    return false;
+                }
+
+                const file = fs.lstatSync(filePath);
+                return file.isFile();
+            })
+            .map(semanticModel => {
+                const metaDataManager = new MetadataManager();
+                metaDataManager.content = this.readFile(semanticModel);
+                return metaDataManager;
+            });
+    }
+
     private readFile(filename: string): string {
         if (!fs.existsSync(path.resolve(process.cwd(), filename))) {
             logger.error(new FatalError("The provided file does not exit"));

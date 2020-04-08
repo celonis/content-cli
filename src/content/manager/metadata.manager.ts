@@ -3,6 +3,8 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
 export class MetadataManager extends BaseManager {
     private static BASE_URL = "/semantic-layer/api/yaml-metadata";
+    private static MODEL_BASE_URL = "/semantic-layer/api/layer";
+    private static MODEL_UPDATE_URL = "/semantic-layer/api/metadata";
     private _id: string;
     private _content: string;
 
@@ -25,8 +27,8 @@ export class MetadataManager extends BaseManager {
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}`),
-            pullUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
-            updateUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
+            pullUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.MODEL_BASE_URL}/${this.id}`),
+            updateUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.MODEL_UPDATE_URL}/${this.id}`),
             exportFileName: "metadata_" + this.id + ".yaml",
             onPushSuccessMessage: (data: any): string => {
                 return "Metadata was pushed successfully. New ID: " + data.id;
@@ -47,6 +49,6 @@ export class MetadataManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
-        return data.content;
+        return JSON.stringify(data);
     }
 }

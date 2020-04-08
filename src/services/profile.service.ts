@@ -9,6 +9,7 @@ export interface Config {
 }
 
 export class ProfileService {
+    private readonly HTTP_HTTPS_REGEX = /(http:\/\/)|(http:\/)|(https:\/\/)|(https:\/)./;
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
@@ -50,12 +51,33 @@ export class ProfileService {
         }
     }
 
+    public storeTempProfile(teamUrl: string, apiToken: string): Profile {
+        const teamName = this.parseTeamNameFromUrl(teamUrl);
+        const profile = {
+            name: teamName,
+            team: teamUrl,
+            apiToken: apiToken,
+        };
+        this.storeProfile(profile);
+        return profile;
+    }
+
     public storeProfile(profile: Profile): void {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
         fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
         });
+    }
+
+    private parseTeamNameFromUrl(teamUrl: string): string {
+        const teamUrlWithoutProtocol = teamUrl.replace(this.HTTP_HTTPS_REGEX, "");
+        const urlParts = teamUrlWithoutProtocol.split(".");
+        if (urlParts.length === 0) {
+            return null;
+        }
+
+        return urlParts[0];
     }
 
     private storeConfig(config: Config) {
