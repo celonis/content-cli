@@ -51,6 +51,19 @@ class Push {
         return program;
     }
 
+    public static semanticMetadatas(program) {
+        program
+            .command("semantic-metadatas")
+            .description("Command to push semantic models to semantic layer")
+            .option("--profile <profile>", "Profile which you want to use to push the metadata")
+            .action(async cmd => {
+                await new MetadataConfigCommand().pushMetadataConfigs(cmd.profile);
+                process.exit();
+            });
+
+        return program;
+    }
+
     public static widget(program) {
         program
             .command("widget")
@@ -77,13 +90,28 @@ class Push {
 
         return program;
     }
+
+    public static boards(program) {
+        program
+            .command("boards")
+            .description("Command to push boards")
+            .option("--profile <profile>", "Profile which you want to use to push the board")
+            .action(async cmd => {
+                await new BoardCommand().pushBoards(cmd.profile);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Push.analysis(program);
 Push.skill(program);
 Push.semanticMetadata(program);
+Push.semanticMetadatas(program);
 Push.widget(program);
 Push.board(program);
+Push.boards(program);
 
 program.parse(process.argv);
 

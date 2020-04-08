@@ -2,6 +2,7 @@ import { Profile } from "../interfaces/profile.interface";
 import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../util/logger";
+
 const homedir = require("os").homedir();
 
 export interface Config {
@@ -21,7 +22,7 @@ export class ProfileService {
                 );
                 resolve(JSON.parse(file));
             } catch (e) {
-                reject(e);
+                resolve(this.buildProfileFromEnvVariables());
             }
         });
     }
@@ -55,6 +56,25 @@ export class ProfileService {
         const newProfileFileName = this.constructProfileFileName(profile.name);
         fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
+        });
+    }
+
+    private buildProfileFromEnvVariables(): Promise<Profile> {
+        const teamUrl = process.env.TEAM_URL;
+        const apiToken = process.env.API_TOKEN;
+
+        return new Promise<Profile>((resolve, reject) => {
+            if (!teamUrl || !apiToken) {
+                reject(
+                    "No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables"
+                );
+            }
+
+            resolve({
+                name: teamUrl,
+                team: teamUrl,
+                apiToken: apiToken,
+            });
         });
     }
 

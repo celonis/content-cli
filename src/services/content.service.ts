@@ -40,6 +40,25 @@ export class ContentService {
         });
     }
 
+    public async batchPush(profileName: string, baseManagers: BaseManager[]): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.profileService
+                .findProfile(this.resolveProfile(profileName))
+                .then((profile: Profile) => {
+                    baseManagers.forEach(baseManager => {
+                        baseManager.profile = profile;
+                        baseManager.push().then(
+                            () => resolve(),
+                            () => reject()
+                        );
+                    });
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                });
+        });
+    }
+
     public async update(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
@@ -61,10 +80,7 @@ export class ContentService {
         if (profile) {
             return profile;
         }
-        const defaultProfile = this.profileService.getDefaultProfile();
-        if (defaultProfile) {
-            return defaultProfile;
-        }
-        logger.error(new FatalError("No profile provided and no default profile set."));
+
+        return this.profileService.getDefaultProfile();
     }
 }

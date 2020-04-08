@@ -13,6 +13,10 @@ export class BoardCommand {
         await this.contentService.push(profile, this.boardManagerFactory.createManager(null, filename));
     }
 
+    public async pushBoards(profile: string) {
+        await this.contentService.batchPush(profile, this.boardManagerFactory.createManagers());
+    }
+
     public async updateBoard(profile: string, id: string, filename: string): Promise<any> {
         await this.contentService.update(profile, this.boardManagerFactory.createManager(id, filename));
     }

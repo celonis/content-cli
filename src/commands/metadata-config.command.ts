@@ -13,6 +13,10 @@ export class MetadataConfigCommand {
         await this.contentService.push(profile, this.metadataManagerFactory.createManager(null, filename));
     }
 
+    public async pushMetadataConfigs(profile: string) {
+        await this.contentService.batchPush(profile, this.metadataManagerFactory.createManagers());
+    }
+
     public async updateMetadataConfig(profile: string, id: string, filename: string): Promise<any> {
         await this.contentService.update(profile, this.metadataManagerFactory.createManager(id, filename));
     }
