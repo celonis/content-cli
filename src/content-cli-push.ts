@@ -69,8 +69,6 @@ class Push {
             .command("widget")
             .description("Command to push a widget")
             .option("--profile <profile>", "Profile which you want to use to push the widget")
-            .option("--team <team>", "URL for of team")
-            .option("--apiKey <apiKey>", "Api key of your team")
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile);
                 process.exit();
