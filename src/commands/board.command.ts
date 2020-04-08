@@ -1,11 +1,9 @@
 import { ContentService } from "../services/content.service";
 import { BoardManagerFactory } from "../content/factory/board-manger.factory";
-import { ProfileService } from "../services/profile.service";
 
 export class BoardCommand {
     private contentService = new ContentService();
     private boardManagerFactory = new BoardManagerFactory();
-    private profileService = new ProfileService();
 
     public async pullBoard(profile: string, id: string) {
         await this.contentService.pull(profile, this.boardManagerFactory.createManager(id, null));
@@ -15,12 +13,7 @@ export class BoardCommand {
         await this.contentService.push(profile, this.boardManagerFactory.createManager(null, filename));
     }
 
-    public async pushBoards(profile: string, teamUrl: string, apiKey: string) {
-        const shouldCreateTempProfile = !profile && teamUrl && apiKey;
-        if (shouldCreateTempProfile) {
-            const tempProfile = this.profileService.storeTempProfile(teamUrl, apiKey);
-            profile = tempProfile.name;
-        }
+    public async pushBoards(profile: string) {
         await this.contentService.batchPush(profile, this.boardManagerFactory.createManagers());
     }
 

@@ -42,8 +42,6 @@ class Push {
             .command("semantic-metadata")
             .description("Command to push a metadata configuration to semantic layer")
             .option("--profile <profile>", "Profile which you want to use to push the metadata")
-            .option("--team <team>", "URL for of team")
-            .option("--apiKey <apiKey>", "Api key of your team")
             .option("--file <file>", "The file you want to push")
             .action(async cmd => {
                 await new MetadataConfigCommand().pushMetadataConfig(cmd.profile, cmd.file);
@@ -58,10 +56,8 @@ class Push {
             .command("semantic-metadatas")
             .description("Command to push semantic models to semantic layer")
             .option("--profile <profile>", "Profile which you want to use to push the metadata")
-            .option("--team <team>", "URL for of team")
-            .option("--apiKey <apiKey>", "Api key of your team")
             .action(async cmd => {
-                await new MetadataConfigCommand().pushMetadataConfigs(cmd.profile, cmd.team, cmd.apiKey);
+                await new MetadataConfigCommand().pushMetadataConfigs(cmd.profile);
                 process.exit();
             });
 
@@ -76,7 +72,7 @@ class Push {
             .option("--team <team>", "URL for of team")
             .option("--apiKey <apiKey>", "Api key of your team")
             .action(async cmd => {
-                await new WidgetCommand().pushWidget(cmd.profile, cmd.team, cmd.apiKey);
+                await new WidgetCommand().pushWidget(cmd.profile);
                 process.exit();
             });
 
@@ -102,10 +98,8 @@ class Push {
             .command("boards")
             .description("Command to push boards")
             .option("--profile <profile>", "Profile which you want to use to push the board")
-            .option("--team <team>", "URL for of team")
-            .option("--apiKey <apiKey>", "Api key of your team")
             .action(async cmd => {
-                await new BoardCommand().pushBoards(cmd.profile, cmd.team, cmd.apiKey);
+                await new BoardCommand().pushBoards(cmd.profile);
                 process.exit();
             });
 

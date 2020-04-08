@@ -8,8 +8,7 @@ export class ContentService {
 
     public async pull(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.profileService
-                .findProfile(this.resolveProfile(profile))
+            this.findProfile(profile)
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.pull().then(
@@ -25,8 +24,7 @@ export class ContentService {
 
     public async push(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.profileService
-                .findProfile(this.resolveProfile(profile))
+            this.findProfile(profile)
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.push().then(
@@ -41,9 +39,8 @@ export class ContentService {
     }
 
     public async batchPush(profileName: string, baseManagers: BaseManager[]): Promise<any> {
-        const localProfile = this.profileService.findProfile(this.resolveProfile(profileName));
         return new Promise((resolve, reject) => {
-            localProfile
+            this.findProfile(profileName)
                 .then((profile: Profile) => {
                     baseManagers.forEach(baseManager => {
                         baseManager.profile = profile;
@@ -61,8 +58,7 @@ export class ContentService {
 
     public async update(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
-            this.profileService
-                .findProfile(this.resolveProfile(profile))
+            this.findProfile(profile)
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.update().then(
@@ -76,6 +72,18 @@ export class ContentService {
         });
     }
 
+    private findProfile(profile: string): Promise<Profile> {
+        if (profile) {
+            try {
+                return this.profileService.findProfile(this.resolveProfile(profile));
+            } catch (error) {
+                return this.buildProfileFromEnvVariables();
+            }
+        }
+
+        return this.buildProfileFromEnvVariables();
+    }
+
     private resolveProfile(profile: string): string {
         if (profile) {
             return profile;
@@ -85,5 +93,22 @@ export class ContentService {
             return defaultProfile;
         }
         logger.error(new FatalError("No profile provided and no default profile set."));
+    }
+
+    private buildProfileFromEnvVariables(): Promise<Profile> {
+        const teamUrl = process.env.TEAM_URL;
+        const apiToken = process.env.API_TOKEN;
+
+        return new Promise<Profile>((resolve, reject) => {
+            if (!teamUrl || !apiToken) {
+                reject();
+            }
+
+            resolve({
+                name: teamUrl,
+                team: teamUrl,
+                apiToken: apiToken,
+            });
+        });
     }
 }
