@@ -60,20 +60,18 @@ export class ProfileService {
     }
 
     private buildProfileFromEnvVariables(): Promise<Profile> {
-        const teamUrl = process.env.TEAM_URL;
-        const apiToken = process.env.API_TOKEN;
-
+        const profileVariables = this.getProfileEnvVariables();
         return new Promise<Profile>((resolve, reject) => {
-            if (!teamUrl || !apiToken) {
+            if (!profileVariables.teamUrl || !profileVariables.apiToken) {
                 reject(
                     "No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables"
                 );
             }
 
             resolve({
-                name: teamUrl,
-                team: teamUrl,
-                apiToken: apiToken,
+                name: profileVariables.teamUrl,
+                team: profileVariables.teamUrl,
+                apiToken: profileVariables.apiToken,
             });
         });
     }
@@ -116,5 +114,22 @@ export class ProfileService {
             logger.error(new FatalError(err));
         }
         return fileNames;
+    }
+
+    private getProfileEnvVariables(): any {
+        return {
+            teamUrl: this.getTeamUrlFromEnvVariables(),
+            apiToken: process.env.API_TOKEN,
+        };
+    }
+
+    private getTeamUrlFromEnvVariables(): string {
+        const teamUrl = process.env.TEAM_URL;
+        if (!teamUrl) {
+            return null;
+        }
+
+        const url = new URL(teamUrl);
+        return url.origin;
     }
 }
