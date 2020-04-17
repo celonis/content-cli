@@ -54,6 +54,7 @@ export class ProfileService {
     public storeProfile(profile: Profile): void {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
+        profile.team = this.getBaseTeamUrl(profile.team);
         fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
         });
@@ -118,13 +119,12 @@ export class ProfileService {
 
     private getProfileEnvVariables(): any {
         return {
-            teamUrl: this.getTeamUrlFromEnvVariables(),
+            teamUrl: this.getBaseTeamUrl(process.env.TEAM_URL),
             apiToken: process.env.API_TOKEN,
         };
     }
 
-    private getTeamUrlFromEnvVariables(): string {
-        const teamUrl = process.env.TEAM_URL;
+    private getBaseTeamUrl(teamUrl: string): string {
         if (!teamUrl) {
             return null;
         }
