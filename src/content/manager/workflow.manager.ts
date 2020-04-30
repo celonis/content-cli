@@ -4,7 +4,7 @@ import * as YAML from "yaml";
 
 export class WorkflowManager extends BaseManager {
     private static BASE_URL = "/process-automation/api/workflow-models";
-    private static PUSH_URL = `${WorkflowManager.BASE_URL}/export`;
+    private static PUSH_URL = `${WorkflowManager.BASE_URL}/import`;
 
     private _id: string;
     private _content: string;
@@ -28,7 +28,7 @@ export class WorkflowManager extends BaseManager {
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, WorkflowManager.PUSH_URL),
-            pullUrl: this.profile.team.replace(/\/?$/, `${WorkflowManager.BASE_URL}/${this.id}/import`),
+            pullUrl: this.profile.team.replace(/\/?$/, `${WorkflowManager.BASE_URL}/${this.id}/export`),
             updateUrl: this.profile.team.replace(/\/?$/, WorkflowManager.PUSH_URL),
             exportFileName: "workflow_" + this.id + ".yaml",
             onPushSuccessMessage: (data: any): string => {

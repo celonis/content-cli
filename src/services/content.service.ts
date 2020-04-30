@@ -45,13 +45,17 @@ export class ContentService {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
+                    const promises: Array<Promise<any>> = [];
+
                     baseManagers.forEach(baseManager => {
                         baseManager.profile = profile;
-                        baseManager.push().then(
-                            () => resolve(),
-                            () => reject()
-                        );
+                        promises.push(baseManager.push());
                     });
+
+                    Promise.all(promises).then(
+                        () => resolve(),
+                        () => reject()
+                    );
                 })
                 .catch(err => {
                     logger.error(new FatalError(err));
