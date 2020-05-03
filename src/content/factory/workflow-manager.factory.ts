@@ -17,8 +17,9 @@ export class WorkflowManagerFactory {
     }
 
     public createManagers(): WorkflowManager[] {
-        const workflows = fs.readdirSync(process.cwd());
-        return workflows
+        const filePaths = fs.readdirSync(process.cwd());
+
+        return filePaths
             .filter(filePath => {
                 if (!filePath.endsWith("yml") && !filePath.endsWith("yaml")) {
                     return false;
@@ -27,10 +28,8 @@ export class WorkflowManagerFactory {
                 const file = fs.lstatSync(filePath);
                 return file.isFile();
             })
-            .map(workflow => {
-                const workflowManager = new WorkflowManager();
-                workflowManager.content = this.readFile(workflow);
-                return workflowManager;
+            .map(filePath => {
+                return this.createManager(null, filePath);
             });
     }
 
