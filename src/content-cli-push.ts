@@ -3,6 +3,7 @@ import { SkillCommand } from "./commands/skill.command";
 import { MetadataConfigCommand } from "./commands/metadata-config.command";
 import { WidgetCommand } from "./commands/widget.command";
 import { BoardCommand } from "./commands/board.command";
+import { WorkflowCommand } from "./commands/workflow.command";
 
 var program = require("commander");
 
@@ -104,6 +105,33 @@ class Push {
 
         return program;
     }
+
+    public static workflow(program) {
+        program
+            .command("workflow")
+            .description("Command to push a workflow")
+            .option("--profile <profile>", "Profile which you want to use to push the workflow")
+            .option("--file <file>", "The file you want to push")
+            .action(async cmd => {
+                await new WorkflowCommand().pushWorkflow(cmd.profile, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static workflows(program) {
+        program
+            .command("workflows")
+            .description("Command to push workflows")
+            .option("--profile <profile>", "Profile which you want to use to push the workflows")
+            .action(async cmd => {
+                await new WorkflowCommand().pushWorkflows(cmd.profile);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Push.analysis(program);
@@ -113,6 +141,8 @@ Push.semanticMetadatas(program);
 Push.widget(program);
 Push.board(program);
 Push.boards(program);
+Push.workflow(program);
+Push.workflows(program);
 
 program.parse(process.argv);
 

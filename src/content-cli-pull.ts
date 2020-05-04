@@ -3,6 +3,7 @@ import { SkillCommand } from "./commands/skill.command";
 import { ObjectiveCommand } from "./commands/objective.command";
 import { MetadataConfigCommand } from "./commands/metadata-config.command";
 import { BoardCommand } from "./commands/board.command";
+import { WorkflowCommand } from "./commands/workflow.command";
 
 var program = require("commander");
 
@@ -77,6 +78,20 @@ class Pull {
 
         return program;
     }
+
+    public static workflow(program) {
+        program
+            .command("workflow")
+            .description("Command to pull a workflow")
+            .option("--profile <profile>", "Profile which you want to use to pull the workflow")
+            .option("--id <id>", "Id of the workflow you want to pull")
+            .action(async cmd => {
+                await new WorkflowCommand().pullWorkflow(cmd.profile, cmd.id);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Pull.analysis(program);
@@ -84,6 +99,7 @@ Pull.skill(program);
 Pull.objective(program);
 Pull.semanticMetadata(program);
 Pull.board(program);
+Pull.workflow(program);
 
 program.parse(process.argv);
 
