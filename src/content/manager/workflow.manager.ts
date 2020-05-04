@@ -3,7 +3,7 @@ import { BaseManager } from "./base.manager";
 import * as YAML from "yaml";
 
 export class WorkflowManager extends BaseManager {
-    private static BASE_URL = "/process-automation/api/workflows/yaml";
+    private static BASE_URL = "/process-automation/api/yaml/workflows";
     private static PUSH_URL = `${WorkflowManager.BASE_URL}/import`;
 
     private _id: string;
