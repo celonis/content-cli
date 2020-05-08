@@ -4,6 +4,7 @@ import { ObjectiveCommand } from "./commands/objective.command";
 import { MetadataConfigCommand } from "./commands/metadata-config.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
+import { DataPoolCommand } from "./commands/data-pool.command";
 
 var program = require("commander");
 
@@ -92,6 +93,20 @@ class Pull {
 
         return program;
     }
+
+    public static dataPool(program) {
+        program
+            .command("data-pool")
+            .description("Command to pull a data pool")
+            .option("--profile <profile>", "Profile which you want to use to pull the data pool")
+            .option("--id <id>", "Id of the data pool you want to pull")
+            .action(async cmd => {
+                await new DataPoolCommand().pullDataPool(cmd.profile, cmd.id);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Pull.analysis(program);
@@ -100,6 +115,7 @@ Pull.objective(program);
 Pull.semanticMetadata(program);
 Pull.board(program);
 Pull.workflow(program);
+Pull.dataPool(program);
 
 program.parse(process.argv);
 

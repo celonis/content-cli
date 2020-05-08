@@ -4,6 +4,7 @@ import { MetadataConfigCommand } from "./commands/metadata-config.command";
 import { WidgetCommand } from "./commands/widget.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
+import { DataPoolCommand } from "./commands/data-pool.command";
 
 var program = require("commander");
 
@@ -132,6 +133,33 @@ class Push {
 
         return program;
     }
+
+    public static dataPool(program) {
+        program
+            .command("data-pool")
+            .description("Command to push a data pool")
+            .option("--profile <profile>", "Profile which you want to use to push the data pool")
+            .option("--file <file>", "The file you want to push")
+            .action(async cmd => {
+                await new DataPoolCommand().pushDataPool(cmd.profile, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static dataPools(program) {
+        program
+            .command("data-pools")
+            .description("Command to push data pool")
+            .option("--profile <profile>", "Profile which you want to use to push the data pools")
+            .action(async cmd => {
+                await new DataPoolCommand().pushDataPools(cmd.profile);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Push.analysis(program);
@@ -143,6 +171,8 @@ Push.board(program);
 Push.boards(program);
 Push.workflow(program);
 Push.workflows(program);
+Push.dataPool(program);
+Push.dataPools(program);
 
 program.parse(process.argv);
 
