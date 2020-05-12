@@ -1,6 +1,7 @@
 import { MetadataConfigCommand } from "./commands/metadata-config.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
+import { DataPoolCommand } from "./commands/data-pool.command";
 
 var program = require("commander");
 
@@ -49,11 +50,27 @@ class Update {
 
         return program;
     }
+
+    public static dataPool(program) {
+        program
+            .command("data-pool")
+            .description("Command to update a data pool using a data pool configuration file")
+            .option("--profile <profile>", "Profile which you want to use to update the data pool configuration")
+            .option("--id <id>", "Id of the data pool you want to update")
+            .option("--file <file>", "The file you want to push")
+            .action(async cmd => {
+                await new DataPoolCommand().updateDataPool(cmd.profile, cmd.id, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Update.semanticMetadata(program);
 Update.board(program);
 Update.workflow(program);
+Update.dataPool(program);
 
 program.parse(process.argv);
 
