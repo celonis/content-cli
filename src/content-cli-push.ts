@@ -151,7 +151,7 @@ class Push {
     public static dataPools(program) {
         program
             .command("data-pools")
-            .description("Command to push data pool")
+            .description("Command to push data pools")
             .option("--profile <profile>", "Profile which you want to use to push the data pools")
             .action(async cmd => {
                 await new DataPoolCommand().pushDataPools(cmd.profile);
