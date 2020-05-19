@@ -9,17 +9,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Npm install and npm build
-    strategy:
-      matrix:
-        node-version: [10.17.0]
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+    - uses: actions/setup-node@v1
       with:
-        node-version: ${{ matrix.node-version }}
-    - run: npm ci
-    - run: npm run build
+        node-version: '10.17.0'
+        registry-url: https://npm.pkg.github.com
+    - name: Yarn Install
+      run: yarn install
+    - name: Yarn Build
+      run: yarn build  
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-lates
