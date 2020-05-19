@@ -3,6 +3,8 @@ name: Build and publish Workflow
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - 'package.json'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,12 +24,11 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     - uses: actions/checkout@master
+      name: Checkout Master
       with:
         fetch-depth: '0'
-    - name: Bump version and push tag
-      uses: anothrNick/github-tag-action@1.17.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
-        WITH_V: true
-        DEFAULT_BUMP: patch
+    - uses: tool3/bump@v1
+      name: Bump patch version
+      with:
+        github_token: ${{ secrets.GIT_TOKEN }}
 
