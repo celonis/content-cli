@@ -14,7 +14,7 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '10.17.0'
-        registry-url: https://npm.pkg.github.com
+        registry-url: https://npm.pkg.github.com/celonis
     - name: Yarn Install
       run: yarn install
     - name: Yarn Build
