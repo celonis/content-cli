@@ -17,10 +17,8 @@ jobs:
       run: yarn install
     - name: Yarn Build
       run: yarn build
-    - name: Go to dist
-      run: cd dist/
     - name: Publish library
-      run: npm publish --access private
+      run: cd dist/ && npm publish --access private && cd ../
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     - uses: actions/checkout@master
