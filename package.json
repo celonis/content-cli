@@ -35,7 +35,7 @@
     "typescript": "3.1.6"
   },
   "publishConfig": {
-    "registry": "http://scs.corp.celonis.de:8081/repository/npm-celonis/"
+    "registry": "https://npm.pkg.github.com/celonis"
   },
   "husky": {
     "hooks": {

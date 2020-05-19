@@ -1,0 +1,41 @@
+name: Build Workflow
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Npm install and npm build
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.17.0'
+        registry-url: https://npm.pkg.github.com/celonis
+    - name: Yarn Install
+      run: yarn install
+    - name: Yarn Build
+      run: yarn build  
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-lates
+    steps:
+      - name: Go to dist
+        run: cd dist/
+      - name: Publish library
+        run: npm publish --access private
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: '0'
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.17.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
+    
