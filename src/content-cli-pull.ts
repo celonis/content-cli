@@ -1,7 +1,7 @@
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { ObjectiveCommand } from "./commands/objective.command";
-import { MetadataConfigCommand } from "./commands/metadata-config.command";
+import { SemanticModelCommand } from "./commands/semantic-model.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
@@ -52,14 +52,14 @@ class Pull {
         return program;
     }
 
-    public static semanticMetadata(program) {
+    public static semanticModel(program) {
         program
-            .command("semantic-metadata")
-            .description("Command to pull a metadata configuration file from semantic layer")
-            .option("--profile <profile>", "Profile which you want to use to pull the metadata")
+            .command("semantic-model")
+            .description("Command to pull a semantic model file from semantic layer")
+            .option("--profile <profile>", "Profile which you want to use to pull the semantic model")
             .option("--id <id>", "Id of the configuration file you want to pull")
             .action(async cmd => {
-                await new MetadataConfigCommand().pullMetadataConfig(cmd.profile, cmd.id);
+                await new SemanticModelCommand().pullSemanticModel(cmd.profile, cmd.id);
                 process.exit();
             });
 
@@ -112,7 +112,7 @@ class Pull {
 Pull.analysis(program);
 Pull.skill(program);
 Pull.objective(program);
-Pull.semanticMetadata(program);
+Pull.semanticModel(program);
 Pull.board(program);
 Pull.workflow(program);
 Pull.dataPool(program);

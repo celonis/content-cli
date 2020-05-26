@@ -1,7 +1,8 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
-export class MetadataManager extends BaseManager {
+export class SemanticModelManager extends BaseManager {
+    public static SEMANTIC_MODEL_FILE_PREFIX = "semantic-model_";
     private static BASE_URL = "/semantic-layer/api/yaml-metadata";
     private static MODEL_BASE_URL = "/semantic-layer/api/layer";
     private _id: string;
@@ -25,15 +26,15 @@ export class MetadataManager extends BaseManager {
 
     public getConfig(): ManagerConfig {
         return {
-            pushUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}`),
-            pullUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.MODEL_BASE_URL}/${this.id}`),
-            updateUrl: this.profile.team.replace(/\/?$/, `${MetadataManager.BASE_URL}/${this.id}`),
-            exportFileName: "metadata_" + this.id + ".yaml",
+            pushUrl: this.profile.team.replace(/\/?$/, `${SemanticModelManager.BASE_URL}`),
+            pullUrl: this.profile.team.replace(/\/?$/, `${SemanticModelManager.MODEL_BASE_URL}/${this.id}`),
+            updateUrl: this.profile.team.replace(/\/?$/, `${SemanticModelManager.BASE_URL}/${this.id}`),
+            exportFileName: SemanticModelManager.SEMANTIC_MODEL_FILE_PREFIX + this.id + ".yml",
             onPushSuccessMessage: (data: any): string => {
-                return "Metadata was pushed successfully. New ID: " + data.metadataId;
+                return "Semantic Model was pushed successfully. New ID: " + data.metadataId;
             },
             onUpdateSuccessMessage: (): string => {
-                return "Metadata was updated successfully!";
+                return "Semantic Model was updated successfully!";
             },
         };
     }
