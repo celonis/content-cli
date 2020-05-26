@@ -1,4 +1,4 @@
-import { MetadataConfigCommand } from "./commands/metadata-config.command";
+import { SemanticModelCommand } from "./commands/semantic-model.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
@@ -6,15 +6,15 @@ import { DataPoolCommand } from "./commands/data-pool.command";
 var program = require("commander");
 
 class Update {
-    public static semanticMetadata(program) {
+    public static semanticModel(program) {
         program
-            .command("semantic-metadata")
-            .description("Command to pull a metadata configuration file using a specific profile")
-            .option("--profile <profile>", "Profile which you want to use to update the metadata")
+            .command("semantic-model")
+            .description("Command to pull a semantic model file using a specific profile")
+            .option("--profile <profile>", "Profile which you want to use to update the semantic model")
             .option("--id <id>", "Id of the configuration file you want to update")
             .option("--file <file>", "The file you want to push")
             .action(async cmd => {
-                await new MetadataConfigCommand().updateMetadataConfig(cmd.profile, cmd.id, cmd.file);
+                await new SemanticModelCommand().updateSemanticModel(cmd.profile, cmd.id, cmd.file);
                 process.exit();
             });
 
@@ -67,7 +67,7 @@ class Update {
     }
 }
 
-Update.semanticMetadata(program);
+Update.semanticModel(program);
 Update.board(program);
 Update.workflow(program);
 Update.dataPool(program);

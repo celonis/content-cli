@@ -1,6 +1,6 @@
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
-import { MetadataConfigCommand } from "./commands/metadata-config.command";
+import { SemanticModelCommand } from "./commands/semantic-model.command";
 import { WidgetCommand } from "./commands/widget.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
@@ -39,27 +39,27 @@ class Push {
         return program;
     }
 
-    public static semanticMetadata(program) {
+    public static semanticModel(program) {
         program
-            .command("semantic-metadata")
-            .description("Command to push a metadata configuration to semantic layer")
-            .option("--profile <profile>", "Profile which you want to use to push the metadata")
+            .command("semantic-model")
+            .description("Command to push a semantic model to semantic layer")
+            .option("--profile <profile>", "Profile which you want to use to push the semantic model")
             .option("--file <file>", "The file you want to push")
             .action(async cmd => {
-                await new MetadataConfigCommand().pushMetadataConfig(cmd.profile, cmd.file);
+                await new SemanticModelCommand().pushSemanticModel(cmd.profile, cmd.file);
                 process.exit();
             });
 
         return program;
     }
 
-    public static semanticMetadatas(program) {
+    public static semanticModels(program) {
         program
-            .command("semantic-metadatas")
+            .command("semantic-models")
             .description("Command to push semantic models to semantic layer")
-            .option("--profile <profile>", "Profile which you want to use to push the metadata")
+            .option("--profile <profile>", "Profile which you want to use to push the semantic models")
             .action(async cmd => {
-                await new MetadataConfigCommand().pushMetadataConfigs(cmd.profile);
+                await new SemanticModelCommand().pushSemanticModels(cmd.profile);
                 process.exit();
             });
 
@@ -164,8 +164,8 @@ class Push {
 
 Push.analysis(program);
 Push.skill(program);
-Push.semanticMetadata(program);
-Push.semanticMetadatas(program);
+Push.semanticModel(program);
+Push.semanticModels(program);
 Push.widget(program);
 Push.board(program);
 Push.boards(program);
