@@ -4,7 +4,7 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 export class SemanticModelManager extends BaseManager {
     public static SEMANTIC_MODEL_FILE_PREFIX = "semantic-model_";
     private static BASE_URL = "/semantic-layer/api/yaml-metadata";
-    private static MODEL_BASE_URL = "/semantic-layer/api/layer";
+    private static MODEL_BASE_URL = "/semantic-layer/api/metadata";
     private _id: string;
     private _content: string;
 
@@ -44,11 +44,12 @@ export class SemanticModelManager extends BaseManager {
             body: JSON.stringify({
                 id: this.id,
                 content: this.content,
+                shouldPublish: true,
             }),
         };
     }
 
     protected getSerializedFileContent(data: any): string {
-        return JSON.stringify(data);
+        return data.draftLayer.contentAsYamlString;
     }
 }
