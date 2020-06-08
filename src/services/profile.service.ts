@@ -16,13 +16,19 @@ export class ProfileService {
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
             try {
-                const file = fs.readFileSync(
-                    path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
-                    { encoding: "utf-8" }
-                );
-                resolve(JSON.parse(file));
+                if (process.env.TEAM_URL && process.env.API_TOKEN) {
+                    resolve(this.buildProfileFromEnvVariables());
+                } else {
+                    const file = fs.readFileSync(
+                        path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
+                        { encoding: "utf-8" }
+                    );
+                    resolve(JSON.parse(file));
+                }
             } catch (e) {
-                resolve(this.buildProfileFromEnvVariables());
+                reject(
+                    "No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables"
+                );
             }
         });
     }
@@ -62,13 +68,7 @@ export class ProfileService {
 
     private buildProfileFromEnvVariables(): Promise<Profile> {
         const profileVariables = this.getProfileEnvVariables();
-        return new Promise<Profile>((resolve, reject) => {
-            if (!profileVariables.teamUrl || !profileVariables.apiToken) {
-                reject(
-                    "No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables"
-                );
-            }
-
+        return new Promise<Profile>(resolve => {
             resolve({
                 name: profileVariables.teamUrl,
                 team: profileVariables.teamUrl,
