@@ -43,6 +43,6 @@ export class ObjectiveManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
-        return data;
+        return JSON.stringify(data);
     }
 }
