@@ -20,10 +20,11 @@ interface ManifestWidget {
 }
 
 export class WidgetManagerFactory {
-    public createManager(tenantIndependent: boolean = false): WidgetManager {
+    public createManager(tenantIndependent: boolean = false, packageManager: boolean = false): WidgetManager {
         const widgetManager = new WidgetManager();
         widgetManager.content = this.readContent();
         widgetManager.tenantIndependent = tenantIndependent;
+        widgetManager.packageManager = packageManager;
         return widgetManager;
     }
 
