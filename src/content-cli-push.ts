@@ -72,8 +72,9 @@ class Push {
             .description("Command to push a widget")
             .option("--profile <profile>", "Profile which you want to use to push the widget")
             .option("--tenantIndependent", "Upload widget tenant independently")
+            .option("--packageManager", "Upload widget to package manager") // temporary
             .action(async cmd => {
-                await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent);
+                await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.packageManager);
                 process.exit();
             });
 
