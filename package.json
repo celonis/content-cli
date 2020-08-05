@@ -1,6 +1,6 @@
 {
   "name": "@celonis/content-cli",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "description": "CLI Tools for Celonis Content",
   "main": "content-cli.js",
   "bin": {
