@@ -9,7 +9,7 @@ export class WorkflowManager extends BaseManager {
     private static PUSH_URL = `${WorkflowManager.OLD_BASE_URL}/import`;
 
     private static PACKAGE_MANAGER_BASE_URL = "/package-manager/api/nodes";
-    private static PACKAGE_MANAGER_PUSH_URL = `${WorkflowManager.PACKAGE_MANAGER_BASE_URL}/import`;
+    private static PACKAGE_MANAGER_PUSH_URL = `${WorkflowManager.PACKAGE_MANAGER_BASE_URL}/asset/import`;
 
     private _id: string;
     private _content: string;
@@ -56,7 +56,7 @@ export class WorkflowManager extends BaseManager {
             ),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
-                `${this.packageManager ? WorkflowManager.OLD_BASE_URL : WorkflowManager.NEW_BASE_URL}/${this.id}/export`
+                `${this.packageManager ? WorkflowManager.NEW_BASE_URL : WorkflowManager.OLD_BASE_URL}/${this.id}/export`
             ),
             updateUrl: this.profile.team.replace(/\/?$/, WorkflowManager.PUSH_URL),
             exportFileName: "workflow_" + this.id + ".yaml",
@@ -81,10 +81,12 @@ export class WorkflowManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
+        YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
         return YAML.stringify(data);
     }
 
     private toNodeTransport(): SaveContentNode {
+        YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
         const skill = YAML.parse(this.content) as SaveContentNode;
         skill.rootNodeKey = this.packageKey;
         return skill;
