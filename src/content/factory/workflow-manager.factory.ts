@@ -5,12 +5,7 @@ import { WorkflowManager } from "../manager/workflow.manager";
 import { FatalError, logger } from "../../util/logger";
 
 export class WorkflowManagerFactory {
-    public createManager(
-        id?: string,
-        fileName?: string,
-        packageManager?: boolean,
-        packageKey?: string
-    ): WorkflowManager {
+    public createManager(id?: string, fileName?: string, packageManager?: boolean): WorkflowManager {
         const workflowManager = new WorkflowManager();
         workflowManager.id = id;
 
@@ -19,15 +14,10 @@ export class WorkflowManagerFactory {
         }
 
         workflowManager.packageManager = packageManager;
-
-        if (packageKey) {
-            workflowManager.packageKey = packageKey;
-        }
-
         return workflowManager;
     }
 
-    public createManagers(packageKey: string): WorkflowManager[] {
+    public createManagers(): WorkflowManager[] {
         const filePaths = fs.readdirSync(process.cwd());
 
         return filePaths
@@ -40,7 +30,7 @@ export class WorkflowManagerFactory {
                 return file.isFile();
             })
             .map(filePath => {
-                return this.createManager(null, filePath, !!packageKey, packageKey);
+                return this.createManager(null, filePath);
             });
     }
 

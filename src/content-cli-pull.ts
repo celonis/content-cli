@@ -87,9 +87,9 @@ class Pull {
             .description("Command to pull a workflow")
             .option("--profile <profile>", "Profile which you want to use to pull the workflow")
             .option("--id <id>", "Id of the workflow you want to pull")
-            .option("--packageManager", "Pull workflow in package manager format")
+            .option("--asset", "Pull workflow as an asset")
             .action(async cmd => {
-                await new WorkflowCommand().pullWorkflow(cmd.profile, cmd.id, !!cmd.packageManager);
+                await new WorkflowCommand().pullWorkflow(cmd.profile, cmd.id, !!cmd.asset);
                 process.exit();
             });
 

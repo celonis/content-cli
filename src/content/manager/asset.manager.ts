@@ -6,7 +6,7 @@ import * as YAML from "yaml";
 YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
 
 export class AssetManager extends BaseManager {
-    private static ASSET_FILE_PREFIX = "asset_";
+    public static ASSET_FILE_PREFIX = "asset_";
     private static BASE_URL = "/package-manager/api/nodes";
 
     private static PUSH_URL = `${AssetManager.BASE_URL}/asset/import`;

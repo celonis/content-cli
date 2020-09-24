@@ -9,15 +9,12 @@ export class WorkflowCommand {
         await this.contentService.pull(profile, this.workflowManagerFactory.createManager(id, null, packageManager));
     }
 
-    public async pushWorkflow(profile: string, fileName: string, packageKey: string) {
-        await this.contentService.push(
-            profile,
-            this.workflowManagerFactory.createManager(null, fileName, !!packageKey, packageKey)
-        );
+    public async pushWorkflow(profile: string, fileName: string) {
+        await this.contentService.push(profile, this.workflowManagerFactory.createManager(null, fileName));
     }
 
-    public async pushWorkflows(profile: string, packageKey: string) {
-        await this.contentService.batchPush(profile, this.workflowManagerFactory.createManagers(packageKey));
+    public async pushWorkflows(profile: string) {
+        await this.contentService.batchPush(profile, this.workflowManagerFactory.createManagers());
     }
 
     public async updateWorkflow(profile: string, id: string, fileName: string) {

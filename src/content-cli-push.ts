@@ -115,9 +115,8 @@ class Push {
             .description("Command to push a workflow")
             .option("--profile <profile>", "Profile which you want to use to push the workflow")
             .option("--file <file>", "The file you want to push")
-            .option("--package <packageKey>", "Upload workflow to package manager")
             .action(async cmd => {
-                await new WorkflowCommand().pushWorkflow(cmd.profile, cmd.file, cmd.package);
+                await new WorkflowCommand().pushWorkflow(cmd.profile, cmd.file);
                 process.exit();
             });
 
@@ -129,9 +128,8 @@ class Push {
             .command("workflows")
             .description("Command to push workflows")
             .option("--profile <profile>", "Profile which you want to use to push the workflows")
-            .option("--package <packageKey>", "Upload workflows to package manager")
             .action(async cmd => {
-                await new WorkflowCommand().pushWorkflows(cmd.profile, cmd.package);
+                await new WorkflowCommand().pushWorkflows(cmd.profile);
                 process.exit();
             });
 
