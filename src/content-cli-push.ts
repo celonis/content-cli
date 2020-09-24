@@ -5,6 +5,7 @@ import { WidgetCommand } from "./commands/widget.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
+import { AssetCommand } from "./commands/asset.command";
 
 var program = require("commander");
 
@@ -163,6 +164,35 @@ class Push {
 
         return program;
     }
+
+    public static asset(program) {
+        program
+            .command("asset")
+            .description("Command to push an asset to Studio")
+            .option("--profile <profile>", "Profile which you want to use to push the asset")
+            .option("--file <file>", "The file you want to push")
+            .option("--package <packageKey>", "Key of the package you want to push asset to")
+            .action(async cmd => {
+                await new AssetCommand().pushAsset(cmd.profile, cmd.file, cmd.package);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static assets(program) {
+        program
+            .command("assets")
+            .description("Command to push assets to Studio")
+            .option("--profile <profile>", "Profile which you want to use to push the assets")
+            .option("--package <packageKey>", "Key of the package you want to push assets to")
+            .action(async cmd => {
+                await new AssetCommand().pushAssets(cmd.profile, cmd.package);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Push.analysis(program);
@@ -176,6 +206,8 @@ Push.workflow(program);
 Push.workflows(program);
 Push.dataPool(program);
 Push.dataPools(program);
+Push.asset(program);
+Push.assets(program);
 
 program.parse(process.argv);
 

@@ -5,6 +5,7 @@ import { SemanticModelCommand } from "./commands/semantic-model.command";
 import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
+import { AssetCommand } from "./commands/asset.command";
 
 var program = require("commander");
 
@@ -108,6 +109,20 @@ class Pull {
 
         return program;
     }
+
+    public static asset(program) {
+        program
+            .command("asset")
+            .description("Command to pull an asset from Studio")
+            .option("--profile <profile>", "Profile which you want to use to pull the asset")
+            .option("--key <key>", "Key of asset you want to pull")
+            .action(async cmd => {
+                await new AssetCommand().pullAsset(cmd.profile, cmd.key);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Pull.analysis(program);
@@ -117,6 +132,7 @@ Pull.semanticModel(program);
 Pull.board(program);
 Pull.workflow(program);
 Pull.dataPool(program);
+Pull.asset(program);
 
 program.parse(process.argv);
 
