@@ -22,7 +22,7 @@ export class AssetManagerFactory {
 
         return filePaths
             .filter(filePath => {
-                if (!filePath.endsWith("yml") && !filePath.endsWith("yaml")) {
+                if (!this.isAssetFilePath(filePath)) {
                     return false;
                 }
 
@@ -32,6 +32,13 @@ export class AssetManagerFactory {
             .map(filePath => {
                 return this.createManager(null, filePath, packageKey);
             });
+    }
+
+    private isAssetFilePath(filePath: string): boolean {
+        return (
+            filePath.startsWith(AssetManager.ASSET_FILE_PREFIX) &&
+            (filePath.endsWith("yml") || filePath.endsWith("yaml"))
+        );
     }
 
     private readFile(fileName: string): string {
