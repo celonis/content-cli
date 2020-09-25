@@ -5,8 +5,11 @@ export class AnalysisCommand {
     private contentService = new ContentService();
     private analysisManagerFactory = new AnalysisManagerFactory();
 
-    public async pullAnalysis(profile: string, id: string) {
-        await this.contentService.pull(profile, this.analysisManagerFactory.createManager(id, null, null));
+    public async pullAnalysis(profile: string, id: string, packageManager: boolean) {
+        await this.contentService.pull(
+            profile,
+            this.analysisManagerFactory.createManager(id, null, null, packageManager)
+        );
     }
 
     public async pushAnalysis(profile: string, workspaceId: string, filename: string) {

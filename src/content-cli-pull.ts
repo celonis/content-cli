@@ -16,8 +16,9 @@ class Pull {
             .description("Command to pull an analysis")
             .option("--profile <profile>", "Profile which you want to use to pull the analysis")
             .option("--id <id>", "Id of the analysis you want to pull")
+            .option("--asset", "Pull workflow as an asset")
             .action(async cmd => {
-                await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.id);
+                await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.id, !!cmd.asset);
                 process.exit();
             });
 

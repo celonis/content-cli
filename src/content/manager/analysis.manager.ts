@@ -1,11 +1,19 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
+import * as YAML from "yaml";
+import { AssetManager } from "./asset.manager";
+
+YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
 
 export class AnalysisManager extends BaseManager {
-    private static BASE_URL = "/process-mining/api/analysis";
+    private static BASE_URL = "/process-mining/api/analysis/";
+    private static PULL_URL = `${AnalysisManager.BASE_URL}/export?id=`;
+    private static ANALYSIS_FILE_PREFIX = "analysis_";
+
     private _id: string;
     private _processId: string;
     private _content: any;
+    private _packageManager: boolean;
 
     public get content(): any {
         return this._content;
@@ -31,14 +39,27 @@ export class AnalysisManager extends BaseManager {
         this._processId = value;
     }
 
+    public get packageManager(): boolean {
+        return this._packageManager;
+    }
+
+    public set packageManager(value: boolean) {
+        this._packageManager = value;
+    }
+
     public getConfig(): ManagerConfig {
+        const pullUrl = this.packageManager
+            ? `${AnalysisManager.BASE_URL}${this.id}/package/export`
+            : `${AnalysisManager.PULL_URL}${this.id}`;
         return {
             pushUrl: this.profile.team.replace(
                 /\/?$/,
                 `${AnalysisManager.BASE_URL}/import?processId=${this.processId}`
             ),
-            pullUrl: this.profile.team.replace(/\/?$/, `${AnalysisManager.BASE_URL}/export?id=${this.id}`),
-            exportFileName: "analysis_" + this.id + ".json",
+            pullUrl: this.profile.team.replace(/\/?$/, pullUrl),
+            exportFileName: `${
+                this.packageManager ? AssetManager.ASSET_FILE_PREFIX : AnalysisManager.ANALYSIS_FILE_PREFIX
+            }${this.id}${this.packageManager ? ".yaml" : ".json"}`,
             onPushSuccessMessage: (data: any): string => {
                 return "Analysis was pushed successfully. New ID: " + data.id;
             },
@@ -54,6 +75,9 @@ export class AnalysisManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
+        if (this.packageManager) {
+            return YAML.stringify(data);
+        }
         return JSON.stringify(data);
     }
 }
