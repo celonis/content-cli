@@ -1,48 +1,16 @@
-import { SemanticModelCommand } from "./commands/semantic-model.command";
-import { BoardCommand } from "./commands/board.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 
 var program = require("commander");
 
 class Update {
-    public static semanticModel(program) {
-        program
-            .command("semantic-model")
-            .description("Command to pull a semantic model file using a specific profile")
-            .option("--profile <profile>", "Profile which you want to use to update the semantic model")
-            .option("--id <id>", "Id of the configuration file you want to update")
-            .option("--file <file>", "The file you want to push")
-            .action(async cmd => {
-                await new SemanticModelCommand().updateSemanticModel(cmd.profile, cmd.id, cmd.file);
-                process.exit();
-            });
-
-        return program;
-    }
-
-    public static board(program) {
-        program
-            .command("board")
-            .description("Command to pull a board configuration file using a specific profile")
-            .option("--profile <profile>", "Profile which you want to use to update the board configuration")
-            .option("--id <id>", "Id of the configuration file you want to update")
-            .option("--file <file>", "The file you want to push")
-            .action(async cmd => {
-                await new BoardCommand().updateBoard(cmd.profile, cmd.id, cmd.file);
-                process.exit();
-            });
-
-        return program;
-    }
-
     public static workflow(program) {
         program
             .command("workflow")
             .description("Command to update a workflow using a workflow configuration file")
-            .option("--profile <profile>", "Profile which you want to use to update the workflow configuration")
-            .option("--id <id>", "Id of the workflow you want to update")
-            .option("--file <file>", "The file you want to push")
+            .option("-p, --profile <profile>", "Profile which you want to use to update the workflow configuration")
+            .requiredOption("--id <id>", "Id of the workflow you want to update")
+            .requiredOption("-f, --file <file>", "The file you want to push")
             .action(async cmd => {
                 await new WorkflowCommand().updateWorkflow(cmd.profile, cmd.id, cmd.file);
                 process.exit();
@@ -55,9 +23,9 @@ class Update {
         program
             .command("data-pool")
             .description("Command to update a data pool using a data pool configuration file")
-            .option("--profile <profile>", "Profile which you want to use to update the data pool configuration")
-            .option("--id <id>", "Id of the data pool you want to update")
-            .option("--file <file>", "The file you want to push")
+            .option("-p, --profile <profile>", "Profile which you want to use to update the data pool configuration")
+            .requiredOption("--id <id>", "Id of the data pool you want to update")
+            .requiredOption("-f, --file <file>", "The file you want to push")
             .action(async cmd => {
                 await new DataPoolCommand().updateDataPool(cmd.profile, cmd.id, cmd.file);
                 process.exit();
@@ -67,8 +35,6 @@ class Update {
     }
 }
 
-Update.semanticModel(program);
-Update.board(program);
 Update.workflow(program);
 Update.dataPool(program);
 
