@@ -5,13 +5,15 @@ import { AnalysisManager } from "../manager/analysis.manager";
 import { Stream } from "stream";
 
 export class AnalysisManagerFactory {
-    public createManager(id: string, processId: string, filename: string): AnalysisManager {
+    public createManager(id: string, processId: string, filename: string, packageManager?: boolean): AnalysisManager {
         const analysisManager = new AnalysisManager();
         analysisManager.id = id;
         analysisManager.processId = processId;
         if (filename !== null) {
             analysisManager.content = this.readFile(filename);
         }
+        analysisManager.packageManager = packageManager;
+
         return analysisManager;
     }
 
