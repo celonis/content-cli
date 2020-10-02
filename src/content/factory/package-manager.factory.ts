@@ -5,9 +5,9 @@ import { FatalError, logger } from "../../util/logger";
 import { PackageManager } from "../manager/package.manager";
 
 export class PackageManagerFactory {
-    public createManager(id?: string, fileName?: string): PackageManager {
+    public createManager(key?: string, fileName?: string): PackageManager {
         const packageManager = new PackageManager();
-        packageManager.id = id;
+        packageManager.key = key;
 
         if (fileName) {
             packageManager.fileName = this.resolvePackageFilePath(fileName);

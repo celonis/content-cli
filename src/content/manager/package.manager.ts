@@ -11,15 +11,15 @@ export class PackageManager extends BaseManager {
     private static IMPORT_ENDPOINT_PATH = "import";
     private static EXPORT_ENDPOINT_PATH = "export";
 
-    private _id: string;
+    private _key: string;
     private _fileName: string;
 
-    public get id(): string {
-        return this._id;
+    public get key(): string {
+        return this._key;
     }
 
-    public set id(value: string) {
-        this._id = value;
+    public set key(value: string) {
+        this._key = value;
     }
 
     public get fileName(): string {
@@ -38,12 +38,10 @@ export class PackageManager extends BaseManager {
             ),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
-                `${PackageManager.BASE_URL}/${this._id}/${PackageManager.EXPORT_ENDPOINT_PATH}`
+                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}`
             ),
-            updateUrl: undefined,
-            exportFileName: PackageManager.PACKAGE_FILE_PREFIX + this.id + PackageManager.PACKAGE_FILE_EXTENSION,
+            exportFileName: PackageManager.PACKAGE_FILE_PREFIX + this.key + PackageManager.PACKAGE_FILE_EXTENSION,
             onPushSuccessMessage: (): string => "Package was pushed successfully.",
-            onUpdateSuccessMessage: (): string => undefined,
         };
     }
 

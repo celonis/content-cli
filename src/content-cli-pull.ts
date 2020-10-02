@@ -101,9 +101,9 @@ class Pull {
             .command("package")
             .description("Command to pull a package")
             .option("-p, --profile <profile>", "Profile which you want to use to pull the package")
-            .requiredOption("--id <id>", "Id of the package you want to pull")
+            .requiredOption("--key <key>", "Key of the package you want to pull")
             .action(async cmd => {
-                await new PackageCommand().pullPackage(cmd.profile, cmd.id);
+                await new PackageCommand().pullPackage(cmd.profile, cmd.key);
                 process.exit();
             });
 
