@@ -1,5 +1,6 @@
 import { Profile } from "../interfaces/profile.interface";
 import { logger } from "../util/logger";
+import { Response } from "request";
 
 const request = require("request");
 
@@ -24,7 +25,15 @@ export class HttpClientService {
         return new Promise<any>((resolve, reject) => {
             request
                 .post(url, this.makeFileDownloadOptions(profile))
-                .on("data", data => this.handleResponseStreamData(data, resolve, reject))
+                .on("response", (response: Response) => {
+                    const data: Buffer[] = [];
+                    response.on("data", (chunk: Buffer) => {
+                        data.push(chunk);
+                    });
+                    response.on("end", () => {
+                        this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                    });
+                })
                 .on("error", error => reject(error));
         });
     }
