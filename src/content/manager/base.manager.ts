@@ -39,6 +39,22 @@ export abstract class BaseManager {
         });
     }
 
+    public async pullFile(): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.httpClientService
+                .pullFileData(this.getConfig().pullUrl, this._profile)
+                .then(data => {
+                    this.writeStreamToFile(data);
+                    logger.info("File downloaded successfully. New filename: " + data);
+                    resolve();
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                    reject();
+                });
+        });
+    }
+
     public async push(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
@@ -74,6 +90,12 @@ export abstract class BaseManager {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
         });
+        return filename;
+    }
+
+    protected writeStreamToFile(data: any): string {
+        const filename = this.getConfig().exportFileName;
+        fs.writeFileSync(filename, data);
         return filename;
     }
 

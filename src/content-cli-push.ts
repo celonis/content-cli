@@ -4,6 +4,7 @@ import { WidgetCommand } from "./commands/widget.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
+import { PackageCommand } from "./commands/package.command";
 
 var program = require("commander");
 
@@ -135,6 +136,33 @@ class Push {
 
         return program;
     }
+
+    public static package(program) {
+        program
+            .command("package")
+            .description("Command to push a package to Studio")
+            .option("-p, --profile <profile>", "Profile which you want to use to push the package")
+            .requiredOption("-f, --file <file>", "The file you want to push")
+            .action(async cmd => {
+                await new PackageCommand().pushPackage(cmd.profile, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static packages(program) {
+        program
+            .command("packages")
+            .description("Command to push packages to Studio")
+            .option("-p, --profile <profile>", "Profile which you want to use to push the packages")
+            .action(async cmd => {
+                await new PackageCommand().pushPackages(cmd.profile);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Push.analysis(program);
@@ -146,6 +174,8 @@ Push.dataPool(program);
 Push.dataPools(program);
 Push.asset(program);
 Push.assets(program);
+Push.package(program);
+Push.packages(program);
 
 program.parse(process.argv);
 
