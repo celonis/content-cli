@@ -39,10 +39,7 @@ export class HttpClientService {
 
     private makeOptions(profile: Profile, body: any) {
         const options = {
-            headers: {
-                authorization: `Bearer ${profile.apiToken}`,
-                "content-type": "application/json",
-            },
+            headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
         };
 
         return Object.assign(options, body);
@@ -50,11 +47,15 @@ export class HttpClientService {
 
     private makeFileDownloadOptions(profile: Profile) {
         return {
-            headers: {
-                authorization: `Bearer ${profile.apiToken}`,
-                "content-type": "application/json",
-            },
+            headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
             responseType: "binary",
+        };
+    }
+
+    private buildRequestHeadersWithAuthentication(apiToken: string) {
+        return {
+            authorization: `Bearer ${apiToken}`,
+            "content-type": "application/json",
         };
     }
 

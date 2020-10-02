@@ -42,7 +42,7 @@ export class PackageManager extends BaseManager {
             ),
             updateUrl: undefined,
             exportFileName: PackageManager.PACKAGE_FILE_PREFIX + this.id + PackageManager.PACKAGE_FILE_EXTENSION,
-            onPushSuccessMessage: (): string => "Package was pushed successfully.}",
+            onPushSuccessMessage: (): string => "Package was pushed successfully.",
             onUpdateSuccessMessage: (): string => undefined,
         };
     }
