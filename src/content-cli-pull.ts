@@ -4,6 +4,7 @@ import { ObjectiveCommand } from "./commands/objective.command";
 import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
+import { PackageCommand } from "./commands/package.command";
 
 var program = require("commander");
 
@@ -94,6 +95,20 @@ class Pull {
 
         return program;
     }
+
+    public static package(program) {
+        program
+            .command("package")
+            .description("Command to pull a package")
+            .option("-p, --profile <profile>", "Profile which you want to use to pull the package")
+            .requiredOption("--id <id>", "Id of the package you want to pull")
+            .action(async cmd => {
+                await new PackageCommand().pullPackage(cmd.profile, cmd.id);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 Pull.analysis(program);
@@ -102,6 +117,7 @@ Pull.objective(program);
 Pull.workflow(program);
 Pull.dataPool(program);
 Pull.asset(program);
+Pull.package(program);
 
 program.parse(process.argv);
 

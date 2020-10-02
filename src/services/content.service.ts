@@ -23,6 +23,23 @@ export class ContentService {
         });
     }
 
+    public async pullFile(profile: string, baseManager: BaseManager): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.profileService
+                .findProfile(this.resolveProfile(profile))
+                .then((profile: Profile) => {
+                    baseManager.profile = profile;
+                    baseManager.pullFile().then(
+                        () => resolve(),
+                        () => reject()
+                    );
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                });
+        });
+    }
+
     public async push(profile: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
