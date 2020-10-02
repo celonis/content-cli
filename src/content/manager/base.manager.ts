@@ -45,7 +45,7 @@ export abstract class BaseManager {
                 .pullFileData(this.getConfig().pullUrl, this._profile)
                 .then(data => {
                     this.writeStreamToFile(data);
-                    logger.info("File downloaded successfully. New filename: " + data);
+                    logger.info("File downloaded successfully");
                     resolve();
                 })
                 .catch(err => {
