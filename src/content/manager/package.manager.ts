@@ -13,6 +13,7 @@ export class PackageManager extends BaseManager {
 
     private _key: string;
     private _fileName: string;
+    private _store: boolean;
 
     public get key(): string {
         return this._key;
@@ -30,6 +31,14 @@ export class PackageManager extends BaseManager {
         this._fileName = value;
     }
 
+    public get store(): boolean {
+        return this._store;
+    }
+
+    public set store(value: boolean) {
+        this._store = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(
@@ -38,7 +47,7 @@ export class PackageManager extends BaseManager {
             ),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
-                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}`
+                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${this.store}`
             ),
             exportFileName: PackageManager.PACKAGE_FILE_PREFIX + this.key + PackageManager.PACKAGE_FILE_EXTENSION,
             onPushSuccessMessage: (): string => "Package was pushed successfully.",
