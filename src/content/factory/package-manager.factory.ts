@@ -5,13 +5,15 @@ import { FatalError, logger } from "../../util/logger";
 import { PackageManager } from "../manager/package.manager";
 
 export class PackageManagerFactory {
-    public createManager(key?: string, fileName?: string): PackageManager {
+    public createManager(key?: string, fileName?: string, store?: boolean): PackageManager {
         const packageManager = new PackageManager();
         packageManager.key = key;
 
         if (fileName) {
             packageManager.fileName = this.resolvePackageFilePath(fileName);
         }
+
+        packageManager.store = store;
 
         return packageManager;
     }
