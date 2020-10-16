@@ -31,7 +31,11 @@ export class HttpClientService {
                         data.push(chunk);
                     });
                     response.on("end", () => {
-                        this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        if (this.checkBadRequest(response.statusCode)) {
+                            this.handleBadRequest(response, data.toString(), reject);
+                        } else {
+                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        }
                     });
                 })
                 .on("error", error => reject(error));
@@ -78,23 +82,32 @@ export class HttpClientService {
         reject();
     }
 
-    private handleResponse(res, resolve, reject) {
-        if (res.statusCode >= 400) {
+    private handleResponse(res, resolve, reject): void {
+        if (this.checkBadRequest(res.statusCode)) {
+            this.handleBadRequest(res, res.body, reject);
+            return;
+        }
+        let body = {};
+        try {
             if (res.body) {
-                reject(res.body);
-            } else {
-                reject("Backend responded with status code " + res.statusCode);
+                body = JSON.parse(res.body);
             }
+        } catch (e) {
+            reject("Something went wrong. Please check that you have the right url and api key.");
+            return;
+        }
+        resolve(body);
+    }
+
+    private checkBadRequest(statusCode: number): boolean {
+        return statusCode >= 400;
+    }
+
+    private handleBadRequest(statusCode, data, reject): void {
+        if (data) {
+            reject(data);
         } else {
-            let body = {};
-            try {
-                if (res.body) {
-                    body = JSON.parse(res.body);
-                }
-            } catch (e) {
-                reject("Something went wrong. Please check that you have the right url and api key.");
-            }
-            resolve(body);
+            reject("Backend responded with status code " + statusCode);
         }
     }
 }
