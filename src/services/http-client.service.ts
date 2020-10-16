@@ -31,8 +31,11 @@ export class HttpClientService {
                         data.push(chunk);
                     });
                     response.on("end", () => {
-                        this.handleBadRequest(response, data.toString(), reject);
-                        this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        if (this.checkBadRequest(response.statusCode)) {
+                            this.handleBadRequest(response, data.toString(), reject);
+                        } else {
+                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        }
                     });
                 })
                 .on("error", error => reject(error));
@@ -80,7 +83,10 @@ export class HttpClientService {
     }
 
     private handleResponse(res, resolve, reject): void {
-        this.handleBadRequest(res, res.body, reject);
+        if (this.checkBadRequest(res.statusCode)) {
+            this.handleBadRequest(res, res.body, reject);
+            return;
+        }
         let body = {};
         try {
             if (res.body) {
@@ -88,17 +94,20 @@ export class HttpClientService {
             }
         } catch (e) {
             reject("Something went wrong. Please check that you have the right url and api key.");
+            return;
         }
         resolve(body);
     }
 
-    private handleBadRequest(response, data, reject): void {
-        if (response.statusCode >= 400) {
-            if (data) {
-                reject(data);
-            } else {
-                reject("Backend responded with status code " + response.statusCode);
-            }
+    private checkBadRequest(statusCode: number): boolean {
+        return statusCode >= 400;
+    }
+
+    private handleBadRequest(statusCode, data, reject): void {
+        if (data) {
+            reject(data);
+        } else {
+            reject("Backend responded with status code " + statusCode);
         }
     }
 }
