@@ -5,6 +5,7 @@ import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
+import { CTPCommand } from "./commands/ctp.command";
 
 var program = require("commander");
 
@@ -18,6 +19,21 @@ class Push {
             .requiredOption("-f, --file <file>", "The file you want to push")
             .action(async cmd => {
                 await new AnalysisCommand().pushAnalysis(cmd.profile, cmd.workspaceId, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
+    
+    public static ctp(program) {
+        program
+            .command("ctp")
+            .description("Command to push a .ctp (Celonis 4 transport file) to create a package")
+            .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
+            .requiredOption("-f, --file <file>", "The .ctp file you want to push")
+            .requiredOption("--password <password>", "The password used for extracting the .ctp file")
+            .action(async cmd => {
+                await new CTPCommand().pushCTPFile(cmd.profile, cmd.file, cmd.password);
                 process.exit();
             });
 
@@ -166,6 +182,7 @@ class Push {
 }
 
 Push.analysis(program);
+Push.ctp(program);
 Push.skill(program);
 Push.widget(program);
 Push.workflow(program);
