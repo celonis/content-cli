@@ -24,7 +24,7 @@ class Push {
 
         return program;
     }
-    
+
     public static ctp(program) {
         program
             .command("ctp")
@@ -61,9 +61,10 @@ class Push {
             .description("Command to push a widget")
             .option("-p, --profile <profile>", "Profile which you want to use to push the widget")
             .option("--tenantIndependent", "Upload widget tenant independently")
-            .option("--packageManager", "Upload widget to package manager") // temporary
+            .option("--userSpecific", "Upload widget only for the user in the provided api token")
+            .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
             .action(async cmd => {
-                await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.packageManager);
+                await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
                 process.exit();
             });
 

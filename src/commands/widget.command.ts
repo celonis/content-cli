@@ -5,10 +5,10 @@ export class WidgetCommand {
     private contentService = new ContentService();
     private widgetManagerFactory = new WidgetManagerFactory();
 
-    public async pushWidget(profile: string, tenantIndependent: boolean, packageManager: boolean) {
+    public async pushWidget(profile: string, tenantIndependent: boolean, userSpecific: boolean) {
         await this.contentService.push(
             profile,
-            this.widgetManagerFactory.createManager(tenantIndependent, packageManager)
+            this.widgetManagerFactory.createManager(tenantIndependent, userSpecific)
         );
     }
 }
