@@ -159,9 +159,10 @@ class Push {
             .command("package")
             .description("Command to push a package to Studio")
             .option("-p, --profile <profile>", "Profile which you want to use to push the package")
+            .option("-k, --key <newKey>", "Define a new key for your package")
             .requiredOption("-f, --file <file>", "The file you want to push")
             .action(async cmd => {
-                await new PackageCommand().pushPackage(cmd.profile, cmd.file);
+                await new PackageCommand().pushPackage(cmd.profile, cmd.file, cmd.key);
                 process.exit();
             });
 
