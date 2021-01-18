@@ -1,1 +1,1 @@
-This is the read me file of the content-cli repository.
+This is the read me file for the content-cli repository.
