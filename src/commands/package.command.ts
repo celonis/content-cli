@@ -5,8 +5,8 @@ export class PackageCommand {
     private contentService = new ContentService();
     private packageManagerFactory = new PackageManagerFactory();
 
-    public async pullPackage(profile: string, key: string, store: boolean) {
-        await this.contentService.pullFile(profile, this.packageManagerFactory.createManager(key, null, store));
+    public async pullPackage(profile: string, key: string, store: boolean, newKey: string) {
+        await this.contentService.pullFile(profile, this.packageManagerFactory.createManager(key, null, store, newKey));
     }
 
     public async pushPackage(profile: string, fileName: string, newKey: string) {
