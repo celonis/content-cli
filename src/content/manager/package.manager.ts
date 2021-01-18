@@ -53,14 +53,19 @@ export class PackageManager extends BaseManager {
             pushUrl: this.profile.team.replace(
                 /\/?$/,
                 `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}${
-                    this.newKey ? `?key=${this.newKey}` : ""
+                    this.newKey ? `?newKey=${this.newKey}` : ""
                 }`
             ),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
-                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${this.store}`
+                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${this.store}${
+                    this.newKey ? `&newKey=${this.newKey}` : ""
+                }`
             ),
-            exportFileName: PackageManager.PACKAGE_FILE_PREFIX + this.key + PackageManager.PACKAGE_FILE_EXTENSION,
+            exportFileName:
+                PackageManager.PACKAGE_FILE_PREFIX +
+                (this.newKey ? this.newKey : this.key) +
+                PackageManager.PACKAGE_FILE_EXTENSION,
             onPushSuccessMessage: (): string => "Package was pushed successfully.",
         };
     }
