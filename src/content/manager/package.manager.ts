@@ -14,6 +14,7 @@ export class PackageManager extends BaseManager {
     private _key: string;
     private _fileName: string;
     private _store: boolean;
+    private _newKey: string;
 
     public get key(): string {
         return this._key;
@@ -39,11 +40,21 @@ export class PackageManager extends BaseManager {
         this._store = value;
     }
 
+    public get newKey(): string {
+        return this._newKey;
+    }
+
+    public set newKey(value: string) {
+        this._newKey = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(
                 /\/?$/,
-                `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`
+                `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}${
+                    this.newKey ? `?key=${this.newKey}` : ""
+                }`
             ),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
