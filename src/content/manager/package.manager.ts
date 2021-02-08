@@ -15,6 +15,7 @@ export class PackageManager extends BaseManager {
     private _fileName: string;
     private _store: boolean;
     private _newKey: string;
+    private _overwrite: boolean;
 
     public get key(): string {
         return this._key;
@@ -48,13 +49,21 @@ export class PackageManager extends BaseManager {
         this._newKey = value;
     }
 
+    public get overwrite(): boolean {
+        return this._overwrite;
+    }
+
+    public set overwrite(value: boolean) {
+        this._overwrite = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(
                 /\/?$/,
                 `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}${
                     this.newKey ? `?newKey=${this.newKey}` : ""
-                }`
+                }${this.overwrite ? `?overwrite=${this.overwrite}` : ""}`
             ),
             pullUrl: this.profile.team.replace(
                 /\/?$/,

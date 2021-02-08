@@ -5,7 +5,13 @@ import { FatalError, logger } from "../../util/logger";
 import { PackageManager } from "../manager/package.manager";
 
 export class PackageManagerFactory {
-    public createManager(key?: string, fileName?: string, store?: boolean, newKey?: string): PackageManager {
+    public createManager(
+        key?: string,
+        fileName?: string,
+        store?: boolean,
+        newKey?: string,
+        overwrite?: boolean
+    ): PackageManager {
         const packageManager = new PackageManager();
         packageManager.key = key;
 
@@ -14,6 +20,7 @@ export class PackageManagerFactory {
         }
         packageManager.store = store;
         packageManager.newKey = newKey;
+        packageManager.overwrite = overwrite;
 
         return packageManager;
     }
