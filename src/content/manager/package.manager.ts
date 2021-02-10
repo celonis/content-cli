@@ -95,7 +95,7 @@ export class PackageManager extends BaseManager {
         if (this.overwrite) {
             if (this.newKey) {
                 logger.error(
-                    "You cannot overwrite a package and set a new key at the same time. Please use only of the options."
+                    "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
                 );
                 process.exit();
             } else {
