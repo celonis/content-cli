@@ -2,6 +2,7 @@ import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import * as YAML from "yaml";
 import { AssetManager } from "./asset.manager";
+import * as fs from "fs";
 
 YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
 
@@ -12,15 +13,15 @@ export class AnalysisManager extends BaseManager {
 
     private _id: string;
     private _processId: string;
-    private _content: any;
+    private _fileName: string;
     private _packageManager: boolean;
 
-    public get content(): any {
-        return this._content;
+    public get fileName(): string {
+        return this._fileName;
     }
 
-    public set content(value: any) {
-        this._content = value;
+    public set fileName(value: string) {
+        this._fileName = value;
     }
 
     public get id(): string {
@@ -69,7 +70,7 @@ export class AnalysisManager extends BaseManager {
     public getBody(): any {
         return {
             formData: {
-                file: this.content,
+                file: fs.createReadStream(this.fileName),
             },
         };
     }
