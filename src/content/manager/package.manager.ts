@@ -1,6 +1,7 @@
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { BaseManager } from "./base.manager";
 import * as fs from "fs";
+import { logger } from "../../util/logger";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
@@ -15,6 +16,7 @@ export class PackageManager extends BaseManager {
     private _fileName: string;
     private _store: boolean;
     private _newKey: string;
+    private _overwrite: boolean;
 
     public get key(): string {
         return this._key;
@@ -48,14 +50,17 @@ export class PackageManager extends BaseManager {
         this._newKey = value;
     }
 
+    public get overwrite(): boolean {
+        return this._overwrite;
+    }
+
+    public set overwrite(value: boolean) {
+        this._overwrite = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
-            pushUrl: this.profile.team.replace(
-                /\/?$/,
-                `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}${
-                    this.newKey ? `?newKey=${this.newKey}` : ""
-                }`
-            ),
+            pushUrl: this.profile.team.replace(/\/?$/, this.buildPushUrl()),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
                 `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${this.store}${
@@ -80,5 +85,23 @@ export class PackageManager extends BaseManager {
 
     protected getSerializedFileContent(data: any): string {
         return data;
+    }
+
+    private buildPushUrl(): string {
+        let pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
+        if (this.newKey) {
+            pushUrl = `${pushUrl}?newKey=${this.newKey}`;
+        }
+        if (this.overwrite) {
+            if (this.newKey) {
+                logger.error(
+                    "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
+                );
+                process.exit();
+            } else {
+                pushUrl = `${pushUrl}?overwrite=${this.overwrite}`;
+            }
+        }
+        return pushUrl;
     }
 }
