@@ -30,10 +30,18 @@ class Push {
             .command("ctp")
             .description("Command to push a .ctp (Celonis 4 transport file) to create a package")
             .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
+            .option("--pushAnalysis", "Specify this option if you want to push analysis from the CTP file", true)
+            .option("--pushDataModels", "Specify this option if you want to push data models from the CTP file", false)
             .requiredOption("-f, --file <file>", "The .ctp file you want to push")
             .requiredOption("--password <password>", "The password used for extracting the .ctp file")
             .action(async cmd => {
-                await new CTPCommand().pushCTPFile(cmd.profile, cmd.file, cmd.password);
+                await new CTPCommand().pushCTPFile(
+                    cmd.profile,
+                    cmd.file,
+                    cmd.password,
+                    cmd.pushAnalysis,
+                    cmd.pushDataModels
+                );
                 process.exit();
             });
 
