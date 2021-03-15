@@ -12,6 +12,18 @@ export class CTPCommand {
         pushAnalysis: boolean,
         pushDataModels: boolean
     ) {
-        await this.contentService.pushForm(profile, this.ctpManagerFactory.createManager(filename, password));
+        if (pushAnalysis) {
+            await this.contentService.push(
+                profile,
+                this.ctpManagerFactory.createCtpAnalysisManager(filename, password)
+            );
+        }
+
+        if (pushDataModels) {
+            await this.contentService.pushForm(
+                profile,
+                this.ctpManagerFactory.createCtpDataModelManager(filename, password)
+            );
+        }
     }
 }

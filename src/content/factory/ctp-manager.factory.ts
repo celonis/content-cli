@@ -1,12 +1,23 @@
 import * as fs from "fs";
 import * as path from "path";
 import { FatalError, logger } from "../../util/logger";
-import { CTPManager } from "../manager/ctp.manager";
+import { CtpAnalysisManager } from "../manager/ctp.analysis.manager";
 import { ReadStream } from "fs";
+import { CtpManager } from "../manager/ctp.manager";
+import { CtpDataModelManager } from "../manager/ctp.datamodel.manager";
 
 export class CTPManagerFactory {
-    public createManager(filename: string, password: string): CTPManager {
-        const ctpManager = new CTPManager();
+    public createCtpAnalysisManager(filename: string, password: string): CtpManager {
+        const ctpManager = new CtpAnalysisManager();
+        return this.initManager(ctpManager, filename, password);
+    }
+
+    public createCtpDataModelManager(filename: string, password: string): CtpManager {
+        const ctpManager = new CtpDataModelManager();
+        return this.initManager(ctpManager, filename, password);
+    }
+
+    private initManager(ctpManager: CtpManager, filename: string, password: string): CtpManager {
         ctpManager.password = password;
         if (filename !== null) {
             ctpManager.content = this.readFile(filename);
