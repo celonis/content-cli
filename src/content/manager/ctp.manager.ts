@@ -1,6 +1,5 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
-import * as FormData from "form-data";
 
 export class CTPManager extends BaseManager {
     private static BASE_URL = "/process-analytics/import/ctp";
@@ -33,10 +32,12 @@ export class CTPManager extends BaseManager {
     }
 
     public getBody(): any {
-        const form = new FormData();
-        form.append("file", this.content);
-        form.append("password", this.password);
-        return form;
+        return {
+            formData: {
+                file: this.content,
+                password: this.password,
+            },
+        };
     }
 
     protected getSerializedFileContent(data: any): string {
