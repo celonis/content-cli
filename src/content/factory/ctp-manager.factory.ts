@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { FatalError, logger } from "../../util/logger";
-import { Stream } from "stream";
 import { CTPManager } from "../manager/ctp.manager";
+import { ReadStream } from "fs";
 
 export class CTPManagerFactory {
     public createManager(filename: string, password: string): CTPManager {
@@ -14,7 +14,7 @@ export class CTPManagerFactory {
         return ctpManager;
     }
 
-    private readFile(filename: string): Stream {
+    private readFile(filename: string): ReadStream {
         if (!fs.existsSync(path.resolve(process.cwd(), filename))) {
             logger.error(new FatalError("The provided file does not exit"));
         }

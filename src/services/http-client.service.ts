@@ -1,6 +1,7 @@
 import { Profile } from "../interfaces/profile.interface";
 import { logger } from "../util/logger";
 import { Response } from "request";
+import * as FormData from "form-data";
 
 const request = require("request");
 
@@ -50,6 +51,14 @@ export class HttpClientService {
         });
     }
 
+    public async pushForm(url, profile: Profile, body: FormData): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.post(url, this.makeFormOptions(profile, body), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        });
+    }
+
     private makeOptions(profile: Profile, body: any) {
         const options = {
             headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
@@ -62,6 +71,14 @@ export class HttpClientService {
         return {
             headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
             responseType: "binary",
+        };
+    }
+
+    private makeFormOptions(profile: Profile, formData: FormData) {
+        const formHeaders = formData.getHeaders();
+        return {
+            headers: Object.assign(formHeaders, { authorization: `Bearer ${profile.apiToken}` }),
+            formData: formData,
         };
     }
 

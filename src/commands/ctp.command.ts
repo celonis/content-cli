@@ -12,6 +12,6 @@ export class CTPCommand {
         pushAnalysis: boolean,
         pushDataModels: boolean
     ) {
-        await this.contentService.push(profile, this.ctpManagerFactory.createManager(filename, password));
+        await this.contentService.pushForm(profile, this.ctpManagerFactory.createManager(filename, password));
     }
 }
