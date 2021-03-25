@@ -21,6 +21,8 @@ program.command("push", "Commands to push content.");
 
 program.command("update", "Commands to update content.");
 
+program.command("list", "Commands to list content.").alias("ls");
+
 program.version(version);
 program.parse(process.argv);
 

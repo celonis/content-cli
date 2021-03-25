@@ -85,6 +85,21 @@ export abstract class BaseManager {
         });
     }
 
+    public async findAll(): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.httpClientService
+                .findAll(this.getConfig().findAllUrl, this._profile)
+                .then(data => {
+                    this.getConfig().onFindAll(data);
+                    resolve(data);
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                    reject();
+                });
+        });
+    }
+
     protected writeToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
