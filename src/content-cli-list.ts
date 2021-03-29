@@ -8,6 +8,7 @@ class List {
         program
             .command("packages")
             .description("Command to list all packages")
+            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .action(async cmd => {
                 await new PackageCommand().listPackages(cmd.profile);
                 process.exit();
