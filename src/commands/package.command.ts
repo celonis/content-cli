@@ -19,4 +19,8 @@ export class PackageCommand {
     public async pushPackages(profile: string) {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createManagers());
     }
+
+    public async listPackages(profile: string) {
+        await this.contentService.findAll(profile, this.packageManagerFactory.createManager());
+    }
 }
