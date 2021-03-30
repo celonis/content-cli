@@ -1,15 +1,15 @@
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { ObjectiveCommand } from "./commands/objective.command";
-import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 
-var program = require("commander");
+import commander = require("commander");
+type CommanderStatic = commander.CommanderStatic;
 
 class Pull {
-    public static analysis(program) {
+    public static analysis(program: CommanderStatic): CommanderStatic {
         program
             .command("analysis")
             .description("Command to pull an analysis")
@@ -24,7 +24,7 @@ class Pull {
         return program;
     }
 
-    public static skill(program) {
+    public static skill(program: CommanderStatic): CommanderStatic {
         program
             .command("skill")
             .description("Command to pull a skill")
@@ -39,7 +39,7 @@ class Pull {
         return program;
     }
 
-    public static objective(program) {
+    public static objective(program: CommanderStatic): CommanderStatic {
         program
             .command("objective")
             .description("Command to pull an objective")
@@ -53,22 +53,7 @@ class Pull {
         return program;
     }
 
-    public static workflow(program) {
-        program
-            .command("workflow")
-            .description("Command to pull a workflow")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the workflow")
-            .requiredOption("--id <id>", "Id of the workflow you want to pull")
-            .option("--asset", "Pull workflow as an asset")
-            .action(async cmd => {
-                await new WorkflowCommand().pullWorkflow(cmd.profile, cmd.id, !!cmd.asset);
-                process.exit();
-            });
-
-        return program;
-    }
-
-    public static dataPool(program) {
+    public static dataPool(program: CommanderStatic): CommanderStatic {
         program
             .command("data-pool")
             .description("Command to pull a data pool")
@@ -82,7 +67,7 @@ class Pull {
         return program;
     }
 
-    public static asset(program) {
+    public static asset(program: CommanderStatic): CommanderStatic {
         program
             .command("asset")
             .description("Command to pull an asset from Studio")
@@ -96,7 +81,7 @@ class Pull {
         return program;
     }
 
-    public static package(program) {
+    public static package(program: CommanderStatic): CommanderStatic {
         program
             .command("package")
             .description("Command to pull a package")
@@ -113,17 +98,16 @@ class Pull {
     }
 }
 
-Pull.analysis(program);
-Pull.skill(program);
-Pull.objective(program);
-Pull.workflow(program);
-Pull.dataPool(program);
-Pull.asset(program);
-Pull.package(program);
+Pull.analysis(commander);
+Pull.skill(commander);
+Pull.objective(commander);
+Pull.dataPool(commander);
+Pull.asset(commander);
+Pull.package(commander);
 
-program.parse(process.argv);
+commander.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    program.outputHelp();
+    commander.outputHelp();
     process.exit(1);
 }

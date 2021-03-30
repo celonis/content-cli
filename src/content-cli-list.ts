@@ -4,7 +4,7 @@ import commander = require("commander");
 type CommanderStatic = commander.CommanderStatic;
 
 class List {
-    public static packages(program: CommanderStatic) {
+    public static packages(program: CommanderStatic): CommanderStatic {
         program
             .command("packages")
             .description("Command to list all packages")

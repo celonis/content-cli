@@ -5,22 +5,22 @@ export class PackageCommand {
     private contentService = new ContentService();
     private packageManagerFactory = new PackageManagerFactory();
 
-    public async pullPackage(profile: string, key: string, store: boolean, newKey: string) {
+    public async pullPackage(profile: string, key: string, store: boolean, newKey: string): Promise<void> {
         await this.contentService.pullFile(profile, this.packageManagerFactory.createManager(key, null, store, newKey));
     }
 
-    public async pushPackage(profile: string, fileName: string, newKey: string, overwrite: boolean) {
+    public async pushPackage(profile: string, fileName: string, newKey: string, overwrite: boolean): Promise<void> {
         await this.contentService.push(
             profile,
             this.packageManagerFactory.createManager(null, fileName, false, newKey, overwrite)
         );
     }
 
-    public async pushPackages(profile: string) {
+    public async pushPackages(profile: string): Promise<void> {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createManagers());
     }
 
-    public async listPackages(profile: string) {
+    public async listPackages(profile: string): Promise<void> {
         await this.contentService.findAll(profile, this.packageManagerFactory.createManager());
     }
 }

@@ -3,8 +3,7 @@ import * as path from "path";
 import { FatalError, logger } from "../../util/logger";
 import * as YAML from "yaml";
 import { WidgetManager } from "../manager/widget.manager";
-
-const AdmZip = require("adm-zip");
+import AdmZip = require("adm-zip");
 
 interface Manifest {
     key: string;
@@ -68,7 +67,7 @@ export class WidgetManagerFactory {
         return null;
     }
 
-    private validateManifest(manifest: Manifest) {
+    private validateManifest(manifest: Manifest): void {
         if (!manifest.bundle) {
             logger.error(new FatalError("Missing 'bundle' attribute."));
         }
