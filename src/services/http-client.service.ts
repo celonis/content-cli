@@ -77,7 +77,7 @@ export class HttpClientService {
     private makeFormOptions(profile: Profile, formData: FormData) {
         const formHeaders = formData.getHeaders();
         return {
-            headers: Object.assign(formHeaders, { authorization: `Bearer ${profile.apiToken}` }),
+            headers: { ...formHeaders, authorization: `Bearer ${profile.apiToken}` },
             formData: formData,
         };
     }
