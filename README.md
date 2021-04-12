@@ -26,7 +26,7 @@ Content CLI has three core functionalities:
 
 ``` content-cli push package -p team2.cluster2 --file package_my-package.zip ```
 
-A more comprehensive list of Content CLI capabilities can be found on the following [documentation](https://help.celonis.cloud/help/display/CIBC/Content-CLI+as+a+tool+for+managing+content+in+the+EMS). Note that to view this documentation you will need access to some Celonis EMS Team
+A more comprehensive list of Content CLI capabilities can be found on the following [documentation](DOCUMENTATION.md). 
 
 You can still explore the full capabilities of Content CLI and the list of options for the different commands by using the `-h` option in your command.
 
