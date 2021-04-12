@@ -2,6 +2,7 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { BaseManager } from "./base.manager";
 import * as fs from "fs";
 import { logger } from "../../util/logger";
+import { SaveContentNode } from "../../interfaces/save-content-node.interface";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
@@ -67,11 +68,13 @@ export class PackageManager extends BaseManager {
                     this.newKey ? `&newKey=${this.newKey}` : ""
                 }`
             ),
+            findAllUrl: this.profile.team.replace(/\/?$/, PackageManager.BASE_URL),
             exportFileName:
                 PackageManager.PACKAGE_FILE_PREFIX +
                 (this.newKey ? this.newKey : this.key) +
                 PackageManager.PACKAGE_FILE_EXTENSION,
             onPushSuccessMessage: (): string => "Package was pushed successfully.",
+            onFindAll: (data: SaveContentNode[]) => this.listPackages(data),
         };
     }
 
@@ -103,5 +106,11 @@ export class PackageManager extends BaseManager {
             }
         }
         return pushUrl;
+    }
+
+    private listPackages(nodes: SaveContentNode[]): void {
+        nodes.forEach(node => {
+            logger.info(`${node.name} - Key: "${node.key}"`);
+        });
     }
 }

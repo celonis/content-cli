@@ -6,10 +6,10 @@ import { BaseManager } from "../content/manager/base.manager";
 export class ContentService {
     private profileService = new ProfileService();
 
-    public async pull(profile: string, baseManager: BaseManager): Promise<any> {
+    public async pull(profileName: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(this.resolveProfile(profile))
+                .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.pull().then(
@@ -23,10 +23,10 @@ export class ContentService {
         });
     }
 
-    public async pullFile(profile: string, baseManager: BaseManager): Promise<any> {
+    public async pullFile(profileName: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(this.resolveProfile(profile))
+                .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.pullFile().then(
@@ -40,10 +40,10 @@ export class ContentService {
         });
     }
 
-    public async push(profile: string, baseManager: BaseManager): Promise<any> {
+    public async push(profileName: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(this.resolveProfile(profile))
+                .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.push().then(
@@ -92,13 +92,30 @@ export class ContentService {
         });
     }
 
-    public async update(profile: string, baseManager: BaseManager): Promise<any> {
+    public async update(profileName: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
-                .findProfile(this.resolveProfile(profile))
+                .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
                     baseManager.profile = profile;
                     baseManager.update().then(
+                        () => resolve(),
+                        () => reject()
+                    );
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                });
+        });
+    }
+
+    public async findAll(profileName: string, baseManager: BaseManager): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.profileService
+                .findProfile(this.resolveProfile(profileName))
+                .then((profile: Profile) => {
+                    baseManager.profile = profile;
+                    baseManager.findAll().then(
                         () => resolve(),
                         () => reject()
                     );

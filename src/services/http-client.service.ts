@@ -6,7 +6,7 @@ import * as FormData from "form-data";
 const request = require("request");
 
 export class HttpClientService {
-    public async pushData(url, profile: Profile, body: string): Promise<any> {
+    public async pushData(url: string, profile: Profile, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.post(url, this.makeOptions(profile, body), (err, res) => {
                 this.handleResponse(res, resolve, reject);
@@ -14,7 +14,7 @@ export class HttpClientService {
         });
     }
 
-    public async pullData(url, profile: Profile): Promise<any> {
+    public async pullData(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.get(url, this.makeOptions(profile, null), (err, res) => {
                 this.handleResponse(res, resolve, reject);
@@ -22,7 +22,7 @@ export class HttpClientService {
         });
     }
 
-    public async pullFileData(url, profile: Profile): Promise<any> {
+    public async pullFileData(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request
                 .post(url, this.makeFileDownloadOptions(profile))
@@ -43,7 +43,7 @@ export class HttpClientService {
         });
     }
 
-    public async updateData(url, profile: Profile, body: string): Promise<any> {
+    public async updateData(url: string, profile: Profile, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.put(url, this.makeOptions(profile, body), (err, res) => {
                 this.handleResponse(res, resolve, reject);
@@ -59,7 +59,15 @@ export class HttpClientService {
         });
     }
 
-    private makeOptions(profile: Profile, body: any) {
+    public async findAll(url: string, profile: Profile): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.get(url, this.makeOptions(profile), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        });
+    }
+
+    private makeOptions(profile: Profile, body: object = {}) {
         const options = {
             headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
         };
