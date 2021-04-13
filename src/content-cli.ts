@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { logger } from "./util/logger";
-const version = require("./package.json").version;
-const semverSatisfies = require("semver/functions/satisfies");
-import * as program from "commander";
+import semverSatisfies = require("semver/functions/satisfies");
+import program = require("commander");
+// tslint:disable-next-line:no-var-requires
+const { version } = require("./package.json");
 
 const requiredVersion = ">=10.10.0";
 if (!semverSatisfies(process.version, requiredVersion)) {

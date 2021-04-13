@@ -1,12 +1,12 @@
 {
   "name": "@celonis/content-cli",
   "version": "0.0.47",
-  "description": "CLI Tools for Celonis Content",
+  "description": "CLI Tool to help manage content in Celonis EMS",
   "main": "content-cli.js",
   "bin": {
     "content-cli": "./content-cli.js"
   },
-  "author": "Genc Blakqori <g.blakqori@celonis.com>",
+  "author": "Celonis SE",
   "license": "MIT",
   "scripts": {
     "build": "./node_modules/.bin/tsc && cp package.json dist/package.json",
@@ -15,8 +15,6 @@
   "dependencies": {
     "adm-zip": "^0.4.14",
     "commander": "^6.0.0",
-    "compare-versions": "^3.5.1",
-    "npm": "^6.14.6",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.5",
     "semver": "^7.3.2",

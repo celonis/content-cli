@@ -1,25 +1,10 @@
-import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 
-var program = require("commander");
+import commander = require("commander");
+type CommanderStatic = commander.CommanderStatic;
 
 class Update {
-    public static workflow(program) {
-        program
-            .command("workflow")
-            .description("Command to update a workflow using a workflow configuration file")
-            .option("-p, --profile <profile>", "Profile which you want to use to update the workflow configuration")
-            .requiredOption("--id <id>", "Id of the workflow you want to update")
-            .requiredOption("-f, --file <file>", "The file you want to push")
-            .action(async cmd => {
-                await new WorkflowCommand().updateWorkflow(cmd.profile, cmd.id, cmd.file);
-                process.exit();
-            });
-
-        return program;
-    }
-
-    public static dataPool(program) {
+    public static dataPool(program: CommanderStatic): CommanderStatic {
         program
             .command("data-pool")
             .description("Command to update a data pool using a data pool configuration file")
@@ -35,12 +20,10 @@ class Update {
     }
 }
 
-Update.workflow(program);
-Update.dataPool(program);
-
-program.parse(process.argv);
+Update.dataPool(commander);
+commander.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    program.outputHelp();
+    commander.outputHelp();
     process.exit(1);
 }

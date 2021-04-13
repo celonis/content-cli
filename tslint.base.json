@@ -11,12 +11,21 @@
         "object-literal-shorthand": false,
         "object-literal-sort-keys": false,
         "ordered-imports": false,
+        "no-var-keyword": true,
+        "variable-name": [true, "allow-leading-underscore"],
+        "arrow-parens": [true, "ban-single-arg-parens"],
+        "member-access": [true, "check-accessor"],
         "quotemark": [
             true,
             "double",
             "avoid-escape",
             "avoid-template"
         ],
-        "variable-name": [true, "allow-leading-underscore"]
+        "typedef": [
+            true,
+            "call-signature",
+            "parameter",
+            "property-declaration"
+        ]
     }
 }
