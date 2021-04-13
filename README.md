@@ -16,22 +16,30 @@ Content CLI has three core functionalities:
 
 **Profile:** The CLI connects to the EMS environments through profiles. For each of the commands you can specify which profile you want to use. This makes it powerful in the sense that you can pull something from let's say team1.cluser1 and push it directly to team2.cluster2 easily. You can create a profile using the following command:
 
-``` content-cli profile create ```
+```
+content-cli profile create
+```
 
 **Pull:** This feature allows you to download content from the EMS to your local machine. Let's take Studio package as an example. These can be exported in the EMS as ZIP files that contain all package assets. By using the following command using the package key and profile you have created, you will pull the ZIP file.
 
-``` content-cli pull package -p team1.cluster1 --key my-package ```
+```
+content-cli pull package -p team1.cluster1 --key my-package
+```
 
 **Push:** This feature allows you to push a content file to a team in the EMS. To continue the last example, you can use the following command to push he previously pulled package in another team.
 
-``` content-cli push package -p team2.cluster2 --file package_my-package.zip ```
+```
+content-cli push package -p team2.cluster2 --file package_my-package.zip
+```
 
 A more comprehensive list of Content CLI capabilities can be found on the following [documentation](DOCUMENTATION.md). 
 
 You can still explore the full capabilities of Content CLI and the list of options for the different commands by using the `-h` option in your command.
 
-``` content-cli -h ``` 
-``` content-cli pull package -h ```
+```
+content-cli -h
+content-cli pull package -h
+```
 
 ## Getting Started
 
@@ -41,7 +49,9 @@ This tool is tightly connected with the Celonis EMS and all capabilities require
 
 We manage releases using Github Actions with the `Build and Publish Workflow`. This action runs after merging to the master branch, which builds the project and publishes the package to the Github registry. You can install a published version of the Content CLI using the following command:
 
-``` npm i -g @celonis/content-cli ```
+```
+npm i -g @celonis/content-cli
+```
 
 ## Contributing
 
@@ -51,4 +61,4 @@ We encourage public contributions! Please review [CONTRIBUTING.md](CONTRIBUTING.
 
 Copyright (c) 2021 Celonis SE
 
-This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
