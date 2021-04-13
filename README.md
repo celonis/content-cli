@@ -61,4 +61,4 @@ We encourage public contributions! Please review [CONTRIBUTING.md](CONTRIBUTING.
 
 Copyright (c) 2021 Celonis SE
 
-This project is licensed under the MIT License - see [LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
