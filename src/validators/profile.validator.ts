@@ -1,7 +1,7 @@
 import { Profile } from "../interfaces/profile.interface";
 import { FatalError, logger } from "../util/logger";
-const validUrl = require("valid-url");
-const request = require("request");
+import validUrl = require("valid-url");
+import request = require("request");
 
 export class ProfileValidator {
     public static async validateProfile(profile: Profile): Promise<void> {
@@ -24,7 +24,7 @@ export class ProfileValidator {
                 },
             };
 
-            let url = profile.team.replace(/\/?$/, "/api/cloud");
+            const url = profile.team.replace(/\/?$/, "/api/cloud");
 
             request.get(url, options, (err, res) => {
                 let body;

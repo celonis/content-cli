@@ -7,7 +7,7 @@ import { logger } from "../util/logger";
 export class ProfileCommand {
     private profileService = new ProfileService();
 
-    public async createProfile(setAsDefault: boolean) {
+    public async createProfile(setAsDefault: boolean): Promise<void> {
         const profile: Profile = {} as Profile;
         profile.name = await QuestionService.ask("Name of the profile: ");
         profile.team = await QuestionService.ask("Your team (please provide the full url): ");
@@ -20,22 +20,22 @@ export class ProfileCommand {
         logger.info("Profile created successfully!");
     }
 
-    public async listProfiles() {
+    public async listProfiles(): Promise<void> {
         this.profileService.readAllProfiles().then((profiles: string[]) => {
             const defaultProfile = this.profileService.getDefaultProfile();
             if (profiles) {
                 profiles.forEach(profile => {
                     if (defaultProfile && defaultProfile === profile) {
-                        console.log(profile + " (default)");
+                        logger.info(profile + " (default)");
                     } else {
-                        console.log(profile);
+                        logger.info(profile);
                     }
                 });
             }
         });
     }
 
-    public async makeDefaultProfile(profile: string) {
+    public async makeDefaultProfile(profile: string): Promise<void> {
         await this.profileService.makeDefaultProfile(profile);
         logger.info("Default profile: " + profile);
     }

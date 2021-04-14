@@ -5,15 +5,15 @@ export class DataPoolCommand {
     private contentService = new ContentService();
     private dataPoolManagerFactory = new DataPoolManagerFactory();
 
-    public async pullDataPool(profile: string, id: string) {
+    public async pullDataPool(profile: string, id: string): Promise<void> {
         await this.contentService.pull(profile, this.dataPoolManagerFactory.createManager(id, null));
     }
 
-    public async pushDataPool(profile: string, filename: string) {
+    public async pushDataPool(profile: string, filename: string): Promise<void> {
         await this.contentService.push(profile, this.dataPoolManagerFactory.createManager(null, filename));
     }
 
-    public async pushDataPools(profile: string) {
+    public async pushDataPools(profile: string): Promise<void> {
         await this.contentService.batchPush(profile, this.dataPoolManagerFactory.createManagers());
     }
 

@@ -1,16 +1,16 @@
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { WidgetCommand } from "./commands/widget.command";
-import { WorkflowCommand } from "./commands/workflow.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
 
-var program = require("commander");
+import commander = require("commander");
+type CommanderStatic = commander.CommanderStatic;
 
 class Push {
-    public static analysis(program) {
+    public static analysis(program: CommanderStatic): CommanderStatic {
         program
             .command("analysis")
             .description("Command to push an analysis to a workspace")
@@ -25,7 +25,7 @@ class Push {
         return program;
     }
 
-    public static ctp(program) {
+    public static ctp(program: CommanderStatic): CommanderStatic {
         program
             .command("ctp")
             .description("Command to push a .ctp (Celonis 4 transport file) to create a package")
@@ -48,7 +48,7 @@ class Push {
         return program;
     }
 
-    public static skill(program) {
+    public static skill(program: CommanderStatic): CommanderStatic {
         program
             .command("skill")
             .description("Command to push a skill to a project")
@@ -63,7 +63,7 @@ class Push {
         return program;
     }
 
-    public static widget(program) {
+    public static widget(program: CommanderStatic): CommanderStatic {
         program
             .command("widget")
             .description("Command to push a widget")
@@ -79,34 +79,7 @@ class Push {
         return program;
     }
 
-    public static workflow(program) {
-        program
-            .command("workflow")
-            .description("Command to push a workflow")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the workflow")
-            .requiredOption("-f, --file <file>", "The file you want to push")
-            .action(async cmd => {
-                await new WorkflowCommand().pushWorkflow(cmd.profile, cmd.file);
-                process.exit();
-            });
-
-        return program;
-    }
-
-    public static workflows(program) {
-        program
-            .command("workflows")
-            .description("Command to push workflows")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the workflows")
-            .action(async cmd => {
-                await new WorkflowCommand().pushWorkflows(cmd.profile);
-                process.exit();
-            });
-
-        return program;
-    }
-
-    public static dataPool(program) {
+    public static dataPool(program: CommanderStatic): CommanderStatic {
         program
             .command("data-pool")
             .description("Command to push a data pool")
@@ -120,7 +93,7 @@ class Push {
         return program;
     }
 
-    public static dataPools(program) {
+    public static dataPools(program: CommanderStatic): CommanderStatic {
         program
             .command("data-pools")
             .description("Command to push data pools")
@@ -133,7 +106,7 @@ class Push {
         return program;
     }
 
-    public static asset(program) {
+    public static asset(program: CommanderStatic): CommanderStatic {
         program
             .command("asset")
             .description("Command to push an asset to Studio")
@@ -148,7 +121,7 @@ class Push {
         return program;
     }
 
-    public static assets(program) {
+    public static assets(program: CommanderStatic): CommanderStatic {
         program
             .command("assets")
             .description("Command to push assets to Studio")
@@ -162,7 +135,7 @@ class Push {
         return program;
     }
 
-    public static package(program) {
+    public static package(program: CommanderStatic): CommanderStatic {
         program
             .command("package")
             .description("Command to push a package to Studio")
@@ -178,7 +151,7 @@ class Push {
         return program;
     }
 
-    public static packages(program) {
+    public static packages(program: CommanderStatic): CommanderStatic {
         program
             .command("packages")
             .description("Command to push packages to Studio")
@@ -192,22 +165,20 @@ class Push {
     }
 }
 
-Push.analysis(program);
-Push.ctp(program);
-Push.skill(program);
-Push.widget(program);
-Push.workflow(program);
-Push.workflows(program);
-Push.dataPool(program);
-Push.dataPools(program);
-Push.asset(program);
-Push.assets(program);
-Push.package(program);
-Push.packages(program);
+Push.analysis(commander);
+Push.ctp(commander);
+Push.skill(commander);
+Push.widget(commander);
+Push.dataPool(commander);
+Push.dataPools(commander);
+Push.asset(commander);
+Push.assets(commander);
+Push.package(commander);
+Push.packages(commander);
 
-program.parse(process.argv);
+commander.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    program.outputHelp();
+    commander.outputHelp();
     process.exit(1);
 }

@@ -3,7 +3,8 @@ import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../util/logger";
 
-const homedir = require("os").homedir();
+import os = require("os");
+const homedir = os.homedir();
 
 export interface Config {
     defaultProfile: string;
@@ -77,7 +78,7 @@ export class ProfileService {
         });
     }
 
-    private storeConfig(config: Config) {
+    private storeConfig(config: Config): void {
         fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8" });
     }
 

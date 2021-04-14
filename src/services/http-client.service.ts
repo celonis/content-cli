@@ -1,9 +1,8 @@
 import { Profile } from "../interfaces/profile.interface";
 import { logger } from "../util/logger";
-import { Response } from "request";
-import * as FormData from "form-data";
+import { CoreOptions, Headers, Response } from "request";
 
-const request = require("request");
+import request = require("request");
 
 export class HttpClientService {
     public async pushData(url: string, profile: Profile, body: object): Promise<any> {
@@ -59,7 +58,7 @@ export class HttpClientService {
         });
     }
 
-    private makeOptions(profile: Profile, body: object = {}) {
+    private makeOptions(profile: Profile, body: object = {}): CoreOptions {
         const options = {
             headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
         };
@@ -67,29 +66,22 @@ export class HttpClientService {
         return Object.assign(options, body);
     }
 
-    private makeFileDownloadOptions(profile: Profile) {
+    private makeFileDownloadOptions(profile: Profile): object {
         return {
             headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
             responseType: "binary",
         };
     }
 
-    private makeFormOptions(profile: Profile, formData: FormData) {
-        const formHeaders = formData.getHeaders();
-        return {
-            headers: { ...formHeaders, authorization: `Bearer ${profile.apiToken}` },
-            formData: formData,
-        };
-    }
-
-    private buildRequestHeadersWithAuthentication(apiToken: string) {
+    private buildRequestHeadersWithAuthentication(apiToken: string): Headers {
         return {
             authorization: `Bearer ${apiToken}`,
             "content-type": "application/json",
         };
     }
 
-    private handleResponseStreamData(data, resolve, reject) {
+    // tslint:disable-next-line:typedef
+    private handleResponseStreamData(data, resolve, reject): void {
         if (data) {
             resolve(data);
             return;
@@ -99,7 +91,8 @@ export class HttpClientService {
         reject();
     }
 
-    private handleResponse(res, resolve, reject): void {
+    // tslint:disable-next-line:typedef
+    private handleResponse(res: Response, resolve, reject): void {
         if (this.checkBadRequest(res.statusCode)) {
             this.handleBadRequest(res, res.body, reject);
             return;
@@ -120,6 +113,7 @@ export class HttpClientService {
         return statusCode >= 400;
     }
 
+    // tslint:disable-next-line:typedef
     private handleBadRequest(statusCode, data, reject): void {
         if (data) {
             reject(data);

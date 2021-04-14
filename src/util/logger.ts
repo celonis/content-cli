@@ -3,11 +3,11 @@ import * as Transport from "winston-transport";
 import { Logger } from "winston";
 
 class CustomTransport extends Transport {
-    constructor(opts) {
+    constructor(opts: any) {
         super(opts);
     }
 
-    public log(info: any, cb: () => void) {
+    public log(info: any, cb: () => void): void {
         setImmediate(() => {
             this.emit("logged", info);
         });

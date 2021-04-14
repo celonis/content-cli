@@ -8,11 +8,11 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 export abstract class BaseManager {
     private httpClientService = new HttpClientService();
 
-    get profile(): Profile {
+    public get profile(): Profile {
         return this._profile;
     }
 
-    set profile(value: Profile) {
+    public set profile(value: Profile) {
         this._profile = value;
     }
 
@@ -116,7 +116,7 @@ export abstract class BaseManager {
 
     protected abstract getConfig(): ManagerConfig;
 
-    protected abstract getBody(): any;
+    protected abstract getBody(): object;
 
     protected abstract getSerializedFileContent(data: any): string;
 }

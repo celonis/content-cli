@@ -5,7 +5,7 @@ export class WidgetCommand {
     private contentService = new ContentService();
     private widgetManagerFactory = new WidgetManagerFactory();
 
-    public async pushWidget(profile: string, tenantIndependent: boolean, userSpecific: boolean) {
+    public async pushWidget(profile: string, tenantIndependent: boolean, userSpecific: boolean): Promise<void> {
         await this.contentService.push(
             profile,
             this.widgetManagerFactory.createManager(tenantIndependent, userSpecific)

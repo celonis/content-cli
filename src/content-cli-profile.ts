@@ -1,9 +1,10 @@
 import { ProfileCommand } from "./commands/profile.command";
 
-var program = require("commander");
+import commander = require("commander");
+type CommanderStatic = commander.CommanderStatic;
 
 class Profile {
-    public static listProfile(program) {
+    public static listProfile(program: CommanderStatic): CommanderStatic {
         program
             .command("list")
             .description("Command to list all stored profiles")
@@ -15,7 +16,7 @@ class Profile {
         return program;
     }
 
-    public static createProfile(program) {
+    public static createProfile(program: CommanderStatic): CommanderStatic {
         program
             .command("create")
             .description("Command to create a new profile")
@@ -28,7 +29,7 @@ class Profile {
         return program;
     }
 
-    public static defaultProfile(program) {
+    public static defaultProfile(program: CommanderStatic): CommanderStatic {
         program
             .command("default <profile>")
             .description("Command to set a profile as default")
@@ -41,13 +42,13 @@ class Profile {
     }
 }
 
-Profile.listProfile(program);
-Profile.createProfile(program);
-Profile.defaultProfile(program);
+Profile.listProfile(commander);
+Profile.createProfile(commander);
+Profile.defaultProfile(commander);
 
-program.parse(process.argv);
+commander.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    program.outputHelp();
+    commander.outputHelp();
     process.exit(1);
 }

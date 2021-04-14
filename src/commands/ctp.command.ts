@@ -11,7 +11,7 @@ export class CTPCommand {
         password: string,
         pushAnalysis: boolean,
         pushDataModels: boolean
-    ) {
+    ): Promise<void> {
         if (pushAnalysis) {
             await this.contentService.push(
                 profile,
