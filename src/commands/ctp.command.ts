@@ -5,7 +5,25 @@ export class CTPCommand {
     private contentService = new ContentService();
     private ctpManagerFactory = new CTPManagerFactory();
 
-    public async pushCTPFile(profile: string, filename: string, password: string): Promise<void> {
-        await this.contentService.push(profile, this.ctpManagerFactory.createManager(filename, password));
+    public async pushCTPFile(
+        profile: string,
+        filename: string,
+        password: string,
+        pushAnalysis: boolean,
+        pushDataModels: boolean
+    ): Promise<void> {
+        if (pushAnalysis) {
+            await this.contentService.push(
+                profile,
+                this.ctpManagerFactory.createCtpAnalysisManager(filename, password)
+            );
+        }
+
+        if (pushDataModels) {
+            await this.contentService.push(
+                profile,
+                this.ctpManagerFactory.createCtpDataModelManager(filename, password)
+            );
+        }
     }
 }
