@@ -57,18 +57,6 @@ export class ContentService {
         });
     }
 
-    public async pushForm(profile: string, baseManager: BaseManager): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.profileService.findProfile(this.resolveProfile(profile)).then((profile: Profile) => {
-                baseManager.profile = profile;
-                baseManager.pushForm().then(
-                    () => resolve(),
-                    () => reject()
-                );
-            });
-        });
-    }
-
     public async batchPush(profileName: string, baseManagers: BaseManager[]): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService

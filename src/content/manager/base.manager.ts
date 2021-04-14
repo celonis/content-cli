@@ -70,21 +70,6 @@ export abstract class BaseManager {
         });
     }
 
-    public async pushForm(): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
-            this.httpClientService
-                .pushForm(this.getConfig(), this._profile, this.getBody())
-                .then(data => {
-                    logger.info(this.getConfig().onPushSuccessMessage(data));
-                    resolve(data);
-                })
-                .catch(err => {
-                    logger.error(new FatalError(err));
-                    reject();
-                });
-        });
-    }
-
     public async update(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService

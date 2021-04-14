@@ -51,14 +51,6 @@ export class HttpClientService {
         });
     }
 
-    public async pushForm(url, profile: Profile, body: FormData): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
-            request.post(url, this.makeFormOptions(profile, body), (err, res) => {
-                this.handleResponse(res, resolve, reject);
-            });
-        });
-    }
-
     public async findAll(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.get(url, this.makeOptions(profile), (err, res) => {

@@ -20,7 +20,7 @@ export class CTPCommand {
         }
 
         if (pushDataModels) {
-            await this.contentService.pushForm(
+            await this.contentService.push(
                 profile,
                 this.ctpManagerFactory.createCtpDataModelManager(filename, password)
             );
