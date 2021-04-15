@@ -14,19 +14,43 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '10.17.0'
-          registry-url: https://npm.pkg.github.com/celonis
-
       - name: Yarn Install
         run: yarn install
 
       - name: Yarn Build
         run: yarn build
 
-      - name: Publish library
-        run: cd dist/ && npm publish --access public
+      - name: Move files to build
+        run: |
+          cp package.json dist/package.json
+          cp README.md dist/README.md
+          cp LICENSE dist/LICENSE
+
+      - name: Setup publish to Npm Registry
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.17.0'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Publish to Npm Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CI: true
+        run: |
+          cd dist/
+          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
+          npm config set scope "@celonis"
+          npm config list
+          npm publish --access public
+
+      - name: Setup publish to Github Registry
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.17.0'
+          registry-url: https://npm.pkg.github.com/celonis
+
+      - name: Publish to Github Registry
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -39,4 +63,3 @@ jobs:
         name: Bump patch version
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
