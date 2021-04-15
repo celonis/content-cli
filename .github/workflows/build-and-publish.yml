@@ -5,30 +5,38 @@ on:
     branches: [ master ]
     paths-ignore:
       - 'package.json'
+      - '.github/**'
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Npm install and npm build
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v1
-      with:
-        node-version: '10.17.0'
-        registry-url: https://npm.pkg.github.com/celonis
-    - name: Yarn Install
-      run: yarn install
-    - name: Yarn Build
-      run: yarn build
-    - name: Publish library
-      run: cd dist/ && npm publish --access private && cd ../
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - uses: actions/checkout@master
-      name: Checkout Master
-      with:
-        fetch-depth: '0'
-    - uses: tool3/bump@v1
-      name: Bump patch version
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '10.17.0'
+          registry-url: https://npm.pkg.github.com/celonis
+
+      - name: Yarn Install
+        run: yarn install
+
+      - name: Yarn Build
+        run: yarn build
+
+      - name: Publish library
+        run: cd dist/ && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/checkout@master
+        name: Checkout Master
+        with:
+          fetch-depth: '0'
+
+      - uses: tool3/bump@v1
+        name: Bump patch version
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 

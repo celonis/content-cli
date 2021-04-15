@@ -5,7 +5,6 @@
 npm-debug.log
 /.scannerwork
 
-
 *.scss.ngstyle.ts
 *.scss.shim.ngstyle.ts
 *.ngsummary.json
