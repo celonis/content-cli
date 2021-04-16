@@ -20,7 +20,6 @@ jobs:
           node-version: '10.17.0'
           registry-url: https://npm.pkg.github.com/celonis
           scope: '@celonis'
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Yarn Install
         run: yarn install
@@ -35,6 +34,8 @@ jobs:
           cp LICENSE dist/LICENSE
 
       - name: Publish to Github Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd dist/ && npm publish
 
       - name: Setup publish to Npm Registry
@@ -43,9 +44,10 @@ jobs:
           node-version: '10.17.0'
           registry-url: https://registry.npmjs.org/
           scope: '@celonis'
-          token: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to Npm Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
 
       - uses: actions/checkout@master
