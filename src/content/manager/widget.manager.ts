@@ -2,7 +2,7 @@ import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 
 export class WidgetManager extends BaseManager {
-    private static PACKAGE_MANAGER_BASE_URL = "/package-manager";
+    private static STUDIO_MANAGER_BASE_URL = "/studio-manager";
     private static WIDGET_API = "/api/widgets/upload";
     private static WIDGET_TENANT_INDEPENDENT_API = "/api/widgets/upload-tenant-independently";
     private static WIDGET_USER_SPECIFIC_API = "/api/widgets/upload-user";
@@ -35,7 +35,7 @@ export class WidgetManager extends BaseManager {
     }
 
     public getConfig(): ManagerConfig {
-        const baseUrl = WidgetManager.PACKAGE_MANAGER_BASE_URL;
+        const baseUrl = WidgetManager.STUDIO_MANAGER_BASE_URL;
         const widgetUrl = this.userSpecific
             ? WidgetManager.WIDGET_USER_SPECIFIC_API
             : this.tenantIndependent
