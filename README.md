@@ -55,10 +55,10 @@ npm i -g @celonis/content-cli
 
 ## Contributing
 
-We encourage public contributions! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and development process.
+We encourage public contributions! Please review [CONTRIBUTING.md](https://github.com/celonis/content-cli/blob/master/CONTRIBUTING.md) for details on our code of conduct and development process.
 
 ## License
 
 Copyright (c) 2021 Celonis SE
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see [LICENSE](https://github.com/celonis/content-cli/blob/master/LICENSE) file for details.
