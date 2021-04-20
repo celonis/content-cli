@@ -48,7 +48,7 @@ jobs:
       - name: Publish to Npm Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        run: cd dist/ && npm publish --access public
 
       - uses: actions/checkout@master
         name: Checkout Master

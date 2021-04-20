@@ -32,7 +32,7 @@ content-cli pull package -p team1.cluster1 --key my-package
 content-cli push package -p team2.cluster2 --file package_my-package.zip
 ```
 
-A more comprehensive list of Content CLI capabilities can be found on the following [documentation](DOCUMENTATION.md). 
+A more comprehensive list of Content CLI capabilities can be found on the following [documentation](https://github.com/celonis/content-cli/blob/master/DOCUMENTATION.md). 
 
 You can still explore the full capabilities of Content CLI and the list of options for the different commands by using the `-h` option in your command.
 
