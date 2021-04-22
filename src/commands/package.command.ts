@@ -6,13 +6,22 @@ export class PackageCommand {
     private packageManagerFactory = new PackageManagerFactory();
 
     public async pullPackage(profile: string, key: string, store: boolean, newKey: string): Promise<void> {
-        await this.contentService.pullFile(profile, this.packageManagerFactory.createManager(key, null, store, newKey));
+        await this.contentService.pullFile(
+            profile,
+            this.packageManagerFactory.createManager(key, null, null, store, newKey)
+        );
     }
 
-    public async pushPackage(profile: string, fileName: string, newKey: string, overwrite: boolean): Promise<void> {
+    public async pushPackage(
+        profile: string,
+        spaceId: string,
+        fileName: string,
+        newKey: string,
+        overwrite: boolean
+    ): Promise<void> {
         await this.contentService.push(
             profile,
-            this.packageManagerFactory.createManager(null, fileName, false, newKey, overwrite)
+            this.packageManagerFactory.createManager(null, spaceId, fileName, false, newKey, overwrite)
         );
     }
 

@@ -14,6 +14,7 @@ export class PackageManager extends BaseManager {
     private static EXPORT_ENDPOINT_PATH = "export";
 
     private _key: string;
+    private _spaceId: string;
     private _fileName: string;
     private _store: boolean;
     private _newKey: string;
@@ -25,6 +26,14 @@ export class PackageManager extends BaseManager {
 
     public set key(value: string) {
         this._key = value;
+    }
+
+    public get spaceId(): string {
+        return this._spaceId;
+    }
+
+    public set spaceId(value: string) {
+        this._spaceId = value;
     }
 
     public get fileName(): string {
@@ -91,26 +100,40 @@ export class PackageManager extends BaseManager {
     }
 
     private buildPushUrl(): string {
-        let pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
-        if (this.newKey) {
-            pushUrl = `${pushUrl}?newKey=${this.newKey}`;
-        }
-        if (this.overwrite) {
-            if (this.newKey) {
-                logger.error(
-                    "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
-                );
-                process.exit();
-            } else {
-                pushUrl = `${pushUrl}?overwrite=${this.overwrite}`;
-            }
-        }
-        return pushUrl;
+        this.validateOptions();
+        const pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
+        return this.getPushUrlWithParams(pushUrl);
     }
 
     private listPackages(nodes: SaveContentNode[]): void {
         nodes.forEach(node => {
             logger.info(`${node.name} - Key: "${node.key}"`);
         });
+    }
+
+    private validateOptions(): void {
+        if (this.newKey && this.overwrite) {
+            logger.error(
+                "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
+            );
+            process.exit();
+        }
+    }
+
+    private getPushUrlWithParams(pushUrl: string): string {
+        let pushUrlWithParams = pushUrl;
+        if (this.spaceId || this.newKey || this.overwrite) {
+            pushUrlWithParams = `${pushUrlWithParams}?`;
+        }
+        if (this.spaceId) {
+            pushUrlWithParams = `${pushUrlWithParams}spaceId=${this.spaceId}&`;
+        }
+        if (this.newKey) {
+            pushUrlWithParams = `${pushUrlWithParams}newKey=${this.newKey}&`;
+        }
+        if (this.overwrite) {
+            pushUrlWithParams = `${pushUrlWithParams}overwrite=${this.overwrite}`;
+        }
+        return pushUrlWithParams;
     }
 }

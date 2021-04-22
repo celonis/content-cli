@@ -7,17 +7,20 @@ import { PackageManager } from "../manager/package.manager";
 export class PackageManagerFactory {
     public createManager(
         key?: string,
+        spaceId?: string,
         fileName?: string,
         store?: boolean,
         newKey?: string,
         overwrite?: boolean
     ): PackageManager {
         const packageManager = new PackageManager();
-        packageManager.key = key;
 
         if (fileName) {
             packageManager.fileName = this.resolvePackageFilePath(fileName);
         }
+
+        packageManager.key = key;
+        packageManager.spaceId = spaceId;
         packageManager.store = store;
         packageManager.newKey = newKey;
         packageManager.overwrite = overwrite;
@@ -38,7 +41,7 @@ export class PackageManagerFactory {
                 return file.isFile();
             })
             .map(filePath => {
-                return this.createManager(null, filePath);
+                return this.createManager(null, null, filePath);
             });
     }
 
