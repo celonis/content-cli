@@ -139,13 +139,13 @@ class Push {
         program
             .command("package")
             .description("Command to push a package to Studio")
-            .option("--spaceId <spaceId>", "Id of the destination space")
             .option("-p, --profile <profile>", "Profile which you want to use to push the package")
             .option("--newKey <newKey>", "Define a new key for your package")
             .option("--overwrite", "Overwrite package and its assets")
             .requiredOption("-f, --file <file>", "The file you want to push")
+            .requiredOption("--spaceKey <spaceKey>", "The key of the destination space")
             .action(async cmd => {
-                await new PackageCommand().pushPackage(cmd.profile, cmd.spaceId, cmd.file, cmd.newKey, cmd.overwrite);
+                await new PackageCommand().pushPackage(cmd.profile, cmd.spaceKey, cmd.file, cmd.newKey, cmd.overwrite);
                 process.exit();
             });
 
@@ -157,8 +157,9 @@ class Push {
             .command("packages")
             .description("Command to push packages to Studio")
             .option("-p, --profile <profile>", "Profile which you want to use to push the packages")
+            .requiredOption("--spaceKey <spaceKey>", "The key of the destination space")
             .action(async cmd => {
-                await new PackageCommand().pushPackages(cmd.profile);
+                await new PackageCommand().pushPackages(cmd.profile, cmd.spaceKey);
                 process.exit();
             });
 

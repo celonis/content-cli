@@ -14,7 +14,7 @@ export class PackageManager extends BaseManager {
     private static EXPORT_ENDPOINT_PATH = "export";
 
     private _key: string;
-    private _spaceId: string;
+    private _spaceKey: string;
     private _fileName: string;
     private _store: boolean;
     private _newKey: string;
@@ -28,12 +28,12 @@ export class PackageManager extends BaseManager {
         this._key = value;
     }
 
-    public get spaceId(): string {
-        return this._spaceId;
+    public get spaceKey(): string {
+        return this._spaceKey;
     }
 
-    public set spaceId(value: string) {
-        this._spaceId = value;
+    public set spaceKey(value: string) {
+        this._spaceKey = value;
     }
 
     public get fileName(): string {
@@ -112,22 +112,25 @@ export class PackageManager extends BaseManager {
     }
 
     private validateOptions(): void {
+        let hasErrors: boolean;
+        if (!this.spaceKey) {
+            logger.error("You cannot push a package without specifying the space. Please try again.");
+            hasErrors = true;
+        }
         if (this.newKey && this.overwrite) {
             logger.error(
                 "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
             );
+            hasErrors = true;
+        }
+
+        if (hasErrors) {
             process.exit();
         }
     }
 
     private getPushUrlWithParams(pushUrl: string): string {
-        let pushUrlWithParams = pushUrl;
-        if (this.spaceId || this.newKey || this.overwrite) {
-            pushUrlWithParams = `${pushUrlWithParams}?`;
-        }
-        if (this.spaceId) {
-            pushUrlWithParams = `${pushUrlWithParams}spaceId=${this.spaceId}&`;
-        }
+        let pushUrlWithParams = `${pushUrl}?spaceId=${this.spaceKey}&`;
         if (this.newKey) {
             pushUrlWithParams = `${pushUrlWithParams}newKey=${this.newKey}&`;
         }

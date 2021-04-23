@@ -25,8 +25,8 @@ export class PackageCommand {
         );
     }
 
-    public async pushPackages(profile: string): Promise<void> {
-        await this.contentService.batchPush(profile, this.packageManagerFactory.createManagers());
+    public async pushPackages(profile: string, spaceKey: string): Promise<void> {
+        await this.contentService.batchPush(profile, this.packageManagerFactory.createManagers(spaceKey));
     }
 
     public async listPackages(profile: string): Promise<void> {
