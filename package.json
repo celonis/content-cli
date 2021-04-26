@@ -1,6 +1,6 @@
 {
   "name": "@celonis/content-cli",
-  "version": "0.0.51",
+  "version": "0.0.52",
   "description": "CLI Tool to help manage content in Celonis EMS",
   "main": "content-cli.js",
   "bin": {

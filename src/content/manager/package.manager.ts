@@ -130,12 +130,12 @@ export class PackageManager extends BaseManager {
     }
 
     private getPushUrlWithParams(pushUrl: string): string {
-        let pushUrlWithParams = `${pushUrl}?spaceId=${this.spaceKey}&`;
+        const pushUrlWithParams = `${pushUrl}?spaceId=${this.spaceKey}&`;
         if (this.newKey) {
-            pushUrlWithParams = `${pushUrlWithParams}newKey=${this.newKey}&`;
+            return `${pushUrlWithParams}newKey=${this.newKey}`;
         }
         if (this.overwrite) {
-            pushUrlWithParams = `${pushUrlWithParams}overwrite=${this.overwrite}`;
+            return `${pushUrlWithParams}overwrite=${this.overwrite}`;
         }
         return pushUrlWithParams;
     }
