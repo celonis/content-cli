@@ -14,14 +14,14 @@ export class PackageCommand {
 
     public async pushPackage(
         profile: string,
-        spaceId: string,
+        spaceKey: string,
         fileName: string,
         newKey: string,
         overwrite: boolean
     ): Promise<void> {
         await this.contentService.push(
             profile,
-            this.packageManagerFactory.createManager(null, spaceId, fileName, false, newKey, overwrite)
+            this.packageManagerFactory.createManager(null, spaceKey, fileName, false, newKey, overwrite)
         );
     }
 
