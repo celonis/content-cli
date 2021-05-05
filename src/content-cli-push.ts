@@ -33,13 +33,8 @@ class Push {
             .option("-a, --pushAnalysis", "Specify this option if you want to push analysis from the CTP file")
             .option("-d, --pushDataModels", "Specify this option if you want to push data models from the CTP file")
             .option(
-                "--globalPool",
-                "Specify this option along with --globalPoolName if you want to push all Data models into one newly created pool",
-                false
-            )
-            .option(
                 "--globalPoolName <globalPoolName>",
-                "Specify this option along with --globalPool to set the name of the pool to be created",
+                "Specify this option if you want to push all Data models into one newly created pool along with value to set the name of the pool to be created",
                 null
             )
             .option(
@@ -56,7 +51,6 @@ class Push {
                     cmd.password,
                     cmd.pushAnalysis,
                     cmd.pushDataModels,
-                    cmd.globalPool,
                     cmd.existingPoolId,
                     cmd.globalPoolName
                 );

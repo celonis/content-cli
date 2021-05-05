@@ -3,13 +3,11 @@ import { CtpManager } from "./ctp.manager";
 export class CtpDataModelManager extends CtpManager {
     private static BASE_URL = "/cpm-ems-migrator/migration/api/ctp";
     private readonly existingPoolId: string;
-    private readonly isGlobalPool: boolean;
     private readonly globalPoolName: string;
 
-    constructor(existingPoolId: string, isGlobalPool: boolean, globalPoolName: string) {
+    constructor(existingPoolId: string, globalPoolName: string) {
         super();
         this.existingPoolId = existingPoolId;
-        this.isGlobalPool = isGlobalPool;
         this.globalPoolName = globalPoolName;
     }
 
@@ -23,9 +21,7 @@ export class CtpDataModelManager extends CtpManager {
                 file: this.content,
                 transport: JSON.stringify({
                     password: this.password,
-                    dataSourceId: null,
-                    dataPoolId: this.existingPoolId,
-                    isGlobalPool: this.existingPoolId != null ? true : this.isGlobalPool,
+                    existingPoolId: this.existingPoolId,
                     globalPoolName: this.globalPoolName,
                 }),
             },

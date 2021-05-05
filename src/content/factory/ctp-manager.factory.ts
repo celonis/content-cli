@@ -15,11 +15,10 @@ export class CTPManagerFactory {
     public createCtpDataModelManager(
         filename: string,
         password: string,
-        isGlobalPool: boolean,
         existingPoolId: string,
         globalPoolName: string
     ): CtpManager {
-        const ctpManager = new CtpDataModelManager(existingPoolId, isGlobalPool, globalPoolName);
+        const ctpManager = new CtpDataModelManager(existingPoolId, globalPoolName);
         return this.initManager(ctpManager, filename, password);
     }
 
