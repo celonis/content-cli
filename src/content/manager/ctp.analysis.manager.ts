@@ -6,4 +6,13 @@ export class CtpAnalysisManager extends CtpManager {
     protected getUrl(): string {
         return CtpAnalysisManager.BASE_URL;
     }
+
+    public getBody(): any {
+        return {
+            formData: {
+                file: this.content,
+                password: this.password,
+            },
+        };
+    }
 }

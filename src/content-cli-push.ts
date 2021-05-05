@@ -32,6 +32,9 @@ class Push {
             .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
             .option("-a, --pushAnalysis", "Specify this option if you want to push analysis from the CTP file")
             .option("-d, --pushDataModels", "Specify this option if you want to push data models from the CTP file")
+            .option("--globalPool", "", false)
+            .option("--globalPoolName <globalPoolName>", "", null)
+            .option("--existingPoolId <existingPoolId>", "", null)
             .requiredOption("-f, --file <file>", "The .ctp file you want to push")
             .requiredOption("--password <password>", "The password used for extracting the .ctp file")
             .action(async cmd => {
@@ -40,7 +43,10 @@ class Push {
                     cmd.file,
                     cmd.password,
                     cmd.pushAnalysis,
-                    cmd.pushDataModels
+                    cmd.pushDataModels,
+                    cmd.globalPool,
+                    cmd.existingPoolId,
+                    cmd.globalPoolName
                 );
                 process.exit();
             });
