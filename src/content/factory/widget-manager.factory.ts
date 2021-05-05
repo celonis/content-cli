@@ -10,6 +10,7 @@ interface Manifest {
     name: string;
     bundle: string;
     externalResource: string;
+    version: string;
     widgets: ManifestWidget[];
 }
 
@@ -19,11 +20,16 @@ interface ManifestWidget {
 }
 
 export class WidgetManagerFactory {
-    public createManager(tenantIndependent: boolean = false, userSpecific: boolean = false): WidgetManager {
+    public createManager(
+        tenantIndependent: boolean = false,
+        userSpecific: boolean = false,
+        activate: boolean = false
+    ): WidgetManager {
         const widgetManager = new WidgetManager();
         widgetManager.content = this.readContent();
         widgetManager.tenantIndependent = tenantIndependent;
         widgetManager.userSpecific = userSpecific;
+        widgetManager.activate = activate;
         return widgetManager;
     }
 
@@ -86,6 +92,10 @@ export class WidgetManagerFactory {
 
         if (!fs.existsSync(manifest.bundle)) {
             logger.error(new FatalError("Missing bundle."));
+        }
+
+        if (!manifest.version) {
+            logger.error(new FatalError("Missing version."));
         }
 
         if (

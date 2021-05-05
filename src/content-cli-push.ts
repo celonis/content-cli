@@ -70,9 +70,15 @@ class Push {
             .option("-p, --profile <profile>", "Profile which you want to use to push the widget")
             .option("--tenantIndependent", "Upload widget tenant independently")
             .option("--userSpecific", "Upload widget only for the user in the provided api token")
+            .option("--activate", "Activate widget on upload")
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
             .action(async cmd => {
-                await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
+                await new WidgetCommand().pushWidget(
+                    cmd.profile,
+                    !!cmd.tenantIndependent,
+                    !!cmd.userSpecific,
+                    !!cmd.activate
+                );
                 process.exit();
             });
 

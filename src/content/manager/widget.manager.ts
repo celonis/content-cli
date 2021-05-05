@@ -9,6 +9,7 @@ export class WidgetManager extends BaseManager {
     private _content: any;
     private _tenantIndependent = false;
     private _userSpecific = false;
+    private _activate = false;
 
     public get content(): any {
         return this._content;
@@ -34,6 +35,14 @@ export class WidgetManager extends BaseManager {
         this._userSpecific = value;
     }
 
+    public get activate(): any {
+        return this._activate;
+    }
+
+    public set activate(value: any) {
+        this._activate = value;
+    }
+
     public getConfig(): ManagerConfig {
         const baseUrl = WidgetManager.STUDIO_MANAGER_BASE_URL;
         const widgetUrl = this.userSpecific
@@ -53,6 +62,7 @@ export class WidgetManager extends BaseManager {
         return {
             formData: {
                 file: this.content,
+                activate: String(this.activate),
             },
         };
     }
