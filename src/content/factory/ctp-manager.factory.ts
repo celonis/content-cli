@@ -7,9 +7,9 @@ import { CtpManager } from "../manager/ctp.manager";
 import { CtpDataModelManager } from "../manager/ctp.datamodel.manager";
 
 export class CTPManagerFactory {
-    public createCtpAnalysisManager(filename: string, password: string): CtpManager {
+    public createCtpAnalysisManager(filename: string, password: string, spaceKey: string): CtpManager {
         const ctpManager = new CtpAnalysisManager();
-        return this.initManager(ctpManager, filename, password);
+        return this.initManager(ctpManager, filename, password, spaceKey);
     }
 
     public createCtpDataModelManager(
@@ -22,8 +22,9 @@ export class CTPManagerFactory {
         return this.initManager(ctpManager, filename, password);
     }
 
-    private initManager(ctpManager: CtpManager, filename: string, password: string): CtpManager {
+    private initManager(ctpManager: CtpManager, filename: string, password: string, spaceKey?: string): CtpManager {
         ctpManager.password = password;
+        ctpManager.spaceKey = spaceKey;
         if (filename !== null) {
             ctpManager.content = this.readFile(filename);
         }
