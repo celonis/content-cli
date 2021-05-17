@@ -31,15 +31,6 @@ export abstract class CtpManager extends BaseManager {
         };
     }
 
-    public getBody(): any {
-        return {
-            formData: {
-                file: this.content,
-                password: this.password,
-            },
-        };
-    }
-
     protected getSerializedFileContent(data: any): string {
         return JSON.stringify(data);
     }

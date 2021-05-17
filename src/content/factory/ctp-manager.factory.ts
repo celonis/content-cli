@@ -12,8 +12,13 @@ export class CTPManagerFactory {
         return this.initManager(ctpManager, filename, password);
     }
 
-    public createCtpDataModelManager(filename: string, password: string): CtpManager {
-        const ctpManager = new CtpDataModelManager();
+    public createCtpDataModelManager(
+        filename: string,
+        password: string,
+        existingPoolId: string,
+        globalPoolName: string
+    ): CtpManager {
+        const ctpManager = new CtpDataModelManager(existingPoolId, globalPoolName);
         return this.initManager(ctpManager, filename, password);
     }
 
