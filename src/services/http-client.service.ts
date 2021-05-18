@@ -32,7 +32,7 @@ export class HttpClientService {
                     });
                     response.on("end", () => {
                         if (this.checkBadRequest(response.statusCode)) {
-                            this.handleBadRequest(response, data.toString(), reject);
+                            this.handleBadRequest(response.statusCode, data.toString(), reject);
                         } else {
                             this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
                         }
