@@ -112,19 +112,10 @@ export class PackageManager extends BaseManager {
     }
 
     private validateOptions(): void {
-        let hasErrors: boolean;
-        if (!this.spaceKey) {
-            logger.error("You cannot push a package without specifying the space. Please try again.");
-            hasErrors = true;
-        }
         if (this.newKey && this.overwrite) {
             logger.error(
                 "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
             );
-            hasErrors = true;
-        }
-
-        if (hasErrors) {
             process.exit();
         }
     }
