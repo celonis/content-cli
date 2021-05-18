@@ -42,6 +42,11 @@ class Push {
                 "Specify this option if you want to push all Data models into one already existing pool with provided ID",
                 null
             )
+            .option(
+                "-s, --spaceKey <spaceKey>",
+                "The key of the destination space where the analyses from .ctp file will be created.",
+                ""
+            )
             .requiredOption("-f, --file <file>", "The .ctp file you want to push")
             .requiredOption("--password <password>", "The password used for extracting the .ctp file")
             .action(async cmd => {
@@ -52,7 +57,8 @@ class Push {
                     cmd.pushAnalysis,
                     cmd.pushDataModels,
                     cmd.existingPoolId,
-                    cmd.globalPoolName
+                    cmd.globalPoolName,
+                    cmd.spaceKey
                 );
                 process.exit();
             });
