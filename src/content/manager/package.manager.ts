@@ -14,6 +14,7 @@ export class PackageManager extends BaseManager {
     private static EXPORT_ENDPOINT_PATH = "export";
 
     private _key: string;
+    private _spaceKey: string;
     private _fileName: string;
     private _store: boolean;
     private _newKey: string;
@@ -25,6 +26,14 @@ export class PackageManager extends BaseManager {
 
     public set key(value: string) {
         this._key = value;
+    }
+
+    public get spaceKey(): string {
+        return this._spaceKey;
+    }
+
+    public set spaceKey(value: string) {
+        this._spaceKey = value;
     }
 
     public get fileName(): string {
@@ -91,26 +100,43 @@ export class PackageManager extends BaseManager {
     }
 
     private buildPushUrl(): string {
-        let pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
-        if (this.newKey) {
-            pushUrl = `${pushUrl}?newKey=${this.newKey}`;
-        }
-        if (this.overwrite) {
-            if (this.newKey) {
-                logger.error(
-                    "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
-                );
-                process.exit();
-            } else {
-                pushUrl = `${pushUrl}?overwrite=${this.overwrite}`;
-            }
-        }
-        return pushUrl;
+        this.validateOptions();
+        const pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
+        return this.getPushUrlWithParams(pushUrl);
     }
 
     private listPackages(nodes: SaveContentNode[]): void {
         nodes.forEach(node => {
             logger.info(`${node.name} - Key: "${node.key}"`);
         });
+    }
+
+    private validateOptions(): void {
+        let hasErrors: boolean;
+        if (!this.spaceKey) {
+            logger.error("You cannot push a package without specifying the space. Please try again.");
+            hasErrors = true;
+        }
+        if (this.newKey && this.overwrite) {
+            logger.error(
+                "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
+            );
+            hasErrors = true;
+        }
+
+        if (hasErrors) {
+            process.exit();
+        }
+    }
+
+    private getPushUrlWithParams(pushUrl: string): string {
+        const pushUrlWithParams = `${pushUrl}?spaceId=${this.spaceKey}&`;
+        if (this.newKey) {
+            return `${pushUrlWithParams}newKey=${this.newKey}`;
+        }
+        if (this.overwrite) {
+            return `${pushUrlWithParams}overwrite=${this.overwrite}`;
+        }
+        return pushUrlWithParams;
     }
 }

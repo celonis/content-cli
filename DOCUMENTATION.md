@@ -41,7 +41,7 @@ in the EMS. To continue the last example, you can use the following
 command to push he previously pulled package in another team.
 
 ```
-content-cli push package -p team2.cluster2 --file package_my-package.zip
+content-cli push package --spaceKey my.space -p team2.cluster2 --file package_my-package.zip
 ```
 
 You can still explore the full capabilities of Content CLI and the 
@@ -140,7 +140,7 @@ using the following command:
 
 ```
 // Push single package
-content-cli push package --profile my-other-profile --file package_ap-operational-app.zip
+content-cli push package --spaceKey my.space --profile my-other-profile --file package_ap-operational-app.zip
 ```
 
 Additionally, you can use content-cli push packages to push all the
@@ -149,7 +149,7 @@ following example:
 
 ```
 // Pull multiple packages
-content-cli push packages --profile my-other-profile
+content-cli push packages --spaceKey my.space --profile my-other-profile
 ```
 
 #### Pull package for EMS Store

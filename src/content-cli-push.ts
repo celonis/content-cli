@@ -32,6 +32,16 @@ class Push {
             .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
             .option("-a, --pushAnalysis", "Specify this option if you want to push analysis from the CTP file")
             .option("-d, --pushDataModels", "Specify this option if you want to push data models from the CTP file")
+            .option(
+                "--globalPoolName <globalPoolName>",
+                "Specify this option if you want to push all Data models into one newly created pool along with value to set the name of the pool to be created",
+                null
+            )
+            .option(
+                "--existingPoolId <existingPoolId>",
+                "Specify this option if you want to push all Data models into one already existing pool with provided ID",
+                null
+            )
             .requiredOption("-f, --file <file>", "The .ctp file you want to push")
             .requiredOption("--password <password>", "The password used for extracting the .ctp file")
             .action(async cmd => {
@@ -40,7 +50,9 @@ class Push {
                     cmd.file,
                     cmd.password,
                     cmd.pushAnalysis,
-                    cmd.pushDataModels
+                    cmd.pushDataModels,
+                    cmd.existingPoolId,
+                    cmd.globalPoolName
                 );
                 process.exit();
             });
@@ -143,8 +155,9 @@ class Push {
             .option("--newKey <newKey>", "Define a new key for your package")
             .option("--overwrite", "Overwrite package and its assets")
             .requiredOption("-f, --file <file>", "The file you want to push")
+            .requiredOption("--spaceKey <spaceKey>", "The key of the destination space")
             .action(async cmd => {
-                await new PackageCommand().pushPackage(cmd.profile, cmd.file, cmd.newKey, cmd.overwrite);
+                await new PackageCommand().pushPackage(cmd.profile, cmd.spaceKey, cmd.file, cmd.newKey, cmd.overwrite);
                 process.exit();
             });
 
@@ -156,8 +169,9 @@ class Push {
             .command("packages")
             .description("Command to push packages to Studio")
             .option("-p, --profile <profile>", "Profile which you want to use to push the packages")
+            .requiredOption("--spaceKey <spaceKey>", "The key of the destination space")
             .action(async cmd => {
-                await new PackageCommand().pushPackages(cmd.profile);
+                await new PackageCommand().pushPackages(cmd.profile, cmd.spaceKey);
                 process.exit();
             });
 
