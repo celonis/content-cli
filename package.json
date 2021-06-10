@@ -10,7 +10,7 @@
   "license": "MIT",
   "homepage": "https://github.com/celonis/content-cli",
   "scripts": {
-    "build": "./node_modules/.bin/tsc",
+    "build": "./node_modules/.bin/tsc && cp package.json dist/package.json",
     "lint": "tslint -p ."
   },
   "dependencies": {
