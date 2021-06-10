@@ -89,8 +89,9 @@ class Pull {
             .requiredOption("--key <key>", "Key of the package you want to pull")
             .option("--store", "Pull package with store deployment metadata")
             .option("--newKey <newKey>", "Define a new key for your package")
+            .option("--draft", "Pull draft version of package")
             .action(async cmd => {
-                await new PackageCommand().pullPackage(cmd.profile, cmd.key, !!cmd.store, cmd.newKey);
+                await new PackageCommand().pullPackage(cmd.profile, cmd.key, !!cmd.store, cmd.newKey, !!cmd.draft);
                 process.exit();
             });
 
