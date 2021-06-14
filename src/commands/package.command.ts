@@ -5,10 +5,16 @@ export class PackageCommand {
     private contentService = new ContentService();
     private packageManagerFactory = new PackageManagerFactory();
 
-    public async pullPackage(profile: string, key: string, store: boolean, newKey: string): Promise<void> {
+    public async pullPackage(
+        profile: string,
+        key: string,
+        store: boolean,
+        newKey: string,
+        draft: boolean
+    ): Promise<void> {
         await this.contentService.pullFile(
             profile,
-            this.packageManagerFactory.createManager(key, null, null, store, newKey)
+            this.packageManagerFactory.createPullManager(key, store, newKey, draft)
         );
     }
 
@@ -21,12 +27,12 @@ export class PackageCommand {
     ): Promise<void> {
         await this.contentService.push(
             profile,
-            this.packageManagerFactory.createManager(null, spaceKey, fileName, false, newKey, overwrite)
+            this.packageManagerFactory.createPushManager(spaceKey, fileName, newKey, overwrite)
         );
     }
 
     public async pushPackages(profile: string, spaceKey: string): Promise<void> {
-        await this.contentService.batchPush(profile, this.packageManagerFactory.createManagers(spaceKey));
+        await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
     public async listPackages(profile: string): Promise<void> {

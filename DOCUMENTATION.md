@@ -152,6 +152,17 @@ following example:
 content-cli push packages --spaceKey my.space --profile my-other-profile
 ```
 
+#### Pull draft package
+
+By default, the `pull package` command will pull the last published version 
+of the package. You can use the ***--draft*** option to pull the draft version
+of your package, like the following example:
+
+```
+// Pull draft version of package
+content-cli pull package --profile my-profile-name --key ap-operational-app --draft
+```
+
 #### Pull package for EMS Store
 
 You can use the ***--store*** option to pull the package including the
