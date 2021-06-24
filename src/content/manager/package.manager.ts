@@ -14,10 +14,12 @@ export class PackageManager extends BaseManager {
     private static EXPORT_ENDPOINT_PATH = "export";
 
     private _key: string;
+    private _spaceKey: string;
     private _fileName: string;
     private _store: boolean;
     private _newKey: string;
     private _overwrite: boolean;
+    private _draft: boolean;
 
     public get key(): string {
         return this._key;
@@ -25,6 +27,14 @@ export class PackageManager extends BaseManager {
 
     public set key(value: string) {
         this._key = value;
+    }
+
+    public get spaceKey(): string {
+        return this._spaceKey;
+    }
+
+    public set spaceKey(value: string) {
+        this._spaceKey = value;
     }
 
     public get fileName(): string {
@@ -59,14 +69,22 @@ export class PackageManager extends BaseManager {
         this._overwrite = value;
     }
 
+    public get draft(): boolean {
+        return this._draft;
+    }
+
+    public set draft(value: boolean) {
+        this._draft = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, this.buildPushUrl()),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
-                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${this.store}${
-                    this.newKey ? `&newKey=${this.newKey}` : ""
-                }`
+                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${
+                    this.store
+                }&draft=${this.draft}${this.newKey ? `&newKey=${this.newKey}` : ""}`
             ),
             findAllUrl: this.profile.team.replace(/\/?$/, PackageManager.BASE_URL),
             exportFileName:
@@ -91,26 +109,34 @@ export class PackageManager extends BaseManager {
     }
 
     private buildPushUrl(): string {
-        let pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
-        if (this.newKey) {
-            pushUrl = `${pushUrl}?newKey=${this.newKey}`;
-        }
-        if (this.overwrite) {
-            if (this.newKey) {
-                logger.error(
-                    "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
-                );
-                process.exit();
-            } else {
-                pushUrl = `${pushUrl}?overwrite=${this.overwrite}`;
-            }
-        }
-        return pushUrl;
+        this.validateOptions();
+        const pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
+        return this.getPushUrlWithParams(pushUrl);
     }
 
     private listPackages(nodes: SaveContentNode[]): void {
         nodes.forEach(node => {
             logger.info(`${node.name} - Key: "${node.key}"`);
         });
+    }
+
+    private validateOptions(): void {
+        if (this.newKey && this.overwrite) {
+            logger.error(
+                "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
+            );
+            process.exit();
+        }
+    }
+
+    private getPushUrlWithParams(pushUrl: string): string {
+        const pushUrlWithParams = `${pushUrl}?spaceId=${this.spaceKey}&`;
+        if (this.newKey) {
+            return `${pushUrlWithParams}newKey=${this.newKey}`;
+        }
+        if (this.overwrite) {
+            return `${pushUrlWithParams}overwrite=${this.overwrite}`;
+        }
+        return pushUrlWithParams;
     }
 }

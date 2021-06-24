@@ -5,19 +5,34 @@ export class PackageCommand {
     private contentService = new ContentService();
     private packageManagerFactory = new PackageManagerFactory();
 
-    public async pullPackage(profile: string, key: string, store: boolean, newKey: string): Promise<void> {
-        await this.contentService.pullFile(profile, this.packageManagerFactory.createManager(key, null, store, newKey));
-    }
-
-    public async pushPackage(profile: string, fileName: string, newKey: string, overwrite: boolean): Promise<void> {
-        await this.contentService.push(
+    public async pullPackage(
+        profile: string,
+        key: string,
+        store: boolean,
+        newKey: string,
+        draft: boolean
+    ): Promise<void> {
+        await this.contentService.pullFile(
             profile,
-            this.packageManagerFactory.createManager(null, fileName, false, newKey, overwrite)
+            this.packageManagerFactory.createPullManager(key, store, newKey, draft)
         );
     }
 
-    public async pushPackages(profile: string): Promise<void> {
-        await this.contentService.batchPush(profile, this.packageManagerFactory.createManagers());
+    public async pushPackage(
+        profile: string,
+        spaceKey: string,
+        fileName: string,
+        newKey: string,
+        overwrite: boolean
+    ): Promise<void> {
+        await this.contentService.push(
+            profile,
+            this.packageManagerFactory.createPushManager(spaceKey, fileName, newKey, overwrite)
+        );
+    }
+
+    public async pushPackages(profile: string, spaceKey: string): Promise<void> {
+        await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
     public async listPackages(profile: string): Promise<void> {

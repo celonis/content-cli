@@ -5,27 +5,15 @@ import { FatalError, logger } from "../../util/logger";
 import { PackageManager } from "../manager/package.manager";
 
 export class PackageManagerFactory {
-    public createManager(
-        key?: string,
-        fileName?: string,
-        store?: boolean,
-        newKey?: string,
-        overwrite?: boolean
-    ): PackageManager {
-        const packageManager = new PackageManager();
-        packageManager.key = key;
-
-        if (fileName) {
-            packageManager.fileName = this.resolvePackageFilePath(fileName);
-        }
-        packageManager.store = store;
-        packageManager.newKey = newKey;
-        packageManager.overwrite = overwrite;
-
-        return packageManager;
+    public createPullManager(key: string, store?: boolean, newKey?: string, draft?: boolean): PackageManager {
+        return this.createManager(key, null, null, store, newKey, false, draft);
     }
 
-    public createManagers(): PackageManager[] {
+    public createPushManager(spaceKey: string, fileName: string, newKey?: string, overwrite?: boolean): PackageManager {
+        return this.createManager(null, spaceKey, fileName, false, newKey, overwrite, false);
+    }
+
+    public createPushManagers(spaceKey: string): PackageManager[] {
         const filePaths = fs.readdirSync(process.cwd());
 
         return filePaths
@@ -38,8 +26,33 @@ export class PackageManagerFactory {
                 return file.isFile();
             })
             .map(filePath => {
-                return this.createManager(null, filePath);
+                return this.createPushManager(spaceKey, filePath);
             });
+    }
+
+    public createManager(
+        key?: string,
+        spaceKey?: string,
+        fileName?: string,
+        store?: boolean,
+        newKey?: string,
+        overwrite?: boolean,
+        draft?: boolean
+    ): PackageManager {
+        const packageManager = new PackageManager();
+
+        if (fileName) {
+            packageManager.fileName = this.resolvePackageFilePath(fileName);
+        }
+
+        packageManager.key = key;
+        packageManager.spaceKey = spaceKey;
+        packageManager.store = store;
+        packageManager.newKey = newKey;
+        packageManager.overwrite = overwrite;
+        packageManager.draft = draft;
+
+        return packageManager;
     }
 
     private isPackageFilePath(filePath: string): boolean {

@@ -8,6 +8,7 @@
   },
   "author": "Celonis SE",
   "license": "MIT",
+  "homepage": "https://github.com/celonis/content-cli",
   "scripts": {
     "build": "./node_modules/.bin/tsc && cp package.json dist/package.json",
     "lint": "tslint -p ."
@@ -32,9 +33,6 @@
     "tslint-config-prettier": "^1.18.0",
     "tslint-consistent-codestyle": "^1.16.0",
     "typescript": "3.1.6"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/celonis"
   },
   "husky": {
     "hooks": {

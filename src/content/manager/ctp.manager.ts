@@ -4,6 +4,7 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 export abstract class CtpManager extends BaseManager {
     protected _content: any;
     protected _password: string;
+    protected _spaceKey?: string;
 
     public get content(): any {
         return this._content;
@@ -21,21 +22,20 @@ export abstract class CtpManager extends BaseManager {
         this._password = value;
     }
 
+    public get spaceKey(): string {
+        return this._spaceKey;
+    }
+
+    public set spaceKey(value: string) {
+        this._spaceKey = value;
+    }
+
     public getConfig(): ManagerConfig {
         const baseUrl = this.getUrl();
         return {
             pushUrl: this.profile.team.replace(/\/?$/, `${baseUrl}`),
             onPushSuccessMessage: (): string => {
                 return "CTP File was pushed successfully";
-            },
-        };
-    }
-
-    public getBody(): any {
-        return {
-            formData: {
-                file: this.content,
-                password: this.password,
             },
         };
     }
