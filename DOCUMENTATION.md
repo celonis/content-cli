@@ -41,7 +41,7 @@ in the EMS. To continue the last example, you can use the following
 command to push he previously pulled package in another team.
 
 ```
-content-cli push package --spaceKey my.space -p team2.cluster2 --file package_my-package.zip
+content-cli push package -p team2.cluster2 --spaceKey my-space -f package_my-package.zip
 ```
 
 You can still explore the full capabilities of Content CLI and the 
@@ -132,7 +132,7 @@ your local machine, like the following example:
 
 ```
 // Pull single package
-content-cli pull package --profile my-profile-name --key ap-operational-app
+content-cli pull package -p my-profile-name --key ap-operational-app
 ```
 
 After you have pulled your packages, you can push them into another team
@@ -140,7 +140,7 @@ using the following command:
 
 ```
 // Push single package
-content-cli push package --spaceKey my.space --profile my-other-profile --file package_ap-operational-app.zip
+content-cli push package -p my-other-profile --spaceKey my-space -f package_ap-operational-app.zip
 ```
 
 Additionally, you can use content-cli push packages to push all the
@@ -149,7 +149,7 @@ following example:
 
 ```
 // Pull multiple packages
-content-cli push packages --spaceKey my.space --profile my-other-profile
+content-cli push packages -p my-other-profile --spaceKey my-space
 ```
 
 #### Pull draft package
@@ -160,7 +160,7 @@ of your package, like the following example:
 
 ```
 // Pull draft version of package
-content-cli pull package --profile my-profile-name --key ap-operational-app --draft
+content-cli pull package -p my-profile-name --key ap-operational-app --draft
 ```
 
 #### Pull package for EMS Store
@@ -171,7 +171,7 @@ following example:
 
 ```
 // Pull package with store metadata
-content-cli pull package --profile my-profile-name --key ap-operational-app --store
+content-cli pull package -p my-profile-name --key ap-operational-app --store
 ```
 
 | Note: Pulling the package with the store metadata will only work if your package has no dependencies. |
@@ -185,7 +185,7 @@ from Studio to your local machine, and an example of it would be:
 
 ```
 // Pull single asset from package
-content-cli pull asset --profile my-profile-name --key package-test.km-test
+content-cli pull asset -p my-profile-name --key package-test.km-test
 ```
 
 After you have pulled your assets, you can push them into another
@@ -193,7 +193,7 @@ package using the following command:
 
 ```
 // Push single asset to package
-content-cli push asset --profile my-profile-name --file asset_km-test.yml --package new-package
+content-cli push asset -p my-profile-name -f asset_km-test.yml --package new-package
 ```
 
 Additionally, you can use content-cli push assets to push all the 
@@ -202,7 +202,7 @@ like the following example:
 
 ```
 // Push multiple assets to package
-content-cli push assets --profile my-profile-name --package test-package
+content-cli push assets -p my-profile-name --package test-package
 ```
 | Note: You can find the unique key of the asset/package in the action menu. |
 |----------------------------------------------------------------------------|
@@ -224,7 +224,7 @@ When you use overwrite the following is to be taken into consideration:
 
 ```
 // Overwrite a Package
-content-cli push package --profile my-profile-name --file <path-to-my-local-package> --overwrite
+content-cli push package -p my-profile-name --spaceKey my-space -f <path-to-my-local-package> --overwrite
 ```
 
 ### List all packages in Studio 
@@ -234,7 +234,7 @@ The command takes your permissions into consideration and only lists the
 packages you have access to. 
 
 ```
-content-cli list packages --profile <your-chosen-profile>
+content-cli list packages -p <your-chosen-profile>
 ```
 
 ### Asset options for Analysis
@@ -246,7 +246,7 @@ the  --asset option would be: 
 
 ```
 // Pull analysis as an asset
-content-cli pull analysis --profile my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --asset
+content-cli pull analysis -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --asset
 ```
 
 After you have pulled your workflows/analysis with the --asset option,
@@ -255,7 +255,7 @@ the same command as with pushing other assets to Studio:
 
 ```
 // Push analysis to Studio
-content-cli push asset --profile my-profile-name --file asset_73d39112-73ae-4bbe-8051-3c0f14e065ec.yaml --package my-package-key
+content-cli push asset -p my-profile-name -f asset_73d39112-73ae-4bbe-8051-3c0f14e065ec.yaml --package my-package-key
 ```
 
 | Note: Pushing analysis from Process Analytics to Studio will only work if you have used the ***--asset*** option when pulling. |
