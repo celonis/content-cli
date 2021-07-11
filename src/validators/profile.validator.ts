@@ -18,12 +18,11 @@ export class ProfileValidator {
             if (!validUrl.isUri(profile.team)) {
                 logger.error(new FatalError("The provided url is not a valid url."));
             }
-            const options = {
+            let options = {
                 headers: {
                     authorization: `Bearer ${profile.apiToken}`,
                 },
             };
-
             const url = profile.team.replace(/\/?$/, "/api/cloud");
 
             request.get(url, options, (err, res) => {
@@ -35,8 +34,15 @@ export class ProfileValidator {
                     reject();
                 }
                 if (res.statusCode >= 400 || body.teamDomain == null) {
-                    logger.error(new FatalError("The provided team or api key is wrong."));
-                    reject();
+                    options.headers.authorization = `AppKey ${profile.apiToken}`;
+                    request.get(url, options, (err, res) => {
+                        if (res.statusCode === 200) {
+                            resolve();
+                        } else {
+                            logger.error(new FatalError("The provided team or api key is wrong."));
+                            reject();
+                        }
+                    });
                 } else {
                     resolve();
                 }

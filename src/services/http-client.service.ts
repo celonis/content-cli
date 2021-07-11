@@ -5,26 +5,26 @@ import { CoreOptions, Headers, Response } from "request";
 import request = require("request");
 
 export class HttpClientService {
-    public async pushData(url: string, profile: Profile, body: object): Promise<any> {
+    public async pushData(url: string, headers: Headers, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.post(url, this.makeOptions(profile, body), (err, res) => {
+            request.post(url, this.makeOptions(headers, body), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         });
     }
 
-    public async pullData(url: string, profile: Profile): Promise<any> {
+    public async pullData(url: string, headers: Headers): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.get(url, this.makeOptions(profile, null), (err, res) => {
+            request.get(url, this.makeOptions(headers, null), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         });
     }
 
-    public async pullFileData(url: string, profile: Profile): Promise<any> {
+    public async pullFileData(url: string, headers: Headers): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request
-                .post(url, this.makeFileDownloadOptions(profile))
+                .post(url, this.makeFileDownloadOptions(headers))
                 .on("response", (response: Response) => {
                     const data: Buffer[] = [];
                     response.on("data", (chunk: Buffer) => {
@@ -42,41 +42,66 @@ export class HttpClientService {
         });
     }
 
-    public async updateData(url: string, profile: Profile, body: object): Promise<any> {
+    public async updateData(url: string, headers: Headers, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.put(url, this.makeOptions(profile, body), (err, res) => {
+            request.put(url, this.makeOptions(headers, body), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         });
     }
 
-    public async findAll(url: string, profile: Profile): Promise<any> {
+    public async findAll(url: string, headers: Headers): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.get(url, this.makeOptions(profile), (err, res) => {
+            request.get(url, this.makeOptions(headers, null), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         });
     }
 
-    private makeOptions(profile: Profile, body: object = {}): CoreOptions {
+    public async authenticate(profile: Profile): Promise<any> {
+        return new Promise<any>(resolve => {
+            const url = profile.team.replace(/\/?$/, "/api/cloud");
+            let headers = {
+                authorization: `Bearer ${profile.apiToken}`,
+                "content-type": "application/json",
+            };
+            this.checkAuthorization(url, headers)
+                .then(() => {
+                    resolve(headers);
+                })
+                .catch(() => {
+                    headers.authorization = `AppKey ${profile.apiToken}`;
+                    this.checkAuthorization(url, headers)
+                        .then(() => {
+                            resolve(headers);
+                        })
+                        .catch(() => {
+                            resolve(headers);
+                        });
+                });
+        });
+    }
+
+    private async checkAuthorization(url: string, headers: Headers): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.get(url, this.makeOptions(headers, null), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        });
+    }
+
+    private makeOptions(headers: Headers, body: object = {}): CoreOptions {
         const options = {
-            headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
+            headers: headers,
         };
 
         return Object.assign(options, body);
     }
 
-    private makeFileDownloadOptions(profile: Profile): object {
+    private makeFileDownloadOptions(headers: Headers): object {
         return {
-            headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
+            headers: headers,
             responseType: "binary",
-        };
-    }
-
-    private buildRequestHeadersWithAuthentication(apiToken: string): Headers {
-        return {
-            authorization: `Bearer ${apiToken}`,
-            "content-type": "application/json",
         };
     }
 
