@@ -74,6 +74,7 @@ export class ProfileService {
                 name: profileVariables.teamUrl,
                 team: profileVariables.teamUrl,
                 apiToken: profileVariables.apiToken,
+                authenticationType: null,
             });
         });
     }

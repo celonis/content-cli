@@ -58,20 +58,26 @@ export class HttpClientService {
         });
     }
 
-    public async authenticate(profile: Profile): Promise<any> {
+    public async buildRequestHeadersWithAuthentication(profile: Profile): Promise<any> {
         return new Promise<any>(resolve => {
             const url = profile.team.replace(/\/?$/, "/api/cloud");
             let headers = {
-                authorization: `Bearer ${profile.apiToken}`,
+                authorization: null,
                 "content-type": "application/json",
             };
-            this.checkAuthorization(url, headers)
+            if (profile.authenticationType != null) {
+                headers.authorization = `${profile.authenticationType} ${profile.apiToken}`;
+                resolve(headers);
+            } else {
+                headers.authorization = `Bearer ${profile.apiToken}`;
+            }
+            this.authenticate(url, headers)
                 .then(() => {
                     resolve(headers);
                 })
                 .catch(() => {
                     headers.authorization = `AppKey ${profile.apiToken}`;
-                    this.checkAuthorization(url, headers)
+                    this.authenticate(url, headers)
                         .then(() => {
                             resolve(headers);
                         })
@@ -82,7 +88,7 @@ export class HttpClientService {
         });
     }
 
-    private async checkAuthorization(url: string, headers: Headers): Promise<any> {
+    private async authenticate(url: string, headers: Headers): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.get(url, this.makeOptions(headers, null), (err, res) => {
                 this.handleResponse(res, resolve, reject);

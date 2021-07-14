@@ -4,8 +4,8 @@ import validUrl = require("valid-url");
 import request = require("request");
 
 export class ProfileValidator {
-    public static async validateProfile(profile: Profile): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
+    public static async validateProfile(profile: Profile): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
             if (profile.name == null) {
                 logger.error(new FatalError("The name can not be empty"));
             }
@@ -37,14 +37,14 @@ export class ProfileValidator {
                     options.headers.authorization = `AppKey ${profile.apiToken}`;
                     request.get(url, options, (err, res) => {
                         if (res.statusCode === 200) {
-                            resolve();
+                            resolve("AppKey");
                         } else {
                             logger.error(new FatalError("The provided team or api key is wrong."));
                             reject();
                         }
                     });
                 } else {
-                    resolve();
+                    resolve("Bearer");
                 }
             });
         });

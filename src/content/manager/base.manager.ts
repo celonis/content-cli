@@ -21,7 +21,7 @@ export abstract class BaseManager {
     public async pull(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .authenticate(this._profile)
+                .buildRequestHeadersWithAuthentication(this._profile)
                 .then(headers => {
                     return this.httpClientService.pullData(this.getConfig().pullUrl, headers);
                 })
@@ -45,7 +45,7 @@ export abstract class BaseManager {
     public async pullFile(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .authenticate(this._profile)
+                .buildRequestHeadersWithAuthentication(this._profile)
                 .then(headers => {
                     return this.httpClientService.pullFileData(this.getConfig().pullUrl, headers);
                 })
@@ -64,7 +64,7 @@ export abstract class BaseManager {
     public async push(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .authenticate(this._profile)
+                .buildRequestHeadersWithAuthentication(this._profile)
                 .then(headers => {
                     return this.httpClientService.pushData(this.getConfig().pushUrl, headers, this.getBody());
                 })
@@ -82,7 +82,7 @@ export abstract class BaseManager {
     public async update(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .authenticate(this._profile)
+                .buildRequestHeadersWithAuthentication(this._profile)
                 .then(headers => {
                     return this.httpClientService.updateData(this.getConfig().updateUrl, headers, this.getBody());
                 })
@@ -100,7 +100,7 @@ export abstract class BaseManager {
     public async findAll(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .authenticate(this._profile)
+                .buildRequestHeadersWithAuthentication(this._profile)
                 .then(headers => {
                     return this.httpClientService.findAll(this.getConfig().findAllUrl, headers);
                 })
