@@ -21,10 +21,7 @@ export abstract class BaseManager {
     public async pull(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .buildRequestHeadersWithAuthentication(this._profile)
-                .then(headers => {
-                    return this.httpClientService.pullData(this.getConfig().pullUrl, headers);
-                })
+                .pullData(this.getConfig().pullUrl, this._profile)
                 .then(data => {
                     try {
                         const filename = this.writeToFile(data);
@@ -45,10 +42,7 @@ export abstract class BaseManager {
     public async pullFile(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .buildRequestHeadersWithAuthentication(this._profile)
-                .then(headers => {
-                    return this.httpClientService.pullFileData(this.getConfig().pullUrl, headers);
-                })
+                .pullFileData(this.getConfig().pullUrl, this._profile)
                 .then(data => {
                     const filename = this.writeStreamToFile(data);
                     logger.info("File downloaded successfully. New filename: " + filename);
@@ -64,10 +58,7 @@ export abstract class BaseManager {
     public async push(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .buildRequestHeadersWithAuthentication(this._profile)
-                .then(headers => {
-                    return this.httpClientService.pushData(this.getConfig().pushUrl, headers, this.getBody());
-                })
+                .pushData(this.getConfig().pushUrl, this._profile, this.getBody())
                 .then(data => {
                     logger.info(this.getConfig().onPushSuccessMessage(data));
                     resolve(data);
@@ -82,10 +73,7 @@ export abstract class BaseManager {
     public async update(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .buildRequestHeadersWithAuthentication(this._profile)
-                .then(headers => {
-                    return this.httpClientService.updateData(this.getConfig().updateUrl, headers, this.getBody());
-                })
+                .updateData(this.getConfig().updateUrl, this._profile, this.getBody())
                 .then(data => {
                     logger.info(this.getConfig().onUpdateSuccessMessage());
                     resolve(data);
@@ -100,10 +88,7 @@ export abstract class BaseManager {
     public async findAll(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .buildRequestHeadersWithAuthentication(this._profile)
-                .then(headers => {
-                    return this.httpClientService.findAll(this.getConfig().findAllUrl, headers);
-                })
+                .findAll(this.getConfig().findAllUrl, this._profile)
                 .then(data => {
                     this.getConfig().onFindAll(data);
                     resolve(data);

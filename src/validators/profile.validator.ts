@@ -1,4 +1,4 @@
-import { Profile } from "../interfaces/profile.interface";
+import { AuthenticationType, Profile } from "../interfaces/profile.interface";
 import { FatalError, logger } from "../util/logger";
 import validUrl = require("valid-url");
 import request = require("request");
@@ -20,7 +20,7 @@ export class ProfileValidator {
             }
             let options = {
                 headers: {
-                    authorization: `Bearer ${profile.apiToken}`,
+                    authorization: `${AuthenticationType.BEARER} ${profile.apiToken}`,
                 },
             };
             const url = profile.team.replace(/\/?$/, "/api/cloud");
@@ -34,17 +34,17 @@ export class ProfileValidator {
                     reject();
                 }
                 if (res.statusCode >= 400 || body.teamDomain == null) {
-                    options.headers.authorization = `AppKey ${profile.apiToken}`;
+                    options.headers.authorization = `${AuthenticationType.APPKEY} ${profile.apiToken}`;
                     request.get(url, options, (err, res) => {
                         if (res.statusCode === 200) {
-                            resolve("AppKey");
+                            resolve(AuthenticationType.APPKEY);
                         } else {
                             logger.error(new FatalError("The provided team or api key is wrong."));
                             reject();
                         }
                     });
                 } else {
-                    resolve("Bearer");
+                    resolve(AuthenticationType.BEARER);
                 }
             });
         });
