@@ -2,7 +2,7 @@ export interface Profile {
     name: string;
     team: string;
     apiToken: string;
-    authenticationType: string;
+    authenticationType: AuthenticationType;
 }
 
 export type AuthenticationType = "Bearer" | "AppKey";
