@@ -1,4 +1,4 @@
-import { Profile } from "../interfaces/profile.interface";
+import { AuthenticationType, Profile } from "../interfaces/profile.interface";
 import { logger } from "../util/logger";
 import { CoreOptions, Headers, Response } from "request";
 
@@ -52,7 +52,7 @@ export class HttpClientService {
 
     public async findAll(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.get(url, this.makeOptions(profile), (err, res) => {
+            request.get(url, this.makeOptions(profile, null), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         });
@@ -60,7 +60,7 @@ export class HttpClientService {
 
     private makeOptions(profile: Profile, body: object = {}): CoreOptions {
         const options = {
-            headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
+            headers: this.buildAuthorizationHeaders(profile),
         };
 
         return Object.assign(options, body);
@@ -68,14 +68,15 @@ export class HttpClientService {
 
     private makeFileDownloadOptions(profile: Profile): object {
         return {
-            headers: this.buildRequestHeadersWithAuthentication(profile.apiToken),
+            headers: this.buildAuthorizationHeaders(profile),
             responseType: "binary",
         };
     }
 
-    private buildRequestHeadersWithAuthentication(apiToken: string): Headers {
+    private buildAuthorizationHeaders(profile: Profile): Headers {
+        const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
         return {
-            authorization: `Bearer ${apiToken}`,
+            authorization: `${authenticationType} ${profile.apiToken}`,
             "content-type": "application/json",
         };
     }

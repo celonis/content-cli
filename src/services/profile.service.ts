@@ -1,4 +1,5 @@
-import { Profile } from "../interfaces/profile.interface";
+import { AuthenticationType, Profile } from "../interfaces/profile.interface";
+import { ProfileValidator } from "../validators/profile.validator";
 import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../util/logger";
@@ -67,15 +68,16 @@ export class ProfileService {
         });
     }
 
-    private buildProfileFromEnvVariables(): Promise<Profile> {
+    private async buildProfileFromEnvVariables(): Promise<Profile> {
         const profileVariables = this.getProfileEnvVariables();
-        return new Promise<Profile>(resolve => {
-            resolve({
-                name: profileVariables.teamUrl,
-                team: profileVariables.teamUrl,
-                apiToken: profileVariables.apiToken,
-            });
-        });
+        const profile: Profile = {
+            name: profileVariables.teamUrl,
+            team: profileVariables.teamUrl,
+            apiToken: profileVariables.apiToken,
+            authenticationType: AuthenticationType.BEARER,
+        };
+        profile.authenticationType = await ProfileValidator.validateProfile(profile);
+        return profile;
     }
 
     private storeConfig(config: Config): void {
