@@ -56,21 +56,31 @@ content-cli pull package -h
 ### Using profiles
 
 As mentioned above, **Content CLI** allows creating profiles for
-different environments. A profile consists of a name, an URL to your EMS
-team and an API-KEY. Each of the above mentioned commands include
+different environments. A profile consists of a name, URL to your EMS
+team and an API token. Each of the above mentioned commands include
 a ***--profile*** flag which allows you selecting a profile by its name.
 
 Creating a profile is done by using the ***content-cli profile create***
-command. The CLI will ask for a name, an URL and an API key. If the
+command. The CLI will ask for a name, a URL and an API token. If the
 provided information is correct, it will create a profile with the
-provided data.
+provided data. After successfully creating a profile, you can view 
+your profiles by running the ***content-cli profile list*** command.
 
 | Note: Please do not use blanks in profile names |
 |-------------------------------------------------|
 
-An API Key can be created in the 'Edit Profile' section of your EMS 
-user account. By using ***content-cli profile list**, *you can see
-all of your ready-to-use profiles.
+#### API Token
+
+You can choose between two different options when asked for an API token. 
+The first option is to use an API key, which identifies the user that created 
+the key. You can generate an API key in the `Edit Profile` section of your EMS 
+user account, under `API-Keys`. The second options is to use an Application Key,
+which is treated as a new user with separate configurable permissions. You can 
+generate an Application key in the `Team Settings` section of your EMS account, 
+under `Applications`. After creating an Application, you can assign it different
+permissions based on how much power you want to give to the key owner.
+
+#### When to create profiles
 
 So let's say you have a Studio package in [https://my-team.eu-1.celonis.cloud]() 
 and you want to push the same one to [http://my-other-team.eu-1.celonis.cloud]().
