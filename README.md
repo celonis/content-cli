@@ -33,7 +33,12 @@ content-cli pull package -p interesting-package --key my-dev-profile
 **Push:** This feature allows you to push a content file to a team in the EMS. To continue the last example, you can use the following command to push he previously pulled package in another team.
 
 ```
-content-cli push package -p team2.cluster2 --spaceKey my-space -f package_my-package.zip
+content-cli push package -p {{profile-name}} --spaceKey {{space-key}} -f {{file-to-push.zip}}
+
+```
+Example, if you want to push a package from zipped file "interesting-package.zip" to you team of profile "my-dev-profile" with the space "my-cool-space", the command will look like this:
+```
+content-cli push package -p interesting-package --spaceKey my-cool-space -f interesting-package.zip
 ```
 
 A more comprehensive list of Content CLI capabilities can be found on the following [documentation](https://github.com/celonis/content-cli/blob/master/DOCUMENTATION.md). 
