@@ -23,7 +23,7 @@ content-cli profile create
 **Pull:** This feature allows you to download content from the EMS to your local machine. Let's take Studio package as an example. These can be exported in the EMS as ZIP files that contain all package assets. By using the following command using the package key and profile you have created, you will pull the ZIP file.
 
 ```
-content-cli pull package -p {{profile-name}} --key {{package-key}}
+content-cli pull package -p <profile-name> --key <package-key>
 ```
 Example, if you want to pull a package with key "interesting-package" from your profile "my-dev-profile", the command will look like this:
 ```
@@ -33,7 +33,7 @@ content-cli pull package -p interesting-package --key my-dev-profile
 **Push:** This feature allows you to push a content file to a team in the EMS. To continue the last example, you can use the following command to push he previously pulled package in another team.
 
 ```
-content-cli push package -p {{profile-name}} --spaceKey {{space-key}} -f {{file-to-push.zip}}
+content-cli push package -p <profile-name> --spaceKey <space-key> -f <file-to-push.zip>
 
 ```
 Example, if you want to push a package from zipped file "interesting-package.zip" to you team of profile "my-dev-profile" with the space "my-cool-space", the command will look like this:
