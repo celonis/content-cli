@@ -32,6 +32,9 @@ the installed version of Content CLI:
 content-cli -V
 ```
 
+To get started with using Content CLI, you can follow some examples to manage content that are available
+as part of our pycelonis examples library [here](https://github.com/celonis/pycelonis-examples/tree/main/00_manage_celonis/00_ibc_to_ibc_movers).
+
 ## About the Project
 
 Content CLI has three core functionalities:
