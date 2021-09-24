@@ -133,6 +133,22 @@ you can push.
 content-cli push --help
 ```
 
+#### Push .CTP files to the EMS
+
+_This functionality supports .CTP files generated on a cpm4 instance version 4.6+._ 
+
+By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the EMS, like the following examples:
+
+```
+// Push the analysis extracted from the .CTP file
+content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushAnalysis
+```
+
+```
+// Push the data models extracted from the .CTP file 
+content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
+```
+
 ## Using Content CLI inside Studio
 
 ### Pull/Push packages from/to Studio
