@@ -153,8 +153,9 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 
 ### Pull/Push packages from/to Studio
 
-By using content-cli pull package, you can pull packages from Studio to
-your local machine, like the following example:
+By using content-cli pull package, you can pull the published version of packages from Studio to
+your local machine (You can use the ***--draft*** option to pull the draft version
+of your package, see example below), like the following example:
 
 ```
 // Pull single package
