@@ -29,9 +29,9 @@ export class WidgetSourcemapsManager extends BaseManager {
 
             exec(commandLines.join(" "), (error, stdout) => {
                 if (error) {
-                    logger.error(error);
+                    logger.error(new GracefulError(error.message));
                 } else {
-                    logger.info(stdout);
+                    logger.info(new GracefulError(stdout));
                 }
 
                 return resolve(error || stdout);

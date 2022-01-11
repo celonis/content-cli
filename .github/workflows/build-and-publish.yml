@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node with Github Registry
         uses: actions/setup-node@v1
         with:
-          node-version: '10.17.0'
+          node-version: '16'
           registry-url: https://npm.pkg.github.com/celonis
           scope: '@celonis'
 
@@ -40,7 +40,7 @@ jobs:
       - name: Setup publish to Npm Registry
         uses: actions/setup-node@v1
         with:
-          node-version: '10.17.0'
+          node-version: '16'
           registry-url: https://registry.npmjs.org/
           scope: '@celonis'
 
