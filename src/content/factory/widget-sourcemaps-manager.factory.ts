@@ -6,7 +6,7 @@ import { WidgetManagerFactory } from "./widget-manager.factory";
 export class WidgetSourcemapsManagerFactory {
     private widgetManagerFactory = new WidgetManagerFactory();
 
-    public createManager(tenantIndependent: boolean = false, userSpecific: boolean = false): WidgetSourcemapsManager {
+    public createManager(): WidgetSourcemapsManager {
         const widgetSourcemapsManager = new WidgetSourcemapsManager();
         const manifest = this.widgetManagerFactory.fetchManifest();
 

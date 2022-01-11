@@ -5,10 +5,7 @@ export class WidgetSourcemapsCommand {
     private contentService = new ContentService();
     private widgetManagerFactory = new WidgetSourcemapsManagerFactory();
 
-    public async pushWidget(profile: string, tenantIndependent: boolean, userSpecific: boolean): Promise<void> {
-        await this.contentService.push(
-            profile,
-            this.widgetManagerFactory.createManager(tenantIndependent, userSpecific)
-        );
+    public async pushSourceMaps(profile: string): Promise<void> {
+        await this.contentService.push(profile, this.widgetManagerFactory.createManager());
     }
 }

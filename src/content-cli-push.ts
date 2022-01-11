@@ -91,13 +91,13 @@ class Push {
             .option("--tenantIndependent", "Upload widget tenant independently")
             .option("--userSpecific", "Upload widget only for the user in the provided api token")
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
+            .option("--uploadSourcemaps", "Upload sourcemaps to Datadog RUM", false)
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
-                await new WidgetSourcemapsCommand().pushWidget(
-                    cmd.profile,
-                    !!cmd.tenantIndependent,
-                    !!cmd.userSpecific
-                );
+
+                if (cmd.uploadSourcemaps) {
+                    await new WidgetSourcemapsCommand().pushSourceMaps(cmd.profile);
+                }
 
                 process.exit();
             });
