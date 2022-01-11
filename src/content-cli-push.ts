@@ -97,12 +97,12 @@ class Push {
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
 
+                const zipFileName = path.resolve(process.cwd(), "output.zip");
+                fs.unlinkSync(zipFileName);
+
                 if (cmd.uploadSourcemaps) {
                     await new WidgetSourcemapsCommand().pushSourceMaps(cmd.profile);
                 }
-
-                const zipFileName = path.resolve(process.cwd(), "output.zip");
-                fs.unlinkSync(zipFileName);
 
                 process.exit();
             });
