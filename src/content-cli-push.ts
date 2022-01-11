@@ -7,6 +7,8 @@ import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
 
 import commander = require("commander");
+import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
+
 type CommanderStatic = commander.CommanderStatic;
 
 class Push {
@@ -91,6 +93,12 @@ class Push {
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
+                await new WidgetSourcemapsCommand().pushWidget(
+                    cmd.profile,
+                    !!cmd.tenantIndependent,
+                    !!cmd.userSpecific
+                );
+
                 process.exit();
             });
 

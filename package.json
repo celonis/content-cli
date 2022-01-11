@@ -14,6 +14,7 @@
     "lint": "tslint -p ."
   },
   "dependencies": {
+    "@datadog/datadog-ci": "^0.17.12",
     "adm-zip": "^0.4.14",
     "commander": "^6.0.0",
     "request": "^2.88.0",
@@ -24,6 +25,7 @@
     "yaml": "^1.7.2"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.4.34",
     "@types/node": "~8.9.4",
     "@types/request": "~2.48.1",
     "husky": "^4.0.3",

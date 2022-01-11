@@ -3,12 +3,13 @@ import * as path from "path";
 import { FatalError, logger } from "../../util/logger";
 import * as YAML from "yaml";
 import { WidgetManager } from "../manager/widget.manager";
-import AdmZip = require("adm-zip");
+import * as AdmZip from "adm-zip";
 
 interface Manifest {
     key: string;
     name: string;
     bundle: string;
+    version: string;
     externalResource: string;
     widgets: ManifestWidget[];
 }
@@ -38,24 +39,14 @@ export class WidgetManagerFactory {
 
         const zip = new AdmZip();
         const zipFileName = path.resolve(process.cwd(), "output.zip");
-
-        if (fs.existsSync(path.resolve(process.cwd(), "assets"))) {
-            zip.addLocalFolder(path.resolve(process.cwd(), "assets"), "assets");
-        }
-
-        if (fs.existsSync(path.resolve(process.cwd(), "manifest.yaml"))) {
-            zip.addLocalFile(path.resolve(process.cwd(), "manifest.yaml"));
-        } else {
-            zip.addLocalFile(path.resolve(process.cwd(), "manifest.yml"));
-        }
-        zip.addLocalFile(path.resolve(process.cwd(), manifest.bundle));
+        zip.addLocalFolder(path.resolve(process.cwd()));
         zip.writeZip(zipFileName);
         const stream = fs.createReadStream(path.resolve(process.cwd(), "output.zip"));
         fs.unlinkSync(zipFileName);
         return stream;
     }
 
-    private fetchManifest(): Manifest {
+    public fetchManifest(): Manifest {
         if (fs.existsSync(path.resolve(process.cwd(), "manifest.yaml"))) {
             return YAML.parse(fs.readFileSync(path.resolve(process.cwd(), "manifest.yaml"), { encoding: "utf-8" }));
         }
@@ -67,17 +58,13 @@ export class WidgetManagerFactory {
         return null;
     }
 
-    private validateManifest(manifest: Manifest): void {
+    public validateManifest(manifest: Manifest): void {
         if (!manifest.bundle) {
             logger.error(new FatalError("Missing 'bundle' attribute."));
         }
 
         if (!manifest.name) {
             logger.error(new FatalError("Missing 'name' attribute."));
-        }
-
-        if (!manifest.key) {
-            logger.error(new FatalError("Missing 'key' attribute."));
         }
 
         if (!manifest.key) {
