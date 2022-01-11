@@ -1,5 +1,5 @@
 import { exec } from "child_process";
-import { logger } from "../../util/logger";
+import { GracefulError, logger } from "../../util/logger";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { BaseManager } from "./base.manager";
 
@@ -14,8 +14,10 @@ export class WidgetSourcemapsManager extends BaseManager {
 
     private async pushWidgetSourcemaps(sourcemapsPath: string, distPathPostfix: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            if (!process.env.DATADOG_SITE || !process.env.DATADOG_API_KEY) {
-                return resolve(null);
+            if (!process.env.DATADOG_SITE) {
+                logger.error(new GracefulError("Missing DATADOG_SITE"));
+            } else if (!process.env.DATADOG_API_KEY) {
+                logger.error(new GracefulError("Missing DATADOG_API_KEY"));
             }
 
             const commandLines = [
