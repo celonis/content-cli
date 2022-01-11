@@ -102,7 +102,7 @@ export class ProfileService {
     }
 
     public getAllFilesInDirectory(): string[] {
-        let fileNames: [] = [];
+        let fileNames: string[] = [];
         try {
             if (fs.existsSync(this.profileContainerPath)) {
                 fileNames = fs

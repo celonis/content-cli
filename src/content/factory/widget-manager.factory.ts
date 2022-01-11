@@ -41,9 +41,7 @@ export class WidgetManagerFactory {
         const zipFileName = path.resolve(process.cwd(), "output.zip");
         zip.addLocalFolder(path.resolve(process.cwd()));
         zip.writeZip(zipFileName);
-        const stream = fs.createReadStream(path.resolve(process.cwd(), "output.zip"));
-        fs.unlinkSync(zipFileName);
-        return stream;
+        return fs.createReadStream(path.resolve(process.cwd(), "output.zip"));
     }
 
     public fetchManifest(): Manifest {

@@ -1,3 +1,7 @@
+import * as commander from "commander";
+import * as fs from "fs";
+import * as path from "path";
+
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { WidgetCommand } from "./commands/widget.command";
@@ -5,8 +9,6 @@ import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
-
-import commander = require("commander");
 import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
 
 type CommanderStatic = commander.CommanderStatic;
@@ -98,6 +100,9 @@ class Push {
                 if (cmd.uploadSourcemaps) {
                     await new WidgetSourcemapsCommand().pushSourceMaps(cmd.profile);
                 }
+
+                const zipFileName = path.resolve(process.cwd(), "output.zip");
+                fs.unlinkSync(zipFileName);
 
                 process.exit();
             });
