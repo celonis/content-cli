@@ -3,9 +3,9 @@ import { WidgetSourcemapsManagerFactory } from "../content/factory/widget-source
 
 export class WidgetSourcemapsCommand {
     private contentService = new ContentService();
-    private widgetManagerFactory = new WidgetSourcemapsManagerFactory();
+    private widgetSourcemapsFactory = new WidgetSourcemapsManagerFactory();
 
     public async pushSourceMaps(profile: string): Promise<void> {
-        await this.contentService.push(profile, this.widgetManagerFactory.createManager());
+        await this.contentService.push(profile, this.widgetSourcemapsFactory.createManager());
     }
 }
