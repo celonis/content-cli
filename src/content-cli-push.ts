@@ -93,17 +93,22 @@ class Push {
             .option("--tenantIndependent", "Upload widget tenant independently")
             .option("--userSpecific", "Upload widget only for the user in the provided api token")
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
-            .option("--uploadSourcemaps", "Upload sourcemaps to Datadog RUM", false)
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
-
                 const zipFileName = path.resolve(process.cwd(), "output.zip");
                 fs.unlinkSync(zipFileName);
+                process.exit();
+            });
 
-                if (cmd.uploadSourcemaps) {
-                    await new WidgetSourcemapsCommand().pushSourceMaps(cmd.profile);
-                }
+        return program;
+    }
 
+    public static widgetSourcemaps(program: CommanderStatic): CommanderStatic {
+        program
+            .command("widget-sourcemaps")
+            .description("Command to upload sourcemaps to Datadog RUM")
+            .action(async () => {
+                await new WidgetSourcemapsCommand().pushSourceMaps();
                 process.exit();
             });
 
@@ -208,6 +213,7 @@ Push.asset(commander);
 Push.assets(commander);
 Push.package(commander);
 Push.packages(commander);
+Push.widgetSourcemaps(commander);
 
 commander.parse(process.argv);
 
