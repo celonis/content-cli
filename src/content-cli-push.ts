@@ -1,3 +1,7 @@
+import * as commander from "commander";
+import * as fs from "fs";
+import * as path from "path";
+
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { WidgetCommand } from "./commands/widget.command";
@@ -5,8 +9,8 @@ import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
+import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
 
-import commander = require("commander");
 type CommanderStatic = commander.CommanderStatic;
 
 class Push {
@@ -91,6 +95,20 @@ class Push {
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
+                const zipFileName = path.resolve(process.cwd(), "output.zip");
+                fs.unlinkSync(zipFileName);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static widgetSourcemaps(program: CommanderStatic): CommanderStatic {
+        program
+            .command("widget-sourcemaps")
+            .description("Command to upload sourcemaps to Datadog RUM")
+            .action(async () => {
+                await new WidgetSourcemapsCommand().pushSourceMaps();
                 process.exit();
             });
 
@@ -195,6 +213,7 @@ Push.asset(commander);
 Push.assets(commander);
 Push.package(commander);
 Push.packages(commander);
+Push.widgetSourcemaps(commander);
 
 commander.parse(process.argv);
 
