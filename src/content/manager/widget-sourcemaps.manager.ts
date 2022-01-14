@@ -21,7 +21,9 @@ export class WidgetSourcemapsManager extends BaseManager {
             }
 
             const commandLines = [
-                `datadog-ci sourcemaps upload ${this.distPath}/${distPathPostfix}`,
+                `node ${require.resolve("@datadog/datadog-ci/dist/cli.js")} sourcemaps upload ${
+                    this.distPath
+                }/${distPathPostfix}`,
                 `--service=${this.service}`,
                 `--release-version=${this.releaseVersion}`,
                 `--minified-path-prefix=/package-manager/${sourcemapsPath}`,
