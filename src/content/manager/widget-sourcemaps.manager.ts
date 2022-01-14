@@ -20,10 +20,9 @@ export class WidgetSourcemapsManager extends BaseManager {
                 logger.error(new GracefulError("Missing DATADOG_API_KEY"));
             }
 
+            const datadogCiPath = require.resolve("@datadog/datadog-ci/dist/cli.js");
             const commandLines = [
-                `node ${require.resolve("@datadog/datadog-ci/dist/cli.js")} sourcemaps upload ${
-                    this.distPath
-                }/${distPathPostfix}`,
+                `node ${datadogCiPath} sourcemaps upload ${this.distPath}/${distPathPostfix}`,
                 `--service=${this.service}`,
                 `--release-version=${this.releaseVersion}`,
                 `--minified-path-prefix=/package-manager/${sourcemapsPath}`,
