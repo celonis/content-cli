@@ -22,10 +22,10 @@ export class WidgetSourcemapsManager extends BaseManager {
 
             const datadogCiPath = require.resolve("@datadog/datadog-ci/dist/cli.js");
             const commandLines = [
-                `node ${datadogCiPath} sourcemaps upload ${this.distPath}/${distPathPostfix}`,
-                `--service=${this.service}`,
-                `--release-version=${this.releaseVersion}`,
-                `--minified-path-prefix=/package-manager/${sourcemapsPath}`,
+                `node ${datadogCiPath} sourcemaps upload .`,
+                `--service=package-manager`,
+                `--release-version=1.0.0`,
+                `--minified-path-prefix=/package-manager/`,
             ];
 
             exec(commandLines.join(" "), (error, stdout) => {
