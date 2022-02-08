@@ -28,7 +28,8 @@ export class WidgetSourcemapsManager extends BaseManager {
                 `--minified-path-prefix=/package-manager/`,
             ];
 
-            exec(commandLines.join(" "), (error, stdout) => {
+            const datadogCommandLine = commandLines.join(" ");
+            exec(datadogCommandLine, (error, stdout) => {
                 if (error) {
                     logger.error(new GracefulError(error.message));
                 } else {
