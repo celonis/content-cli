@@ -34,7 +34,7 @@ jobs:
 
       - name: Publish to Github Registry
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.CELOBOT_GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd dist/ && npm publish
 
       - name: Setup publish to Npm Registry
@@ -57,4 +57,4 @@ jobs:
       - uses: tool3/bump@v1
         name: Bump patch version
         with:
-          github_token: ${{ secrets.CELOBOT_GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
