@@ -112,3 +112,4 @@ if (!process.argv.slice(2).length) {
     commander.outputHelp();
     process.exit(1);
 }
+
