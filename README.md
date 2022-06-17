@@ -56,7 +56,7 @@ content-cli pull package -p <profile-name> --key <package-key>
 ```
 Example, if you want to pull a package with key "interesting-package" from your profile "my-dev-profile", the command will look like this:
 ```
-content-cli pull package -p interesting-package --key my-dev-profile
+content-cli pull package -p my-dev-profile --key interesting-package
 ```
 
 **Push:** This feature allows you to push a content file to a team in the EMS. To continue the last example, 
@@ -68,7 +68,7 @@ content-cli push package -p <profile-name> --spaceKey <space-key> -f <file-to-pu
 ```
 Example, if you want to push a package from zipped file "interesting-package.zip" to you team of profile "my-dev-profile" with the space "my-cool-space", the command will look like this:
 ```
-content-cli push package -p interesting-package --spaceKey my-cool-space -f interesting-package.zip
+content-cli push package -p my-dev-profile --spaceKey my-cool-space -f interesting-package.zip
 ```
 
 A more comprehensive list of Content CLI capabilities can be found on the following 
