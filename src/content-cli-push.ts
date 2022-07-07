@@ -10,6 +10,8 @@ import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
 import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
+import { execSync } from "child_process";
+import { GracefulError, logger } from "./util/logger";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -95,6 +97,19 @@ class Push {
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
+
+                if (process.env.AWS_ACCESS_KEY_ID_CDN && process.env.AWS_SECRET_ACCESS_KEY_CDN) {
+                    try {
+                        const dir = path.resolve(process.cwd());
+                        const pushToS3stdout = execSync(
+                            `aws s3 cp ${dir} s3://celonis-static-origin/static/package-manager/ --recursive --exclude="*.map" --exclude="*.yaml" --profile default`
+                        ).toString("utf-8");
+                        logger.info(pushToS3stdout);
+                    } catch (error) {
+                        logger.error(new GracefulError(error.stderr?.toString() || error.message));
+                    }
+                }
+
                 const zipFileName = path.resolve(process.cwd(), "output.zip");
                 fs.unlinkSync(zipFileName);
                 process.exit();
