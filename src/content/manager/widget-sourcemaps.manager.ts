@@ -1,4 +1,4 @@
-import { exec } from "child_process";
+import { exec, execSync } from "child_process";
 import { GracefulError, logger } from "../../util/logger";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { BaseManager } from "./base.manager";
@@ -25,15 +25,30 @@ export class WidgetSourcemapsManager extends BaseManager {
                 `node ${datadogCiPath} sourcemaps upload .`,
                 `--service=package-manager`,
                 `--release-version=1.0.0`,
-                `--minified-path-prefix=/package-manager/`,
+                "--disable-git",
             ];
 
-            const datadogCommandLine = commandLines.join(" ");
+            const datadogCommandLine = [...commandLines, "--minified-path-prefix=/package-manager/"].join(" ");
+            console.log(datadogCommandLine);
             exec(datadogCommandLine, (error, stdout) => {
                 if (error) {
                     logger.error(new GracefulError(error.message));
                 } else {
                     logger.info(new GracefulError(stdout));
+                }
+
+                if (process.env.AWS_ACCESS_KEY_ID_CDN && process.env.AWS_SECRET_ACCESS_KEY_CDN) {
+                    try {
+                        const uploadSourcemapsStdout = execSync(
+                            [
+                                ...commandLines,
+                                `--minified-path-prefix=https://static.celonis.cloud/static/package-manager/`,
+                            ].join(" ")
+                        );
+                        logger.info(uploadSourcemapsStdout);
+                    } catch (error) {
+                        logger.error(new GracefulError(error.stderr?.toString() || error.message));
+                    }
                 }
 
                 return resolve(error || stdout);
