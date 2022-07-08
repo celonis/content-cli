@@ -29,7 +29,6 @@ export class WidgetSourcemapsManager extends BaseManager {
             ];
 
             const datadogCommandLine = [...commandLines, "--minified-path-prefix=/package-manager/"].join(" ");
-            console.log(datadogCommandLine);
             exec(datadogCommandLine, (error, stdout) => {
                 if (error) {
                     logger.error(new GracefulError(error.message));
