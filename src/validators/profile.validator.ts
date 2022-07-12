@@ -3,6 +3,10 @@ import { FatalError, logger } from "../util/logger";
 import validUrl = require("valid-url");
 import request = require("request");
 
+interface CloudResponse {
+    domain: string;
+}
+
 export class ProfileValidator {
     public static async validateProfile(profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
@@ -18,25 +22,20 @@ export class ProfileValidator {
             if (!validUrl.isUri(profile.team)) {
                 logger.error(new FatalError("The provided url is not a valid url."));
             }
-            let options = {
+            const options = {
                 headers: {
                     authorization: `${AuthenticationType.BEARER} ${profile.apiToken}`,
                 },
             };
-            const url = profile.team.replace(/\/?$/, "/api/cloud");
+            const url = profile.team.replace(/\/?$/, "/api/cloud/team");
 
             request.get(url, options, (err, res) => {
-                let body;
-                try {
-                    body = JSON.parse(res.body);
-                } catch (e) {
-                    logger.error(new FatalError("The provided team or api key is wrong."));
-                    reject();
-                }
-                if (res.statusCode >= 400 || body.teamDomain == null) {
+                let body = this.parseBody(res.body);
+                if (res.statusCode >= 400 || !body?.domain) {
                     options.headers.authorization = `${AuthenticationType.APPKEY} ${profile.apiToken}`;
                     request.get(url, options, (err, res) => {
-                        if (res.statusCode === 200) {
+                        body = this.parseBody(res.body);
+                        if (res.statusCode === 200 && body?.domain) {
                             resolve(AuthenticationType.APPKEY);
                         } else {
                             logger.error(new FatalError("The provided team or api key is wrong."));
@@ -48,5 +47,12 @@ export class ProfileValidator {
                 }
             });
         });
+    }
+
+    private static parseBody(responseBody: string): CloudResponse {
+        try {
+            return JSON.parse(responseBody);
+            // tslint:disable-next-line:no-empty
+        } catch (ignored) {}
     }
 }
