@@ -1,6 +1,10 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
-import { SaveContentNode } from "../../interfaces/save-content-node.interface";
+import {
+    AssetMetadataTransport,
+    SaveContentNode,
+    SaveContentNodeWithHiddenField,
+} from "../../interfaces/save-content-node.interface";
 import * as YAML from "yaml";
 
 YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
@@ -63,9 +67,14 @@ export class AssetManager extends BaseManager {
     }
 
     private toNodeTransport(): SaveContentNode {
-        const asset = YAML.parse(this.content) as SaveContentNode;
+        const asset = YAML.parse(this.content) as SaveContentNodeWithHiddenField;
         asset.rootNodeKey = this.packageKey;
-        return asset;
+        if (asset.hiddenInPublishedApps) {
+            const assetMetadataTransport = new AssetMetadataTransport();
+            assetMetadataTransport.hidden = true;
+            asset.assetMetadataTransport = assetMetadataTransport;
+        }
+        return asset as SaveContentNode;
     }
 
     protected getSerializedFileContent(data: any): string {
