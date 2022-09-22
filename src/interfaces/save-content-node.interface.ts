@@ -5,11 +5,7 @@ export interface SaveContentNode {
     nodeType: string;
     assetType: string;
     serializedContent: string;
-    assetMetadataTransport: AssetMetadataTransport;
-}
-
-export interface SaveContentNodeWithHiddenField extends SaveContentNode {
-    hiddenInPublishedApps: boolean;
+    extraMetadata: AssetMetadataTransport;
 }
 
 export class AssetMetadataTransport {
