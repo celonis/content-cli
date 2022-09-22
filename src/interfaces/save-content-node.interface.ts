@@ -5,7 +5,7 @@ export interface SaveContentNode {
     nodeType: string;
     assetType: string;
     serializedContent: string;
-    extraMetadata: AssetMetadataTransport;
+    assetMetadataTransport: AssetMetadataTransport;
 }
 
 export class AssetMetadataTransport {
