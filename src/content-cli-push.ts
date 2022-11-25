@@ -1,3 +1,7 @@
+import * as commander from "commander";
+import * as fs from "fs";
+import * as path from "path";
+
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { WidgetCommand } from "./commands/widget.command";
@@ -5,8 +9,10 @@ import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
+import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
+import { execSync } from "child_process";
+import { GracefulError, logger } from "./util/logger";
 
-import commander = require("commander");
 type CommanderStatic = commander.CommanderStatic;
 
 class Push {
@@ -42,6 +48,11 @@ class Push {
                 "Specify this option if you want to push all Data models into one already existing pool with provided ID",
                 null
             )
+            .option(
+                "-s, --spaceKey <spaceKey>",
+                "The key of the destination space where the analyses from .ctp file will be created.",
+                ""
+            )
             .requiredOption("-f, --file <file>", "The .ctp file you want to push")
             .requiredOption("--password <password>", "The password used for extracting the .ctp file")
             .action(async cmd => {
@@ -52,7 +63,8 @@ class Push {
                     cmd.pushAnalysis,
                     cmd.pushDataModels,
                     cmd.existingPoolId,
-                    cmd.globalPoolName
+                    cmd.globalPoolName,
+                    cmd.spaceKey
                 );
                 process.exit();
             });
@@ -85,6 +97,33 @@ class Push {
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
             .action(async cmd => {
                 await new WidgetCommand().pushWidget(cmd.profile, !!cmd.tenantIndependent, !!cmd.userSpecific);
+
+                if (process.env.AWS_ACCESS_KEY_ID_CDN && process.env.AWS_SECRET_ACCESS_KEY_CDN) {
+                    try {
+                        const dir = path.resolve(process.cwd());
+                        const pushToS3stdout = execSync(
+                            `aws s3 cp ${dir} s3://celonis-static-origin/static/package-manager/ --recursive --exclude="*.map" --exclude="*.yaml" --profile default`
+                        ).toString("utf-8");
+                        logger.info(pushToS3stdout);
+                    } catch (error) {
+                        logger.error(new GracefulError(error.stderr?.toString() || error.message));
+                    }
+                }
+
+                const zipFileName = path.resolve(process.cwd(), "output.zip");
+                fs.unlinkSync(zipFileName);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static widgetSourcemaps(program: CommanderStatic): CommanderStatic {
+        program
+            .command("widget-sourcemaps")
+            .description("Command to upload sourcemaps to Datadog RUM")
+            .action(async () => {
+                await new WidgetSourcemapsCommand().pushSourceMaps();
                 process.exit();
             });
 
@@ -189,6 +228,7 @@ Push.asset(commander);
 Push.assets(commander);
 Push.package(commander);
 Push.packages(commander);
+Push.widgetSourcemaps(commander);
 
 commander.parse(process.argv);
 

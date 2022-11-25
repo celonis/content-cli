@@ -41,7 +41,7 @@ in the EMS. To continue the last example, you can use the following
 command to push he previously pulled package in another team.
 
 ```
-content-cli push package --spaceKey my.space -p team2.cluster2 --file package_my-package.zip
+content-cli push package -p team2.cluster2 --spaceKey my-space -f package_my-package.zip
 ```
 
 You can still explore the full capabilities of Content CLI and the 
@@ -56,21 +56,31 @@ content-cli pull package -h
 ### Using profiles
 
 As mentioned above, **Content CLI** allows creating profiles for
-different environments. A profile consists of a name, an URL to your EMS
-team and an API-KEY. Each of the above mentioned commands include
+different environments. A profile consists of a name, URL to your EMS
+team and an API token. Each of the above mentioned commands include
 a ***--profile*** flag which allows you selecting a profile by its name.
 
 Creating a profile is done by using the ***content-cli profile create***
-command. The CLI will ask for a name, an URL and an API key. If the
+command. The CLI will ask for a name, a URL and an API token. If the
 provided information is correct, it will create a profile with the
-provided data.
+provided data. After successfully creating a profile, you can view 
+your profiles by running the ***content-cli profile list*** command.
 
 | Note: Please do not use blanks in profile names |
 |-------------------------------------------------|
 
-An API Key can be created in the 'Edit Profile' section of your EMS 
-user account. By using ***content-cli profile list**, *you can see
-all of your ready-to-use profiles.
+#### API Token
+
+You can choose between two different options when asked for an API token. 
+The first option is to use an API key, which identifies the user that created 
+the key. You can generate an API key in the `Edit Profile` section of your EMS 
+user account, under `API-Keys`. The second options is to use an Application Key,
+which is treated as a new user with separate configurable permissions. You can 
+generate an Application key in the `Team Settings` section of your EMS account, 
+under `Applications`. After creating an Application, you can assign it different
+permissions based on how much power you want to give to the key owner.
+
+#### When to create profiles
 
 So let's say you have a Studio package in [https://my-team.eu-1.celonis.cloud]() 
 and you want to push the same one to [http://my-other-team.eu-1.celonis.cloud]().
@@ -123,16 +133,33 @@ you can push.
 content-cli push --help
 ```
 
+#### Push .CTP files to the EMS
+
+_This functionality supports .CTP files generated on a cpm4 instance version 4.6+._ 
+
+By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the EMS, like the following examples:
+
+```
+// Push the analysis extracted from the .CTP file
+content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushAnalysis
+```
+
+```
+// Push the data models extracted from the .CTP file 
+content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
+```
+
 ## Using Content CLI inside Studio
 
 ### Pull/Push packages from/to Studio
 
-By using content-cli pull package, you can pull packages from Studio to
-your local machine, like the following example:
+By using content-cli pull package, you can pull the published version of packages from Studio to
+your local machine (You can use the ***--draft*** option to pull the draft version
+of your package, see example below), like the following example:
 
 ```
 // Pull single package
-content-cli pull package --profile my-profile-name --key ap-operational-app
+content-cli pull package -p my-profile-name --key ap-operational-app
 ```
 
 After you have pulled your packages, you can push them into another team
@@ -140,7 +167,7 @@ using the following command:
 
 ```
 // Push single package
-content-cli push package --spaceKey my.space --profile my-other-profile --file package_ap-operational-app.zip
+content-cli push package -p my-other-profile --spaceKey my-space -f package_ap-operational-app.zip
 ```
 
 Additionally, you can use content-cli push packages to push all the
@@ -149,7 +176,18 @@ following example:
 
 ```
 // Pull multiple packages
-content-cli push packages --spaceKey my.space --profile my-other-profile
+content-cli push packages -p my-other-profile --spaceKey my-space
+```
+
+#### Pull draft package
+
+By default, the `pull package` command will pull the last published version 
+of the package. You can use the ***--draft*** option to pull the draft version
+of your package, like the following example:
+
+```
+// Pull draft version of package
+content-cli pull package -p my-profile-name --key ap-operational-app --draft
 ```
 
 #### Pull package for EMS Store
@@ -160,7 +198,7 @@ following example:
 
 ```
 // Pull package with store metadata
-content-cli pull package --profile my-profile-name --key ap-operational-app --store
+content-cli pull package -p my-profile-name --key ap-operational-app --store
 ```
 
 | Note: Pulling the package with the store metadata will only work if your package has no dependencies. |
@@ -174,7 +212,7 @@ from Studio to your local machine, and an example of it would be:
 
 ```
 // Pull single asset from package
-content-cli pull asset --profile my-profile-name --key package-test.km-test
+content-cli pull asset -p my-profile-name --key package-test.km-test
 ```
 
 After you have pulled your assets, you can push them into another
@@ -182,7 +220,7 @@ package using the following command:
 
 ```
 // Push single asset to package
-content-cli push asset --profile my-profile-name --file asset_km-test.yml --package new-package
+content-cli push asset -p my-profile-name -f asset_km-test.yml --package new-package
 ```
 
 Additionally, you can use content-cli push assets to push all the 
@@ -191,7 +229,7 @@ like the following example:
 
 ```
 // Push multiple assets to package
-content-cli push assets --profile my-profile-name --package test-package
+content-cli push assets -p my-profile-name --package test-package
 ```
 | Note: You can find the unique key of the asset/package in the action menu. |
 |----------------------------------------------------------------------------|
@@ -213,7 +251,7 @@ When you use overwrite the following is to be taken into consideration:
 
 ```
 // Overwrite a Package
-content-cli push package --profile my-profile-name --file <path-to-my-local-package> --overwrite
+content-cli push package -p my-profile-name --spaceKey my-space -f <path-to-my-local-package> --overwrite
 ```
 
 ### List all packages in Studio 
@@ -223,7 +261,7 @@ The command takes your permissions into consideration and only lists the
 packages you have access to. 
 
 ```
-content-cli list packages --profile <your-chosen-profile>
+content-cli list packages -p <your-chosen-profile>
 ```
 
 ### Asset options for Analysis
@@ -235,7 +273,7 @@ the  --asset option would be: 
 
 ```
 // Pull analysis as an asset
-content-cli pull analysis --profile my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --asset
+content-cli pull analysis -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --asset
 ```
 
 After you have pulled your workflows/analysis with the --asset option,
@@ -244,7 +282,7 @@ the same command as with pushing other assets to Studio:
 
 ```
 // Push analysis to Studio
-content-cli push asset --profile my-profile-name --file asset_73d39112-73ae-4bbe-8051-3c0f14e065ec.yaml --package my-package-key
+content-cli push asset -p my-profile-name -f asset_73d39112-73ae-4bbe-8051-3c0f14e065ec.yaml --package my-package-key
 ```
 
 | Note: Pushing analysis from Process Analytics to Studio will only work if you have used the ***--asset*** option when pulling. |

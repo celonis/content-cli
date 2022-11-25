@@ -12,7 +12,7 @@ export class ProfileCommand {
         profile.name = await QuestionService.ask("Name of the profile: ");
         profile.team = await QuestionService.ask("Your team (please provide the full url): ");
         profile.apiToken = await QuestionService.ask("Your api token: ");
-        await ProfileValidator.validateProfile(profile);
+        profile.authenticationType = await ProfileValidator.validateProfile(profile);
         this.profileService.storeProfile(profile);
         if (setAsDefault) {
             await this.makeDefaultProfile(profile.name);

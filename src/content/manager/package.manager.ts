@@ -19,6 +19,7 @@ export class PackageManager extends BaseManager {
     private _store: boolean;
     private _newKey: string;
     private _overwrite: boolean;
+    private _draft: boolean;
 
     public get key(): string {
         return this._key;
@@ -68,14 +69,22 @@ export class PackageManager extends BaseManager {
         this._overwrite = value;
     }
 
+    public get draft(): boolean {
+        return this._draft;
+    }
+
+    public set draft(value: boolean) {
+        this._draft = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, this.buildPushUrl()),
             pullUrl: this.profile.team.replace(
                 /\/?$/,
-                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${this.store}${
-                    this.newKey ? `&newKey=${this.newKey}` : ""
-                }`
+                `${PackageManager.BASE_URL}/${this.key}/${PackageManager.EXPORT_ENDPOINT_PATH}?store=${
+                    this.store
+                }&draft=${this.draft}${this.newKey ? `&newKey=${this.newKey}` : ""}`
             ),
             findAllUrl: this.profile.team.replace(/\/?$/, PackageManager.BASE_URL),
             exportFileName:

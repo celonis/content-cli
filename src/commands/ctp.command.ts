@@ -13,12 +13,13 @@ export class CTPCommand {
         pushAnalysis: boolean,
         pushDataModels: boolean,
         existingPoolId: string,
-        globalPoolName: string
+        globalPoolName: string,
+        spaceKey: string
     ): Promise<void> {
         if (pushAnalysis) {
             await this.contentService.push(
                 profile,
-                this.ctpManagerFactory.createCtpAnalysisManager(filename, password)
+                this.ctpManagerFactory.createCtpAnalysisManager(filename, password, spaceKey)
             );
         }
 

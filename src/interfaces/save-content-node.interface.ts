@@ -5,4 +5,9 @@ export interface SaveContentNode {
     nodeType: string;
     assetType: string;
     serializedContent: string;
+    assetMetadataTransport: AssetMetadataTransport;
+}
+
+export class AssetMetadataTransport {
+    public hidden: boolean;
 }

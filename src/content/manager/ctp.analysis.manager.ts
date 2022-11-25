@@ -12,6 +12,7 @@ export class CtpAnalysisManager extends CtpManager {
             formData: {
                 file: this.content,
                 password: this.password,
+                spaceId: this.spaceKey,
             },
         };
     }
