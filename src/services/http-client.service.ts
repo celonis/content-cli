@@ -32,7 +32,7 @@ export class HttpClientService {
                     });
                     response.on("end", () => {
                         if (this.checkBadRequest(response.statusCode)) {
-                            this.handleBadRequest(response, data.toString(), reject);
+                            this.handleBadRequest(response.statusCode, data.toString(), reject);
                         } else {
                             this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
                         }
@@ -95,7 +95,7 @@ export class HttpClientService {
     // tslint:disable-next-line:typedef
     private handleResponse(res: Response, resolve, reject): void {
         if (this.checkBadRequest(res.statusCode)) {
-            this.handleBadRequest(res, res.body, reject);
+            this.handleBadRequest(res.statusCode, res.body, reject);
             return;
         }
         let body = {};
