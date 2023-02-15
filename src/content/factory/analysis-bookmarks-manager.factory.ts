@@ -11,9 +11,10 @@ export class AnalysisBookmarksManagerFactory {
     ): AnalysisBookmarksManager {
         const analysisBookmarksManager = new AnalysisBookmarksManager();
         analysisBookmarksManager.analysisId = analysisId;
-        if (type === "undefined" || type === null) {
+        if (type === undefined || type === null) {
             type = "user";
         }
+
         analysisBookmarksManager.type = type;
         if (filename !== null) {
             analysisBookmarksManager.fileName = this.readFile(filename);
