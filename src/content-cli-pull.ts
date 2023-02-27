@@ -30,7 +30,7 @@ class Pull {
             .command("bookmarks")
             .description("Command to pull an analysis bookmarks")
             .option("-p, --profile <profile>", "Profile which you want to use to pull the analysis bookmarks")
-            .option("--type <type>", "Pull shared/ all Analysis Bookmarks, else by default get user bookmarks")
+            .option("--type <type>", "Pull shared/all Analysis Bookmarks, else by default get user bookmarks")
             .requiredOption("--id <id>", "Id of the analysis you want to pull")
             .action(async cmd => {
                 await new AnalysisBookmarksCommand().pullAnalysisBookmarks(cmd.profile, cmd.id, cmd.type);
