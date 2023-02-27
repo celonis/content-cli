@@ -4,6 +4,7 @@ import { ObjectiveCommand } from "./commands/objective.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
+import { AnalysisBookmarksCommand } from "./commands/analysis-bookmarks.command";
 
 import commander = require("commander");
 type CommanderStatic = commander.CommanderStatic;
@@ -18,6 +19,21 @@ class Pull {
             .option("--asset", "Pull workflow as an asset")
             .action(async cmd => {
                 await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.id, !!cmd.asset);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static analysisBookmarks(program: CommanderStatic): CommanderStatic {
+        program
+            .command("bookmarks")
+            .description("Command to pull an analysis bookmarks")
+            .option("-p, --profile <profile>", "Profile which you want to use to pull the analysis bookmarks")
+            .option("--type <type>", "Pull shared/all Analysis Bookmarks, else by default get user bookmarks")
+            .requiredOption("--id <id>", "Id of the analysis you want to pull")
+            .action(async cmd => {
+                await new AnalysisBookmarksCommand().pullAnalysisBookmarks(cmd.profile, cmd.id, cmd.type);
                 process.exit();
             });
 
@@ -100,6 +116,7 @@ class Pull {
 }
 
 Pull.analysis(commander);
+Pull.analysisBookmarks(commander);
 Pull.skill(commander);
 Pull.objective(commander);
 Pull.dataPool(commander);

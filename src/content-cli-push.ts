@@ -10,6 +10,7 @@ import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
 import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
+import { AnalysisBookmarksCommand } from "./commands/analysis-bookmarks.command";
 import { execSync } from "child_process";
 import { GracefulError, logger } from "./util/logger";
 
@@ -25,6 +26,21 @@ class Push {
             .requiredOption("-f, --file <file>", "The file you want to push")
             .action(async cmd => {
                 await new AnalysisCommand().pushAnalysis(cmd.profile, cmd.workspaceId, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static analysisBookmarks(program: CommanderStatic): CommanderStatic {
+        program
+            .command("bookmarks")
+            .description("Command to push an analysis to a workspace")
+            .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
+            .requiredOption("--id <id>", "Id of the Analysis to which you want to push the analysis bookmarks")
+            .requiredOption("-f, --file <file>", "The file you want to push")
+            .action(async cmd => {
+                await new AnalysisBookmarksCommand().pushAnalysisBookmarks(cmd.profile, cmd.id, cmd.file);
                 process.exit();
             });
 
@@ -219,6 +235,7 @@ class Push {
 }
 
 Push.analysis(commander);
+Push.analysisBookmarks(commander);
 Push.ctp(commander);
 Push.skill(commander);
 Push.widget(commander);

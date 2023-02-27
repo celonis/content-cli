@@ -286,4 +286,23 @@ content-cli push asset -p my-profile-name -f asset_73d39112-73ae-4bbe-8051-3c0f1
 ```
 
 | Note: Pushing analysis from Process Analytics to Studio will only work if you have used the ***--asset*** option when pulling. |
+
+### Pull and Push Analysis Bookmarks in Studio
+
+Enable users to pull and push bookmarks using content-cli. For pulling analysis bookmarks
+you can specify --type (shared/all), and by default it fetches user bookmarks.
+
+```
+// Pull analysis bookmarks
+content-cli pull bookmarks --profile my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --type shared
+```
+
+After you have pulled your analysis bookmarks with the --type option,
+it's time to push them inside analysis in different package. You can do accomplish this using
+the same command as with pushing other assets to Studio:
+
+```
+// Push analysis to Studio
+content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
+```
 |--------------------------------------------------------------------------------------------------------------------------------|
