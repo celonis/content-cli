@@ -7,17 +7,8 @@ export class SpaceManager extends BaseManager {
 
     private static BASE_URL = "/package-manager/api/spaces";
 
-    private _name: string;
     private _id: string;
-    private _iconReference: string;
-
-    public get name(): string {
-        return this._name;
-    }
-
-    public set name(value: string) {
-        this._name = value;
-    }
+    private _name: string;
 
     public get id(): string {
         return this._id;
@@ -27,12 +18,12 @@ export class SpaceManager extends BaseManager {
         this._id = value;
     }
 
-    public get iconReference(): string {
-        return this._iconReference;
+    public get name(): string {
+        return this._name;
     }
 
-    public set iconReference(value: string) {
-        this._iconReference = value;
+    public set name(value: string) {
+        this._name = value;
     }
 
     public getConfig(): ManagerConfig {
