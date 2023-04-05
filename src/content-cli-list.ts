@@ -1,4 +1,5 @@
 import { PackageCommand } from "./commands/package.command";
+import { SpaceCommand } from "./commands/space.command";
 
 import commander = require("commander");
 type CommanderStatic = commander.CommanderStatic;
@@ -16,9 +17,23 @@ class List {
 
         return program;
     }
+
+    public static spaces(program: CommanderStatic): CommanderStatic {
+        program
+            .command("spaces")
+            .description("Command to list all spaces")
+            .option("-p, --profile <profile>", "Profile which you want to use to list spaces")
+            .action(async cmd => {
+                await new SpaceCommand().listSpaces(cmd.profile);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 List.packages(commander);
+List.spaces(commander);
 
 commander.parse(process.argv);
 
