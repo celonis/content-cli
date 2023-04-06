@@ -9,6 +9,7 @@
         -   [Pull package for EMS Store](#pull-package-for-ems-store)
     -   [Pull/Push individual assets from/to Studio](#pullpush-individual-assets-fromto-studio)
     -   [Overwrite Package In Studio](#overwrite-package-in-studio)
+    -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [Asset options for Analysis](#asset-options-for-analysis)
 
@@ -252,6 +253,15 @@ When you use overwrite the following is to be taken into consideration:
 ```
 // Overwrite a Package
 content-cli push package -p my-profile-name --spaceKey my-space -f <path-to-my-local-package> --overwrite
+```
+
+### List all spaces in Studio
+With this command you can retrieve a list of all spaces within a team.
+The command takes your permissions into consideration and only lists the
+spaces you have access to.
+
+```
+content-cli list spaces -p <your-chosen-profile>
 ```
 
 ### List all packages in Studio 
