@@ -28,7 +28,7 @@ export class SpaceManager extends BaseManager {
     private listSpaces(nodes: SaveSpace[]): void {
         if (this.responseType === "json") {
             const filename = uuidv4() + ".json";
-            this.writeToFileWithGivenName(JSON.stringify(nodes, ["key","name"]), filename);
+            this.writeToFileWithGivenName(JSON.stringify(nodes, ["id","name"]), filename);
             logger.info(this.fileDownloadedMessage + filename);
         } else {
             nodes.forEach(node => {
@@ -42,7 +42,7 @@ export class SpaceManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
-        return "";
+        return data;
     }
 
 }
