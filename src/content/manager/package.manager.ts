@@ -1,8 +1,9 @@
-import { ManagerConfig } from "../../interfaces/manager-config.interface";
-import { BaseManager } from "./base.manager";
+import {ManagerConfig} from "../../interfaces/manager-config.interface";
+import {BaseManager} from "./base.manager";
 import * as fs from "fs";
-import { logger } from "../../util/logger";
-import { SaveContentNode } from "../../interfaces/save-content-node.interface";
+import {logger} from "../../util/logger";
+import {SaveContentNode} from "../../interfaces/save-content-node.interface";
+import { v4 as uuidv4 } from "uuid";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
@@ -20,6 +21,7 @@ export class PackageManager extends BaseManager {
     private _newKey: string;
     private _overwrite: boolean;
     private _draft: boolean;
+    private _responseType: string;
 
     public get key(): string {
         return this._key;
@@ -77,6 +79,14 @@ export class PackageManager extends BaseManager {
         this._draft = value;
     }
 
+    public get responseType(): string {
+        return this._responseType;
+    }
+
+    public set responseType(value: string) {
+        this._responseType = value;
+    }
+
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, this.buildPushUrl()),
@@ -115,9 +125,15 @@ export class PackageManager extends BaseManager {
     }
 
     private listPackages(nodes: SaveContentNode[]): void {
-        nodes.forEach(node => {
-            logger.info(`${node.name} - Key: "${node.key}"`);
-        });
+        if (this.responseType === "json") {
+            const filename = uuidv4() + ".json";
+            this.writeToFileWithGivenName(JSON.stringify(nodes, ["key","name", "changeDate", "activatedDraftId", "spaceId"]), filename);
+            logger.info(this.fileDownloadedMessage + filename);
+        } else {
+            nodes.forEach(node => {
+                logger.info(`${node.name} - Key: "${node.key}"`);
+            });
+        }
     }
 
     private validateOptions(): void {

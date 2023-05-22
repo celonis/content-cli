@@ -5,7 +5,7 @@ export class SpaceCommand {
     private contentService = new ContentService();
     private spaceManagerFactory = new SpaceManagerFactory();
 
-    public async listSpaces(profile: string): Promise<void> {
-        await this.contentService.findAll(profile, this.spaceManagerFactory.createManager());
+    public async listSpaces(profile: string, responseType: string): Promise<void> {
+        await this.contentService.findAll(profile, this.spaceManagerFactory.createListManager(responseType));
     }
 }
