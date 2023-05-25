@@ -102,6 +102,37 @@ export abstract class BaseManager {
         });
     }
 
+    public async get(url: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.httpClientService
+                .findAll(this.profile.team.replace(/\/?$/,url), this._profile)
+                .then(data => {
+                    resolve(data);
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                    reject();
+                });
+        });
+    }
+
+    public async findAllAndExport(): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.httpClientService
+                .findAll(this.getConfig().findAllUrl, this._profile)
+                .then(async data => {
+                    await this.getConfig().onFindAllAndExport(data);
+                    resolve(data);
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                    reject();
+                });
+        });
+    }
+
+
+
     protected writeToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
         this.writeToFileWithGivenName(data, filename)

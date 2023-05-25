@@ -11,8 +11,9 @@ class List {
             .description("Command to list all packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--responseType <responseType>", "Type of response", "")
+            .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
-                await new PackageCommand().listPackages(cmd.profile, cmd.responseType);
+                await new PackageCommand().listPackages(cmd.profile, cmd.responseType, cmd.includeDependencies);
                 process.exit();
             });
 

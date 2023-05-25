@@ -114,6 +114,23 @@ export class ContentService {
         });
     }
 
+    public async findAllAndExport(profileName: string, baseManager: BaseManager): Promise<any> {
+        return new Promise((resolve, reject) => {
+            this.profileService
+                .findProfile(this.resolveProfile(profileName))
+                .then((profile: Profile) => {
+                    baseManager.profile = profile;
+                    baseManager.findAllAndExport().then(
+                        () => resolve(),
+                        () => reject()
+                    );
+                })
+                .catch(err => {
+                    logger.error(new FatalError(err));
+                });
+        });
+    }
+
     private resolveProfile(profile: string): string {
         if (profile) {
             return profile;

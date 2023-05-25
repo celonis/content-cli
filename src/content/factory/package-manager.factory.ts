@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
-import { FatalError, logger } from "../../util/logger";
-import { PackageManager } from "../manager/package.manager";
+import {FatalError, logger} from "../../util/logger";
+import {PackageManager} from "../manager/package.manager";
 
 export class PackageManagerFactory {
     public createPullManager(key: string, store?: boolean, newKey?: string, draft?: boolean): PackageManager {
@@ -13,8 +13,8 @@ export class PackageManagerFactory {
         return this.createManager(null, spaceKey, fileName, false, newKey, overwrite, false, null);
     }
 
-    public createListManager(responseType: string): PackageManager {
-        return this.createManager(null, null, null, false, null, false, false, responseType);
+    public createListManager(responseType: string, includeDependencies: boolean): PackageManager {
+        return this.createManager(null, null, null, false, null, false, false, responseType, includeDependencies);
     }
 
     public createPushManagers(spaceKey: string): PackageManager[] {
@@ -42,7 +42,8 @@ export class PackageManagerFactory {
         newKey?: string,
         overwrite?: boolean,
         draft?: boolean,
-        responseType?: string
+        responseType?: string,
+        includeDependencies?: boolean
     ): PackageManager {
         const packageManager = new PackageManager();
 
@@ -57,6 +58,7 @@ export class PackageManagerFactory {
         packageManager.overwrite = overwrite;
         packageManager.draft = draft;
         packageManager.responseType = responseType;
+        packageManager.includeDependencies = includeDependencies;
 
         return packageManager;
     }

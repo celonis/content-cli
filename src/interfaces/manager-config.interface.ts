@@ -7,4 +7,5 @@ export interface ManagerConfig {
     onPushSuccessMessage?: (data: any) => string;
     onUpdateSuccessMessage?: () => string;
     onFindAll?: (data: any) => void;
+    onFindAllAndExport?: (data: any) => void
 }

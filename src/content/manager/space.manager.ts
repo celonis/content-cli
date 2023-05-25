@@ -22,6 +22,7 @@ export class SpaceManager extends BaseManager {
         return {
             findAllUrl: this.profile.team.replace(/\/?$/, SpaceManager.BASE_URL),
             onFindAll: (data: SaveSpace[]) => this.listSpaces(data),
+            onFindAllAndExport: (data: SaveSpace[]) => this.exportListOfSpaces(data),
         };
     }
 
@@ -35,6 +36,12 @@ export class SpaceManager extends BaseManager {
                 logger.info(`${node.id} - Name: "${node.name}"`);
             });
         }
+    }
+
+    private exportListOfSpaces(spaces : SaveSpace[]) : void{
+        const filename = uuidv4() + ".json";
+        this.writeToFileWithGivenName(JSON.stringify(spaces, ["id","name"]), filename);
+        logger.info(this.fileDownloadedMessage + filename);
     }
 
     protected getBody(): object {
