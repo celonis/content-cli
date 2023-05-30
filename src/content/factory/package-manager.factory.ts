@@ -6,11 +6,15 @@ import { PackageManager } from "../manager/package.manager";
 
 export class PackageManagerFactory {
     public createPullManager(key: string, store?: boolean, newKey?: string, draft?: boolean): PackageManager {
-        return this.createManager(key, null, null, store, newKey, false, draft);
+        return this.createManager(key, null, null, store, newKey, false, draft, null);
     }
 
     public createPushManager(spaceKey: string, fileName: string, newKey?: string, overwrite?: boolean): PackageManager {
-        return this.createManager(null, spaceKey, fileName, false, newKey, overwrite, false);
+        return this.createManager(null, spaceKey, fileName, false, newKey, overwrite, false, null);
+    }
+
+    public createListManager(jsonResponse: boolean): PackageManager {
+        return this.createManager(null, null, null, false, null, false, false, jsonResponse);
     }
 
     public createPushManagers(spaceKey: string): PackageManager[] {
@@ -37,7 +41,8 @@ export class PackageManagerFactory {
         store?: boolean,
         newKey?: string,
         overwrite?: boolean,
-        draft?: boolean
+        draft?: boolean,
+        jsonResponse?: boolean
     ): PackageManager {
         const packageManager = new PackageManager();
 
@@ -51,6 +56,7 @@ export class PackageManagerFactory {
         packageManager.newKey = newKey;
         packageManager.overwrite = overwrite;
         packageManager.draft = draft;
+        packageManager.jsonResponse = jsonResponse;
 
         return packageManager;
     }

@@ -10,8 +10,9 @@ class List {
             .command("packages")
             .description("Command to list all packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("--json", "Return response as json type", "")
             .action(async cmd => {
-                await new PackageCommand().listPackages(cmd.profile);
+                await new PackageCommand().listPackages(cmd.profile, cmd.json);
                 process.exit();
             });
 
@@ -23,8 +24,9 @@ class List {
             .command("spaces")
             .description("Command to list all spaces")
             .option("-p, --profile <profile>", "Profile which you want to use to list spaces")
+            .option("--json", "Return response as json type", "")
             .action(async cmd => {
-                await new SpaceCommand().listSpaces(cmd.profile);
+                await new SpaceCommand().listSpaces(cmd.profile, cmd.json);
                 process.exit();
             });
 

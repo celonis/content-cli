@@ -2,28 +2,20 @@ import {ManagerConfig} from "../../interfaces/manager-config.interface";
 import {BaseManager} from "./base.manager";
 import {logger} from "../../util/logger";
 import {SaveSpace} from "../../interfaces/save-space.interface";
+import { v4 as uuidv4 } from "uuid";
 
 export class SpaceManager extends BaseManager {
 
     private static BASE_URL = "/package-manager/api/spaces";
 
-    private _id: string;
-    private _name: string;
+    private _jsonResponse: boolean;
 
-    public get id(): string {
-        return this._id;
+    public get jsonResponse(): boolean {
+        return this._jsonResponse;
     }
 
-    public set id(value: string) {
-        this._id = value;
-    }
-
-    public get name(): string {
-        return this._name;
-    }
-
-    public set name(value: string) {
-        this._name = value;
+    public set jsonResponse(value: boolean) {
+        this._jsonResponse = value;
     }
 
     public getConfig(): ManagerConfig {
@@ -34,9 +26,15 @@ export class SpaceManager extends BaseManager {
     }
 
     private listSpaces(nodes: SaveSpace[]): void {
-        nodes.forEach(node => {
-            logger.info(`${node.id} - Name: "${node.name}"`);
-        });
+        if (this.jsonResponse) {
+            const filename = uuidv4() + ".json";
+            this.writeToFileWithGivenName(JSON.stringify(nodes, ["id","name"]), filename);
+            logger.info(this.fileDownloadedMessage + filename);
+        } else {
+            nodes.forEach(node => {
+                logger.info(`${node.id} - Name: "${node.name}"`);
+            });
+        }
     }
 
     protected getBody(): object {
@@ -44,7 +42,7 @@ export class SpaceManager extends BaseManager {
     }
 
     protected getSerializedFileContent(data: any): string {
-        return "";
+        return data;
     }
 
 }

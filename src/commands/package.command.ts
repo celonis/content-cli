@@ -35,7 +35,7 @@ export class PackageCommand {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
-    public async listPackages(profile: string): Promise<void> {
-        await this.contentService.findAll(profile, this.packageManagerFactory.createManager());
+    public async listPackages(profile: string, jsonResponse: boolean): Promise<void> {
+        await this.contentService.findAll(profile, this.packageManagerFactory.createListManager(jsonResponse));
     }
 }

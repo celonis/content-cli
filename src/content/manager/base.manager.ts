@@ -18,6 +18,8 @@ export abstract class BaseManager {
 
     private _profile: Profile;
 
+    protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
+
     public async pull(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
@@ -25,7 +27,7 @@ export abstract class BaseManager {
                 .then(data => {
                     try {
                         const filename = this.writeToFile(data);
-                        logger.info("File downloaded successfully. New filename: " + filename);
+                        logger.info(this.fileDownloadedMessage + filename);
                         resolve();
                     } catch (e) {
                         logger.error(new FatalError(e));
@@ -45,7 +47,7 @@ export abstract class BaseManager {
                 .pullFileData(this.getConfig().pullUrl, this._profile)
                 .then(data => {
                     const filename = this.writeStreamToFile(data);
-                    logger.info("File downloaded successfully. New filename: " + filename);
+                    logger.info(this.fileDownloadedMessage + filename);
                     resolve();
                 })
                 .catch(err => {
@@ -102,9 +104,7 @@ export abstract class BaseManager {
 
     protected writeToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
-        fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
-            encoding: "utf-8",
-        });
+        this.writeToFileWithGivenName(data, filename)
         return filename;
     }
 
@@ -112,6 +112,12 @@ export abstract class BaseManager {
         const filename = this.getConfig().exportFileName;
         fs.writeFileSync(filename, data);
         return filename;
+    }
+
+    protected writeToFileWithGivenName(data: any, filename:string): void {
+        fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
+            encoding: "utf-8",
+        });
     }
 
     protected abstract getConfig(): ManagerConfig;
