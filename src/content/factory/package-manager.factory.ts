@@ -13,8 +13,8 @@ export class PackageManagerFactory {
         return this.createManager(null, spaceKey, fileName, false, newKey, overwrite, false, null);
     }
 
-    public createListManager(responseType: string): PackageManager {
-        return this.createManager(null, null, null, false, null, false, false, responseType);
+    public createListManager(jsonResponse: boolean): PackageManager {
+        return this.createManager(null, null, null, false, null, false, false, jsonResponse);
     }
 
     public createPushManagers(spaceKey: string): PackageManager[] {
@@ -42,7 +42,7 @@ export class PackageManagerFactory {
         newKey?: string,
         overwrite?: boolean,
         draft?: boolean,
-        responseType?: string
+        jsonResponse?: boolean
     ): PackageManager {
         const packageManager = new PackageManager();
 
@@ -56,7 +56,7 @@ export class PackageManagerFactory {
         packageManager.newKey = newKey;
         packageManager.overwrite = overwrite;
         packageManager.draft = draft;
-        packageManager.responseType = responseType;
+        packageManager.jsonResponse = jsonResponse;
 
         return packageManager;
     }

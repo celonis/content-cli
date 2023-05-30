@@ -21,7 +21,7 @@ export class PackageManager extends BaseManager {
     private _newKey: string;
     private _overwrite: boolean;
     private _draft: boolean;
-    private _responseType: string;
+    private _jsonResponse: boolean;
 
     public get key(): string {
         return this._key;
@@ -79,12 +79,12 @@ export class PackageManager extends BaseManager {
         this._draft = value;
     }
 
-    public get responseType(): string {
-        return this._responseType;
+    public get jsonResponse(): boolean {
+        return this._jsonResponse;
     }
 
-    public set responseType(value: string) {
-        this._responseType = value;
+    public set jsonResponse(value: boolean) {
+        this._jsonResponse = value;
     }
 
     public getConfig(): ManagerConfig {
@@ -125,7 +125,7 @@ export class PackageManager extends BaseManager {
     }
 
     private listPackages(nodes: SaveContentNode[]): void {
-        if (this.responseType === "json") {
+        if (this.jsonResponse) {
             const filename = uuidv4() + ".json";
             this.writeToFileWithGivenName(JSON.stringify(nodes, ["key","name", "changeDate", "activatedDraftId", "spaceId"]), filename);
             logger.info(this.fileDownloadedMessage + filename);

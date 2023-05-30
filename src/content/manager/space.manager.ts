@@ -8,14 +8,14 @@ export class SpaceManager extends BaseManager {
 
     private static BASE_URL = "/package-manager/api/spaces";
 
-    private _responseType: string;
+    private _jsonResponse: boolean;
 
-    public get responseType(): string {
-        return this._responseType;
+    public get jsonResponse(): boolean {
+        return this._jsonResponse;
     }
 
-    public set responseType(value: string) {
-        this._responseType = value;
+    public set jsonResponse(value: boolean) {
+        this._jsonResponse = value;
     }
 
     public getConfig(): ManagerConfig {
@@ -26,7 +26,7 @@ export class SpaceManager extends BaseManager {
     }
 
     private listSpaces(nodes: SaveSpace[]): void {
-        if (this.responseType === "json") {
+        if (this.jsonResponse) {
             const filename = uuidv4() + ".json";
             this.writeToFileWithGivenName(JSON.stringify(nodes, ["id","name"]), filename);
             logger.info(this.fileDownloadedMessage + filename);
