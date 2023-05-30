@@ -155,7 +155,6 @@ export class PackageManager extends BaseManager {
     private async exportListOfPackages(nodes: SaveContentNode[]): Promise<void> {
         return new Promise<void>(async resolve => {
             const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
-
             if (this.includeDependencies) {
                 fieldsToInclude.push("variables", "type", "value", "dependencies", "id", "version");
 
@@ -170,7 +169,6 @@ export class PackageManager extends BaseManager {
                         return node;
                     }
                 )
-
                 nodes = await this.getPackagesWithDependencies(nodes);
 
                 const filename = uuidv4() + ".json";
