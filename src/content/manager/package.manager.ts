@@ -3,13 +3,10 @@ import {BaseManager} from "./base.manager";
 import * as fs from "fs";
 import {logger} from "../../util/logger";
 import {
-    DependenciesTransport,
-    PackageWithVariableAssignments,
     SaveContentNode,
     VariablesAssignments
 } from "../../interfaces/save-content-node.interface";
 import {v4 as uuidv4} from "uuid";
-import {AssetManager} from "./asset.manager";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
@@ -202,7 +199,6 @@ export class PackageManager extends BaseManager {
             })))
         })
     }
-
 
     private validateOptions(): void {
         if (this.newKey && this.overwrite) {

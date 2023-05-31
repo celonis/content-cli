@@ -114,7 +114,7 @@ export class ContentService {
         });
     }
 
-    public async findAllAndExport(profileName: string, baseManager: BaseManager): Promise<any> {
+    public async   findAllAndExport(profileName: string, baseManager: BaseManager): Promise<any> {
         return new Promise((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
