@@ -260,7 +260,7 @@ With this command you can retrieve a list of all spaces within a team.
 The command takes your permissions into consideration and only lists the
 spaces you have access to.
 
--   It's also possible to download spaces in JSON format by adding '-responseType json' option.
+-   It is also possible to download spaces in JSON format by adding '--json' option.
 
 ```
 content-cli list spaces -p <your-chosen-profile>
@@ -272,8 +272,12 @@ With this command you can retrieve a list of all packages within a team.
 The command takes your permissions into consideration and only lists the
 packages you have access to. 
 
+<<<<<<< HEAD
 -   It's also possible to download packages in JSON format by adding '-responseType json' option.
 -   It is also possible to include package dependencies by adding '--includeDependencies' flag
+=======
+-   It is also possible to download packages in JSON format by adding '--json' option.
+>>>>>>> master
 
 ```
 content-cli list packages -p <your-chosen-profile>

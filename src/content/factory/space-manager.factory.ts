@@ -2,15 +2,15 @@ import {SpaceManager} from "../manager/space.manager";
 
 export class SpaceManagerFactory {
 
-    public createListManager(responseType: string): SpaceManager {
-        return this.createManager(responseType);
+    public createListManager(jsonResponse: boolean): SpaceManager {
+        return this.createManager(jsonResponse);
     }
 
     public createManager(
-        responseType?: string
+        jsonResponse?: boolean
     ): SpaceManager {
         const spaceManager = new SpaceManager();
-        spaceManager.responseType = responseType;
+        spaceManager.jsonResponse = jsonResponse;
         return spaceManager;
     }
 }

@@ -35,12 +35,11 @@ export class PackageCommand {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
-    public async listPackages(profile: string, responseType: string, includeDependencies : boolean): Promise<void> {
-        if(responseType === "json") {
-            await this.contentService.findAllAndExport(profile, this.packageManagerFactory.createListManager(responseType, includeDependencies));
-        }else {
-            await this.contentService.findAll(profile, this.packageManagerFactory.createListManager(responseType, includeDependencies));
-
+    public async listPackages(profile: string, jsonResponse: boolean, includeDependencies : boolean): Promise<void> {
+        if (jsonResponse) {
+            await this.contentService.findAllAndExport(profile, this.packageManagerFactory.createListManager(jsonResponse, includeDependencies));
+        } else {
+            await this.contentService.findAll(profile, this.packageManagerFactory.createListManager(null, includeDependencies));
         }
     }
 }
