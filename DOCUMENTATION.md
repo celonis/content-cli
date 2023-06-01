@@ -272,12 +272,8 @@ With this command you can retrieve a list of all packages within a team.
 The command takes your permissions into consideration and only lists the
 packages you have access to. 
 
-<<<<<<< HEAD
--   It's also possible to download packages in JSON format by adding '-responseType json' option.
--   It is also possible to include package dependencies by adding '--includeDependencies' flag
-=======
 -   It is also possible to download packages in JSON format by adding '--json' option.
->>>>>>> master
+-   It is also possible to include package dependencies by adding '--includeDependencies' flag
 
 ```
 content-cli list packages -p <your-chosen-profile>
