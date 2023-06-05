@@ -136,3 +136,5 @@ export class ProfileService {
         return url.origin;
     }
 }
+
+export  const profileService = new ProfileService();

@@ -4,17 +4,13 @@ import * as fs from "fs";
 import {logger} from "../../util/logger";
 import {
     SaveContentNode,
-    VariablesAssignments
 } from "../../interfaces/save-content-node.interface";
-import {v4 as uuidv4} from "uuid";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
     public static PACKAGE_FILE_EXTENSION = ".zip";
 
     private static BASE_URL = "/package-manager/api/packages";
-    private static FIND_ALL_WITH_VARIABLES = "/package-manager/api/packages/with-variable-assignments";
-    private static FIND_ALL_NODES = "/package-manager/api/nodes";
 
     private static IMPORT_ENDPOINT_PATH = "import";
     private static EXPORT_ENDPOINT_PATH = "export";
@@ -117,7 +113,6 @@ export class PackageManager extends BaseManager {
                 PackageManager.PACKAGE_FILE_EXTENSION,
             onPushSuccessMessage: (): string => "Package was pushed successfully.",
             onFindAll: (data: SaveContentNode[]) => this.listPackages(data),
-            onFindAllAndExport: async (data: SaveContentNode[]) => this.exportListOfPackages(data),
         };
     }
 
@@ -133,10 +128,6 @@ export class PackageManager extends BaseManager {
         return data;
     }
 
-    private findAllDependenciesUrl(node: SaveContentNode): string {
-        return `/package-manager/api/package-dependencies/${node.id}/by-root-draft-id/${node.workingDraftId}`;
-    }
-
     private buildPushUrl(): string {
         this.validateOptions();
         const pushUrl = `${PackageManager.BASE_URL}/${PackageManager.IMPORT_ENDPOINT_PATH}`;
@@ -147,66 +138,6 @@ export class PackageManager extends BaseManager {
         nodes.forEach(node => {
             logger.info(`${node.name} - Key: "${node.key}"`);
         });
-    }
-
-    private async exportListOfPackages(nodes: SaveContentNode[]): Promise<void> {
-        return new Promise<void>(async resolve => {
-            const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
-            if (this.includeDependencies) {
-                fieldsToInclude.push("variables", "type", "value", "dependencies", "id", "version");
-
-                const packagesKeyWithActionFlows = (await this.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
-                nodes = nodes.filter(node => {
-                    return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
-                })
-
-                const variablesByNodeKey = await this.getVariablesByNodeKey();
-                nodes.map(node => {
-                        node.variables = variablesByNodeKey.get(node.key);
-                        return node;
-                    }
-                )
-                nodes = await this.getPackagesWithDependencies(nodes);
-
-                const filename = uuidv4() + ".json";
-                this.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
-                logger.info(this.fileDownloadedMessage + filename);
-                resolve();
-            } else {
-                const filename = uuidv4() + ".json";
-                this.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
-                logger.info(this.fileDownloadedMessage + filename);
-                resolve();
-            }
-        })
-    }
-
-    private async getVariablesByNodeKey(): Promise<Map<string, VariablesAssignments[]>> {
-        const nodeWithVariablesAssignments = await this.get(PackageManager.FIND_ALL_WITH_VARIABLES);
-        const variablesByNodeKey = new Map<string, VariablesAssignments[]>();
-
-        nodeWithVariablesAssignments.forEach(nodeWithVariablesAssignment => {
-            variablesByNodeKey.set(nodeWithVariablesAssignment.key, nodeWithVariablesAssignment.variableAssignments);
-        })
-        return variablesByNodeKey;
-    }
-
-    private async getPackagesWithDependencies(nodes: SaveContentNode[]): Promise<SaveContentNode[]> {
-        return new Promise(async resolve => {
-            resolve(await Promise.all(nodes.map(async node => {
-                node.dependencies = await this.get(this.findAllDependenciesUrl(node));
-                return node;
-            })))
-        })
-        if (this.jsonResponse) {
-            const filename = uuidv4() + ".json";
-            this.writeToFileWithGivenName(JSON.stringify(nodes, ["key","name", "changeDate", "activatedDraftId", "spaceId"]), filename);
-            logger.info(this.fileDownloadedMessage + filename);
-        } else {
-            nodes.forEach(node => {
-                logger.info(`${node.name} - Key: "${node.key}"`);
-            });
-        }
     }
 
     private validateOptions(): void {
@@ -227,9 +158,5 @@ export class PackageManager extends BaseManager {
             return `${pushUrlWithParams}overwrite=${this.overwrite}`;
         }
         return pushUrlWithParams;
-    }
-
-    private async findAllNodesOfType(assetType?: string): Promise<any[]> {
-        return this.get(PackageManager.FIND_ALL_NODES+`?assetType=${assetType}`)
     }
 }
