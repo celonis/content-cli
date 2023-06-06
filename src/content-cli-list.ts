@@ -3,6 +3,7 @@ import {SpaceCommand} from "./commands/space.command";
 
 import commander = require("commander");
 import {contextService} from "./services/context.service";
+import {FatalError, logger} from "./util/logger";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -15,7 +16,11 @@ export class List {
             .option("--json", "Return response as json type", "")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
-                await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies)
+                try {
+                    await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies)
+                } catch (err) {
+                    logger.error(new FatalError(err));
+                }
                 process.exit();
             });
 

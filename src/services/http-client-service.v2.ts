@@ -2,7 +2,7 @@ import {AuthenticationType, Profile} from "../interfaces/profile.interface";
 import {CoreOptions, Headers, Response} from "request";
 import request = require("request");
 import { contextService} from "./context.service";
-import {FatalError, logger} from "../util/logger";
+import {FatalError} from "../util/logger";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
@@ -11,7 +11,7 @@ class HttpClientServiceV2 {
                 this.handleResponse(res, resolve, reject);
             });
         }).catch(e => {
-            logger.error(new FatalError(e));
+            throw new FatalError(e);
         });
     }
 
