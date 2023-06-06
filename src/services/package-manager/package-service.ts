@@ -9,52 +9,45 @@ class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     public async listPackages(): Promise<void> {
-        const nodes = await this.findAllPackages();
+        const nodes = await packageManagerApi.findAllPackages();
         nodes.forEach(node => {
             logger.info(`${node.name} - Key: "${node.key}"`);
         });
     }
 
-    public findAllPackages(): Promise<ContentNodeTransport[]> {
-        return packageManagerApi.findAllPackages();
-    }
+    public async findAndExportAllPackages(includeDependencies: boolean): Promise<void> {
+        const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
 
-    public findAndExportAllPackages(includeDependencies: boolean): Promise<void> {
-        return new Promise<void>(async resolve => {
-            const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
+        let nodesListToExport: BatchExportNodeTransport[] = await packageManagerApi.findAllPackages();
 
-            let nodesListToExport: BatchExportNodeTransport[] = (await this.findAllPackages()).map(node => node);
+        if (includeDependencies) {
+            fieldsToInclude.push("variables", "type", "value", "dependencies", "id", "version");
 
-            if (includeDependencies) {
-                fieldsToInclude.push("variables", "type", "value", "dependencies", "id", "version");
+            const packagesKeyWithActionFlows = (await packageManagerApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
+            nodesListToExport = nodesListToExport.filter(node => {
+                return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
+            })
 
-                const packagesKeyWithActionFlows = (await packageManagerApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
-                nodesListToExport = nodesListToExport.filter(node => {
-                    return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
-                })
+            const variablesByNodeKey = await variableService.getVariablesByNodeKey();
+            nodesListToExport.map(node => {
+                    node.variables = variablesByNodeKey.get(node.key);
+                    return node;
+                }
+            )
 
-                const variablesByNodeKey = await variableService.getVariablesByNodeKey();
-                nodesListToExport.map(node => {
-                        node.variables = variablesByNodeKey.get(node.key);
-                        return node;
-                    }
-                )
+            const draftIdsByNodeId = new Map<string, string>();
+            const nodeIds = nodesListToExport.map(node => {
+                draftIdsByNodeId.set(node.id, node.workingDraftId);
+                return node.id;
+            });
+            const dependenciesByPackageId = await this.getPackagesDependenciesByPackageId(nodeIds, draftIdsByNodeId);
 
-                const draftIdsByNodeId = new Map<string, string>();
-                const nodeIds = nodesListToExport.map(node => {
-                    draftIdsByNodeId.set(node.id, node.workingDraftId);
-                    return node.id;
-                });
-                const dependenciesByPackageId = await this.getPackagesDependenciesByPackageId(nodeIds, draftIdsByNodeId);
-
-                nodesListToExport = nodesListToExport.map(nodeToExport => {
-                    nodeToExport.dependencies = dependenciesByPackageId.get(nodeToExport.id);
-                    return nodeToExport;
-                })
-            }
-            this.exportListOfPackages(nodesListToExport, fieldsToInclude);
-            resolve();
-        })
+            nodesListToExport = nodesListToExport.map(nodeToExport => {
+                nodeToExport.dependencies = dependenciesByPackageId.get(nodeToExport.id);
+                return nodeToExport;
+            })
+        }
+        this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
     public async getPackagesDependenciesByPackageId(nodeIds: string[], draftIdsByNodeId: Map<string, string>): Promise<Map<string, PackageDependencyTransport[]>> {
@@ -70,19 +63,18 @@ class PackageService {
         return dependenciesByPackageKey
     }
 
-    public getPackagesWithDependencies(nodeIds: string[], draftIdsByNodeId: Map<string, string>): Promise<PackageDependencyTransport[]> {
-        return new Promise(async resolve => {
-            const results = await Promise.all(nodeIds.map(async nodeId => {
-                return packageManagerApi.findDependenciesOfPackage(nodeId, draftIdsByNodeId.get(nodeId));
-            }))
+    public async getPackagesWithDependencies(nodeIds: string[], draftIdsByNodeId: Map<string, string>): Promise<PackageDependencyTransport[]> {
+        const results = await Promise.all(nodeIds.map(async nodeId => {
+            return packageManagerApi.findDependenciesOfPackage(nodeId, draftIdsByNodeId.get(nodeId));
+        }))
 
-            const dependencies: PackageDependencyTransport[] = [];
+        const dependencies: PackageDependencyTransport[] = [];
 
-            results.forEach(packageDependencies => {
-                dependencies.push(...packageDependencies);
-            })
-            resolve(dependencies);
+        results.forEach(packageDependencies => {
+            dependencies.push(...packageDependencies);
         })
+
+        return dependencies;
     }
 
     private exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): void {

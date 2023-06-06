@@ -23,5 +23,4 @@ class ContextService {
     }
 }
 
-const contextService = ContextService.INSTANCE;
-export {contextService};
+export const contextService = ContextService.INSTANCE;

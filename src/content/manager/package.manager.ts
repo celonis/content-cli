@@ -22,8 +22,6 @@ export class PackageManager extends BaseManager {
     private _newKey: string;
     private _overwrite: boolean;
     private _draft: boolean;
-    private _includeDependencies: boolean;
-    private _jsonResponse: boolean;
 
     public get key(): string {
         return this._key;
@@ -79,22 +77,6 @@ export class PackageManager extends BaseManager {
 
     public set draft(value: boolean) {
         this._draft = value;
-    }
-
-    public get jsonResponse(): boolean {
-        return this._jsonResponse;
-    }
-
-    public set jsonResponse(value: boolean) {
-        this._jsonResponse = value;
-    }
-
-    public get includeDependencies(): boolean {
-        return this._includeDependencies;
-    }
-
-    public set includeDependencies(value: boolean) {
-        this._includeDependencies = value;
     }
 
     public getConfig(): ManagerConfig {

@@ -13,10 +13,6 @@ export class PackageManagerFactory {
         return this.createManager(null, spaceKey, fileName, false, newKey, overwrite, false, null);
     }
 
-    public createListManager(jsonResponse: boolean, includeDependencies : boolean): PackageManager {
-        return this.createManager(null, null, null, false, null, false, false, jsonResponse, includeDependencies);
-    }
-
     public createPushManagers(spaceKey: string): PackageManager[] {
         const filePaths = fs.readdirSync(process.cwd());
 
@@ -57,8 +53,6 @@ export class PackageManagerFactory {
         packageManager.newKey = newKey;
         packageManager.overwrite = overwrite;
         packageManager.draft = draft;
-        packageManager.includeDependencies = includeDependencies;
-        packageManager.jsonResponse = jsonResponse;
 
         return packageManager;
     }

@@ -8,32 +8,20 @@ export interface ContentNodeTransport {
     id: string;
     key: string;
     name: string;
-    rootNodeKey: string;
-    assetType: string;
-    nodeType: string;
-    parentNodeId: string;
-    invalidContent: string;
-    serializedContent: string;
-    serializationType: string;
-    draftId: string; // TODO - Delete after the external services have adapted to the change
+    rootNodeKey : string;
     workingDraftId: string;
     activatedDraftId: string;
-    showInViewerMode: boolean;
     rootNodeId: string;
     assetMetadataTransport: AssetMetadataTransport;
     spaceId: string;
 }
 
 export interface PackageDependencyTransport {
-    id: string; // package id of the dependency
+    id: string;
     key: string;
     name: string;
     version: string;
-    external: boolean;
-    draftId: string;
-    rootNodeId: string; // id of the package that this dependency exists in
-    updateAvailable: string;
-    deleted: string;
+    rootNodeId: string;
 }
 
 export interface AssetMetadataTransport {
@@ -59,12 +47,12 @@ class PackageManagerApi {
         return httpClientV2.get("/package-manager/api/packages");
     }
 
-    public async findAllNodesOfType(assetType?: string): Promise<any[]> {
+    public async findAllNodesOfType(assetType?: string): Promise<ContentNodeTransport[]> {
         return httpClientV2.get(`/package-manager/api/nodes?assetType=${assetType}`)
     }
 
-    public findDependenciesOfPackage(nodeIds: string, draftId: string): Promise<PackageDependencyTransport[]> {
-        return httpClientV2.get(`/package-manager/api/package-dependencies/${nodeIds}/by-root-draft-id/${draftId}`)
+    public findDependenciesOfPackage(nodeId: string, draftId: string): Promise<PackageDependencyTransport[]> {
+        return httpClientV2.get(`/package-manager/api/package-dependencies/${nodeId}/by-root-draft-id/${draftId}`)
     }
 
     public findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
