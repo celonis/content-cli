@@ -1,5 +1,5 @@
 import {logger} from "../../util/logger";
-import {ContentNodeTransport, PackageDependencyTransport, packageManagerApi} from "../../api/package-manager-api";
+import { PackageDependencyTransport, packageManagerApi} from "../../api/package-manager-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";

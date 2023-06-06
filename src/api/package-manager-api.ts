@@ -8,7 +8,7 @@ export interface ContentNodeTransport {
     id: string;
     key: string;
     name: string;
-    rootNodeKey : string;
+    rootNodeKey: string;
     workingDraftId: string;
     activatedDraftId: string;
     rootNodeId: string;
@@ -43,7 +43,7 @@ export interface VariablesAssignments {
 }
 
 class PackageManagerApi {
-    public findAllPackages(): Promise<ContentNodeTransport[]> {
+    public async findAllPackages(): Promise<ContentNodeTransport[]> {
         return httpClientV2.get("/package-manager/api/packages");
     }
 
@@ -51,11 +51,11 @@ class PackageManagerApi {
         return httpClientV2.get(`/package-manager/api/nodes?assetType=${assetType}`)
     }
 
-    public findDependenciesOfPackage(nodeId: string, draftId: string): Promise<PackageDependencyTransport[]> {
+    public async findDependenciesOfPackage(nodeId: string, draftId: string): Promise<PackageDependencyTransport[]> {
         return httpClientV2.get(`/package-manager/api/package-dependencies/${nodeId}/by-root-draft-id/${draftId}`)
     }
 
-    public findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
+    public async findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
         return httpClientV2.get("/package-manager/api/packages/with-variable-assignments")
     }
 
