@@ -3,7 +3,7 @@ import {SpaceCommand} from "./commands/space.command";
 
 import commander = require("commander");
 import {contextService} from "./services/context.service";
-import {FatalError, logger} from "./util/logger";
+import {logger} from "./util/logger";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -16,11 +16,7 @@ export class List {
             .option("--json", "Return response as json type", "")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
-                try {
-                    await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies)
-                } catch (err) {
-                    logger.error(new FatalError(err));
-                }
+                await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies)
                 process.exit();
             });
 
@@ -46,7 +42,7 @@ export class List {
 const options = commander.parseOptions(process.argv)
 const indexOfProfileOption = options.unknown.indexOf('-p') ?? options.unknown.indexOf('--profile');
 
-process.on("unhandledRejection", (e,promise) => {
+process.on("unhandledRejection", (e, promise) => {
     logger.error(e.toString());
 })
 

@@ -1,7 +1,7 @@
 import {AuthenticationType, Profile} from "../interfaces/profile.interface";
 import {CoreOptions, Headers, Response} from "request";
 import request = require("request");
-import { contextService} from "./context.service";
+import {contextService} from "./context.service";
 import {FatalError} from "../util/logger";
 
 class HttpClientServiceV2 {

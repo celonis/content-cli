@@ -1,6 +1,5 @@
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
-import {DataModelTransport} from "../../interfaces/package-manager.interfaces";
-import {packageApi} from "../../api/package-api";
+import {computePoolApi} from "../../api/compute-pool-api";
 
 class DatamodelService {
 
@@ -11,7 +10,7 @@ class DatamodelService {
 
         nodesListToExport.forEach(node => {
             promises.push(new Promise(async resolve => {
-                node.datamodels = await packageApi.findAssignedDatamodels(node.key);
+                node.datamodels = await computePoolApi.findAssignedDatamodels(node.key);
                 resolve(node);
             }));
         })

@@ -5,6 +5,8 @@ import {FileService, fileService} from "../file-service";
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
 import {PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
+import {nodeApi} from "../../api/node-api";
+import {packageDependenciesApi} from "../../api/package-dependencies-api";
 
 class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -24,7 +26,7 @@ class PackageService {
         if (includeDependencies) {
             fieldsToInclude.push("type", "value", "dependencies", "id", "version", "poolId", "node","dataModelId", "dataPool","datamodels");
 
-            const packagesKeyWithActionFlows = (await packageApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
+            const packagesKeyWithActionFlows = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
             nodesListToExport = nodesListToExport.filter(node => {
                 return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
             })
@@ -79,7 +81,7 @@ class PackageService {
     public async getPackagesWithDependencies(nodeIds: string[], draftIdByNodeId: Map<string, string>): Promise<PackageDependencyTransport[]> {
         const promises = [];
 
-        nodeIds.forEach(async nodeId => promises.push(packageApi.findDependenciesOfPackage(nodeId, draftIdByNodeId.get(nodeId))));
+        nodeIds.forEach(async nodeId => promises.push(packageDependenciesApi.findDependenciesOfPackage(nodeId, draftIdByNodeId.get(nodeId))));
 
         return await Promise.all(promises);
     }
