@@ -1,4 +1,4 @@
-import {AssetMetadataTransport} from "../api/package-manager-api";
+import {AssetMetadataTransport} from "./package-manager.interfaces";
 
 export interface SaveContentNode {
     key: string;

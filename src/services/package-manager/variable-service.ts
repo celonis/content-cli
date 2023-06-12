@@ -1,9 +1,10 @@
-import {packageManagerApi, VariablesAssignments} from "../../api/package-manager-api";
+import {packageApi} from "../../api/package-api";
+import {VariablesAssignments} from "../../interfaces/package-manager.interfaces";
 
 class VariableService {
 
     public async getVariablesByNodeKey(): Promise<Map<string, VariablesAssignments[]>> {
-        const nodeWithVariablesAssignments = await packageManagerApi.findAllPackagesWithVariableAssignments();
+        const nodeWithVariablesAssignments = await packageApi.findAllPackagesWithVariableAssignments();
         const variablesByNodeKey = new Map<string, VariablesAssignments[]>();
 
         nodeWithVariablesAssignments.forEach(nodeWithVariablesAssignment => {
