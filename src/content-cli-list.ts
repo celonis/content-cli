@@ -46,6 +46,10 @@ export class List {
 const options = commander.parseOptions(process.argv)
 const indexOfProfileOption = options.unknown.indexOf('-p') ?? options.unknown.indexOf('--profile');
 
+process.on("unhandledRejection", (e,promise) => {
+    logger.error(e.toString());
+})
+
 contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
     List.packages(commander);
     List.spaces(commander);

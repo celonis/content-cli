@@ -16,6 +16,12 @@ export interface ContentNodeTransport {
     spaceId: string;
 }
 
+export interface DataModelTransport {
+    id: string;
+    name: string,
+    poolId: string;
+}
+
 export interface PackageDependencyTransport {
     id: string;
     key: string;
@@ -42,6 +48,13 @@ export interface VariablesAssignments {
     type: string;
 }
 
+export interface PackageHistoryTransport {
+    id: string;
+    key: string;
+    name: string;
+    version: string;
+}
+
 class PackageManagerApi {
     public async findAllPackages(): Promise<ContentNodeTransport[]> {
         return httpClientV2.get("/package-manager/api/packages");
@@ -59,6 +72,13 @@ class PackageManagerApi {
         return httpClientV2.get("/package-manager/api/packages/with-variable-assignments")
     }
 
+    public async findLatestVersionById(nodeId: string): Promise<PackageHistoryTransport> {
+        return httpClientV2.get(`/package-manager/api/packages/${nodeId}/latest-version`);
+    }
+
+    public async getDataModel(dataModelId: string,packageKey : string): Promise<DataModelTransport> {
+        return httpClientV2.get(`/package-manager/api/compute-pools/data-models/${dataModelId}?packageKey=${packageKey}`);
+    }
 }
 
 export const packageManagerApi = new PackageManagerApi();
