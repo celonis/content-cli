@@ -6,6 +6,8 @@ import {FatalError} from "../util/logger";
 
 
 class PackageApi {
+    public static readonly INSTANCE = new PackageApi();
+
     public async findAllPackages(): Promise<ContentNodeTransport[]> {
         return httpClientV2.get("/package-manager/api/packages").catch(e => {
             throw new FatalError(`Problem getting packages: ${e}`);
@@ -26,4 +28,4 @@ class PackageApi {
 
 }
 
-export const packageApi = new PackageApi();
+export const packageApi = PackageApi.INSTANCE;
