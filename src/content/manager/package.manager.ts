@@ -2,8 +2,9 @@ import {ManagerConfig} from "../../interfaces/manager-config.interface";
 import {BaseManager} from "./base.manager";
 import * as fs from "fs";
 import {logger} from "../../util/logger";
-import {SaveContentNode} from "../../interfaces/save-content-node.interface";
-import { v4 as uuidv4 } from "uuid";
+import {
+    SaveContentNode,
+} from "../../interfaces/save-content-node.interface";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
@@ -21,7 +22,6 @@ export class PackageManager extends BaseManager {
     private _newKey: string;
     private _overwrite: boolean;
     private _draft: boolean;
-    private _jsonResponse: boolean;
 
     public get key(): string {
         return this._key;
@@ -79,14 +79,6 @@ export class PackageManager extends BaseManager {
         this._draft = value;
     }
 
-    public get jsonResponse(): boolean {
-        return this._jsonResponse;
-    }
-
-    public set jsonResponse(value: boolean) {
-        this._jsonResponse = value;
-    }
-
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, this.buildPushUrl()),
@@ -125,15 +117,9 @@ export class PackageManager extends BaseManager {
     }
 
     private listPackages(nodes: SaveContentNode[]): void {
-        if (this.jsonResponse) {
-            const filename = uuidv4() + ".json";
-            this.writeToFileWithGivenName(JSON.stringify(nodes, ["key","name", "changeDate", "activatedDraftId", "spaceId"]), filename);
-            logger.info(this.fileDownloadedMessage + filename);
-        } else {
-            nodes.forEach(node => {
-                logger.info(`${node.name} - Key: "${node.key}"`);
-            });
-        }
+        nodes.forEach(node => {
+            logger.info(`${node.name} - Key: "${node.key}"`);
+        });
     }
 
     private validateOptions(): void {

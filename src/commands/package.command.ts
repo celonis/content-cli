@@ -1,5 +1,6 @@
-import { ContentService } from "../services/content.service";
-import { PackageManagerFactory } from "../content/factory/package-manager.factory";
+import {ContentService} from "../services/content.service";
+import {PackageManagerFactory} from "../content/factory/package-manager.factory";
+import {packageService} from "../services/package-manager/package-service";
 
 export class PackageCommand {
     private contentService = new ContentService();
@@ -35,7 +36,11 @@ export class PackageCommand {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
-    public async listPackages(profile: string, jsonResponse: boolean): Promise<void> {
-        await this.contentService.findAll(profile, this.packageManagerFactory.createListManager(jsonResponse));
+    public async listPackages(jsonResponse: boolean, includeDependencies: boolean): Promise<void> {
+        if (jsonResponse) {
+            await packageService.findAndExportAllPackages(includeDependencies);
+        } else {
+            await packageService.listPackages();
+        }
     }
 }

@@ -1,3 +1,5 @@
+import {AssetMetadataTransport} from "./package-manager.interfaces";
+
 export interface SaveContentNode {
     key: string;
     rootNodeKey: string;
@@ -8,6 +10,3 @@ export interface SaveContentNode {
     assetMetadataTransport: AssetMetadataTransport;
 }
 
-export class AssetMetadataTransport {
-    public hidden: boolean;
-}
