@@ -5,7 +5,17 @@ import { FatalError, logger } from "../../util/logger";
 import { AssetManager } from "../manager/asset.manager";
 
 export class AssetManagerFactory {
-    public createManager(key?: string, fileName?: string, packageKey?: string): AssetManager {
+
+    public createListManager(ymlResponse: boolean, assetType: string): AssetManager {
+        return this.createManager(null, null, null, assetType, ymlResponse);
+    }
+
+    public createManager(
+        key?: string,
+        fileName?: string,
+        packageKey?: string,
+        assetType?: string,
+        ymlResponse?: boolean): AssetManager {
         const assetManager = new AssetManager();
         assetManager.key = key;
 
@@ -14,6 +24,8 @@ export class AssetManagerFactory {
         }
 
         assetManager.packageKey = packageKey;
+        assetManager.assetType = assetType;
+        assetManager.ymlResponse = ymlResponse;
         return assetManager;
     }
 

@@ -1,5 +1,6 @@
 import {PackageCommand} from "./commands/package.command";
 import {SpaceCommand} from "./commands/space.command";
+import {AssetCommand} from "./commands/asset.command";
 
 import commander = require("commander");
 import {contextService} from "./services/context.service";
@@ -36,6 +37,20 @@ export class List {
 
         return program;
     }
+    public static assets(program: CommanderStatic): CommanderStatic {
+        program
+            .command("assets")
+            .description("Command to list all assets")
+            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("--yml", "Return response as yml type", "")
+            .option("--assetType <assetType>", "type of assets")
+            .action(async cmd => {
+                await new AssetCommand().listAssets(cmd.profile, cmd.yml, cmd.assetType);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 
@@ -49,6 +64,7 @@ process.on("unhandledRejection", (e, promise) => {
 contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
     List.packages(commander);
     List.spaces(commander);
+    List.assets(commander);
 
     commander.parse(process.argv);
 }).catch(e => {

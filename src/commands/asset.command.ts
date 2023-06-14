@@ -16,4 +16,9 @@ export class AssetCommand {
     public async pushAssets(profile: string, packageKey: string): Promise<void> {
         await this.contentService.batchPush(profile, this.assetManagerFactory.createManagers(packageKey));
     }
+
+    public async listAssets(profile: string, ymlResponse: boolean, assetType: string): Promise<void> {
+        await this.contentService.findAll(profile, this.assetManagerFactory.createListManager(ymlResponse, assetType));
+    }
+
 }
