@@ -9,7 +9,6 @@ export class DataPoolManager extends BaseManager {
     private static DATA_POOL_PUSH_URL = DataPoolManager.API_URL + "/pool-import";
     private static DATA_POOL_ACTIONS_URL = DataPoolManager.API_URL + "/pools/{id}";
     private static DATA_POOL_PULL_URL = DataPoolManager.DATA_POOL_ACTIONS_URL + "/export";
-    private static DATA_POOLS_LIST_URL = DataPoolManager.API_URL + "/pools/paged";
 
     private _id: string;
     private _content: string;
@@ -33,7 +32,6 @@ export class DataPoolManager extends BaseManager {
     public getConfig(): ManagerConfig {
         return {
             pushUrl: this.profile.team.replace(/\/?$/, `${DataPoolManager.DATA_POOL_PUSH_URL}`),
-            findAllUrl: this.profile.team.replace(/\/?$/, `${DataPoolManager.DATA_POOLS_LIST_URL}`),
             pullUrl: this.profile.team
                 .replace(/\/?$/, `${DataPoolManager.DATA_POOL_PULL_URL}`)
                 .replace("{id}", this.id),
@@ -47,7 +45,6 @@ export class DataPoolManager extends BaseManager {
             onUpdateSuccessMessage: (): string => {
                 return "Data Pool was updated successfully!";
             },
-            onFindAll: (data: DataPoolSlimTransport[]) => this.listDataPools(data),
         };
     }
 
@@ -62,13 +59,6 @@ export class DataPoolManager extends BaseManager {
         return {
             body: this.content,
         };
-    }
-
-
-    private listDataPools(pools: DataPoolSlimTransport[]): void {
-        pools.forEach(pool => {
-            logger.info(`${pool}`);
-        });
     }
 
     protected getSerializedFileContent(data: any): string {
