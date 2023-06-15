@@ -285,7 +285,7 @@ With this command you can retrieve a list of all assets with the --assetType o
 The command takes your permissions into consideration and only lists the
 assets you have access to. 
 
--   It is also possible to download assets in YML format by adding '--yml' option.
+-   It is also possible to download packages in JSON format by adding '--json' option.
 
 ```
 content-cli list assets -p <your-chosen-profile> --assetType SCENARIO

@@ -42,10 +42,10 @@ export class List {
             .command("assets")
             .description("Command to list all assets")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
-            .option("--yml", "Return response as yml type", "")
+            .option("--json", "Return response as json type", "")
             .option("--assetType <assetType>", "type of assets")
             .action(async cmd => {
-                await new AssetCommand().listAssets(cmd.profile, cmd.yml, cmd.assetType);
+                await new AssetCommand().listAssets(cmd.profile, cmd.json, cmd.assetType);
                 process.exit();
             });
 
