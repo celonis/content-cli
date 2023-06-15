@@ -41,7 +41,7 @@ export class List {
         program
             .command("assets")
             .description("Command to list all assets")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("-p, --profile <profile>", "Profile which you want to use to list assets")
             .option("--json", "Return response as json type", "")
             .option("--assetType <assetType>", "type of assets")
             .action(async cmd => {
