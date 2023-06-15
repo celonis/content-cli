@@ -1,7 +1,5 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
-import {logger} from "../../util/logger";
-import {DataPoolSlimTransport} from "../../interfaces/data-pool-manager.interfaces";
 
 export class DataPoolManager extends BaseManager {
     public static DATA_POOL_FILE_NAME_PREFIX = "data-pool_";
