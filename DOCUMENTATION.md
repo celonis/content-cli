@@ -279,6 +279,18 @@ packages you have access to. 
 content-cli list packages -p <your-chosen-profile>
 ```
 
+### List all assets in Studio 
+
+With this command you can retrieve a list of all assets with the --assetType option within a team.
+The command takes your permissions into consideration and only lists the
+assets you have access to. 
+
+-   It is also possible to download assets in JSON format by adding '--json' option.
+
+```
+content-cli list assets -p <your-chosen-profile> --assetType SCENARIO
+```
+
 ### Asset options for Analysis
 
 For migration use cases, when pulling analysis from Process Analytics

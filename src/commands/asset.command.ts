@@ -1,5 +1,6 @@
-import { ContentService } from "../services/content.service";
-import { AssetManagerFactory } from "../content/factory/asset-manager.factory";
+import {ContentService} from "../services/content.service";
+import {AssetManagerFactory} from "../content/factory/asset-manager.factory";
+import {assetService} from "../services/package-manager/asset-service";
 
 export class AssetCommand {
     private contentService = new ContentService();
@@ -15,5 +16,13 @@ export class AssetCommand {
 
     public async pushAssets(profile: string, packageKey: string): Promise<void> {
         await this.contentService.batchPush(profile, this.assetManagerFactory.createManagers(packageKey));
+    }
+
+    public async listAssets(profile: string, jsonResponse: boolean, assetType: string): Promise<void> {
+        if (jsonResponse) {
+            await assetService.findAndExportAllAssets(assetType);
+        } else {
+            await assetService.listAssets(assetType);
+        }
     }
 }
