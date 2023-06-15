@@ -288,7 +288,7 @@ assets you have access to. 
 -   It is also possible to download assets in YML format by adding '--yml' option.
 
 ```
-content-cli list packages -p <your-chosen-profile>
+content-cli list assets -p <your-chosen-profile> --assetType SCENARIO
 ```
 
 ### Asset options for Analysis
