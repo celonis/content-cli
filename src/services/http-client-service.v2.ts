@@ -2,7 +2,7 @@ import {AuthenticationType, Profile} from "../interfaces/profile.interface";
 import {CoreOptions, Headers, Response} from "request";
 import request = require("request");
 import {contextService} from "./context.service";
-import {FatalError} from "../util/logger";
+import {FatalError, logger} from "../util/logger";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
@@ -12,6 +12,27 @@ class HttpClientServiceV2 {
             });
         }).catch(e => {
             throw new FatalError(e);
+        });
+    }
+
+    public async getFileData(url: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request
+                .post(this.resolveUrl(url), this.makeFileDownloadOptions(contextService.getContext().profile))
+                .on("response", (response: Response) => {
+                    const data: Buffer[] = [];
+                    response.on("data", (chunk: Buffer) => {
+                        data.push(chunk);
+                    });
+                    response.on("end", () => {
+                        if (this.checkBadRequest(response.statusCode)) {
+                            this.handleBadRequest(response.statusCode, data.toString(), reject);
+                        } else {
+                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        }
+                    });
+                })
+                .on("error", error => reject(error));
         });
     }
 
@@ -36,6 +57,13 @@ class HttpClientServiceV2 {
         resolve(body);
     }
 
+    private makeFileDownloadOptions(profile: Profile): object {
+        return {
+            headers: this.buildAuthorizationHeaders(profile),
+            responseType: "binary",
+        };
+    }
+
     private checkBadRequest(statusCode: number): boolean {
         return statusCode >= 400;
     }
@@ -49,6 +77,15 @@ class HttpClientServiceV2 {
         }
     }
 
+    private handleResponseStreamData(data, resolve, reject): void {
+        if (data) {
+            resolve(data);
+            return;
+        }
+
+        logger.error("Could not get file stream from response");
+        reject();
+    }
 
     private makeOptions(profile: Profile, body: object = {}): CoreOptions {
         const options = {

@@ -26,6 +26,12 @@ class PackageApi {
         });
     }
 
+    public async pullPackage(key: string,
+                             store?: boolean,
+                             newKey?: string,
+                             draft?: boolean): Promise<any> {
+        return httpClientV2.getFileData(`/package-manager/api/packages/${key}/export?store=${store}&draft=${draft}${newKey ? `&newKey=${newKey}` : ""}`);
+    }
 }
 
 export const packageApi = PackageApi.INSTANCE;

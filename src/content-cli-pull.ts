@@ -1,12 +1,15 @@
-import { AnalysisCommand } from "./commands/analysis.command";
-import { SkillCommand } from "./commands/skill.command";
-import { ObjectiveCommand } from "./commands/objective.command";
-import { DataPoolCommand } from "./commands/data-pool.command";
-import { AssetCommand } from "./commands/asset.command";
-import { PackageCommand } from "./commands/package.command";
-import { AnalysisBookmarksCommand } from "./commands/analysis-bookmarks.command";
+import {AnalysisCommand} from "./commands/analysis.command";
+import {SkillCommand} from "./commands/skill.command";
+import {ObjectiveCommand} from "./commands/objective.command";
+import {DataPoolCommand} from "./commands/data-pool.command";
+import {AssetCommand} from "./commands/asset.command";
+import {PackageCommand} from "./commands/package.command";
+import {AnalysisBookmarksCommand} from "./commands/analysis-bookmarks.command";
 
 import commander = require("commander");
+import {contextService} from "./services/context.service";
+import {logger} from "./util/logger";
+
 type CommanderStatic = commander.CommanderStatic;
 
 class Pull {
@@ -102,28 +105,58 @@ class Pull {
             .command("package")
             .description("Command to pull a package")
             .option("-p, --profile <profile>", "Profile which you want to use to pull the package")
-            .requiredOption("--key <key>", "Key of the package you want to pull")
+            .option("--key <key>", "Key of the package you want to pull")
             .option("--store", "Pull package with store deployment metadata")
             .option("--newKey <newKey>", "Define a new key for your package")
             .option("--draft", "Pull draft version of package")
+            .option("--includeDependencies", "When exporting multiple packages include their dependencies as well")
+            .option("--packageKeys <packageKeys>", "Comma seperated list of package  keys to export")
             .action(async cmd => {
-                await new PackageCommand().pullPackage(cmd.profile, cmd.key, !!cmd.store, cmd.newKey, !!cmd.draft);
+                if (!cmd.key && !cmd.packageKeys) {
+                    logger.error("Either key or a list of keys needs to be provided");
+                    process.exit();
+                }
+                await new PackageCommand().pullPackage(cmd.key, !!cmd.store, cmd.newKey, !!cmd.draft, this.listOfValues(cmd.packageKeys),cmd.includeDependencies);
                 process.exit();
             });
 
         return program;
     }
+
+    private static listOfValues(values: string): string[] {
+
+        const splitValue = values ?values.split(",") : [];
+
+        splitValue.forEach(value => {
+            if (value.trim() === "") {
+                logger.error("Invalid value for packageKeys. Please provide a comma seperated list like: --packageKeys package1,package2,package3....")
+                process.exit();
+            }
+        })
+        return splitValue;
+    }
 }
 
-Pull.analysis(commander);
-Pull.analysisBookmarks(commander);
-Pull.skill(commander);
-Pull.objective(commander);
-Pull.dataPool(commander);
-Pull.asset(commander);
-Pull.package(commander);
+const options = commander.parseOptions(process.argv);
+const indexOfProfileOption = options.unknown.indexOf('-p') ?? options.unknown.indexOf('--profile');
 
-commander.parse(process.argv);
+process.on("unhandledRejection", (e, promise) => {
+    logger.error(e.toString());
+})
+
+contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
+    Pull.analysis(commander);
+    Pull.analysisBookmarks(commander);
+    Pull.skill(commander);
+    Pull.objective(commander);
+    Pull.dataPool(commander);
+    Pull.asset(commander);
+    Pull.package(commander);
+
+    commander.parse(process.argv);
+}).catch(e => {
+    console.log(e)
+});
 
 if (!process.argv.slice(2).length) {
     commander.outputHelp();

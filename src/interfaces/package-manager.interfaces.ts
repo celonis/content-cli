@@ -68,3 +68,9 @@ export interface ComputePoolTransport {
     name: string;
 }
 
+export interface SpaceTransport {
+    spaceIcon: string;
+    name: string;
+    id: string;
+}
+

@@ -7,16 +7,19 @@ export class PackageCommand {
     private packageManagerFactory = new PackageManagerFactory();
 
     public async pullPackage(
-        profile: string,
         key: string,
         store: boolean,
         newKey: string,
-        draft: boolean
+        draft: boolean,
+        packageKeys?: string[],
+        includeDependencies?: boolean,
     ): Promise<void> {
-        await this.contentService.pullFile(
-            profile,
-            this.packageManagerFactory.createPullManager(key, store, newKey, draft)
-        );
+        if (packageKeys && packageKeys.length) {
+            await packageService.pullPackages(packageKeys,includeDependencies)
+        } else {
+            await packageService.pullPackage(key, store, newKey, draft);
+
+        }
     }
 
     public async pushPackage(
