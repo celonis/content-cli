@@ -279,6 +279,18 @@ packages you have access to. 
 content-cli list packages -p <your-chosen-profile>
 ```
 
+### List all data pools of the team
+
+With this command you can retrieve a list of all data pools within a team.
+The command takes your permissions into consideration and only lists the
+pools you have access to. 
+
+-   It is also possible to download packages in JSON format by adding '--json' option.
+
+```
+content-cli list packages -p <your-chosen-profile>
+```
+
 ### List all assets in Studio 
 
 With this command you can retrieve a list of all assets with the --assetType option within a team.

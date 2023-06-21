@@ -43,7 +43,7 @@ export class List {
         program
             .command("data-pools")
             .description("Command to list all Data Pools")
-            .option("-p, --profile <profile>", "Profile which you want to use to list spaces")
+            .option("-p, --profile <profile>", "Profile which you want to use to list data pools")
             .option("--json", "Return response as json type", "")
             .action(async cmd => {
                 await new DataPoolCommand().listDataPools(cmd.profile, cmd.json);
