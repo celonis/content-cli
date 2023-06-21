@@ -288,7 +288,7 @@ pools you have access to. 
 -   It is also possible to download packages in JSON format by adding '--json' option.
 
 ```
-content-cli list packages -p <your-chosen-profile>
+content-cli list data-pools -p <your-chosen-profile>
 ```
 
 ### List all assets in Studio 
