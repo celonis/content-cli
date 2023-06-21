@@ -1,5 +1,6 @@
-import { ContentService } from "../services/content.service";
-import { DataPoolManagerFactory } from "../content/factory/data-pool-manager.factory";
+import {ContentService} from "../services/content.service";
+import {DataPoolManagerFactory} from "../content/factory/data-pool-manager.factory";
+import {dataPoolService} from "../services/data-pool/data-pool-service";
 
 export class DataPoolCommand {
     private contentService = new ContentService();
@@ -20,4 +21,13 @@ export class DataPoolCommand {
     public async updateDataPool(profile: string, id: string, filename: string): Promise<any> {
         await this.contentService.update(profile, this.dataPoolManagerFactory.createManager(id, filename));
     }
+
+    public async listDataPools(profile: string, jsonResponse: boolean): Promise<any> {
+        if (jsonResponse) {
+            await dataPoolService.findAndExportAllPools();
+        } else {
+            await dataPoolService.listDataPools();
+        }
+    }
+
 }
