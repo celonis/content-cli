@@ -43,4 +43,8 @@ export class PackageCommand {
             await packageService.listPackages();
         }
     }
+
+    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
+        await packageService.batchExportPackages(packageKeys, includeDependencies);
+    }
 }

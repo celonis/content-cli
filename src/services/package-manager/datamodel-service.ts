@@ -1,5 +1,6 @@
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {computePoolApi} from "../../api/compute-pool-api";
+import {logger} from "../../util/logger";
 
 class DatamodelService {
 
