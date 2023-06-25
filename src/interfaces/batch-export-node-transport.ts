@@ -37,3 +37,8 @@ export interface ManifestDependency {
     packageKey: string,
     version: string
 }
+
+export interface PackageAndAssetTransport {
+    rootNode: ContentNodeTransport,
+    nodes: ContentNodeTransport[]
+}
