@@ -4,18 +4,14 @@ import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
 import {
     BatchExportNodeTransport,
-    ManifestDependency,
-    ManifestNodeTransport
+    ManifestNodeTransport, PackageAndAssetTransport
 } from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
 import {ContentNodeTransport, PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
 import {nodeApi} from "../../api/node-api";
 import {packageDependenciesApi} from "../../api/package-dependencies-api";
 import {variableService} from "./variable-service";
-import {SpaceExportTransport} from "../../interfaces/save-space.interface";
 import {spaceService} from "./space-service";
-import {computePoolApi} from "../../api/compute-pool-api";
-import {promises} from "fs";
 
 class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -62,21 +58,18 @@ class PackageService {
     }
 
     public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
-        const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
         const allPackages = await packageApi.findAllPackages();
         let nodesListToExport: BatchExportNodeTransport[] = allPackages.filter(node => packageKeys.includes(node.key));
-        const actionFlowsPackageKeys = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node=>node.rootNodeKey);
+        const actionFlowsPackageKeys = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
         nodesListToExport = nodesListToExport.filter(node => !actionFlowsPackageKeys.includes(node.key));
 
-        if(includeDependencies) {
-            fieldsToInclude.push("type", "value", "dependencies", "id", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels", "variables", "space");
-
+        if (includeDependencies) {
             nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages);
-
-            this.exportManifestOfPackages(nodesListToExport);
-            this.exportPackagesAndAssets(nodesListToExport);
+            nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
+            await this.exportToZip(nodesListToExport);
         } else {
-            this.exportListOfPackages(nodesListToExport, fieldsToInclude);
+            nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
+            await this.exportToZip(nodesListToExport);
         }
     }
 
@@ -136,67 +129,89 @@ class PackageService {
 
         await variableService.getVariablesByNodeKey(nodesListToExport);
         nodesListToExport = await dataModelService.getDatamodelsForNodes(nodesListToExport);
-        nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
 
         nodesListToExport = await this.getNodeDependecies(nodesListToExport, allPackages);
         return nodesListToExport
     }
 
     private async getNodeDependecies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[]): Promise<BatchExportNodeTransport[]> {
-        for(const node of nodesListToExport) {
-            const nodesToGetKeys = node.dependencies.filter(dependency=> !nodesListToExport
-                    .map(node=> node.key)
-                    .includes(dependency.key))
-                .map(dependency=>dependency.key);
-            if(nodesToGetKeys.length > 0) {
-                let dependencyNodes = allPackages.filter(packageNode=> nodesToGetKeys.includes(packageNode.key));
+        for (const node of nodesListToExport) {
+            const nodesToGetKeys = node.dependencies.filter(dependency => !nodesListToExport
+                .map(node => node.key)
+                .includes(dependency.key))
+                .map(dependency => dependency.key);
+            if (nodesToGetKeys.length > 0) {
+                let dependencyNodes = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key));
                 dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages);
                 nodesListToExport.push(...dependencyNodes);
             }
         }
         return nodesListToExport;
     }
+
     private exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): void {
         const filename = uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
         logger.info(FileService.fileDownloadedMessage + filename);
     }
 
-    private exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): void {
-        for(const node of nodes) {
-            fileService.writeToFileWithGivenName(JSON.stringify(node as unknown as ContentNodeTransport), node.key + ".json");
+    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): Promise<PackageAndAssetTransport[]> {
+        const packageAndAssets: PackageAndAssetTransport[] = [];
+        const packages = nodes as ContentNodeTransport[];
+        for (const rootPackage of packages) {
+            const assets = await nodeApi.findAllByRootKey(rootPackage.key);
+            packageAndAssets.push({
+                rootNode: rootPackage,
+                nodes: assets
+            })
+        }
+        return packageAndAssets;
+    }
+
+    private async exportToZip(nodes: BatchExportNodeTransport[]): Promise<void> {
+        const manifestNodes = this.exportManifestOfPackages(nodes);
+        const packagesAndAssets = await this.exportPackagesAndAssets(nodes);
+        fileService.createDirectoryWithGivenName("exported-assets");
+        fileService.writeToFileWithGivenName(JSON.stringify(manifestNodes), "exported-assets/manifest.json");
+        for (const packageAndAsset of packagesAndAssets) {
+            fileService.createDirectoryWithGivenName("exported-assets/" + packageAndAsset.rootNode.key);
+            fileService.writeToFileWithGivenName(JSON.stringify(packageAndAsset.rootNode), `exported-assets/${packageAndAsset.rootNode.key}/${packageAndAsset.rootNode.key}.json`);
+            fileService.createDirectoryWithGivenName("exported-assets/" + packageAndAsset.rootNode.key + "/nodes");
+            for (const node of packageAndAsset.nodes) {
+                fileService.writeToFileWithGivenName(JSON.stringify(node), `exported-assets/${packageAndAsset.rootNode.key}/nodes/${node.key}.json`);
+            }
         }
     }
 
-    private exportManifestOfPackages(nodes: BatchExportNodeTransport[]): void {
+    private exportManifestOfPackages(nodes: BatchExportNodeTransport[]): ManifestNodeTransport[] {
         const manifestNodes: ManifestNodeTransport[] = [];
-        nodes.forEach((node)=> {
-          const manifestNode = {} as ManifestNodeTransport;
-          manifestNode.packageKey = node.key;
-          manifestNode.space = {
-              spaceName: node.space.name,
-              spaceIcon: node.space.iconReference
-          }
-          manifestNode.variables = node.variables.filter(variable=>variable.type === "DATA_MODEL").map((variable)=> {
-              // @ts-ignore
-              const dataModel = node.datamodels.find(dataModel => dataModel.node.dataModelId === variable.value);
-              // logger.info(dataModel);
-              return {
-                  variableName: variable.key,
-                  dataModelName: dataModel?.node.name,
-                  dataPoolName: dataModel?.dataPool.name
-              }
-          });
-          manifestNode.dependencies = node.dependencies.map(dependency => {
-            return {
-                packageKey: dependency.key,
-                version: dependency.version
+        nodes.forEach((node) => {
+            const manifestNode = {} as ManifestNodeTransport;
+            manifestNode.packageKey = node.key;
+            manifestNode.space = {
+                spaceName: node.space.name,
+                spaceIcon: node.space.iconReference
             }
-          });
-          manifestNodes.push(manifestNode);
+            manifestNode.variables = node.variables?.filter(variable => variable.type === "DATA_MODEL").map((variable) => {
+                // @ts-ignore
+                const dataModel = node.datamodels?.find(dataModel => dataModel.node.dataModelId === variable.value);
+                // logger.info(dataModel);
+                return {
+                    variableName: variable.key,
+                    dataModelName: dataModel?.node.name,
+                    dataPoolName: dataModel?.dataPool.name
+                }
+            });
+            manifestNode.dependencies = node.dependencies?.map(dependency => {
+                return {
+                    packageKey: dependency.key,
+                    version: dependency.version
+                }
+            });
+            manifestNodes.push(manifestNode);
         })
 
-        fileService.writeToFileWithGivenName(JSON.stringify(manifestNodes), "manifest.json");
+        return manifestNodes;
     }
 }
 

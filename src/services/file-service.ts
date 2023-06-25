@@ -12,6 +12,10 @@ export class FileService {
         });
     }
 
+    public createDirectoryWithGivenName(dirName: string): void {
+        fs.mkdirSync(path.resolve(process.cwd(), dirName));
+    }
+
     private getSerializedFileContent(data: any): string {
         return data;
     }
