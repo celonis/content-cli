@@ -195,7 +195,6 @@ class PackageService {
             manifestNode.variables = node.variables?.filter(variable => variable.type === "DATA_MODEL").map((variable) => {
                 // @ts-ignore
                 const dataModel = node.datamodels?.find(dataModel => dataModel.node.dataModelId === variable.value);
-                // logger.info(dataModel);
                 return {
                     variableName: variable.key,
                     dataModelName: dataModel?.node.name,
