@@ -22,10 +22,9 @@ export interface ManifestNodeTransport {
     dependencies: ManifestDependency[]
 }
 
-export interface ManifestVariable {
-    variableName: string,
-    dataPoolName: string,
-    dataModelName: string
+export interface ManifestVariable extends VariablesAssignments{
+    dataPoolName?: string,
+    dataModelName?: string
 }
 
 export interface ManifestSpace {
@@ -35,7 +34,8 @@ export interface ManifestSpace {
 
 export interface ManifestDependency {
     packageKey: string,
-    version: string
+    version: string,
+    external: boolean
 }
 
 export interface PackageAndAssetTransport {

@@ -12,8 +12,14 @@ import {nodeApi} from "../../api/node-api";
 import {packageDependenciesApi} from "../../api/package-dependencies-api";
 import {variableService} from "./variable-service";
 import {spaceService} from "./space-service";
+import {HttpClientService} from "../http-client.service";
+import {ProfileService} from "../profile.service";
+import * as YAML from 'yaml';
+import AdmZip = require("adm-zip");
 
 class PackageService {
+    private httpClientService = new HttpClientService();
+    private profileService = new ProfileService();
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     public async listPackages(): Promise<void> {
@@ -57,7 +63,7 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
-    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean, profileName: string): Promise<void> {
         const allPackages = await packageApi.findAllPackages();
         let nodesListToExport: BatchExportNodeTransport[] = allPackages.filter(node => packageKeys.includes(node.key));
         const actionFlowsPackageKeys = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
@@ -66,10 +72,10 @@ class PackageService {
         if (includeDependencies) {
             nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages);
             nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-            await this.exportToZip(nodesListToExport);
+            await this.exportToZip(nodesListToExport, profileName);
         } else {
             nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-            await this.exportToZip(nodesListToExport);
+            await this.exportToZip(nodesListToExport, profileName);
         }
     }
 
@@ -155,32 +161,31 @@ class PackageService {
         logger.info(FileService.fileDownloadedMessage + filename);
     }
 
-    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): Promise<PackageAndAssetTransport[]> {
-        const packageAndAssets: PackageAndAssetTransport[] = [];
+    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[], profileName: string): Promise<any[]> {
+        const zips = [];
         const packages = nodes as ContentNodeTransport[];
         for (const rootPackage of packages) {
-            const assets = await nodeApi.findAllByRootKey(rootPackage.key);
-            packageAndAssets.push({
-                rootNode: rootPackage,
-                nodes: assets
-            })
+            const profile = await this.profileService.findProfile(profileName)
+            const exportedPackage = await this.httpClientService.pullFileData(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export`, profile);
+            zips.push({
+                data: exportedPackage,
+                packageKey: rootPackage.key
+            });
         }
-        return packageAndAssets;
+        return zips;
     }
 
-    private async exportToZip(nodes: BatchExportNodeTransport[]): Promise<void> {
+    private async exportToZip(nodes: BatchExportNodeTransport[], profileName: string): Promise<void> {
         const manifestNodes = this.exportManifestOfPackages(nodes);
-        const packagesAndAssets = await this.exportPackagesAndAssets(nodes);
-        fileService.createDirectoryWithGivenName("exported-assets");
-        fileService.writeToFileWithGivenName(JSON.stringify(manifestNodes), "exported-assets/manifest.json");
-        for (const packageAndAsset of packagesAndAssets) {
-            fileService.createDirectoryWithGivenName("exported-assets/" + packageAndAsset.rootNode.key);
-            fileService.writeToFileWithGivenName(JSON.stringify(packageAndAsset.rootNode), `exported-assets/${packageAndAsset.rootNode.key}/${packageAndAsset.rootNode.key}.json`);
-            fileService.createDirectoryWithGivenName("exported-assets/" + packageAndAsset.rootNode.key + "/nodes");
-            for (const node of packageAndAsset.nodes) {
-                fileService.writeToFileWithGivenName(JSON.stringify(node), `exported-assets/${packageAndAsset.rootNode.key}/nodes/${node.key}.json`);
-            }
+        const packageZips = await this.exportPackagesAndAssets(nodes, profileName);
+
+        const zip = new AdmZip();
+
+        zip.addFile("manifest.yml", Buffer.from(YAML.stringify(manifestNodes), "utf8"));
+        for (const packageZip of packageZips) {
+            zip.addFile(packageZip.packageKey + ".zip", packageZip.data)
         }
+        zip.writeZip(/*target file name*/ "export.zip");
     }
 
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[]): ManifestNodeTransport[] {
@@ -192,19 +197,25 @@ class PackageService {
                 spaceName: node.space.name,
                 spaceIcon: node.space.iconReference
             }
-            manifestNode.variables = node.variables?.filter(variable => variable.type === "DATA_MODEL").map((variable) => {
-                // @ts-ignore
-                const dataModel = node.datamodels?.find(dataModel => dataModel.node.dataModelId === variable.value);
-                return {
-                    variableName: variable.key,
-                    dataModelName: dataModel?.node.name,
-                    dataPoolName: dataModel?.dataPool.name
+            manifestNode.variables = node.variables?.map((variable) => {
+                if (variable.type === "DATA_MODEL") {
+                    // @ts-ignore
+                    const dataModel = node.datamodels?.find(dataModel => dataModel.node.dataModelId === variable.value);
+                    return {
+                        key: variable.key,
+                        type: variable.type,
+                        value: variable.value,
+                        dataModelName: dataModel?.node.name,
+                        dataPoolName: dataModel?.dataPool.name
+                    }
                 }
+                return variable;
             });
             manifestNode.dependencies = node.dependencies?.map(dependency => {
                 return {
                     packageKey: dependency.key,
-                    version: dependency.version
+                    version: dependency.version,
+                    external: dependency.external
                 }
             });
             manifestNodes.push(manifestNode);

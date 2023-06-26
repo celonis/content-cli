@@ -15,7 +15,7 @@ export class Export {
             .option("--packageKeys <packageKeys...>", "Exports only given package keys", "[]")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
-                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies)
+                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies, cmd.profile)
                 process.exit();
             });
 
