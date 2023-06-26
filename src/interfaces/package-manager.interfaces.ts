@@ -26,6 +26,7 @@ export interface PackageDependencyTransport {
     name: string;
     version: string;
     rootNodeId: string;
+    external: boolean
 }
 
 export interface AssetMetadataTransport {
