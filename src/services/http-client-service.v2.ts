@@ -2,12 +2,42 @@ import {AuthenticationType, Profile} from "../interfaces/profile.interface";
 import {CoreOptions, Headers, Response} from "request";
 import request = require("request");
 import {contextService} from "./context.service";
-import {FatalError} from "../util/logger";
+import {FatalError, logger} from "../util/logger";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.get(this.resolveUrl(url), this.makeOptions(contextService.getContext().profile, null), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async post(url: string, body:any): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.post(this.resolveUrl(url), this.makeOptions(contextService.getContext().profile, body), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async postJson(url: string, body:any): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.post(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, JSON.stringify(body), "application/json;charset=utf-8"), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async put(url: string, body:object): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.put(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, JSON.stringify(body), "application/json;charset=utf-8"), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         }).catch(e => {
@@ -58,11 +88,18 @@ class HttpClientServiceV2 {
         return Object.assign(options, body);
     }
 
-    private buildAuthorizationHeaders(profile: Profile): Headers {
+    private makeOptionsJson(profile: Profile, body: any, contentType: string): CoreOptions {
+        return {
+            headers: this.buildAuthorizationHeaders(profile, contentType),
+            body: body
+        };
+    }
+
+    private buildAuthorizationHeaders(profile: Profile, contentType?: string): Headers {
         const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
         return {
             authorization: `${authenticationType} ${profile.apiToken}`,
-            "content-type": "application/json",
+            "content-type": contentType ?? "application/json",
         };
     }
 }
