@@ -3,8 +3,8 @@ import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
 import {
-    BatchExportNodeTransport,
-    ManifestNodeTransport, PackageAndAssetTransport
+    BatchExportNodeTransport, ManifestDependency,
+    ManifestNodeTransport, PackageAndAssetTransport, SpaceMappingTransport
 } from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
 import {ContentNodeTransport, PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
@@ -15,7 +15,11 @@ import {spaceService} from "./space-service";
 import {HttpClientService} from "../http-client.service";
 import {ProfileService} from "../profile.service";
 import * as YAML from 'yaml';
+import * as fs from "fs";
 import AdmZip = require("adm-zip");
+import {spaceApi} from "../../api/space-api";
+import * as path from "path";
+import {SaveSpace} from "../../interfaces/save-space.interface";
 
 class PackageService {
     private httpClientService = new HttpClientService();
@@ -63,6 +67,24 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
+    public async batchImportPackages(spaceMapping: string[], exportedDatapoolsFile: string, exportedPackagesFile: string): Promise<void> {
+        if (exportedPackagesFile) {
+            const zip = new AdmZip(exportedPackagesFile + ".zip");
+            await fs.mkdirSync(path.resolve(process.cwd(), "export"));
+            await zip.extractAllTo("export");
+
+            const manifestNodes = await fileService.readManifestFile(exportedPackagesFile);
+            const allSpaces = await spaceApi.findAllSpaces();
+            const importedKeys = [];
+            for (const node of manifestNodes) {
+                await this.importPackage(node, manifestNodes, spaceMapping, allSpaces, importedKeys)
+            }
+        } else {
+            logger.error("You should provide exportedPackagesFile");
+            throw Error();
+        }
+    }
+
     public async batchExportPackages(packageKeys: string[], includeDependencies: boolean, profileName: string): Promise<void> {
         const allPackages = await packageApi.findAllPackages();
         let nodesListToExport: BatchExportNodeTransport[] = allPackages.filter(node => packageKeys.includes(node.key));
@@ -105,6 +127,19 @@ class PackageService {
         return Promise.all(promises);
     }
 
+    public async getActiveVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
+        const promises = [];
+
+        nodes.forEach(node => {
+            promises.push(new Promise(async resolve => {
+                node.version = await packageApi.findActiveVersionById(node.id);
+                resolve(node);
+            }));
+        })
+
+        return Promise.all(promises);
+    }
+
     public async getPackagesWithDependencies(nodeIds: string[], draftIdByNodeId: Map<string, string>): Promise<PackageDependencyTransport[]> {
         const promises = [];
 
@@ -117,8 +152,96 @@ class PackageService {
         return dependencies;
     }
 
+    public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
+        const nodeInTargetTeam1 = await packageApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey);
+        const nextVersion = await packageApi.findNextVersion(nodeInTargetTeam1.id);
+        await packageApi.publishPackage({
+            packageKey: packageToImport.packageKey,
+            version: nextVersion.version,
+            publishMessage: "Published package after import",
+            nodeIdsToExclude: []
+        });
+    }
+    private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMapping: string[], allSpaces: SaveSpace[], importedKeys: string[]) {
+        if (importedKeys.includes(packageToImport.packageKey)) {
+            return;
+        }
+        let targetSpaceId;
+        if (packageToImport.dependencies.length > 0) {
+            for (const dependency of packageToImport.dependencies) {
+                if (!dependency.external) {
+                    const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
+                    await this.importPackage(dependentPackage, manifestNodes, spaceMapping, allSpaces, importedKeys)
+                }
+            }
+        }
+
+        let targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName)
+        if (spaceMapping) {
+            const customSpacesMap: SpaceMappingTransport[] = spaceMapping.map(spaceMap => {
+                const packageAndSpaceid = spaceMap.split(":");
+                return {
+                    packageKey: packageAndSpaceid[0],
+                    spaceId: packageAndSpaceid[1]
+                }
+            })
+            const customSpaceMap = customSpacesMap.find(space => space.packageKey === packageToImport.packageKey);
+            if (customSpaceMap) {
+                const customSpace = allSpaces.find(space => space.id === customSpaceMap.spaceId)
+                if (!customSpace) {
+                    logger.error("Provided space id does not exist")
+                    throw Error();
+                }
+                targetSpaceId = customSpace.id;
+            } else {
+                if (!targetSpace) {
+                    targetSpace = await spaceApi.createSpace({
+                        id: uuidv4(),
+                        name: packageToImport.space.spaceName,
+                        iconReference: packageToImport.space.spaceIcon
+                    });
+                }
+                targetSpaceId = targetSpace.id;
+            }
+        } else {
+            if (!targetSpace) {
+                targetSpace = await spaceApi.createSpace({
+                    id: uuidv4(),
+                    name: packageToImport.space.spaceName,
+                    iconReference: packageToImport.space.spaceIcon
+                });
+            }
+            targetSpaceId = targetSpace.id;
+        }
+
+        const packageZip = {
+            formData: {
+                package: await fs.createReadStream(path.resolve(process.cwd(), "export/" + packageToImport.packageKey + ".zip"), {encoding: null})
+            },
+        };
+        importedKeys.push(packageToImport.packageKey);
+        const nodeInTargetTeam = await packageApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey);
+        const packageWithKeyExists = !!nodeInTargetTeam;
+        await packageApi.importPackage(packageZip, nodeInTargetTeam?.id, targetSpaceId, packageWithKeyExists);
+        await this.updateDependencyVersions(packageToImport);
+        await this.publishPackage(packageToImport)
+    }
+
+    private async updateDependencyVersions(node: ManifestNodeTransport): Promise<void> {
+        const createdNode = await packageApi.findOneByKeyAndRootNodeKey(node.packageKey);
+        for (const dependency of node.dependencies) {
+            const nodeInTargetTeam = await packageApi.findOneByKeyAndRootNodeKey(dependency.key);
+            const nextVersion = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
+            dependency.version = nextVersion.version;
+            dependency.updateAvailable = false;
+            dependency.id = nodeInTargetTeam.rootNodeId;
+            dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
+            await packageApi.updatePackageDependency(createdNode.id, dependency);
+        }
+    }
+
     private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[]): Promise<BatchExportNodeTransport[]> {
-        nodesListToExport = await this.getVersionOfPackages(nodesListToExport);
+        nodesListToExport = await this.getActiveVersionOfPackages(nodesListToExport);
 
         const draftIdByNodeId = new Map<string, string>();
         const nodeIds = nodesListToExport.map(node => {
@@ -166,7 +289,7 @@ class PackageService {
         const packages = nodes as ContentNodeTransport[];
         for (const rootPackage of packages) {
             const profile = await this.profileService.findProfile(profileName)
-            const exportedPackage = await this.httpClientService.pullFileData(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export`, profile);
+            const exportedPackage = await this.httpClientService.pullFileData(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export?newKey=${rootPackage.key}`, profile);
             zips.push({
                 data: exportedPackage,
                 packageKey: rootPackage.key
@@ -193,6 +316,8 @@ class PackageService {
         nodes.forEach((node) => {
             const manifestNode = {} as ManifestNodeTransport;
             manifestNode.packageKey = node.key;
+            manifestNode.packageId = node.id;
+            manifestNode.packageVersion = node.version.version;
             manifestNode.space = {
                 spaceName: node.space.name,
                 spaceIcon: node.space.iconReference
@@ -211,13 +336,7 @@ class PackageService {
                 }
                 return variable;
             });
-            manifestNode.dependencies = node.dependencies?.map(dependency => {
-                return {
-                    packageKey: dependency.key,
-                    version: dependency.version,
-                    external: dependency.external
-                }
-            });
+            manifestNode.dependencies = node.dependencies as ManifestDependency[];
             manifestNodes.push(manifestNode);
         })
 

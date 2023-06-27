@@ -1,5 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
+import {ManifestNodeTransport} from "../interfaces/batch-export-node-transport";
+import * as YAML from "yaml";
 
 export class FileService {
 
@@ -16,6 +18,10 @@ export class FileService {
         fs.mkdirSync(path.resolve(process.cwd(), dirName));
     }
 
+    public readManifestFile(fileDir: string): Promise<ManifestNodeTransport[]> {
+        const manifest: ManifestNodeTransport[] = YAML.parse(fs.readFileSync(path.resolve(process.cwd(), fileDir + "/manifest.yml"), { encoding: "utf-8" }));
+        return Promise.all(manifest);
+    }
     private getSerializedFileContent(data: any): string {
         return data;
     }
