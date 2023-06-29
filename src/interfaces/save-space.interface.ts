@@ -1,10 +1,5 @@
-export interface SaveSpace {
+export interface SpaceTransport {
     id: string;
     name: string;
-    iconReference: string
-}
-
-export interface SpaceExportTransport {
-    name: string,
     iconReference: string
 }

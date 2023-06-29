@@ -39,17 +39,14 @@ class PackageApi {
         });
     }
 
-    public async findOneByKeyAndRootNodeKey(packageKey: string): Promise<ContentNodeTransport> {
-        return httpClientV2.get(`/package-manager/api/nodes/${packageKey}/${packageKey}`).catch(e => {
-            return null
-        });
-    }
-
     public async importPackage(nodeContent: any, nodeId: string, spaceId: string, overwrite: boolean): Promise<any> {
-        await httpClientV2.post(`/package-manager/api/packages/import?spaceId=${spaceId}` + (overwrite ? "&overwrite=true" : ""), nodeContent).catch(e => {
+        await httpClientV2.postFile("/package-manager/api/packages/import", nodeContent, {
+            spaceId: spaceId,
+            overwrite: overwrite
+        }).catch(e => {
             throw new FatalError(`Problem importing package: ${e}`);
         });
-        if(overwrite) {
+        if (overwrite) {
             return await httpClientV2.put(`/package-manager/api/packages/${nodeId}/move/${spaceId}`, {}).catch(e => {
                 throw new FatalError(`Problem moving package: ${e}`);
             });
@@ -63,7 +60,7 @@ class PackageApi {
     }
 
     public async publishPackage(activatePackage: ActivatePackageTransport): Promise<void> {
-        await httpClientV2.postJson(`/package-manager/api/packages/${activatePackage.packageKey}/activate`, activatePackage).catch(e => {
+        await httpClientV2.post(`/package-manager/api/packages/${activatePackage.packageKey}/activate`, activatePackage).catch(e => {
             throw new FatalError(`Problem activating package with key ${activatePackage.packageKey}: ${e}`);
         });
     }

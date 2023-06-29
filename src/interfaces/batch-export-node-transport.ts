@@ -3,7 +3,7 @@ import {
     PackageDependencyTransport,
     PackageHistoryTransport, StudioDataModelTransport, VariablesAssignments
 } from "./package-manager.interfaces";
-import {SpaceExportTransport} from "./save-space.interface";
+import {SpaceTransport} from "./save-space.interface";
 
 export interface BatchExportNodeTransport extends ContentNodeTransport {
     workingDraftId: string;
@@ -12,38 +12,7 @@ export interface BatchExportNodeTransport extends ContentNodeTransport {
     dependencies?: PackageDependencyTransport[];
     datamodels?: StudioDataModelTransport[];
     variables?: VariablesAssignments[];
-    space?: SpaceExportTransport;
-}
-
-export interface ManifestNodeTransport {
-    packageKey: string;
-    packageId: string,
-    packageVersion: string;
-    variables: ManifestVariable[],
-    space: ManifestSpace,
-    dependencies: ManifestDependency[]
-}
-
-export interface ManifestVariable extends VariablesAssignments{
-    dataPoolName?: string,
-    dataModelName?: string
-}
-
-export interface ManifestSpace {
-    spaceName: string,
-    spaceIcon: string
-}
-
-export interface ManifestDependency {
-    id: string;
-    key: string;
-    name: string;
-    version: string;
-    rootNodeId: string;
-    external: boolean
-    draftId: string;
-    updateAvailable: boolean;
-    deleted: boolean;
+    space?: SpaceTransport;
 }
 
 export interface PackageAndAssetTransport {

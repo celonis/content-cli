@@ -3,8 +3,7 @@ import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
 import {
-    BatchExportNodeTransport, ManifestDependency,
-    ManifestNodeTransport, PackageAndAssetTransport, SpaceMappingTransport
+    BatchExportNodeTransport, SpaceMappingTransport
 } from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
 import {ContentNodeTransport, PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
@@ -19,9 +18,10 @@ import * as fs from "fs";
 import AdmZip = require("adm-zip");
 import {spaceApi} from "../../api/space-api";
 import * as path from "path";
-import {SaveSpace} from "../../interfaces/save-space.interface";
 import {tmpdir} from "os";
 import {httpClientV2} from "../http-client-service.v2";
+import {SpaceTransport} from "../../interfaces/save-space.interface";
+import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manifest-transport";
 
 class PackageService {
     private profileService = new ProfileService();
@@ -50,7 +50,10 @@ class PackageService {
             //TODO need to replace all these individual calls with a single api call that gets all the required data.
             nodesListToExport = await this.getVersionOfPackages(nodesListToExport);
 
-            nodesListToExport = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+            const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+            nodesListToExport.forEach(node => {
+                node.datamodels = dataModelAssignments.get(node.key);
+            })
 
             const draftIdByNodeId = new Map<string, string>();
             const nodeIds = nodesListToExport.map(node => {
@@ -68,24 +71,19 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
-    public async batchImportPackages(spaceMapping: string[], exportedDatapoolsFile: string, exportedPackagesFile: string): Promise<void> {
-        if (exportedPackagesFile) {
-            exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
-            const zip = new AdmZip(exportedPackagesFile);
-            const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
-            await fs.mkdirSync(importedFilePath);
-            await zip.extractAllTo(importedFilePath);
+    public async batchImportPackages(spaceMappings: string[], exportedDatapoolsFile: string, exportedPackagesFile: string): Promise<void> {
+        exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
+        const zip = new AdmZip(exportedPackagesFile);
+        const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
+        await fs.mkdirSync(importedFilePath);
+        await zip.extractAllTo(importedFilePath);
 
-            const manifestNodes = await fileService.readManifestFile(importedFilePath);
-            //TO-DO Import data-pools and data models based on the package variables
-            const allSpaces = await spaceApi.findAllSpaces();
-            const importedKeys = [];
-            for (const node of manifestNodes) {
-                await this.importPackage(node, manifestNodes, spaceMapping, allSpaces, importedKeys, importedFilePath)
-            }
-        } else {
-            logger.error("You should provide exportedPackagesFile");
-            throw Error();
+        const manifestNodes = await fileService.readManifestFile(importedFilePath);
+        //TO-DO Import data-pools and data models based on the package variables
+        const allSpaces = await spaceApi.findAllSpaces();
+        const importedKeys = [];
+        for (const node of manifestNodes) {
+            await this.importPackage(node, manifestNodes, spaceMappings, allSpaces, importedKeys, importedFilePath)
         }
     }
 
@@ -100,19 +98,6 @@ class PackageService {
         }
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
         await this.exportToZip(nodesListToExport, profileName);
-    }
-
-    public async getPackagesDependenciesByPackageId(nodeIds: string[], draftIdByNodeId: Map<string, string>, actionFlowPackageKeys: string[]): Promise<Map<string, PackageDependencyTransport[]>> {
-        const dependenciesByPackageId = new Map<string, PackageDependencyTransport[]>();
-        const packageWithDependencies = await this.getPackagesWithDependencies(nodeIds, draftIdByNodeId, actionFlowPackageKeys);
-
-        packageWithDependencies.forEach(packageWithDependency => {
-            const dependenciesOfPackage = dependenciesByPackageId.get(packageWithDependency.rootNodeId) ?? [];
-            dependenciesOfPackage.push(packageWithDependency);
-            dependenciesByPackageId.set(packageWithDependency?.rootNodeId, dependenciesOfPackage);
-        });
-
-        return dependenciesByPackageId
     }
 
     public async getVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
@@ -156,8 +141,8 @@ class PackageService {
     }
 
     public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
-        const nodeInTargetTeam1 = await packageApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey);
-        const nextVersion = await packageApi.findNextVersion(nodeInTargetTeam1.id);
+        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
+        const nextVersion = await packageApi.findNextVersion(nodeInTargetTeam.id);
         await packageApi.publishPackage({
             packageKey: packageToImport.packageKey,
             version: nextVersion.version,
@@ -166,7 +151,20 @@ class PackageService {
         });
     }
 
-    private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMapping: string[], allSpaces: SaveSpace[], importedKeys: string[], importedFilePath: string) {
+    private async getPackagesDependenciesByPackageId(nodeIds: string[], draftIdByNodeId: Map<string, string>, actionFlowPackageKeys: string[]): Promise<Map<string, PackageDependencyTransport[]>> {
+        const dependenciesByPackageId = new Map<string, PackageDependencyTransport[]>();
+        const packageWithDependencies = await this.getPackagesWithDependencies(nodeIds, draftIdByNodeId, actionFlowPackageKeys);
+
+        packageWithDependencies.forEach(packageWithDependency => {
+            const dependenciesOfPackage = dependenciesByPackageId.get(packageWithDependency.rootNodeId) ?? [];
+            dependenciesOfPackage.push(packageWithDependency);
+            dependenciesByPackageId.set(packageWithDependency?.rootNodeId, dependenciesOfPackage);
+        });
+
+        return dependenciesByPackageId
+    }
+
+    private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMappings: string[], allSpaces: SpaceTransport[], importedKeys: string[], importedFilePath: string) {
         if (importedKeys.includes(packageToImport.packageKey)) {
             return;
         }
@@ -175,14 +173,14 @@ class PackageService {
             for (const dependency of packageToImport.dependencies) {
                 if (!dependency.external) {
                     const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-                    await this.importPackage(dependentPackage, manifestNodes, spaceMapping, allSpaces, importedKeys, importedFilePath)
+                    await this.importPackage(dependentPackage, manifestNodes, spaceMappings, allSpaces, importedKeys, importedFilePath)
                 }
             }
         }
 
         let targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName)
-        if (spaceMapping) {
-            const customSpacesMap: SpaceMappingTransport[] = spaceMapping.map(spaceMap => {
+        if (spaceMappings) {
+            const customSpacesMap: SpaceMappingTransport[] = spaceMappings.map(spaceMap => {
                 const packageAndSpaceid = spaceMap.split(":");
                 return {
                     packageKey: packageAndSpaceid[0],
@@ -224,7 +222,7 @@ class PackageService {
             },
         };
         importedKeys.push(packageToImport.packageKey);
-        const nodeInTargetTeam = await packageApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey);
+        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
         const packageWithKeyExists = !!nodeInTargetTeam;
         await packageApi.importPackage(packageZip, nodeInTargetTeam?.id, targetSpaceId, packageWithKeyExists);
         await this.updateDependencyVersions(packageToImport);
@@ -233,9 +231,9 @@ class PackageService {
     }
 
     private async updateDependencyVersions(node: ManifestNodeTransport): Promise<void> {
-        const createdNode = await packageApi.findOneByKeyAndRootNodeKey(node.packageKey);
+        const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
         for (const dependency of node.dependencies) {
-            const nodeInTargetTeam = await packageApi.findOneByKeyAndRootNodeKey(dependency.key);
+            const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
             const nextVersion = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
             dependency.version = nextVersion.version;
             dependency.updateAvailable = false;
@@ -268,7 +266,7 @@ class PackageService {
         });
 
         const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
-        nodesListWithActiveVersion.forEach(node=> {
+        nodesListWithActiveVersion.forEach(node => {
             node.datamodels = dataModelAssignments.get(node.key);
         })
 
@@ -302,7 +300,7 @@ class PackageService {
         const packages = nodes as ContentNodeTransport[];
         for (const rootPackage of packages) {
             const profile = await this.profileService.findProfile(profileName)
-            const exportedPackage = await httpClientV2.pullFileData(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export?newKey=${rootPackage.key}`, profile);
+            const exportedPackage = await httpClientV2.downloadFile(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export?newKey=${rootPackage.key}`, profile);
             zips.push({
                 data: exportedPackage,
                 packageKey: rootPackage.key

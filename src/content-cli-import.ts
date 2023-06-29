@@ -11,11 +11,11 @@ export class Import {
             .command("packages")
             .description("Command to import all given packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
-            .option("--spaceMapping <spaceMapping...>", "Mapping on which space packages will be created", "[]")
+            .option("--spaceMappings <spaceMappings...>", "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'", "[]")
             .option("--exportedDatapoolsFile <exportedDatapoolsFile>", "Exported datapool file (relative path)", "")
-            .option("--exportedPackagesFile <exportedPackagesFile>", "Exported packages file (relative path)", "")
+            .requiredOption("--exportedPackagesFile <exportedPackagesFile>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(cmd.spaceMapping, cmd.exportedDatapoolsFile, cmd.exportedPackagesFile)
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.exportedDatapoolsFile, cmd.exportedPackagesFile)
                 process.exit();
             });
 

@@ -3,6 +3,7 @@ import {CoreOptions, Headers, Response} from "request";
 import request = require("request");
 import {contextService} from "./context.service";
 import {FatalError, logger} from "../util/logger";
+import * as querystring from "querystring";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
@@ -15,9 +16,9 @@ class HttpClientServiceV2 {
         });
     }
 
-    public async post(url: string, body:any): Promise<any> {
+    public async postFile(url: string, body: any, parameters?: {}): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.post(this.resolveUrl(url), this.makeOptions(contextService.getContext().profile, body), (err, res) => {
+            request.post(this.resolveUrl(url) + "?" + querystring.stringify(parameters), this.makeOptions(contextService.getContext().profile, body), (err, res) => {
                 this.handleResponse(res, resolve, reject);
             });
         }).catch(e => {
@@ -25,7 +26,7 @@ class HttpClientServiceV2 {
         });
     }
 
-    public async postJson(url: string, body:any): Promise<any> {
+    public async post(url: string, body: any): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.post(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, JSON.stringify(body), "application/json;charset=utf-8"), (err, res) => {
                 this.handleResponse(res, resolve, reject);
@@ -35,7 +36,7 @@ class HttpClientServiceV2 {
         });
     }
 
-    public async put(url: string, body:object): Promise<any> {
+    public async put(url: string, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request.put(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, JSON.stringify(body), "application/json;charset=utf-8"), (err, res) => {
                 this.handleResponse(res, resolve, reject);
@@ -45,7 +46,7 @@ class HttpClientServiceV2 {
         });
     }
 
-    public async pullFileData(url: string, profile: Profile): Promise<any> {
+    public async downloadFile(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request
                 .post(url, this.makeFileDownloadOptions(profile))

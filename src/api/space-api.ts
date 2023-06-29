@@ -5,24 +5,24 @@ import {
 } from "../interfaces/package-manager.interfaces";
 import {httpClientV2} from "../services/http-client-service.v2";
 import {FatalError} from "../util/logger";
-import {SaveSpace, SpaceExportTransport} from "../interfaces/save-space.interface";
+import {SpaceTransport} from "../interfaces/save-space.interface";
 
 class SpaceApi {
     public static readonly INSTANCE = new SpaceApi();
 
-    public async findOne(spaceId: string): Promise<SpaceExportTransport> {
+    public async findOne(spaceId: string): Promise<SpaceTransport> {
         return httpClientV2.get(`/package-manager/api/spaces/${spaceId}`).catch(e => {
             throw new FatalError(`Problem getting packages: ${e}`);
         });
     }
 
-    public async findAllSpaces(): Promise<SaveSpace[]> {
+    public async findAllSpaces(): Promise<SpaceTransport[]> {
         return httpClientV2.get("/package-manager/api/spaces").catch(e => {
             throw new FatalError(`Problem getting packages: ${e}`);
         });
     }
 
-    public async createSpace(space: SaveSpace): Promise<SaveSpace> {
+    public async createSpace(space: SpaceTransport): Promise<SpaceTransport> {
         return httpClientV2.post("/package-manager/api/spaces", space).catch(e => {
             throw new FatalError(`Problem getting packages: ${e}`);
         });

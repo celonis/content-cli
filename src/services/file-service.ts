@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import {ManifestNodeTransport} from "../interfaces/batch-export-node-transport";
 import * as YAML from "yaml";
+import {ManifestNodeTransport} from "../interfaces/manifest-transport";
 
 export class FileService {
 
