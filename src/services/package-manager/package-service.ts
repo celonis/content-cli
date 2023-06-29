@@ -21,9 +21,9 @@ import {spaceApi} from "../../api/space-api";
 import * as path from "path";
 import {SaveSpace} from "../../interfaces/save-space.interface";
 import {tmpdir} from "os";
+import {httpClientV2} from "../http-client-service.v2";
 
 class PackageService {
-    private httpClientService = new HttpClientService();
     private profileService = new ProfileService();
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
@@ -97,12 +97,9 @@ class PackageService {
 
         if (includeDependencies) {
             nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys);
-            nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-            await this.exportToZip(nodesListToExport, profileName);
-        } else {
-            nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-            await this.exportToZip(nodesListToExport, profileName);
         }
+        nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
+        await this.exportToZip(nodesListToExport, profileName);
     }
 
     public async getPackagesDependenciesByPackageId(nodeIds: string[], draftIdByNodeId: Map<string, string>, actionFlowPackageKeys: string[]): Promise<Map<string, PackageDependencyTransport[]>> {
@@ -131,7 +128,7 @@ class PackageService {
         return Promise.all(promises);
     }
 
-    public async getActiveVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
+    public async getNodesWithActiveVersion(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
         const promises = [];
 
         nodes.forEach(node => {
@@ -168,6 +165,7 @@ class PackageService {
             nodeIdsToExclude: []
         });
     }
+
     private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMapping: string[], allSpaces: SaveSpace[], importedKeys: string[], importedFilePath: string) {
         if (importedKeys.includes(packageToImport.packageKey)) {
             return;
@@ -248,29 +246,37 @@ class PackageService {
     }
 
     private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[]): Promise<BatchExportNodeTransport[]> {
-        nodesListToExport = await this.getActiveVersionOfPackages(nodesListToExport);
+        let nodesListWithActiveVersion = await this.getNodesWithActiveVersion(nodesListToExport);
 
         const draftIdByNodeId = new Map<string, string>();
-        const nodeIds = nodesListToExport.map(node => {
+        const nodeIds = nodesListWithActiveVersion.map(node => {
             draftIdByNodeId.set(node.id, node.workingDraftId);
             return node.id;
         });
 
         const dependenciesByPackageId = await this.getPackagesDependenciesByPackageId(nodeIds, draftIdByNodeId, actionFlowPackageKeys);
 
-        nodesListToExport = nodesListToExport.map(nodeToExport => {
+        nodesListWithActiveVersion = nodesListWithActiveVersion.map(nodeToExport => {
             nodeToExport.dependencies = dependenciesByPackageId.get(nodeToExport.id) ?? [];
             return nodeToExport;
         })
 
-        await variableService.getVariablesByNodeKey(nodesListToExport);
-        nodesListToExport = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+        const variableAssignments = await variableService.getVariableAssignmentsForNodes(nodesListWithActiveVersion);
 
-        nodesListToExport = await this.getNodeDependecies(nodesListToExport, allPackages, actionFlowPackageKeys);
+        nodesListWithActiveVersion.forEach(node => {
+            node.variables = variableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
+        });
+
+        const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+        nodesListWithActiveVersion.forEach(node=> {
+            node.datamodels = dataModelAssignments.get(node.key);
+        })
+
+        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys);
         return nodesListToExport
     }
 
-    private async getNodeDependecies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[]): Promise<BatchExportNodeTransport[]> {
+    private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[]): Promise<BatchExportNodeTransport[]> {
         for (const node of nodesListToExport) {
             const nodesToGetKeys = node.dependencies.filter(dependency => !nodesListToExport
                 .map(node => node.key)
@@ -296,7 +302,7 @@ class PackageService {
         const packages = nodes as ContentNodeTransport[];
         for (const rootPackage of packages) {
             const profile = await this.profileService.findProfile(profileName)
-            const exportedPackage = await this.httpClientService.pullFileData(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export?newKey=${rootPackage.key}`, profile);
+            const exportedPackage = await httpClientV2.pullFileData(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export?newKey=${rootPackage.key}`, profile);
             zips.push({
                 data: exportedPackage,
                 packageKey: rootPackage.key

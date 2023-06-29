@@ -12,7 +12,7 @@ export class Export {
             .command("packages")
             .description("Command to export all given packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
-            .option("--packageKeys <packageKeys...>", "Exports only given package keys", "[]")
+            .requiredOption("--packageKeys <packageKeys...>", "Exports only given package keys")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
                 await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies, cmd.profile)

@@ -1,21 +1,20 @@
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {computePoolApi} from "../../api/compute-pool-api";
+import {StudioDataModelTransport} from "../../interfaces/package-manager.interfaces";
 
 class DatamodelService {
 
     public static readonly INSTANCE = new DatamodelService();
 
-    public async getDatamodelsForNodes(nodesListToExport: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
-        const promises = [];
+    public async getDatamodelsForNodes(nodesListToExport: BatchExportNodeTransport[]): Promise<Map<string, StudioDataModelTransport[]>> {
+        const dataModelsMap = new Map<string, StudioDataModelTransport[]>();
 
-        nodesListToExport.forEach(node => {
-            promises.push(new Promise(async resolve => {
-                node.datamodels = await computePoolApi.findAssignedDatamodels(node.key);
-                resolve(node);
-            }));
-        })
+        for(const node of nodesListToExport) {
+            const assignedDataModels = await computePoolApi.findAssignedDatamodels(node.key);
+            dataModelsMap.set(node.key, assignedDataModels)
+        }
 
-        return Promise.all(promises);
+        return dataModelsMap;
     }
 
 }

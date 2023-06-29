@@ -45,8 +45,46 @@ class HttpClientServiceV2 {
         });
     }
 
+    public async pullFileData(url: string, profile: Profile): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request
+                .post(url, this.makeFileDownloadOptions(profile))
+                .on("response", (response: Response) => {
+                    const data: Buffer[] = [];
+                    response.on("data", (chunk: Buffer) => {
+                        data.push(chunk);
+                    });
+                    response.on("end", () => {
+                        if (this.checkBadRequest(response.statusCode)) {
+                            this.handleBadRequest(response.statusCode, data.toString(), reject);
+                        } else {
+                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        }
+                    });
+                })
+                .on("error", error => reject(error));
+        });
+    }
+
+    private handleResponseStreamData(data, resolve, reject): void {
+        if (data) {
+            resolve(data);
+            return;
+        }
+
+        logger.error("Could not get file stream from response");
+        reject();
+    }
+
     private resolveUrl(url: string): string {
         return contextService.getContext().profile.team.replace(/\/?$/, url);
+    }
+
+    private makeFileDownloadOptions(profile: Profile): object {
+        return {
+            headers: this.buildAuthorizationHeaders(profile),
+            responseType: "binary",
+        };
     }
 
     private handleResponse(res: Response, resolve, reject): void {

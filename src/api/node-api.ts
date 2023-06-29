@@ -11,13 +11,6 @@ class NodeApi {
                 throw new FatalError(`Problem getting nodes of type ${assetType}: ${e}`);
             });
     }
-
-    public async findAllByRootKey(rootKey: string): Promise<ContentNodeTransport[]> {
-        return httpClientV2.get(`/package-manager/api/nodes/by-root-key/${rootKey}`)
-            .catch(e=> {
-                throw new FatalError(`Problem getting nodes for root key ${rootKey}: ${e}`);
-            });
-    }
 }
 
 export const nodeApi = NodeApi.INSTANCE;
