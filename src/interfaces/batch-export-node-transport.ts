@@ -17,8 +17,6 @@ export interface BatchExportNodeTransport extends ContentNodeTransport {
 
 export interface ManifestNodeTransport {
     packageKey: string;
-    packageId: string,
-    packageVersion: string;
     variables: ManifestVariable[],
     space: ManifestSpace,
     dependencies: ManifestDependency[]
@@ -35,23 +33,12 @@ export interface ManifestSpace {
 }
 
 export interface ManifestDependency {
-    id: string;
-    key: string;
-    name: string;
-    version: string;
-    rootNodeId: string;
+    packageKey: string,
+    version: string,
     external: boolean
-    draftId: string;
-    updateAvailable: boolean;
-    deleted: boolean;
 }
 
 export interface PackageAndAssetTransport {
     rootNode: ContentNodeTransport,
     nodes: ContentNodeTransport[]
-}
-
-export interface SpaceMappingTransport {
-    packageKey: string,
-    spaceId: string
 }

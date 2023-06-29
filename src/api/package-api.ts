@@ -1,7 +1,6 @@
 import {httpClientV2} from "../services/http-client-service.v2";
 import {
-    ActivatePackageTransport,
-    ContentNodeTransport, PackageDependencyTransport, PackageHistoryTransport, PackageWithVariableAssignments
+    ContentNodeTransport, PackageHistoryTransport, PackageWithVariableAssignments
 } from "../interfaces/package-manager.interfaces";
 import {FatalError} from "../util/logger";
 
@@ -27,46 +26,6 @@ class PackageApi {
         });
     }
 
-    public async findActiveVersionById(nodeId: string): Promise<PackageHistoryTransport> {
-        return httpClientV2.get(`/package-manager/api/packages/${nodeId}/active`).catch(e => {
-            throw new FatalError(`Problem getting latest version of package: ${e}`);
-        });
-    }
-
-    public async findNextVersion(nodeId: string): Promise<PackageHistoryTransport> {
-        return httpClientV2.get(`/package-manager/api/packages/${nodeId}/next-version`).catch(e => {
-            throw new FatalError(`Problem getting latest version of package: ${e}`);
-        });
-    }
-
-    public async findOneByKeyAndRootNodeKey(packageKey: string): Promise<ContentNodeTransport> {
-        return httpClientV2.get(`/package-manager/api/nodes/${packageKey}/${packageKey}`).catch(e => {
-            return null
-        });
-    }
-
-    public async importPackage(nodeContent: any, nodeId: string, spaceId: string, overwrite: boolean): Promise<any> {
-        await httpClientV2.post(`/package-manager/api/packages/import?spaceId=${spaceId}` + (overwrite ? "&overwrite=true" : ""), nodeContent).catch(e => {
-            throw new FatalError(`Problem importing package: ${e}`);
-        });
-        if(overwrite) {
-            return await httpClientV2.put(`/package-manager/api/packages/${nodeId}/move/${spaceId}`, {}).catch(e => {
-                throw new FatalError(`Problem moving package: ${e}`);
-            });
-        }
-    }
-
-    public async updatePackageDependency(nodeId: string, packageDependency: PackageDependencyTransport): Promise<void> {
-        await httpClientV2.put(`/package-manager/api/package-dependencies/${nodeId}/dependency/by-key/${packageDependency.key}`, packageDependency).catch(e => {
-            throw new FatalError(`Problem updating package dependency: ${e}`);
-        });
-    }
-
-    public async publishPackage(activatePackage: ActivatePackageTransport): Promise<void> {
-        await httpClientV2.postJson(`/package-manager/api/packages/${activatePackage.packageKey}/activate`, activatePackage).catch(e => {
-            throw new FatalError(`Problem activating package with key ${activatePackage.packageKey}: ${e}`);
-        });
-    }
 }
 
 export const packageApi = PackageApi.INSTANCE;

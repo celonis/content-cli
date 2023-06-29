@@ -14,12 +14,6 @@ export interface ContentNodeTransport {
     spaceId: string;
 }
 
-export interface ActivatePackageTransport {
-    packageKey: string;
-    version: string;
-    publishMessage: string;
-    nodeIdsToExclude: string[];
-}
 export interface DataModelTransport {
     id: string;
     name: string,
@@ -33,9 +27,6 @@ export interface PackageDependencyTransport {
     version: string;
     rootNodeId: string;
     external: boolean
-    draftId: string;
-    updateAvailable: boolean;
-    deleted: boolean;
 }
 
 export interface AssetMetadataTransport {

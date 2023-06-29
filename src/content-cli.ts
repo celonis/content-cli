@@ -19,7 +19,6 @@ program.command("profile", "Commands related to profiles.");
 program.command("pull", "Commands to pull content.");
 
 program.command("export", "Commands to export content.")
-program.command("import", "Commands to export content.")
 
 program.command("push", "Commands to push content.");
 
