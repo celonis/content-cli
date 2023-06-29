@@ -20,6 +20,7 @@ import AdmZip = require("adm-zip");
 import {spaceApi} from "../../api/space-api";
 import * as path from "path";
 import {SaveSpace} from "../../interfaces/save-space.interface";
+import {tmpdir} from "os";
 
 class PackageService {
     private httpClientService = new HttpClientService();
@@ -69,15 +70,18 @@ class PackageService {
 
     public async batchImportPackages(spaceMapping: string[], exportedDatapoolsFile: string, exportedPackagesFile: string): Promise<void> {
         if (exportedPackagesFile) {
-            const zip = new AdmZip(exportedPackagesFile + ".zip");
-            await fs.mkdirSync(path.resolve(process.cwd(), "export"));
-            await zip.extractAllTo("export");
+            exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
+            const zip = new AdmZip(exportedPackagesFile);
+            const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
+            await fs.mkdirSync(importedFilePath);
+            await zip.extractAllTo(importedFilePath);
 
-            const manifestNodes = await fileService.readManifestFile(exportedPackagesFile);
+            const manifestNodes = await fileService.readManifestFile(importedFilePath);
+            //TO-DO Import data-pools and data models based on the package variables
             const allSpaces = await spaceApi.findAllSpaces();
             const importedKeys = [];
             for (const node of manifestNodes) {
-                await this.importPackage(node, manifestNodes, spaceMapping, allSpaces, importedKeys)
+                await this.importPackage(node, manifestNodes, spaceMapping, allSpaces, importedKeys, importedFilePath)
             }
         } else {
             logger.error("You should provide exportedPackagesFile");
@@ -154,7 +158,6 @@ class PackageService {
         return dependencies;
     }
 
-<<<<<<< HEAD
     public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
         const nodeInTargetTeam1 = await packageApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey);
         const nextVersion = await packageApi.findNextVersion(nodeInTargetTeam1.id);
@@ -165,7 +168,7 @@ class PackageService {
             nodeIdsToExclude: []
         });
     }
-    private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMapping: string[], allSpaces: SaveSpace[], importedKeys: string[]) {
+    private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMapping: string[], allSpaces: SaveSpace[], importedKeys: string[], importedFilePath: string) {
         if (importedKeys.includes(packageToImport.packageKey)) {
             return;
         }
@@ -174,7 +177,7 @@ class PackageService {
             for (const dependency of packageToImport.dependencies) {
                 if (!dependency.external) {
                     const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-                    await this.importPackage(dependentPackage, manifestNodes, spaceMapping, allSpaces, importedKeys)
+                    await this.importPackage(dependentPackage, manifestNodes, spaceMapping, allSpaces, importedKeys, importedFilePath)
                 }
             }
         }
@@ -219,7 +222,7 @@ class PackageService {
 
         const packageZip = {
             formData: {
-                package: await fs.createReadStream(path.resolve(process.cwd(), "export/" + packageToImport.packageKey + ".zip"), {encoding: null})
+                package: await fs.createReadStream(path.resolve(importedFilePath, packageToImport.packageKey + ".zip"), {encoding: null})
             },
         };
         importedKeys.push(packageToImport.packageKey);
@@ -227,7 +230,8 @@ class PackageService {
         const packageWithKeyExists = !!nodeInTargetTeam;
         await packageApi.importPackage(packageZip, nodeInTargetTeam?.id, targetSpaceId, packageWithKeyExists);
         await this.updateDependencyVersions(packageToImport);
-        await this.publishPackage(packageToImport)
+        await this.publishPackage(packageToImport);
+        logger.info(`Imported package with key: ${packageToImport.packageKey} successfully`)
     }
 
     private async updateDependencyVersions(node: ManifestNodeTransport): Promise<void> {
