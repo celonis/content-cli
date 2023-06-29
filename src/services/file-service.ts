@@ -18,8 +18,8 @@ export class FileService {
         fs.mkdirSync(path.resolve(process.cwd(), dirName));
     }
 
-    public readManifestFile(fileDir: string): Promise<ManifestNodeTransport[]> {
-        const manifest: ManifestNodeTransport[] = YAML.parse(fs.readFileSync(path.resolve(process.cwd(), fileDir + "/manifest.yml"), { encoding: "utf-8" }));
+    public readManifestFile(importedFileName: string): Promise<ManifestNodeTransport[]> {
+        const manifest: ManifestNodeTransport[] = YAML.parse(fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), { encoding: "utf-8" }));
         return Promise.all(manifest);
     }
     private getSerializedFileContent(data: any): string {
