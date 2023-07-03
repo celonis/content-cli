@@ -47,8 +47,7 @@ class PackageService {
                 return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
             })
 
-            //TODO need to replace all these individual calls with a single api call that gets all the required data.
-            nodesListToExport = await this.getVersionOfPackages(nodesListToExport);
+            nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
 
             const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
             nodesListToExport.forEach(node => {
@@ -191,8 +190,7 @@ class PackageService {
             if (customSpaceMap) {
                 const customSpace = allSpaces.find(space => space.id === customSpaceMap.spaceId)
                 if (!customSpace) {
-                    logger.error("Provided space id does not exist")
-                    throw Error();
+                    throw Error("Provided space id does not exist");
                 }
                 targetSpaceId = customSpace.id;
             } else {
