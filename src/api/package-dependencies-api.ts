@@ -11,6 +11,12 @@ class PackageDependenciesApi {
                 throw new FatalError(`Problem getting dependencies of package: ${e}`);
             });
     }
+
+    public async updatePackageDependency(nodeId: string, packageDependency: PackageDependencyTransport): Promise<void> {
+        await httpClientV2.put(`/package-manager/api/package-dependencies/${nodeId}/dependency/by-key/${packageDependency.key}`, packageDependency).catch(e => {
+            throw new FatalError(`Problem updating package dependency: ${e}`);
+        });
+    }
 }
 
 export const packageDependenciesApi = PackageDependenciesApi.INSTANCE;

@@ -12,7 +12,7 @@ class NodeApi {
             });
     }
 
-    public async findOneByKeyAndRootNodeKey(packageKey: string, nodeKey: string): Promise<ContentNodeTransport> {
+    public async findOneByKeyAndRootNodeKey(packageKey: string, nodeKey: string): Promise<ContentNodeTransport | null> {
         return httpClientV2.get(`/package-manager/api/nodes/${packageKey}/${nodeKey}`).catch(e => {
             return null
         });

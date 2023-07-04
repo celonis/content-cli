@@ -178,31 +178,18 @@ class PackageService {
         }
 
         let targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName)
-        if (spaceMappings) {
-            const customSpacesMap: SpaceMappingTransport[] = spaceMappings.map(spaceMap => {
-                const packageAndSpaceid = spaceMap.split(":");
-                return {
-                    packageKey: packageAndSpaceid[0],
-                    spaceId: packageAndSpaceid[1]
-                }
-            })
-            const customSpaceMap = customSpacesMap.find(space => space.packageKey === packageToImport.packageKey);
-            if (customSpaceMap) {
-                const customSpace = allSpaces.find(space => space.id === customSpaceMap.spaceId)
-                if (!customSpace) {
-                    throw Error("Provided space id does not exist");
-                }
-                targetSpaceId = customSpace.id;
-            } else {
-                if (!targetSpace) {
-                    targetSpace = await spaceApi.createSpace({
-                        id: uuidv4(),
-                        name: packageToImport.space.spaceName,
-                        iconReference: packageToImport.space.spaceIcon
-                    });
-                }
-                targetSpaceId = targetSpace.id;
+        const customSpacesMap: Map<string, string> = new Map();
+        spaceMappings.forEach(spaceMap => {
+            const packageAndSpaceid = spaceMap.split(":");
+            customSpacesMap.set(packageAndSpaceid[0], packageAndSpaceid[1])
+        })
+        const customSpaceId = customSpacesMap.get(packageToImport.packageKey);
+        if (customSpaceId) {
+            const customSpace = allSpaces.find(space => space.id === customSpaceId)
+            if (!customSpace) {
+                throw Error("Provided space id does not exist");
             }
+            targetSpaceId = customSpace.id;
         } else {
             if (!targetSpace) {
                 targetSpace = await spaceApi.createSpace({
@@ -221,8 +208,10 @@ class PackageService {
         };
         importedKeys.push(packageToImport.packageKey);
         const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
-        const packageWithKeyExists = !!nodeInTargetTeam;
-        await packageApi.importPackage(packageZip, nodeInTargetTeam?.id, targetSpaceId, packageWithKeyExists);
+        await packageApi.importPackage(packageZip, targetSpaceId, !!nodeInTargetTeam);
+        if (nodeInTargetTeam) {
+            await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpaceId)
+        }
         await this.updateDependencyVersions(packageToImport);
         await this.publishPackage(packageToImport);
         logger.info(`Imported package with key: ${packageToImport.packageKey} successfully`)
@@ -237,7 +226,7 @@ class PackageService {
             dependency.updateAvailable = false;
             dependency.id = nodeInTargetTeam.rootNodeId;
             dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
-            await packageApi.updatePackageDependency(createdNode.id, dependency);
+            await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
         }
     }
 
@@ -318,6 +307,7 @@ class PackageService {
             zip.addFile(packageZip.packageKey + ".zip", packageZip.data)
         }
         zip.writeZip("export_" + uuidv4() + ".zip");
+        logger.info("Successfully exported package");
     }
 
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[]): ManifestNodeTransport[] {

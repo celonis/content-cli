@@ -39,23 +39,18 @@ class PackageApi {
         });
     }
 
-    public async importPackage(nodeContent: any, nodeId: string, spaceId: string, overwrite: boolean): Promise<any> {
+    public async importPackage(nodeContent: any, spaceId: string, overwrite: boolean): Promise<any> {
         await httpClientV2.postFile("/package-manager/api/packages/import", nodeContent, {
             spaceId: spaceId,
             overwrite: overwrite
         }).catch(e => {
             throw new FatalError(`Problem importing package: ${e}`);
         });
-        if (overwrite) {
-            return await httpClientV2.put(`/package-manager/api/packages/${nodeId}/move/${spaceId}`, {}).catch(e => {
-                throw new FatalError(`Problem moving package: ${e}`);
-            });
-        }
     }
 
-    public async updatePackageDependency(nodeId: string, packageDependency: PackageDependencyTransport): Promise<void> {
-        await httpClientV2.put(`/package-manager/api/package-dependencies/${nodeId}/dependency/by-key/${packageDependency.key}`, packageDependency).catch(e => {
-            throw new FatalError(`Problem updating package dependency: ${e}`);
+    public async movePackageToSpace(nodeId: string, spaceId: string): Promise<void> {
+        await httpClientV2.put(`/package-manager/api/packages/${nodeId}/move/${spaceId}`, {}).catch(e => {
+            throw new FatalError(`Problem moving package: ${e}`);
         });
     }
 
