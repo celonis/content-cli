@@ -40,7 +40,7 @@ class PackageService {
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
 
         if (includeDependencies) {
-            fieldsToInclude.push("type", "value", "dependencies", "id", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels");
+            fieldsToInclude.push("type", "value", "dependencies", "id", "updateAvailable", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels");
 
             const packagesKeyWithActionFlows = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
             nodesListToExport = nodesListToExport.filter(node => {
