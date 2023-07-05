@@ -86,7 +86,7 @@ class PackageService {
         }
     }
 
-    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean, profileName: string): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
         const allPackages = await packageApi.findAllPackages();
         let nodesListToExport: BatchExportNodeTransport[] = allPackages.filter(node => packageKeys.includes(node.key));
         const actionFlowsPackageKeys = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
@@ -96,7 +96,7 @@ class PackageService {
             nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys);
         }
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-        await this.exportToZip(nodesListToExport, profileName);
+        await this.exportToZip(nodesListToExport);
     }
 
     public async getVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
@@ -282,12 +282,11 @@ class PackageService {
         logger.info(FileService.fileDownloadedMessage + filename);
     }
 
-    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[], profileName: string): Promise<any[]> {
+    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): Promise<any[]> {
         const zips = [];
         const packages = nodes as ContentNodeTransport[];
         for (const rootPackage of packages) {
-            const profile = await this.profileService.findProfile(profileName)
-            const exportedPackage = await httpClientV2.downloadFile(`${profile.team}/package-manager/api/packages/${rootPackage.key}/export?newKey=${rootPackage.key}`, profile);
+            const exportedPackage = await packageApi.exportPackage(rootPackage.key)
             zips.push({
                 data: exportedPackage,
                 packageKey: rootPackage.key
@@ -296,9 +295,9 @@ class PackageService {
         return zips;
     }
 
-    private async exportToZip(nodes: BatchExportNodeTransport[], profileName: string): Promise<void> {
+    private async exportToZip(nodes: BatchExportNodeTransport[]): Promise<void> {
         const manifestNodes = this.exportManifestOfPackages(nodes);
-        const packageZips = await this.exportPackagesAndAssets(nodes, profileName);
+        const packageZips = await this.exportPackagesAndAssets(nodes);
 
         const zip = new AdmZip();
 

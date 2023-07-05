@@ -15,6 +15,10 @@ class PackageApi {
         });
     }
 
+    public async exportPackage(rootPackageKey: string): Promise<Buffer> {
+        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?newKey=${rootPackageKey}`);
+    }
+
     public async findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
         return httpClientV2.get("/package-manager/api/packages/with-variable-assignments").catch(e => {
             throw new FatalError(`Problem getting variables of packages: : ${e}`);

@@ -46,10 +46,10 @@ class HttpClientServiceV2 {
         });
     }
 
-    public async downloadFile(url: string, profile: Profile): Promise<any> {
+    public async downloadFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request
-                .post(url, this.makeFileDownloadOptions(profile))
+                .post(this.resolveUrl(url), this.makeFileDownloadOptions(contextService.getContext().profile))
                 .on("response", (response: Response) => {
                     const data: Buffer[] = [];
                     response.on("data", (chunk: Buffer) => {
