@@ -93,7 +93,7 @@ class PackageService {
         nodesListToExport = nodesListToExport.filter(node => !actionFlowsPackageKeys.includes(node.key));
 
         if (includeDependencies) {
-            nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys);
+            nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys, []);
         }
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
         await this.exportToZip(nodesListToExport);
@@ -230,7 +230,7 @@ class PackageService {
         }
     }
 
-    private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[]): Promise<BatchExportNodeTransport[]> {
+    private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
         let nodesListWithActiveVersion = await this.getNodesWithActiveVersion(nodesListToExport);
 
         const draftIdByNodeId = new Map<string, string>();
@@ -257,23 +257,31 @@ class PackageService {
             node.datamodels = dataModelAssignments.get(node.key);
         })
 
-        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys);
+        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys, nodePath);
         return nodesListToExport
     }
 
-    private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[]): Promise<BatchExportNodeTransport[]> {
+    private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
         for (const node of nodesListToExport) {
             const nodesToGetKeys = node.dependencies.filter(dependency => !nodesListToExport
                 .map(node => node.key)
                 .includes(dependency.key))
                 .map(dependency => dependency.key);
             if (nodesToGetKeys.length > 0) {
+                if(this.checkForCircularDependencies(nodePath, node.key)) {
+                    throw Error("Cannot export package that has a circular dependency");
+                }
+                nodePath.push(node.key);
                 let dependencyNodes = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key));
-                dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages, actionFlowPackageKeys);
+                dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages, actionFlowPackageKeys, [...nodePath]);
                 nodesListToExport.push(...dependencyNodes);
             }
         }
         return nodesListToExport;
+    }
+
+    private checkForCircularDependencies(nodePath: string[], nodeKey: string): boolean {
+        return nodePath.includes(nodeKey);
     }
 
     private exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): void {
