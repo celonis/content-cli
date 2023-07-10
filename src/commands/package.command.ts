@@ -38,7 +38,7 @@ export class PackageCommand {
 
     public async listPackages(jsonResponse: boolean, includeDependencies: boolean): Promise<void> {
         if (jsonResponse) {
-            await packageService.findAndExportAllPackages(includeDependencies);
+            await packageService.findAndExportListOfAllPackages(includeDependencies);
         } else {
             await packageService.listPackages();
         }

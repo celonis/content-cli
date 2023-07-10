@@ -15,8 +15,8 @@ class PackageApi {
         });
     }
 
-    public async exportPackage(rootPackageKey: string): Promise<Buffer> {
-        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?newKey=${rootPackageKey}`);
+    public async exportPackage(rootPackageKey: string, version?: string): Promise<Buffer> {
+        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?newKey=${rootPackageKey}${version ? `&version=${version}` : ""}`);
     }
 
     public async findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {

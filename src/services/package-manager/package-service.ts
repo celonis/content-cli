@@ -2,29 +2,23 @@ import {logger} from "../../util/logger";
 import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
-import {
-    BatchExportNodeTransport, SpaceMappingTransport
-} from "../../interfaces/batch-export-node-transport";
+import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
 import {ContentNodeTransport, PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
 import {nodeApi} from "../../api/node-api";
 import {packageDependenciesApi} from "../../api/package-dependencies-api";
 import {variableService} from "./variable-service";
 import {spaceService} from "./space-service";
-import {HttpClientService} from "../http-client.service";
-import {ProfileService} from "../profile.service";
-import * as YAML from 'yaml';
+import * as YAML from "yaml";
 import * as fs from "fs";
 import AdmZip = require("adm-zip");
 import {spaceApi} from "../../api/space-api";
 import * as path from "path";
 import {tmpdir} from "os";
-import {httpClientV2} from "../http-client-service.v2";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manifest-transport";
 
 class PackageService {
-    private profileService = new ProfileService();
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     public async listPackages(): Promise<void> {
@@ -34,7 +28,7 @@ class PackageService {
         });
     }
 
-    public async findAndExportAllPackages(includeDependencies: boolean): Promise<void> {
+    public async findAndExportListOfAllPackages(includeDependencies: boolean): Promise<void> {
         const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
@@ -92,11 +86,12 @@ class PackageService {
         const actionFlowsPackageKeys = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
         nodesListToExport = nodesListToExport.filter(node => !actionFlowsPackageKeys.includes(node.key));
 
+        const versionsByNodeKey = new Map<string, string[]>();
         if (includeDependencies) {
-            nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys, []);
+            nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
         }
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-        await this.exportToZip(nodesListToExport);
+        await this.exportToZip(nodesListToExport, versionsByNodeKey);
     }
 
     public async getVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
@@ -230,7 +225,7 @@ class PackageService {
         }
     }
 
-    private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
+    private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
         let nodesListWithActiveVersion = await this.getNodesWithActiveVersion(nodesListToExport);
 
         const draftIdByNodeId = new Map<string, string>();
@@ -257,31 +252,53 @@ class PackageService {
             node.datamodels = dataModelAssignments.get(node.key);
         })
 
-        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys, nodePath);
+        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys, nodePath, versionsByNodeKey);
         return nodesListToExport
     }
 
-    private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
+    private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
         for (const node of nodesListToExport) {
             const nodesToGetKeys = node.dependencies.filter(dependency => !nodesListToExport
                 .map(node => node.key)
                 .includes(dependency.key))
                 .map(dependency => dependency.key);
-            if (nodesToGetKeys.length > 0) {
-                if(this.checkForCircularDependencies(nodePath, node.key)) {
-                    throw Error("Cannot export package that has a circular dependency");
+
+            const dependencyVersionByKey = new Map<string, string>();
+
+            node.dependencies.forEach(dependency => {
+                const dependencyVersion = versionsByNodeKey.has(dependency.key) ? versionsByNodeKey.get(dependency.key) : [];
+
+                if (!dependencyVersion.includes(dependency.version)) {
+                    dependencyVersion.push(dependency.version);
+                    dependencyVersionByKey.set(dependency.key, dependency.version);
                 }
-                nodePath.push(node.key);
+            });
+
+            if (nodesToGetKeys.length > 0) {
+                const packageVersions = versionsByNodeKey.get(node.key);
+                if (packageVersions  && packageVersions.length) {
+                    packageVersions.forEach(version => {
+                        if (this.checkForCircularDependencies(nodePath, node.key, version)) {
+                            throw Error("Cannot export package that has a circular dependency");
+                        }
+                        nodePath.push(node.key + ":" + version);
+                    })
+                } else {
+                    if (this.checkForCircularDependencies(nodePath, node.key, node.version.version)) {
+                        throw Error("Cannot export package that has a circular dependency");
+                    }
+                    nodePath.push(node.key + ":" + node.version.version);
+                }
                 let dependencyNodes = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key));
-                dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages, actionFlowPackageKeys, [...nodePath]);
+                dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages, actionFlowPackageKeys, [...nodePath], versionsByNodeKey);
                 nodesListToExport.push(...dependencyNodes);
             }
         }
         return nodesListToExport;
     }
 
-    private checkForCircularDependencies(nodePath: string[], nodeKey: string): boolean {
-        return nodePath.includes(nodeKey);
+    private checkForCircularDependencies(nodePath: string[], nodeKey: string, version: string): boolean {
+        return nodePath.includes(nodeKey + ":" + version);
     }
 
     private exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): void {
@@ -290,34 +307,56 @@ class PackageService {
         logger.info(FileService.fileDownloadedMessage + filename);
     }
 
-    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): Promise<any[]> {
+    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[], versionsByNodeKey: Map<string, string[]>): Promise<any[]> {
         const zips = [];
         const packages = nodes as ContentNodeTransport[];
+        const exportedPackageVersion = [];
         for (const rootPackage of packages) {
-            const exportedPackage = await packageApi.exportPackage(rootPackage.key)
-            zips.push({
-                data: exportedPackage,
-                packageKey: rootPackage.key
-            });
+            const packageVersionsToExport = versionsByNodeKey.get(rootPackage.key);
+            let exportedPackage;
+            for (const version of packageVersionsToExport) {
+                // if (version) {
+                //     if (exportedPackageVersion.includes(rootPackage.key + ":" + version)) {
+                //         return;
+                //     }
+                //     exportedPackage = await packageApi.exportPackage(rootPackage.key, version)
+                //     zips.push({
+                //         data: exportedPackage,
+                //         packageKey: rootPackage.key
+                //     });
+                //     exportedPackageVersion.push(rootPackage.key + ":" + version);
+                //     return;
+                // }
+
+                exportedPackage = await packageApi.exportPackage(rootPackage.key)
+                zips.push({
+                    data: exportedPackage,
+                    packageKey: rootPackage.key,
+                    version: version ?? ""
+                });
+            }
+
         }
         return zips;
     }
 
-    private async exportToZip(nodes: BatchExportNodeTransport[]): Promise<void> {
-        const manifestNodes = this.exportManifestOfPackages(nodes);
-        const packageZips = await this.exportPackagesAndAssets(nodes);
+    private async exportToZip(nodes: BatchExportNodeTransport[], versionsByNodeKey: Map<string, string[]>): Promise<void> {
+        const manifestNodes = this.exportManifestOfPackages(nodes, versionsByNodeKey);
+        const packageZips = await this.exportPackagesAndAssets(nodes, versionsByNodeKey);
 
         const zip = new AdmZip();
 
         zip.addFile("manifest.yml", Buffer.from(YAML.stringify(manifestNodes), "utf8"));
         for (const packageZip of packageZips) {
-            zip.addFile(packageZip.packageKey + ".zip", packageZip.data)
+            const packageVersion = packageZip.version ? packageZip.version : "";
+            const fileName = packageVersion ? `${packageZip.packageKey}:${packageZip.version}` : packageZip.packageKey;
+            zip.addFile(fileName + ".zip", packageZip.data)
         }
         zip.writeZip("export_" + uuidv4() + ".zip");
         logger.info("Successfully exported package");
     }
 
-    private exportManifestOfPackages(nodes: BatchExportNodeTransport[]): ManifestNodeTransport[] {
+    private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {
         const manifestNodes: ManifestNodeTransport[] = [];
         nodes.forEach((node) => {
             const manifestNode = {} as ManifestNodeTransport;
@@ -343,6 +382,7 @@ class PackageService {
                 return variable;
             });
             manifestNode.dependencies = node.dependencies as ManifestDependency[];
+            manifestNode.usedVersions = dependencyVersionsByNodeKey.get(node.key);
             manifestNodes.push(manifestNode);
         })
 

@@ -6,6 +6,7 @@ export interface ManifestNodeTransport {
     packageVersion: string;
     variables: ManifestVariable[],
     space: ManifestSpace,
+    usedVersions: string[];
     dependencies: ManifestDependency[]
 }
 
