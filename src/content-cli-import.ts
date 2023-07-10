@@ -11,7 +11,7 @@ export class Import {
             .command("packages")
             .description("Command to import all given packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
-            .option("--spaceMappings <spaceMappings...>", "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'", "")
+            .option("--spaceMappings <spaceMappings...>", "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'")
             .option("--exportedDatapoolsFile <exportedDatapoolsFile>", "Exported datapool file (relative path)", "")
             .requiredOption("--exportedPackagesFile <exportedPackagesFile>", "Exported packages file (relative path)")
             .action(async cmd => {

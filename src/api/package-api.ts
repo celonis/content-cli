@@ -37,6 +37,12 @@ class PackageApi {
         });
     }
 
+    public async findActiveVersionByIds(nodeIds: string[]): Promise<PackageHistoryTransport[]> {
+        return httpClientV2.post("/package-manager/api/packages/active/by-ids", nodeIds).catch(e => {
+            throw new FatalError(`Problem getting latest version of packages: ${e}`);
+        });
+    }
+
     public async findNextVersion(nodeId: string): Promise<PackageHistoryTransport> {
         return httpClientV2.get(`/package-manager/api/packages/${nodeId}/next-version`).catch(e => {
             throw new FatalError(`Problem getting latest version of package: ${e}`);
