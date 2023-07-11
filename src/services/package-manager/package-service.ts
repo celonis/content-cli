@@ -88,11 +88,6 @@ class PackageService {
 
         const versionsByNodeKey = new Map<string, string[]>();
 
-        nodesListToExport.forEach(node => {
-            const versions = [node?.version?.version];
-            versionsByNodeKey.set(node.key, versions);
-        });
-
         if (includeDependencies) {
             nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
         }
@@ -258,37 +253,38 @@ class PackageService {
             node.datamodels = dataModelAssignments.get(node.key);
         })
 
-        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys, nodePath, versionsByNodeKey);
+        nodesListToExport = await this.getNodeDependencies(nodesListWithActiveVersion, allPackages, actionFlowPackageKeys, nodePath, versionsByNodeKey);
         return nodesListToExport
     }
 
     private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
         for (const node of nodesListToExport) {
+            node.dependencies.forEach(dependency => {
+                const dependencyVersions = versionsByNodeKey.get(dependency.key) ?? [];
+
+                if (!dependencyVersions.includes(dependency.version)) {
+                    dependencyVersions.push(dependency.version);
+                    versionsByNodeKey.set(node.key, dependencyVersions);
+                }
+            });
+
             const nodesToGetKeys = node.dependencies.filter(dependency => !nodesListToExport
                 .map(node => node.key)
                 .includes(dependency.key))
                 .map(dependency => dependency.key);
 
-            const dependencyVersionByKey = new Map<string, string>();
-
-            node.dependencies.forEach(dependency => {
-                const dependencyVersion = versionsByNodeKey.has(dependency.key) ? versionsByNodeKey.get(dependency.key) : [];
-                if (!dependencyVersion.includes(dependency.version)) {
-                    dependencyVersion.push(dependency.version);
-                    dependencyVersionByKey.set(dependency.key, dependency.version);
-                }
-            });
+            const packageVersions = versionsByNodeKey.get(node.key) ?? [];
 
             if (nodesToGetKeys.length > 0) {
-                const packageVersions = versionsByNodeKey.get(node.key);
                 if (packageVersions && packageVersions.length) {
                     packageVersions.forEach(version => {
                         if (this.checkForCircularDependencies(nodePath, node.key, version)) {
                             throw Error("Cannot export package that has a circular dependency");
                         }
                         nodePath.push(node.key + ":" + version);
-                    })
+                    });
                 } else {
+
                     if (this.checkForCircularDependencies(nodePath, node.key, node.version.version)) {
                         throw Error("Cannot export package that has a circular dependency");
                     }
@@ -316,31 +312,29 @@ class PackageService {
         const zips = [];
         const packages = nodes as ContentNodeTransport[];
         const exportedPackageVersion = [];
+
         for (const rootPackage of packages) {
             const packageVersionsToExport = versionsByNodeKey.get(rootPackage.key);
             let exportedPackage;
-            for (const version of packageVersionsToExport) {
-                // if (version) {
-                //     if (exportedPackageVersion.includes(rootPackage.key + ":" + version)) {
-                //         return;
-                //     }
-                //     exportedPackage = await packageApi.exportPackage(rootPackage.key, version)
-                //     zips.push({
-                //         data: exportedPackage,
-                //         packageKey: rootPackage.key
-                //     });
-                //     exportedPackageVersion.push(rootPackage.key + ":" + version);
-                //     return;
-                // }
-
+            if (packageVersionsToExport) {
+                for (const version of packageVersionsToExport) {
+                    if (exportedPackageVersion.includes(rootPackage.key + ":" + version)) {
+                        return;
+                    }
+                    exportedPackage = await packageApi.exportPackage(rootPackage.key, version)
+                    zips.push({
+                        data: exportedPackage,
+                        packageKey: rootPackage.key
+                    });
+                    exportedPackageVersion.push(rootPackage.key + ":" + version);
+                }
+            } else {
                 exportedPackage = await packageApi.exportPackage(rootPackage.key)
                 zips.push({
                     data: exportedPackage,
                     packageKey: rootPackage.key,
-                    version: version ?? ""
                 });
             }
-
         }
         return zips;
     }
@@ -357,8 +351,10 @@ class PackageService {
             const fileName = packageVersion ? `${packageZip.packageKey}:${packageZip.version}` : packageZip.packageKey;
             zip.addFile(fileName + ".zip", packageZip.data)
         }
-        zip.writeZip("export_" + uuidv4() + ".zip");
-        logger.info("Successfully exported package");
+
+        const fileName = "export_" + uuidv4() + ".zip";
+        zip.writeZip(fileName);
+        logger.info("Successfully exported package to: " + fileName);
     }
 
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {
