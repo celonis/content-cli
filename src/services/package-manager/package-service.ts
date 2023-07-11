@@ -87,9 +87,16 @@ class PackageService {
         nodesListToExport = nodesListToExport.filter(node => !actionFlowsPackageKeys.includes(node.key));
 
         const versionsByNodeKey = new Map<string, string[]>();
+
+        nodesListToExport.forEach(node => {
+            const versions = [node?.version?.version];
+            versionsByNodeKey.set(node.key, versions);
+        });
+
         if (includeDependencies) {
             nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
         }
+
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
         await this.exportToZip(nodesListToExport, versionsByNodeKey);
     }
@@ -109,7 +116,6 @@ class PackageService {
 
     public async getNodesWithActiveVersion(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
         const promises = [];
-
         nodes.forEach(node => {
             promises.push(new Promise(async resolve => {
                 node.version = await packageApi.findActiveVersionById(node.id);
@@ -267,7 +273,6 @@ class PackageService {
 
             node.dependencies.forEach(dependency => {
                 const dependencyVersion = versionsByNodeKey.has(dependency.key) ? versionsByNodeKey.get(dependency.key) : [];
-
                 if (!dependencyVersion.includes(dependency.version)) {
                     dependencyVersion.push(dependency.version);
                     dependencyVersionByKey.set(dependency.key, dependency.version);
@@ -276,7 +281,7 @@ class PackageService {
 
             if (nodesToGetKeys.length > 0) {
                 const packageVersions = versionsByNodeKey.get(node.key);
-                if (packageVersions  && packageVersions.length) {
+                if (packageVersions && packageVersions.length) {
                     packageVersions.forEach(version => {
                         if (this.checkForCircularDependencies(nodePath, node.key, version)) {
                             throw Error("Cannot export package that has a circular dependency");
@@ -362,7 +367,7 @@ class PackageService {
             const manifestNode = {} as ManifestNodeTransport;
             manifestNode.packageKey = node.key;
             manifestNode.packageId = node.id;
-            manifestNode.packageVersion = node.version.version;
+            manifestNode.packageVersion = node?.version?.version;
             manifestNode.space = {
                 spaceName: node.space.name,
                 spaceIcon: node.space.iconReference
