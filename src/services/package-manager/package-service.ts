@@ -237,16 +237,16 @@ class PackageService {
 
     private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
         for (const node of nodesListToExport) {
-            const nodesToGetKeys = node.dependencies.filter(dependency => !nodesListToExport
+            const unexportedNodeKeys = node.dependencies.filter(dependency => !nodesListToExport
                 .map(node => node.key)
                 .includes(dependency.key))
                 .map(dependency => dependency.key);
-            if (nodesToGetKeys.length > 0) {
+            if (unexportedNodeKeys.length > 0) {
                 if(this.checkForCircularDependencies(nodePath, node.key)) {
                     throw Error("Export was canceled as package with key: " + node.key + " has a circular dependency");
                 }
                 nodePath.push(node.key);
-                let dependencyNodes = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key));
+                let dependencyNodes = allPackages.filter(packageNode => unexportedNodeKeys.includes(packageNode.key));
                 dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages, actionFlowPackageKeys, [...nodePath]);
                 nodesListToExport.push(...dependencyNodes);
             }
