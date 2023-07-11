@@ -87,7 +87,8 @@ class PackageService {
 
         nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
         if (includeDependencies) {
-            nodesListToExport = await this.getPackagesAndTheirDependenciesPackages(nodesListToExport, allPackages, actionFlowsPackageKeys, versionsByNodeKey);
+            const dependencyPackages = await this.getDependencyPackages(nodesListToExport, [], allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
+            nodesListToExport.push(...dependencyPackages);
         }
 
         const variableAssignments = await variableService.getVariableAssignmentsForNodes(nodesListToExport);
@@ -104,19 +105,6 @@ class PackageService {
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
 
         await this.exportToZip(nodesListToExport, versionsByNodeKey);
-    }
-
-    public async getVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
-        const promises = [];
-
-        nodes.forEach(node => {
-            promises.push(new Promise(async resolve => {
-                node.version = await packageApi.findLatestVersionById(node.id);
-                resolve(node);
-            }));
-        })
-
-        return Promise.all(promises);
     }
 
     public async getNodesWithActiveVersion(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
@@ -217,12 +205,7 @@ class PackageService {
         }
     }
 
-    private async getPackagesAndTheirDependenciesPackages(nodes: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
-        const packagesWithDependencies = await this.getNodeDependencyPackages(nodes, allPackages, actionFlowPackageKeys, [], versionsByNodeKey);
-        return packagesWithDependencies;
-    }
-
-    private async getNodeDependencyPackages(nodesToResolve: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], resolvedDependencies: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
+    private async getDependencyPackages(nodesToResolve: BatchExportNodeTransport[], dependencyPackages: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], resolvedDependencies: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
         const draftIdByNodeId = new Map<string, string>();
         nodesToResolve.forEach(node => draftIdByNodeId.set(node.activatedDraftId, node.id));
 
@@ -232,8 +215,6 @@ class PackageService {
             nodeToExport.dependencies = dependenciesByPackageDraftIds[nodeToExport.activatedDraftId] ?? [];
             return nodeToExport;
         });
-
-        const nodesAndDependencyPackages = [...nodesWithDependencies];
 
         for (const node of nodesWithDependencies) {
             node.dependencies.forEach(dependency => {
@@ -249,7 +230,7 @@ class PackageService {
             }).map(iteratedNode => iteratedNode.key);
 
             if (nodesToGetKeys.length > 0) {
-                const dependencyPackages = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key)).map(dependency => {
+                const dependencyPackagesOfNode = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key)).map(dependency => {
                     const versionedDep = node.dependencies.find(dep => dependency.key === dep.key);
                     return {
                         ...dependency,
@@ -260,13 +241,12 @@ class PackageService {
                     } as BatchExportNodeTransport
                 });
 
-
-                const dependenciesAndTheirDependentPackages = await this.getNodeDependencyPackages(dependencyPackages, allPackages, actionFlowPackageKeys, resolvedDependencies, versionsByNodeKey);
-                nodesAndDependencyPackages.push(...dependenciesAndTheirDependentPackages);
+                dependencyPackages.push(...dependencyPackagesOfNode);
+                await this.getDependencyPackages(dependencyPackagesOfNode, dependencyPackages, allPackages, actionFlowPackageKeys, resolvedDependencies, versionsByNodeKey)
             }
         }
 
-        return nodesAndDependencyPackages;
+        return dependencyPackages;
     }
 
     private nodeHasBeenResolvedBefore(nodePath: string[], nodeKey: string, version: string): boolean {
