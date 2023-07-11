@@ -77,9 +77,9 @@ process.on("unhandledRejection", (e, promise) => {
 })
 
 contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
-    getAllCommands()
+    getAllCommands();
 }, ()=> {
-    getAllCommands()
+    getAllCommands();
 }).catch(e => {
     console.log(e)
 });
