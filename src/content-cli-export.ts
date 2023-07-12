@@ -2,11 +2,9 @@ import {CommanderStatic} from "commander";
 import {PackageCommand} from "./commands/package.command";
 import {logger} from "./util/logger";
 import {contextService} from "./services/context.service";
-import {List} from "./content-cli-list";
 import * as commander from "commander";
 
 export class Export {
-
     public static packages(program: CommanderStatic): CommanderStatic {
         program
             .command("packages")
