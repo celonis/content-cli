@@ -68,7 +68,8 @@ export class List {
     }
 }
 
-const options = commander.parseOptions(process.argv);
+
+const options = commander.parseOptions(process.argv)
 const indexOfProfileOption = options.unknown.indexOf('-p') !== -1 ? options.unknown.indexOf('-p') : options.unknown.indexOf('--profile');
 
 process.on("unhandledRejection", (e, promise) => {
@@ -76,16 +77,21 @@ process.on("unhandledRejection", (e, promise) => {
 })
 
 contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
+    getAllCommands();
+}, ()=> {
+    getAllCommands();
+}).catch(e => {
+    console.log(e)
+});
+
+function getAllCommands() {
     List.packages(commander);
     List.spaces(commander);
     List.dataPools(commander);
     List.assets(commander);
 
     commander.parse(process.argv);
-}).catch(e => {
-    console.log(e)
-});
-
+}
 if (!process.argv.slice(2).length) {
     commander.outputHelp();
     process.exit(1);
