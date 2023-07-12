@@ -2,7 +2,8 @@ import {AuthenticationType, Profile} from "../interfaces/profile.interface";
 import {CoreOptions, Headers, Response} from "request";
 import request = require("request");
 import {contextService} from "./context.service";
-import {FatalError} from "../util/logger";
+import {FatalError, logger} from "../util/logger";
+import * as querystring from "querystring";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
@@ -15,8 +16,76 @@ class HttpClientServiceV2 {
         });
     }
 
+    public async postFile(url: string, body: any, parameters?: {}): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.post(this.resolveUrl(url) + "?" + querystring.stringify(parameters), this.makeOptions(contextService.getContext().profile, body), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async post(url: string, body: any): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.post(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, JSON.stringify(body), "application/json;charset=utf-8"), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async put(url: string, body: object): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.put(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, JSON.stringify(body), "application/json;charset=utf-8"), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async downloadFile(url: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request
+                .post(this.resolveUrl(url), this.makeFileDownloadOptions(contextService.getContext().profile))
+                .on("response", (response: Response) => {
+                    const data: Buffer[] = [];
+                    response.on("data", (chunk: Buffer) => {
+                        data.push(chunk);
+                    });
+                    response.on("end", () => {
+                        if (this.checkBadRequest(response.statusCode)) {
+                            this.handleBadRequest(response.statusCode, data.toString(), reject);
+                        } else {
+                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                        }
+                    });
+                })
+                .on("error", error => reject(error));
+        });
+    }
+
+    private handleResponseStreamData(data, resolve, reject): void {
+        if (data) {
+            resolve(data);
+            return;
+        }
+
+        logger.error("Could not get file stream from response");
+        reject();
+    }
+
     private resolveUrl(url: string): string {
         return contextService.getContext().profile.team.replace(/\/?$/, url);
+    }
+
+    private makeFileDownloadOptions(profile: Profile): object {
+        return {
+            headers: this.buildAuthorizationHeaders(profile),
+            responseType: "binary",
+        };
     }
 
     private handleResponse(res: Response, resolve, reject): void {
@@ -58,11 +127,18 @@ class HttpClientServiceV2 {
         return Object.assign(options, body);
     }
 
-    private buildAuthorizationHeaders(profile: Profile): Headers {
+    private makeOptionsJson(profile: Profile, body: any, contentType: string): CoreOptions {
+        return {
+            headers: this.buildAuthorizationHeaders(profile, contentType),
+            body: body
+        };
+    }
+
+    private buildAuthorizationHeaders(profile: Profile, contentType?: string): Headers {
         const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
         return {
             authorization: `${authenticationType} ${profile.apiToken}`,
-            "content-type": "application/json",
+            "content-type": contentType ?? "application/json",
         };
     }
 }

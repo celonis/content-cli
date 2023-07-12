@@ -1,5 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as YAML from "yaml";
+import {ManifestNodeTransport} from "../interfaces/manifest-transport";
 
 export class FileService {
 
@@ -12,6 +14,14 @@ export class FileService {
         });
     }
 
+    public createDirectoryWithGivenName(dirName: string): void {
+        fs.mkdirSync(path.resolve(process.cwd(), dirName));
+    }
+
+    public readManifestFile(importedFileName: string): Promise<ManifestNodeTransport[]> {
+        const manifest: ManifestNodeTransport[] = YAML.parse(fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), { encoding: "utf-8" }));
+        return Promise.all(manifest);
+    }
     private getSerializedFileContent(data: any): string {
         return data;
     }

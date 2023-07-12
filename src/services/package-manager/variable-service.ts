@@ -1,16 +1,11 @@
 import {packageApi} from "../../api/package-api";
-import {VariablesAssignments} from "../../interfaces/package-manager.interfaces";
+import {PackageWithVariableAssignments, VariablesAssignments} from "../../interfaces/package-manager.interfaces";
+import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 
 class VariableService {
 
-    public async getVariablesByNodeKey(): Promise<Map<string, VariablesAssignments[]>> {
-        const nodeWithVariablesAssignments = await packageApi.findAllPackagesWithVariableAssignments();
-        const variablesByNodeKey = new Map<string, VariablesAssignments[]>();
-
-        nodeWithVariablesAssignments.forEach(nodeWithVariablesAssignment => {
-            variablesByNodeKey.set(nodeWithVariablesAssignment.key, nodeWithVariablesAssignment.variableAssignments);
-        })
-        return variablesByNodeKey;
+    public async getVariableAssignmentsForNodes(nodes: BatchExportNodeTransport[]): Promise<PackageWithVariableAssignments[]> {
+        return await packageApi.findAllPackagesWithVariableAssignments();
     }
 }
 
