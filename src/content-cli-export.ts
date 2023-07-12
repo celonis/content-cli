@@ -24,7 +24,7 @@ export class Export {
 }
 
 const options = commander.parseOptions(process.argv)
-const indexOfProfileOption = options.unknown.indexOf('-p') ?? options.unknown.indexOf('--profile');
+const indexOfProfileOption = options.unknown.indexOf('-p') !== -1 ? options.unknown.indexOf('-p') : options.unknown.indexOf('--profile');
 
 process.on("unhandledRejection", (e, promise) => {
     logger.error(e.toString());
