@@ -140,70 +140,73 @@ class PackageService {
     }
 
     private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMappings: string[], allSpaces: SpaceTransport[], importedKeys: string[], importedFilePath: string) {
-        if (importedKeys.includes(packageToImport.packageKey)) {
-            return;
-        }
-        let targetSpaceId;
-        if (packageToImport.dependencies.length > 0) {
-            for (const dependency of packageToImport.dependencies) {
-                if (!dependency.external) {
-                    const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-                    await this.importPackage(dependentPackage, manifestNodes, spaceMappings, allSpaces, importedKeys, importedFilePath)
-                }
-            }
-        }
-
-        let targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName)
-        const customSpacesMap: Map<string, string> = new Map();
-        spaceMappings.forEach(spaceMap => {
-            const packageAndSpaceid = spaceMap.split(":");
-            customSpacesMap.set(packageAndSpaceid[0], packageAndSpaceid[1])
-        })
-        const customSpaceId = customSpacesMap.get(packageToImport.packageKey);
-        if (customSpaceId) {
-            const customSpace = allSpaces.find(space => space.id === customSpaceId)
-            if (!customSpace) {
-                throw Error("Provided space id does not exist");
-            }
-            targetSpaceId = customSpace.id;
-        } else {
-            if (!targetSpace) {
-                targetSpace = await spaceApi.createSpace({
-                    id: uuidv4(),
-                    name: packageToImport.space.spaceName,
-                    iconReference: packageToImport.space.spaceIcon
-                });
-            }
-            targetSpaceId = targetSpace.id;
-        }
-
-        const packageZip = {
-            formData: {
-                package: await fs.createReadStream(path.resolve(importedFilePath, packageToImport.packageKey + ".zip"), {encoding: null})
-            },
-        };
-        importedKeys.push(packageToImport.packageKey);
-        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
-        await packageApi.importPackage(packageZip, targetSpaceId, !!nodeInTargetTeam);
-        if (nodeInTargetTeam) {
-            await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpaceId)
-        }
-        await this.updateDependencyVersions(packageToImport);
-        await this.publishPackage(packageToImport);
-        logger.info(`Imported package with key: ${packageToImport.packageKey} successfully`)
+      // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
+        // if (importedKeys.includes(packageToImport.packageKey)) {
+        //     return;
+        // }
+        // let targetSpaceId;
+        // if (packageToImport.dependencies.length > 0) {
+        //     for (const dependency of packageToImport.dependencies) {
+        //         if (!dependency.external) {
+        //             const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
+        //             await this.importPackage(dependentPackage, manifestNodes, spaceMappings, allSpaces, importedKeys, importedFilePath)
+        //         }
+        //     }
+        // }
+        //
+        // let targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName)
+        // const customSpacesMap: Map<string, string> = new Map();
+        // spaceMappings.forEach(spaceMap => {
+        //     const packageAndSpaceid = spaceMap.split(":");
+        //     customSpacesMap.set(packageAndSpaceid[0], packageAndSpaceid[1])
+        // })
+        // const customSpaceId = customSpacesMap.get(packageToImport.packageKey);
+        // if (customSpaceId) {
+        //     const customSpace = allSpaces.find(space => space.id === customSpaceId)
+        //     if (!customSpace) {
+        //         throw Error("Provided space id does not exist");
+        //     }
+        //     targetSpaceId = customSpace.id;
+        // } else {
+        //     if (!targetSpace) {
+        //         targetSpace = await spaceApi.createSpace({
+        //             id: uuidv4(),
+        //             name: packageToImport.space.spaceName,
+        //             iconReference: packageToImport.space.spaceIcon
+        //         });
+        //     }
+        //     targetSpaceId = targetSpace.id;
+        // }
+        //
+        // const packageZip = {
+        //     formData: {
+        //         package: await fs.createReadStream(path.resolve(importedFilePath, packageToImport.packageKey + ".zip"), {encoding: null})
+        //     },
+        // };
+        // importedKeys.push(packageToImport.packageKey);
+        // const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
+        // await packageApi.importPackage(packageZip, targetSpaceId, !!nodeInTargetTeam);
+        // if (nodeInTargetTeam) {
+        //     await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpaceId)
+        // }
+        // await this.updateDependencyVersions(packageToImport);
+        // await this.publishPackage(packageToImport);
+        // logger.info(`Imported package with key: ${packageToImport.packageKey} successfully`)
     }
 
     private async updateDependencyVersions(node: ManifestNodeTransport): Promise<void> {
-        const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
-        for (const dependency of node.dependencies) {
-            const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
-            const nextVersion = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
-            dependency.version = nextVersion.version;
-            dependency.updateAvailable = false;
-            dependency.id = nodeInTargetTeam.rootNodeId;
-            dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
-            await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
-        }
+        // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
+
+        // const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
+        // for (const dependency of node.dependencies) {
+        //     const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
+        //     const nextVersion = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
+        //     dependency.version = nextVersion.version;
+        //     dependency.updateAvailable = false;
+        //     dependency.id = nodeInTargetTeam.rootNodeId;
+        //     dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
+        //     await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
+        // }
     }
 
     private async getDependencyPackages(nodesToResolve: BatchExportNodeTransport[], dependencyPackages: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], resolvedDependencies: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
@@ -291,12 +294,12 @@ class PackageService {
     }
 
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {
-        const manifestNodes: ManifestNodeTransport[] = [];
+        const manifestNodesByPackageKey = new Map<string, ManifestNodeTransport>();
+
         nodes.forEach((node) => {
-            const manifestNode = {} as ManifestNodeTransport;
+            const manifestNode = manifestNodesByPackageKey.get(node.key) ?? {} as ManifestNodeTransport;
             manifestNode.packageKey = node.key;
             manifestNode.packageId = node.id;
-            manifestNode.packageVersion = node?.version?.version;
             manifestNode.space = {
                 spaceName: node.space.name,
                 spaceIcon: node.space.iconReference
@@ -315,12 +318,12 @@ class PackageService {
                 }
                 return variable;
             });
-            manifestNode.dependencies = node.dependencies as ManifestDependency[];
-            manifestNode.usedVersions = dependencyVersionsByNodeKey.get(node.key) ?? [];
-            manifestNodes.push(manifestNode);
+            manifestNode.dependenciesByVersion = manifestNode.dependenciesByVersion ?? new Map<string, ManifestDependency[]>();
+            manifestNode.dependenciesByVersion.set(node.version.version, node.dependencies);
+            manifestNodesByPackageKey.set(node.key, manifestNode);
         })
 
-        return manifestNodes;
+        return [...manifestNodesByPackageKey.values()];
     }
 }
 
