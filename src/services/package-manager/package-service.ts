@@ -256,7 +256,7 @@ class PackageService {
                 return variable;
             });
             manifestNode.dependenciesByVersion = manifestNode.dependenciesByVersion ?? new Map<string, ManifestDependency[]>();
-            manifestNode.dependenciesByVersion.set(node.version.version, node.dependencies);
+            manifestNode.dependenciesByVersion.set(node.version.version, node.dependencies ?? []);
             manifestNodesByPackageKey.set(node.key, manifestNode);
         })
 
