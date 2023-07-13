@@ -1,7 +1,7 @@
 import {httpClientV2} from "../services/http-client-service.v2";
 import {
     ActivatePackageTransport,
-    ContentNodeTransport, PackageDependencyTransport, PackageHistoryTransport, PackageWithVariableAssignments
+    ContentNodeTransport, PackageHistoryTransport, PackageWithVariableAssignments
 } from "../interfaces/package-manager.interfaces";
 import {FatalError} from "../util/logger";
 
@@ -16,7 +16,11 @@ class PackageApi {
     }
 
     public async exportPackage(rootPackageKey: string, version?: string): Promise<Buffer> {
-        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?newKey=${rootPackageKey}${version ? `&version=${version}` : ""}`);
+        const queryParams = new URLSearchParams();
+        queryParams.set("newKey", rootPackageKey);
+        queryParams.set("version", version ?? "");
+
+        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`);
     }
 
     public async findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
