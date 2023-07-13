@@ -148,7 +148,7 @@ class PackageService {
                                 spaceMappings: string[],
                                 allSpaces: SpaceTransport[],
                                 importedVersionsByNodeKey: Map<string, string[]>,
-                                importedFilePath: string) {
+                                importedFilePath: string): Promise<void> {
         const importedPackageVersion = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
         const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
 
@@ -165,10 +165,10 @@ class PackageService {
                                        allSpaces: SpaceTransport[],
                                        importedVersionsByNodeKey: Map<string, string[]>,
                                        importedFilePath: string,
-                                       versionOfPackageBeingImported: string) {
+                                       versionOfPackageBeingImported: string): Promise<void> {
         const importedVersionsOfPackage = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
         if (importedVersionsOfPackage.includes(versionOfPackageBeingImported)) {
-            console.log("TESTT")
+            throw new Error("Circular Dependency detected")
             return;
         }
 
