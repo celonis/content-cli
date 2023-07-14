@@ -1,6 +1,6 @@
 import {PackageDependencyTransport} from "../interfaces/package-manager.interfaces";
 import {httpClientV2} from "../services/http-client-service.v2";
-import {FatalError, logger} from "../util/logger";
+import {FatalError} from "../util/logger";
 
 class PackageDependenciesApi {
     public static readonly INSTANCE = new PackageDependenciesApi();

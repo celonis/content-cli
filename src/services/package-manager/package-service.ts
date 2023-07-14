@@ -227,7 +227,7 @@ class PackageService {
 
         const fileName = "export_" + uuidv4() + ".zip";
         zip.writeZip(fileName);
-        logger.info("Successfully exported package to: " + fileName);
+        logger.info(this.fileDownloadedMessage + fileName);
     }
 
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {

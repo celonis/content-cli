@@ -20,7 +20,9 @@ class PackageApi {
         queryParams.set("newKey", rootPackageKey);
         queryParams.set("version", version ?? "");
 
-        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`);
+        return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`).catch(e => {
+            throw new FatalError(`Pacakge ${rootPackageKey}_${version} failed to export.`)
+        });
     }
 
     public async findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
