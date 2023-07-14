@@ -47,7 +47,12 @@ class PackageService {
                 return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
             })
 
-            nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
+            const unPublishedNodes = nodesListToExport.filter(node => !node.activatedDraftId);
+            let publishedNodes = nodesListToExport.filter(node => node.activatedDraftId);
+
+            publishedNodes = await this.getNodesWithActiveVersion(publishedNodes);
+
+            nodesListToExport = [...publishedNodes, ...unPublishedNodes];
 
             const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
             nodesListToExport.forEach(node => {
