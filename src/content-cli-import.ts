@@ -13,9 +13,9 @@ export class Import {
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--spaceMappings <spaceMappings...>", "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'")
             .option("--dataModelMapping <dataModelMapping>", "Data model mappings file (relative path)", "")
-            .requiredOption("--exportedPackagesFile <exportedPackagesFile>", "Exported packages file (relative path)")
+            .requiredOption("--packagesFile <packagesFile>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.dataModelMapping, cmd.exportedPackagesFile)
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.dataModelMapping, cmd.packagesFile)
                 process.exit();
             });
 

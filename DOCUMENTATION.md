@@ -276,6 +276,34 @@ You can use the --includeDependencies flag to also export the dependencies of th
 content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2> --includeDependencies
 ```
 
+### Importing multiple packages into Studio
+
+You can use the `import packages` command to import multiple packages that were exported using `export packages` at once into studio.
+
+```
+//Importing multiple packages at once
+content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file>
+```
+
+Example usage would be:
+```
+content-cli import packages -p <your-chosen-profile> --packagesFile export_123123-13123-123123.zip
+```
+
+You can also optionally import dependencies using `--includeDependencies` flag. 
+
+```
+// Note this will only work if packages where exported with included dependencies.
+content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file> --includeDependencies
+```
+
+You can also use the `--spaceMapping` flag to provide a mapping of packages to spaces in target team:
+
+```
+// Example usage of spaceMapping
+content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file> --includeDependencies --spaceMapping <package-key-1>:<target-space-key-1> <package-key-2>:<target-space-key-2> ...
+```
+
 ### List all spaces in Studio
 With this command you can retrieve a list of all spaces within a team.
 The command takes your permissions into consideration and only lists the
