@@ -261,7 +261,7 @@ You can use the export packages command to export multiple packages at once from
 
 ```
 //Exporting multiple packages at once
-content-cli export packages -p <your-chosen-profile> --packageKeys <packageKeysYouWantToExport>
+content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2>
 ```
 
 Example usage would be:
@@ -270,6 +270,11 @@ content-cli export packages -p dev --packageKeys package-1 package-2
 ```
 
 You can use the --includeDependencies flag to also export the dependencies of the specified packages.
+
+```
+//Exporting multiple packages at once with dependencies
+content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2> --includeDependencies
+```
 
 ### List all spaces in Studio
 With this command you can retrieve a list of all spaces within a team.
