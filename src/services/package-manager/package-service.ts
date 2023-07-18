@@ -76,6 +76,12 @@ class PackageService {
         const importedVersionsByNodeKey = new Map<string, string[]>();
         const sourceToTargetVersionsByNodeKey = new Map<string, Map<string, string>>();
 
+        for (const node of manifestNodes) {
+            for (const version of node.dependenciesByVersion.keys()) {
+                await this.checkNodeForCircularDependency(node, version, manifestNodes, []);
+            }
+        }
+
         const customSpacesMap: Map<string, string> = new Map();
         spaceMappings.forEach(spaceMap => {
             const packageAndSpaceid = spaceMap.split(":");
@@ -86,6 +92,23 @@ class PackageService {
             await this.importPackage(node, manifestNodes, sourceToTargetVersionsByNodeKey, customSpacesMap, importedVersionsByNodeKey, importedFilePath)
         }
     }
+
+    private async checkNodeForCircularDependency(node: ManifestNodeTransport, version: string, manifestNodes: ManifestNodeTransport[], iteratedNodeAndVersions: string[]): Promise<void> {
+        const dependencies = node.dependenciesByVersion.get(version);
+
+        if (iteratedNodeAndVersions.includes(`${node.packageKey}_${version}`)) {
+            throw new Error("Circular dependency detected!");
+        }
+
+        iteratedNodeAndVersions.push(`${node.packageKey}_${version}`);
+
+        for (const dependency of dependencies) {
+            const manifestNodeOfDependency = manifestNodes.find(manifestNode => manifestNode.packageKey === dependency.key);
+
+            await this.checkNodeForCircularDependency(manifestNodeOfDependency, dependency.version, manifestNodes, iteratedNodeAndVersions);
+        }
+    }
+
 
     public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
         const allPackages = await packageApi.findAllPackages();
