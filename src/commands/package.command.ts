@@ -48,7 +48,7 @@ export class PackageCommand {
         await packageService.batchExportPackages(packageKeys, includeDependencies);
     }
 
-    public async batchImportPackages(spaceMappings: string[], dataModelMapping: string, exportedPackagesFile: string): Promise<void> {
-        await packageService.batchImportPackages(spaceMappings ?? [], dataModelMapping, exportedPackagesFile);
+    public async batchImportPackages(spaceMappings: string[], exportedPackagesFile: string): Promise<void> {
+        await packageService.batchImportPackages(spaceMappings ?? [], exportedPackagesFile);
     }
 }

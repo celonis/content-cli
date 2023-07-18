@@ -66,7 +66,7 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
-    public async batchImportPackages(spaceMappings: string[], dataModelMapping: string, exportedPackagesFile: string): Promise<void> {
+    public async batchImportPackages(spaceMappings: string[], exportedPackagesFile: string): Promise<void> {
         exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
         const zip = new AdmZip(exportedPackagesFile);
         const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
@@ -75,8 +75,6 @@ class PackageService {
 
         const manifestNodes = await fileService.readManifestFile(importedFilePath);
         manifestNodes.map(node => node.dependenciesByVersion = new Map(Object.entries(node.dependenciesByVersion)));
-
-        //TO-DO [DS-1462](https://celonis.atlassian.net/browse/DP-1462) Use mapping to set new datamodelIds.
 
         const importedVersionsByNodeKey = new Map<string, string[]>();
         const sourceToTargetVersionsByNodeKey = new Map<string, Map<string, string>>();
