@@ -109,6 +109,167 @@ class PackageService {
         }
     }
 
+    private async importPackage(packageToImport: ManifestNodeTransport,
+                                manifestNodes: ManifestNodeTransport[],
+                                sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
+                                spaceMappings: Map<string, string>,
+                                importedVersionsByNodeKey: Map<string, string[]>,
+                                importedFilePath: string): Promise<void> {
+        const importedPackageVersion = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
+        const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
+
+        for (const version of versionsOfPackage) {
+            await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath, version);
+        }
+    }
+
+    private compareVersions(version1: string, version2: string): number {
+        const splitVersion1 = version1.split(".");
+        const splitVersion2 = version2.split(".");
+
+        const majorVersion1 = splitVersion1[0];
+        const majorVersion2 = splitVersion2[0];
+
+        const minorVersion1 = splitVersion1[1];
+        const minorVersion2 = splitVersion2[1];
+
+        const patchVersion1 = splitVersion1[2];
+        const patchVersion2 = splitVersion2[2];
+
+        const firstVersionIsGreaterThanFirst = (majorVersion1 > majorVersion2) || (minorVersion1 > minorVersion2) || (patchVersion1 > patchVersion2);
+        return firstVersionIsGreaterThanFirst ? 1 : -1;
+    }
+
+    private async importPackageVersion(packageToImport: ManifestNodeTransport,
+                                       manifestNodes: ManifestNodeTransport[],
+                                       sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
+                                       spaceMappings: Map<string, string>,
+                                       importedVersionsByNodeKey: Map<string, string[]>,
+                                       importedFilePath: string,
+                                       versionOfPackageBeingImported: string): Promise<void> {
+        if (packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported).length) {
+            const dependenciesOfPackageVersion = packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported)
+            await this.importDependencyPackages(dependenciesOfPackageVersion, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath);
+        }
+
+        if (this.checkIfPackageVersionHasBeenImported(packageToImport.packageKey, versionOfPackageBeingImported, importedVersionsByNodeKey)) {
+            return;
+        }
+
+        const targetSpace = await this.getTargetSpaceForExportedPackage(packageToImport, spaceMappings);
+
+        let nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
+
+        const pathToZipFile = path.resolve(importedFilePath, packageToImport.packageKey + "_" + versionOfPackageBeingImported + ".zip");
+        const packageZip = await this.createBodyForImport(pathToZipFile);
+
+        await packageApi.importPackage(packageZip, targetSpace.id, !!nodeInTargetTeam);
+
+        if (nodeInTargetTeam) {
+            await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpace.id)
+        } else {
+            nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
+        }
+
+        await this.updateDependencyVersions(packageToImport, versionOfPackageBeingImported, sourceToTargetVersionsByNodeKey);
+        await this.publishPackage(packageToImport);
+
+        const packageVersionInTargetTeam = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
+
+        const mappedVersions = sourceToTargetVersionsByNodeKey.get(packageToImport.packageKey) ?? new Map<string, string>();
+        mappedVersions.set(versionOfPackageBeingImported, packageVersionInTargetTeam.version);
+        sourceToTargetVersionsByNodeKey.set(packageToImport.packageKey, mappedVersions);
+
+        const importedVersionsOfPackage = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
+        importedVersionsOfPackage.push(versionOfPackageBeingImported);
+        importedVersionsByNodeKey.set(packageToImport.packageKey, importedVersionsOfPackage);
+
+        logger.info(`Imported package with key: ${packageToImport.packageKey} ${versionOfPackageBeingImported} successfully`)
+    }
+
+    private async importDependencyPackages(dependenciesToImport: ManifestDependency[],
+                                           manifestNodes: ManifestNodeTransport[],
+                                           sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
+                                           spaceMappings: Map<string, string>,
+                                           importedVersionsByNodeKey: Map<string, string[]>,
+                                           importedFilePath: string): Promise<void> {
+        for (const dependency of dependenciesToImport) {
+            if (this.checkIfPackageVersionHasBeenImported(dependency.key, dependency.version, importedVersionsByNodeKey)) {
+                continue;
+            }
+
+            if (!dependency.external) {
+                const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
+                await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath);
+            }
+        }
+    }
+
+    private checkIfPackageVersionHasBeenImported(packageKey: string,
+                                                 version: string,
+                                                 importedVersions: Map<string, string[]>): boolean {
+        const importedPackages = importedVersions.get(packageKey) ?? [];
+        return importedPackages.includes(version);
+    }
+
+    private async createBodyForImport(filename: string): Promise<object> {
+        return {
+            formData: {
+                package: await fs.createReadStream(filename, {encoding: null})
+            },
+        }
+    }
+
+    private async getTargetSpaceForExportedPackage(packageToImport: ManifestNodeTransport, spaceMappings: Map<string, string>): Promise<SpaceTransport> {
+        let targetSpace;
+        const allSpaces = await spaceService.getAllSpaces();
+        if (spaceMappings.has(packageToImport.packageKey)) {
+            const customSpaceId = spaceMappings.get(packageToImport.packageKey);
+            const customSpace = allSpaces.find(space => space.id === customSpaceId);
+
+            if (!customSpace) {
+                throw Error("Provided space id does not exist");
+            }
+
+            targetSpace = customSpace;
+        } else {
+            targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName);
+
+            if (!targetSpace) {
+                targetSpace = await spaceService.createSpace(packageToImport.space.spaceName, packageToImport.space.spaceIcon);
+            }
+
+        }
+
+        return targetSpace;
+    }
+
+    private async updateDependencyVersions(node: ManifestNodeTransport,
+                                           versionOfPackage: string,
+                                           sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>): Promise<void> {
+        // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
+
+        const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
+        for (const dependency of [...node.dependenciesByVersion.get(versionOfPackage)]) {
+            const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
+            dependency.version = sourceToTargetVersionsByNodeKey.get(dependency.key).get(dependency.version);
+            dependency.updateAvailable = false;
+            dependency.id = nodeInTargetTeam.rootNodeId;
+            dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
+            await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
+        }
+    }
+
+    public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
+        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
+        const nextVersion = await packageApi.findNextVersion(nodeInTargetTeam.id);
+        await packageApi.publishPackage({
+            packageKey: packageToImport.packageKey,
+            version: nextVersion.version,
+            publishMessage: "Published package after import",
+            nodeIdsToExclude: []
+        });
+    }
 
     public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
         const allPackages = await packageApi.findAllPackages();
@@ -158,162 +319,6 @@ class PackageService {
         })
 
         return allPackageDependencies;
-    }
-
-    public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
-        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
-        const nextVersion = await packageApi.findNextVersion(nodeInTargetTeam.id);
-        await packageApi.publishPackage({
-            packageKey: packageToImport.packageKey,
-            version: nextVersion.version,
-            publishMessage: "Published package after import",
-            nodeIdsToExclude: []
-        });
-    }
-
-    private async importPackage(packageToImport: ManifestNodeTransport,
-                                manifestNodes: ManifestNodeTransport[],
-                                sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
-                                spaceMappings: Map<string, string>,
-                                importedVersionsByNodeKey: Map<string, string[]>,
-                                importedFilePath: string): Promise<void> {
-        const importedPackageVersion = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
-        const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
-
-        for (const version of versionsOfPackage) {
-            await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath, version);
-        }
-    }
-
-    private async importPackageVersion(packageToImport: ManifestNodeTransport,
-                                       manifestNodes: ManifestNodeTransport[],
-                                       sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
-                                       spaceMappings: Map<string, string>,
-                                       importedVersionsByNodeKey: Map<string, string[]>,
-                                       importedFilePath: string,
-                                       versionOfPackageBeingImported: string): Promise<void> {
-        if (packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported).length) {
-            const dependenciesOfPackageVersion = packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported)
-            await this.importDependencyPackages(dependenciesOfPackageVersion, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath);
-        }
-
-        if (this.checkIfPackageVersionHasBeenImported(packageToImport.packageKey, versionOfPackageBeingImported, importedVersionsByNodeKey)) {
-            return;
-        }
-
-        const targetSpace = await this.getTargetSpaceForExportedPackage(packageToImport, spaceMappings);
-
-        let nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
-
-        const packageZip = {
-            formData: {
-                package: await fs.createReadStream(path.resolve(importedFilePath, packageToImport.packageKey + "_" + versionOfPackageBeingImported + ".zip"), {encoding: null})
-            },
-        };
-        await packageApi.importPackage(packageZip, targetSpace.id, !!nodeInTargetTeam);
-
-        if (nodeInTargetTeam) {
-            await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpace.id)
-        } else {
-            nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
-        }
-
-        await this.updateDependencyVersions(packageToImport, versionOfPackageBeingImported, sourceToTargetVersionsByNodeKey);
-        await this.publishPackage(packageToImport);
-
-        const packageVersionInTargetTeam = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
-
-        const mappedVersions = sourceToTargetVersionsByNodeKey.get(packageToImport.packageKey) ?? new Map<string, string>();
-        mappedVersions.set(versionOfPackageBeingImported, packageVersionInTargetTeam.version);
-        sourceToTargetVersionsByNodeKey.set(packageToImport.packageKey, mappedVersions);
-
-        const importedVersionsOfPackage = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
-        importedVersionsOfPackage.push(versionOfPackageBeingImported);
-        importedVersionsByNodeKey.set(packageToImport.packageKey, importedVersionsOfPackage);
-
-        logger.info(`Imported package with key: ${packageToImport.packageKey} ${versionOfPackageBeingImported} successfully`)
-    }
-
-    private checkIfPackageVersionHasBeenImported(packageKey: string,
-                                                 version: string,
-                                                 importedVersions: Map<string, string[]>): boolean {
-        const importedPackages = importedVersions.get(packageKey) ?? [];
-        return importedPackages.includes(version);
-    }
-
-    private async getTargetSpaceForExportedPackage(packageToImport: ManifestNodeTransport, spaceMappings: Map<string, string>): Promise<SpaceTransport> {
-        let targetSpace;
-        const allSpaces = await spaceService.getAllSpaces();
-        if (spaceMappings.has(packageToImport.packageKey)) {
-            const customSpaceId = spaceMappings.get(packageToImport.packageKey);
-            const customSpace = allSpaces.find(space => space.id === customSpaceId);
-
-            if (!customSpace) {
-                throw Error("Provided space id does not exist");
-            }
-
-            targetSpace = customSpace;
-        } else {
-            targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName);
-
-            if (!targetSpace) {
-                targetSpace = await spaceService.createSpace(packageToImport.space.spaceName, packageToImport.space.spaceIcon);
-            }
-
-        }
-
-        return targetSpace;
-    }
-
-    private async importDependencyPackages(dependenciesToImport: ManifestDependency[],
-                                           manifestNodes: ManifestNodeTransport[],
-                                           sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
-                                           spaceMappings: Map<string, string>,
-                                           importedVersionsByNodeKey: Map<string, string[]>,
-                                           importedFilePath: string): Promise<void> {
-        for (const dependency of dependenciesToImport) {
-            if (this.checkIfPackageVersionHasBeenImported(dependency.key, dependency.version, importedVersionsByNodeKey)) {
-                continue;
-            }
-
-            if (!dependency.external) {
-                const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-                await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath);
-            }
-        }
-    }
-
-    private async updateDependencyVersions(node: ManifestNodeTransport,
-                                           versionOfPackage: string,
-                                           sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>): Promise<void> {
-        // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
-
-        const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
-        for (const dependency of [...node.dependenciesByVersion.get(versionOfPackage)]) {
-            const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
-            dependency.version = sourceToTargetVersionsByNodeKey.get(dependency.key).get(dependency.version);
-            dependency.updateAvailable = false;
-            dependency.id = nodeInTargetTeam.rootNodeId;
-            dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
-            await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
-        }
-    }
-
-    private compareVersions(version1: string, version2: string): number {
-        const splitVersion1 = version1.split(".");
-        const splitVersion2 = version2.split(".");
-
-        const majorVersion1 = splitVersion1[0];
-        const majorVersion2 = splitVersion2[0];
-
-        const minorVersion1 = splitVersion1[1];
-        const minorVersion2 = splitVersion2[1];
-
-        const patchVersion1 = splitVersion1[2];
-        const patchVersion2 = splitVersion2[2];
-
-        const firstVersionIsGreaterThanFirst = (majorVersion1 > majorVersion2) || (minorVersion1 > minorVersion2) || (patchVersion1 > patchVersion2);
-        return firstVersionIsGreaterThanFirst ? 1 : -1;
     }
 
     private async getDependencyPackages(nodesToResolve: BatchExportNodeTransport[], dependencyPackages: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], resolvedDependencies: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {

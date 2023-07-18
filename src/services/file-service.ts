@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as YAML from "yaml";
 import {ManifestNodeTransport} from "../interfaces/manifest-transport";
+import {Stream} from "stream";
 
 export class FileService {
 
@@ -22,6 +23,7 @@ export class FileService {
         const manifest: ManifestNodeTransport[] = YAML.parse(fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), { encoding: "utf-8" }));
         return Promise.all(manifest);
     }
+
     private getSerializedFileContent(data: any): string {
         return data;
     }
