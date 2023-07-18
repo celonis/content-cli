@@ -250,7 +250,6 @@ class PackageService {
     private async updateDependencyVersions(node: ManifestNodeTransport,
                                            versionOfPackage: string,
                                            sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>): Promise<void> {
-        // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
 
         const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
         for (const dependency of [...node.dependenciesByVersion.get(versionOfPackage)]) {
@@ -259,6 +258,7 @@ class PackageService {
             dependency.updateAvailable = false;
             dependency.id = nodeInTargetTeam.rootNodeId;
             dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
+
             await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
         }
     }

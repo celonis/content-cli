@@ -290,18 +290,11 @@ Example usage would be:
 content-cli import packages -p <your-chosen-profile> --packagesFile export_123123-13123-123123.zip
 ```
 
-You can also optionally import dependencies using `--includeDependencies` flag. 
-
-```
-// Note this will only work if packages where exported with included dependencies.
-content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file> --includeDependencies
-```
-
 You can also use the `--spaceMapping` flag to provide a mapping of packages to spaces in target team:
 
 ```
 // Example usage of spaceMapping
-content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file> --includeDependencies --spaceMapping <package-key-1>:<target-space-key-1> <package-key-2>:<target-space-key-2> ...
+content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file> --spaceMapping <package-key-1>:<target-space-key-1> <package-key-2>:<target-space-key-2> ...
 ```
 
 ### List all spaces in Studio
