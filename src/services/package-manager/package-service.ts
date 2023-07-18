@@ -347,11 +347,10 @@ class PackageService {
         logger.info(FileService.fileDownloadedMessage + filename);
     }
 
-    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[], versionsByNodeKey: Map<string, string[]>): Promise<any[]> {
+    private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): Promise<any[]> {
         const zips = [];
         for (const rootPackage of nodes) {
-            let exportedPackage;
-            exportedPackage = await packageApi.exportPackage(rootPackage.key, rootPackage.version.version)
+            const exportedPackage = await packageApi.exportPackage(rootPackage.key, rootPackage.version.version)
             zips.push({
                 data: exportedPackage,
                 packageKey: rootPackage.key,
@@ -363,7 +362,7 @@ class PackageService {
 
     private async exportToZip(nodes: BatchExportNodeTransport[], versionsByNodeKey: Map<string, string[]>): Promise<void> {
         const manifestNodes = this.exportManifestOfPackages(nodes, versionsByNodeKey);
-        const packageZips = await this.exportPackagesAndAssets(nodes, versionsByNodeKey);
+        const packageZips = await this.exportPackagesAndAssets(nodes);
 
         const zip = new AdmZip();
 
@@ -374,7 +373,7 @@ class PackageService {
 
         const fileName = "export_" + uuidv4() + ".zip";
         zip.writeZip(fileName);
-        logger.info("Successfully exported package to: " + fileName);
+        logger.info(this.fileDownloadedMessage + fileName);
     }
 
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {
@@ -403,7 +402,7 @@ class PackageService {
                 return variable;
             });
             manifestNode.dependenciesByVersion = manifestNode.dependenciesByVersion ?? new Map<string, ManifestDependency[]>();
-            manifestNode.dependenciesByVersion.set(node.version.version, node.dependencies);
+            manifestNode.dependenciesByVersion.set(node.version.version, node.dependencies ?? []);
             manifestNodesByPackageKey.set(node.key, manifestNode);
         })
 
