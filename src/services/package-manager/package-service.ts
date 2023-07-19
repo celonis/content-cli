@@ -187,7 +187,9 @@ class PackageService {
         importedVersionsOfPackage.push(versionOfPackageBeingImported);
         importedVersionsByNodeKey.set(packageToImport.packageKey, importedVersionsOfPackage);
 
-        logger.info(`Imported package with key: ${packageToImport.packageKey} ${versionOfPackageBeingImported} successfully`)
+        const mappedVersion = sourceToTargetVersionsByNodeKey.get(packageToImport.packageKey).get(versionOfPackageBeingImported);
+
+        logger.info(`Imported package with key: ${packageToImport.packageKey} ${versionOfPackageBeingImported} successfully. New version: ${mappedVersion}`)
     }
 
     private async importDependencyPackages(dependenciesToImport: ManifestDependency[],
