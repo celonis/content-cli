@@ -257,7 +257,8 @@ class PackageService {
             dependency.version = sourceToTargetVersionsByNodeKey.get(dependency.key).get(dependency.version);
             dependency.updateAvailable = false;
             dependency.id = nodeInTargetTeam.rootNodeId;
-            dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
+            dependency.rootNodeId = createdNode.rootNodeId;
+            dependency.draftId = nodeInTargetTeam.workingDraftId;
 
             await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
         }
