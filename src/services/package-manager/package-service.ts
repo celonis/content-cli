@@ -2,29 +2,23 @@ import {logger} from "../../util/logger";
 import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
-import {
-    BatchExportNodeTransport, SpaceMappingTransport
-} from "../../interfaces/batch-export-node-transport";
+import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
 import {ContentNodeTransport, PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
 import {nodeApi} from "../../api/node-api";
 import {packageDependenciesApi} from "../../api/package-dependencies-api";
 import {variableService} from "./variable-service";
 import {spaceService} from "./space-service";
-import {HttpClientService} from "../http-client.service";
-import {ProfileService} from "../profile.service";
-import * as YAML from 'yaml';
+import * as YAML from "yaml";
 import * as fs from "fs";
 import AdmZip = require("adm-zip");
 import {spaceApi} from "../../api/space-api";
 import * as path from "path";
 import {tmpdir} from "os";
-import {httpClientV2} from "../http-client-service.v2";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manifest-transport";
 
 class PackageService {
-    private profileService = new ProfileService();
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     public async listPackages(): Promise<void> {
@@ -34,7 +28,7 @@ class PackageService {
         });
     }
 
-    public async findAndExportAllPackages(includeDependencies: boolean): Promise<void> {
+    public async findAndExportListOfAllPackages(includeDependencies: boolean): Promise<void> {
         const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
@@ -72,7 +66,7 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
-    public async batchImportPackages(spaceMappings: string[], exportedDatapoolsFile: string, exportedPackagesFile: string): Promise<void> {
+    public async batchImportPackages(spaceMappings: string[], dataModelMapping: string, exportedPackagesFile: string): Promise<void> {
         exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
         const zip = new AdmZip(exportedPackagesFile);
         const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
@@ -80,7 +74,8 @@ class PackageService {
         await zip.extractAllTo(importedFilePath);
 
         const manifestNodes = await fileService.readManifestFile(importedFilePath);
-        //TO-DO Import data-pools and data models based on the package variables
+
+        //TO-DO [DS-1462](https://celonis.atlassian.net/browse/DP-1462) Use mapping to set new datamodelIds.
         const allSpaces = await spaceApi.findAllSpaces();
         const importedKeys = [];
         for (const node of manifestNodes) {
@@ -94,31 +89,44 @@ class PackageService {
         const actionFlowsPackageKeys = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
         nodesListToExport = nodesListToExport.filter(node => !actionFlowsPackageKeys.includes(node.key));
 
-        if (includeDependencies) {
-            nodesListToExport = await this.fillNodeDependencies(nodesListToExport, allPackages, actionFlowsPackageKeys, []);
+        const versionsByNodeKey = new Map<string, string[]>();
+
+        const allPackageKeys = allPackages.map(p => p.key);
+
+        for(const packageKey of packageKeys) {
+            if (!allPackageKeys.includes(packageKey)) {
+                throw  new Error(`Package ${packageKey} does not exist.`);
+            }
         }
+
+
+        nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
+        if (includeDependencies) {
+            const dependencyPackages = await this.getDependencyPackages(nodesListToExport, [], allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
+            nodesListToExport.push(...dependencyPackages);
+        }
+
+        const variableAssignments = await variableService.getVariableAssignmentsForNodes(nodesListToExport);
+
+        nodesListToExport.forEach(node => {
+            node.variables = variableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
+        });
+
+        const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+        nodesListToExport.forEach(node => {
+            node.datamodels = dataModelAssignments.get(node.key);
+        });
+
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-        await this.exportToZip(nodesListToExport);
-    }
 
-    public async getVersionOfPackages(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
-        const promises = [];
-
-        nodes.forEach(node => {
-            promises.push(new Promise(async resolve => {
-                node.version = await packageApi.findLatestVersionById(node.id);
-                resolve(node);
-            }));
-        })
-
-        return Promise.all(promises);
+        await this.exportToZip(nodesListToExport, versionsByNodeKey);
     }
 
     public async getNodesWithActiveVersion(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
-        const activeVersionsOfPackage = await packageApi.findActiveVersionByIds(nodes.map(node=>node.id));
+        const activeVersionsOfPackage = await packageApi.findActiveVersionByIds(nodes.map(node => node.id));
 
         nodes.forEach(node => {
-            node.version = activeVersionsOfPackage.find(packageVersion=> packageVersion.id === node.id);
+            node.version = activeVersionsOfPackage.find(packageVersion => packageVersion.id === node.id);
         })
 
         return nodes;
@@ -127,7 +135,7 @@ class PackageService {
     public async getPackagesWithDependencies(draftIdByNodeId: Map<string, string>, actionFlowPackageKeys: string[]): Promise<Map<string, PackageDependencyTransport[]>> {
         const allPackageDependencies: Map<string, PackageDependencyTransport[]> = await packageDependenciesApi.findPackageDependenciesByIds(draftIdByNodeId);
 
-        Object.values(allPackageDependencies).forEach((value, key)=> {
+        Object.values(allPackageDependencies).forEach((value, key) => {
             value = value.filter((dependency => actionFlowPackageKeys.includes(dependency.key)))
         })
 
@@ -146,121 +154,59 @@ class PackageService {
     }
 
     private async importPackage(packageToImport: ManifestNodeTransport, manifestNodes: ManifestNodeTransport[], spaceMappings: string[], allSpaces: SpaceTransport[], importedKeys: string[], importedFilePath: string) {
-        if (importedKeys.includes(packageToImport.packageKey)) {
-            return;
-        }
-        let targetSpaceId;
-        if (packageToImport.dependencies.length > 0) {
-            for (const dependency of packageToImport.dependencies) {
-                if (!dependency.external) {
-                    const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-                    await this.importPackage(dependentPackage, manifestNodes, spaceMappings, allSpaces, importedKeys, importedFilePath)
-                }
-            }
-        }
-
-        let targetSpace = allSpaces.find(space => space.name === packageToImport.space.spaceName)
-        const customSpacesMap: Map<string, string> = new Map();
-        spaceMappings.forEach(spaceMap => {
-            const packageAndSpaceid = spaceMap.split(":");
-            customSpacesMap.set(packageAndSpaceid[0], packageAndSpaceid[1])
-        })
-        const customSpaceId = customSpacesMap.get(packageToImport.packageKey);
-        if (customSpaceId) {
-            const customSpace = allSpaces.find(space => space.id === customSpaceId)
-            if (!customSpace) {
-                throw Error("Provided space id does not exist");
-            }
-            targetSpaceId = customSpace.id;
-        } else {
-            if (!targetSpace) {
-                targetSpace = await spaceApi.createSpace({
-                    id: uuidv4(),
-                    name: packageToImport.space.spaceName,
-                    iconReference: packageToImport.space.spaceIcon
-                });
-            }
-            targetSpaceId = targetSpace.id;
-        }
-
-        const packageZip = {
-            formData: {
-                package: await fs.createReadStream(path.resolve(importedFilePath, packageToImport.packageKey + ".zip"), {encoding: null})
-            },
-        };
-        importedKeys.push(packageToImport.packageKey);
-        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
-        await packageApi.importPackage(packageZip, targetSpaceId, !!nodeInTargetTeam);
-        if (nodeInTargetTeam) {
-            await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpaceId)
-        }
-        await this.updateDependencyVersions(packageToImport);
-        await this.publishPackage(packageToImport);
-        logger.info(`Imported package with key: ${packageToImport.packageKey} successfully`)
+      // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
     }
 
     private async updateDependencyVersions(node: ManifestNodeTransport): Promise<void> {
-        const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
-        for (const dependency of node.dependencies) {
-            const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
-            const nextVersion = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
-            dependency.version = nextVersion.version;
-            dependency.updateAvailable = false;
-            dependency.id = nodeInTargetTeam.rootNodeId;
-            dependency.rootNodeId = nodeInTargetTeam.rootNodeId;
-            await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
-        }
+        // TODO [TN-4317](https://celonis.atlassian.net/browse/TN-4317)
     }
 
-    private async fillNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
-        let nodesListWithActiveVersion = await this.getNodesWithActiveVersion(nodesListToExport);
-
+    private async getDependencyPackages(nodesToResolve: BatchExportNodeTransport[], dependencyPackages: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], resolvedDependencies: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
         const draftIdByNodeId = new Map<string, string>();
-        nodesListWithActiveVersion.forEach(node => draftIdByNodeId.set(node.workingDraftId, node.id));
+        nodesToResolve.forEach(node => draftIdByNodeId.set(node.activatedDraftId, node.id));
 
-        const dependenciesByPackageIds = await this.getPackagesWithDependencies(draftIdByNodeId, actionFlowPackageKeys);
+        const dependenciesByPackageDraftIds = await this.getPackagesWithDependencies(draftIdByNodeId, actionFlowPackageKeys);
 
-        nodesListWithActiveVersion = nodesListWithActiveVersion.map(nodeToExport => {
-            nodeToExport.dependencies = dependenciesByPackageIds[nodeToExport.workingDraftId] ?? [];
+        const nodesWithDependencies = nodesToResolve.map(nodeToExport => {
+            nodeToExport.dependencies = dependenciesByPackageDraftIds[nodeToExport.activatedDraftId] ?? [];
             return nodeToExport;
-        })
-
-        const variableAssignments = await variableService.getVariableAssignmentsForNodes(nodesListWithActiveVersion);
-
-        nodesListWithActiveVersion.forEach(node => {
-            node.variables = variableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
         });
 
-        const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
-        nodesListWithActiveVersion.forEach(node => {
-            node.datamodels = dataModelAssignments.get(node.key);
-        })
-
-        nodesListToExport = await this.getNodeDependencies(nodesListToExport, allPackages, actionFlowPackageKeys, nodePath);
-        return nodesListToExport
-    }
-
-    private async getNodeDependencies(nodesListToExport: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], actionFlowPackageKeys: string[], nodePath: string[]): Promise<BatchExportNodeTransport[]> {
-        for (const node of nodesListToExport) {
-            const unexportedNodeKeys = node.dependencies.filter(dependency => !nodesListToExport
-                .map(node => node.key)
-                .includes(dependency.key))
-                .map(dependency => dependency.key);
-            if (unexportedNodeKeys.length > 0) {
-                if(this.checkForCircularDependencies(nodePath, node.key)) {
-                    throw Error("Export was canceled as package with key: " + node.key + " has a circular dependency");
+        for (const node of nodesWithDependencies) {
+            node.dependencies.forEach(dependency => {
+                const dependencyVersions = versionsByNodeKey.get(dependency.key) ?? [];
+                if (!dependencyVersions.includes(dependency.version)) {
+                    dependencyVersions.push(dependency.version);
+                    versionsByNodeKey.set(dependency.key, dependencyVersions);
                 }
-                nodePath.push(node.key);
-                let dependencyNodes = allPackages.filter(packageNode => unexportedNodeKeys.includes(packageNode.key));
-                dependencyNodes = await this.fillNodeDependencies(dependencyNodes, allPackages, actionFlowPackageKeys, [...nodePath]);
-                nodesListToExport.push(...dependencyNodes);
+            });
+
+            const nodesToGetKeys = node.dependencies.filter(dependency => {
+                return !this.nodeHasBeenResolvedBefore(resolvedDependencies, dependency.key, dependency.version)
+            }).map(iteratedNode => iteratedNode.key);
+
+            if (nodesToGetKeys.length > 0) {
+                const dependencyPackagesOfNode = allPackages.filter(packageNode => nodesToGetKeys.includes(packageNode.key)).map(dependency => {
+                    const versionedDep = node.dependencies.find(dep => dependency.key === dep.key);
+                    return {
+                        ...dependency,
+                        version: {
+                            version: versionedDep.version
+                        },
+                        activatedDraftId: versionedDep.draftId
+                    } as BatchExportNodeTransport
+                });
+
+                dependencyPackages.push(...dependencyPackagesOfNode);
+                await this.getDependencyPackages(dependencyPackagesOfNode, dependencyPackages, allPackages, actionFlowPackageKeys, resolvedDependencies, versionsByNodeKey)
             }
         }
-        return nodesListToExport;
+
+        return dependencyPackages;
     }
 
-    private checkForCircularDependencies(nodePath: string[], nodeKey: string): boolean {
-        return nodePath.includes(nodeKey);
+    private nodeHasBeenResolvedBefore(nodePath: string[], nodeKey: string, version: string): boolean {
+        return nodePath.includes(nodeKey + ":" + version);
     }
 
     private exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): void {
@@ -271,38 +217,40 @@ class PackageService {
 
     private async exportPackagesAndAssets(nodes: BatchExportNodeTransport[]): Promise<any[]> {
         const zips = [];
-        const packages = nodes as ContentNodeTransport[];
-        for (const rootPackage of packages) {
-            const exportedPackage = await packageApi.exportPackage(rootPackage.key)
+        for (const rootPackage of nodes) {
+            const exportedPackage = await packageApi.exportPackage(rootPackage.key, rootPackage.version.version)
             zips.push({
                 data: exportedPackage,
-                packageKey: rootPackage.key
+                packageKey: rootPackage.key,
+                version: rootPackage.version.version
             });
         }
         return zips;
     }
 
-    private async exportToZip(nodes: BatchExportNodeTransport[]): Promise<void> {
-        const manifestNodes = this.exportManifestOfPackages(nodes);
+    private async exportToZip(nodes: BatchExportNodeTransport[], versionsByNodeKey: Map<string, string[]>): Promise<void> {
+        const manifestNodes = this.exportManifestOfPackages(nodes, versionsByNodeKey);
         const packageZips = await this.exportPackagesAndAssets(nodes);
 
         const zip = new AdmZip();
 
         zip.addFile("manifest.yml", Buffer.from(YAML.stringify(manifestNodes), "utf8"));
         for (const packageZip of packageZips) {
-            zip.addFile(packageZip.packageKey + ".zip", packageZip.data)
+            zip.addFile(`${packageZip.packageKey}_${packageZip.version}.zip`, packageZip.data)
         }
-        zip.writeZip("export_" + uuidv4() + ".zip");
-        logger.info("Successfully exported package");
+
+        const fileName = "export_" + uuidv4() + ".zip";
+        zip.writeZip(fileName);
+        logger.info(this.fileDownloadedMessage + fileName);
     }
 
-    private exportManifestOfPackages(nodes: BatchExportNodeTransport[]): ManifestNodeTransport[] {
-        const manifestNodes: ManifestNodeTransport[] = [];
+    private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {
+        const manifestNodesByPackageKey = new Map<string, ManifestNodeTransport>();
+
         nodes.forEach((node) => {
-            const manifestNode = {} as ManifestNodeTransport;
+            const manifestNode = manifestNodesByPackageKey.get(node.key) ?? {} as ManifestNodeTransport;
             manifestNode.packageKey = node.key;
             manifestNode.packageId = node.id;
-            manifestNode.packageVersion = node.version.version;
             manifestNode.space = {
                 spaceName: node.space.name,
                 spaceIcon: node.space.iconReference
@@ -321,11 +269,12 @@ class PackageService {
                 }
                 return variable;
             });
-            manifestNode.dependencies = node.dependencies as ManifestDependency[];
-            manifestNodes.push(manifestNode);
+            manifestNode.dependenciesByVersion = manifestNode.dependenciesByVersion ?? new Map<string, ManifestDependency[]>();
+            manifestNode.dependenciesByVersion.set(node.version.version, node.dependencies ?? []);
+            manifestNodesByPackageKey.set(node.key, manifestNode);
         })
 
-        return manifestNodes;
+        return [...manifestNodesByPackageKey.values()];
     }
 }
 

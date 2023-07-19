@@ -2,11 +2,9 @@ import {CommanderStatic} from "commander";
 import {PackageCommand} from "./commands/package.command";
 import {logger} from "./util/logger";
 import {contextService} from "./services/context.service";
-import {List} from "./content-cli-list";
 import * as commander from "commander";
 
 export class Export {
-
     public static packages(program: CommanderStatic): CommanderStatic {
         program
             .command("packages")
@@ -24,7 +22,7 @@ export class Export {
 }
 
 const options = commander.parseOptions(process.argv)
-const indexOfProfileOption = options.unknown.indexOf('-p') ?? options.unknown.indexOf('--profile');
+const indexOfProfileOption = options.unknown.indexOf('-p') !== -1 ? options.unknown.indexOf('-p') : options.unknown.indexOf('--profile');
 
 process.on("unhandledRejection", (e, promise) => {
     logger.error(e.toString());

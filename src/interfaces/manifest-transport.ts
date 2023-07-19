@@ -1,12 +1,12 @@
 import {VariablesAssignments} from "./package-manager.interfaces";
 
 export interface ManifestNodeTransport {
+    packageKeyAndVersion: string;
     packageKey: string;
     packageId: string,
-    packageVersion: string;
     variables: ManifestVariable[],
     space: ManifestSpace,
-    dependencies: ManifestDependency[]
+    dependenciesByVersion: Map<string, ManifestDependency[]>;
 }
 
 export interface ManifestVariable extends VariablesAssignments {

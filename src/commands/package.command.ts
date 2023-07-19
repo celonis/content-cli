@@ -38,7 +38,7 @@ export class PackageCommand {
 
     public async listPackages(jsonResponse: boolean, includeDependencies: boolean): Promise<void> {
         if (jsonResponse) {
-            await packageService.findAndExportAllPackages(includeDependencies);
+            await packageService.findAndExportListOfAllPackages(includeDependencies);
         } else {
             await packageService.listPackages();
         }
@@ -48,7 +48,7 @@ export class PackageCommand {
         await packageService.batchExportPackages(packageKeys, includeDependencies);
     }
 
-    public async batchImportPackages(spaceMappings: string[], exportedDatapoolsFile: string, exportedPackagesFile: string): Promise<void> {
-        await packageService.batchImportPackages(spaceMappings ?? [], exportedDatapoolsFile, exportedPackagesFile);
+    public async batchImportPackages(spaceMappings: string[], dataModelMapping: string, exportedPackagesFile: string): Promise<void> {
+        await packageService.batchImportPackages(spaceMappings ?? [], dataModelMapping, exportedPackagesFile);
     }
 }
