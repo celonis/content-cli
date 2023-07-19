@@ -261,19 +261,14 @@ You can use the export packages command to export multiple packages at once from
 
 ```
 //Exporting multiple packages at once
-content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2>
-```
-
-Example usage would be:
-```
-content-cli export packages -p dev --packageKeys package-1 package-2
+content-cli export packages -p <profileName> --packageKeys <package1> <package2>
 ```
 
 You can use the --includeDependencies flag to also export the dependencies of the specified packages.
 
 ```
 //Exporting multiple packages at once with dependencies
-content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2> --includeDependencies
+content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies
 ```
 
 ### Importing multiple packages into Studio
@@ -282,19 +277,14 @@ You can use the `import packages` command to import multiple packages that were 
 
 ```
 //Importing multiple packages at once
-content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file>
+content-cli import packages -p <profileName> --packagesFile <exportedPackagesFile>
 ```
 
-Example usage would be:
-```
-content-cli import packages -p <your-chosen-profile> --packagesFile export_123123-13123-123123.zip
-```
-
-You can also use the `--spaceMapping` flag to provide a mapping of packages to spaces in target team:
+You can also use the `--spaceMappings` flag to provide a mapping of packages to spaces in target team:
 
 ```
-// Example usage of spaceMapping
-content-cli import packages -p <your-chosen-profile> --packagesFile <path to exported zip file> --spaceMapping <package-key-1>:<target-space-key-1> <package-key-2>:<target-space-key-2> ...
+// Example usage of spaceMappings
+content-cli import packages -p <profileName> --packagesFile <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
 ### List all spaces in Studio
