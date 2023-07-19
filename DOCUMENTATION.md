@@ -277,14 +277,14 @@ You can use the `import packages` command to import multiple packages that were 
 
 ```
 //Importing multiple packages at once
-content-cli import packages -p <profileName> --packagesFile <exportedPackagesFile>
+content-cli import packages -p <profileName> --file <exportedPackagesFile>
 ```
 
 You can also use the `--spaceMappings` flag to provide a mapping of packages to spaces in target team:
 
 ```
 // Example usage of spaceMappings
-content-cli import packages -p <profileName> --packagesFile <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
 ### List all spaces in Studio

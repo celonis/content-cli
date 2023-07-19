@@ -12,9 +12,9 @@ export class Import {
             .description("Command to import all given packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--spaceMappings <spaceMappings...>", "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'")
-            .requiredOption("--packagesFile <packagesFile>", "Exported packages file (relative path)")
+            .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.packagesFile)
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.file)
                 process.exit();
             });
 
