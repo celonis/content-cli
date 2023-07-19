@@ -282,6 +282,15 @@ class PackageService {
 
         const versionsByNodeKey = new Map<string, string[]>();
 
+        const allPackageKeys = allPackages.map(p => p.key);
+
+        for(const packageKey of packageKeys) {
+            if (!allPackageKeys.includes(packageKey)) {
+                throw  new Error(`Package ${packageKey} does not exist.`);
+            }
+        }
+
+
         nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
         if (includeDependencies) {
             const dependencyPackages = await this.getDependencyPackages(nodesListToExport, [], allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
