@@ -2,7 +2,6 @@ import * as fs from "fs";
 import * as path from "path";
 import * as YAML from "yaml";
 import {ManifestNodeTransport} from "../interfaces/manifest-transport";
-import {Stream} from "stream";
 
 export class FileService {
 
