@@ -254,6 +254,7 @@ class PackageService {
                                            sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>): Promise<void> {
 
         const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
+        const newDependencies = [];
         for (const dependency of [...node.dependenciesByVersion.get(versionOfPackage)]) {
             const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
             dependency.version = sourceToTargetVersionsByNodeKey.get(dependency.key).get(dependency.version);
@@ -261,9 +262,11 @@ class PackageService {
             dependency.id = nodeInTargetTeam.rootNodeId;
             dependency.rootNodeId = createdNode.rootNodeId;
             dependency.draftId = nodeInTargetTeam.workingDraftId;
+            newDependencies.push(dependency);
 
-            await packageDependenciesApi.updatePackageDependency(createdNode.id, dependency);
+            await packageDependenciesApi.deleteDependency(createdNode.id, dependency.key);
         }
+        await packageDependenciesApi.createDependencies(createdNode.id, newDependencies);
     }
 
     public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
@@ -287,7 +290,7 @@ class PackageService {
 
         const allPackageKeys = allPackages.map(p => p.key);
 
-        for(const packageKey of packageKeys) {
+        for (const packageKey of packageKeys) {
             if (!allPackageKeys.includes(packageKey)) {
                 throw  new Error(`Package ${packageKey} does not exist.`);
             }
@@ -347,7 +350,9 @@ class PackageService {
             return nodeToExport;
         });
 
+
         for (const node of nodesWithDependencies) {
+            node.dependencies = node.dependencies.filter(dependency => !dependency.external);
             node.dependencies.forEach(dependency => {
                 const dependencyVersions = versionsByNodeKey.get(dependency.key) ?? [];
                 if (!dependencyVersions.includes(dependency.version)) {

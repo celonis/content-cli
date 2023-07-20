@@ -24,6 +24,18 @@ class PackageDependenciesApi {
             throw new FatalError(`Problem updating package dependency: ${e}`);
         });
     }
+
+    public async createDependencies(packageId: string, packageDependency: PackageDependencyTransport[]): Promise<void> {
+        await httpClientV2.post(`/package-manager/api/package-dependencies/${packageId}`, packageDependency).catch(e => {
+            throw new FatalError(`Problem updating package dependency: ${e}`);
+        });
+    }
+
+    public async deleteDependency(packageId: string, packageDependencyKey: string): Promise<void> {
+        await httpClientV2.delete(`/package-manager/api/package-dependencies/${packageId}/dependency/by-key/${packageDependencyKey}`).catch(e => {
+            throw new FatalError(`Problem updating package dependency: ${e}`);
+        });
+    }
 }
 
 export const packageDependenciesApi = PackageDependenciesApi.INSTANCE;

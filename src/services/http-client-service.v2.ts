@@ -46,6 +46,16 @@ class HttpClientServiceV2 {
         });
     }
 
+    public async delete(url: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            request.delete(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, "application/json;charset=utf-8"), (err, res) => {
+                this.handleResponse(res, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
     public async downloadFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             request
@@ -127,7 +137,7 @@ class HttpClientServiceV2 {
         return Object.assign(options, body);
     }
 
-    private makeOptionsJson(profile: Profile, body: any, contentType: string): CoreOptions {
+    private makeOptionsJson(profile: Profile, body?: any, contentType?: string): CoreOptions {
         return {
             headers: this.buildAuthorizationHeaders(profile, contentType),
             body: body
