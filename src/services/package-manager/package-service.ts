@@ -12,7 +12,6 @@ import {spaceService} from "./space-service";
 import * as YAML from "yaml";
 import * as fs from "fs";
 import AdmZip = require("adm-zip");
-import {spaceApi} from "../../api/space-api";
 import * as path from "path";
 import {tmpdir} from "os";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
@@ -91,8 +90,9 @@ class PackageService {
             customSpacesMap.set(packageAndSpaceid[0], packageAndSpaceid[1])
         })
 
+        const draftIdsByPackageKeyAndVersion = new Map<string, string>();
         for (const node of manifestNodes) {
-            await this.importPackage(node, manifestNodes, sourceToTargetVersionsByNodeKey, customSpacesMap, importedVersionsByNodeKey, importedFilePath)
+            await this.importPackage(node, manifestNodes, sourceToTargetVersionsByNodeKey, customSpacesMap, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath)
         }
     }
 
@@ -117,12 +117,13 @@ class PackageService {
                                 sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
                                 spaceMappings: Map<string, string>,
                                 importedVersionsByNodeKey: Map<string, string[]>,
+                                draftIdsByPackageKeyAndVersion: Map<string, string>,
                                 importedFilePath: string): Promise<void> {
         const importedPackageVersion = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
         const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
 
         for (const version of versionsOfPackage) {
-            await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath, version);
+            await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
         }
     }
 
@@ -148,11 +149,12 @@ class PackageService {
                                        sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
                                        spaceMappings: Map<string, string>,
                                        importedVersionsByNodeKey: Map<string, string[]>,
+                                       draftIdsByPackageKeyAndVersion: Map<string, string>,
                                        importedFilePath: string,
                                        versionOfPackageBeingImported: string): Promise<void> {
         if (packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported).length) {
-            const dependenciesOfPackageVersion = packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported)
-            await this.importDependencyPackages(dependenciesOfPackageVersion, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath);
+            const dependenciesOfPackageVersion = packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported);
+            await this.importDependencyPackages(dependenciesOfPackageVersion, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath);
         }
 
         if (this.checkIfPackageVersionHasBeenImported(packageToImport.packageKey, versionOfPackageBeingImported, importedVersionsByNodeKey)) {
@@ -174,7 +176,9 @@ class PackageService {
             nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
         }
 
-        await this.updateDependencyVersions(packageToImport, versionOfPackageBeingImported, sourceToTargetVersionsByNodeKey);
+        draftIdsByPackageKeyAndVersion.set(`${nodeInTargetTeam.key}_${versionOfPackageBeingImported}`, nodeInTargetTeam.activatedDraftId);
+
+        await this.updateDependencyVersions(packageToImport, versionOfPackageBeingImported, sourceToTargetVersionsByNodeKey, draftIdsByPackageKeyAndVersion);
         await this.publishPackage(packageToImport);
 
         const packageVersionInTargetTeam = await packageApi.findActiveVersionById(nodeInTargetTeam.id);
@@ -197,16 +201,15 @@ class PackageService {
                                            sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
                                            spaceMappings: Map<string, string>,
                                            importedVersionsByNodeKey: Map<string, string[]>,
+                                           draftIdsByPackageKeyAndVersion: Map<string, string>,
                                            importedFilePath: string): Promise<void> {
         for (const dependency of dependenciesToImport) {
             if (this.checkIfPackageVersionHasBeenImported(dependency.key, dependency.version, importedVersionsByNodeKey)) {
                 continue;
             }
 
-            if (!dependency.external) {
-                const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-                await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, importedFilePath);
-            }
+            const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
+            await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath);
         }
     }
 
@@ -251,22 +254,27 @@ class PackageService {
 
     private async updateDependencyVersions(node: ManifestNodeTransport,
                                            versionOfPackage: string,
-                                           sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>): Promise<void> {
+                                           sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
+                                           draftIdsByPackageKeyAndVersion: Map<string, string>): Promise<void> {
 
         const createdNode = await nodeApi.findOneByKeyAndRootNodeKey(node.packageKey, node.packageKey);
         const newDependencies = [];
         for (const dependency of [...node.dependenciesByVersion.get(versionOfPackage)]) {
             const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(dependency.key, dependency.key);
+            const draftIdOfVersionedDependency = draftIdsByPackageKeyAndVersion.get(`${dependency.key}_${dependency.version}`);
             dependency.version = sourceToTargetVersionsByNodeKey.get(dependency.key).get(dependency.version);
-            dependency.updateAvailable = false;
+            dependency.updateAvailable = dependency.updateAvailable;
             dependency.id = nodeInTargetTeam.rootNodeId;
             dependency.rootNodeId = createdNode.rootNodeId;
-            dependency.draftId = nodeInTargetTeam.workingDraftId;
+            dependency.draftId = draftIdOfVersionedDependency;
             newDependencies.push(dependency);
 
             await packageDependenciesApi.deleteDependency(createdNode.id, dependency.key);
         }
-        await packageDependenciesApi.createDependencies(createdNode.id, newDependencies);
+
+        if (newDependencies.length) {
+            await packageDependenciesApi.createDependencies(createdNode.id, newDependencies);
+        }
     }
 
     public async publishPackage(packageToImport: ManifestNodeTransport): Promise<void> {
@@ -352,7 +360,7 @@ class PackageService {
 
 
         for (const node of nodesWithDependencies) {
-            node.dependencies = node.dependencies.filter(dependency => !dependency.external);
+            node.dependencies = node.dependencies.filter(dependency => !(dependency.external || dependency.deleted));
             node.dependencies.forEach(dependency => {
                 const dependencyVersions = versionsByNodeKey.get(dependency.key) ?? [];
                 if (!dependencyVersions.includes(dependency.version)) {
