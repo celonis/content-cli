@@ -261,19 +261,30 @@ You can use the export packages command to export multiple packages at once from
 
 ```
 //Exporting multiple packages at once
-content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2>
-```
-
-Example usage would be:
-```
-content-cli export packages -p dev --packageKeys package-1 package-2
+content-cli export packages -p <profileName> --packageKeys <package1> <package2>
 ```
 
 You can use the --includeDependencies flag to also export the dependencies of the specified packages.
 
 ```
 //Exporting multiple packages at once with dependencies
-content-cli export packages -p <your-chosen-profile> --packageKeys <package1> <package2> --includeDependencies
+content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies
+```
+
+### Importing multiple packages into Studio
+
+You can use the `import packages` command to import multiple packages that were exported using `export packages` at once into studio.
+
+```
+//Importing multiple packages at once
+content-cli import packages -p <profileName> --file <exportedPackagesFile>
+```
+
+You can also use the `--spaceMappings` flag to provide a mapping of packages to spaces in target team:
+
+```
+// Example usage of spaceMappings
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
 ### List all spaces in Studio
