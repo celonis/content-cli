@@ -7,8 +7,8 @@ class ComputePoolApi {
 
     public async findAssignedDatamodels(packageKey: string): Promise<StudioDataModelTransport[]> {
         return httpClientV2.get(`/package-manager/api/compute-pools/data-models/assigned?packageKey=${packageKey}`)
-            .catch(e=> {
-                throw new FatalError(`Problem getting datamodels of package: ${e}`);
+            .catch(e => {
+                return null;
             });
     }
 }
