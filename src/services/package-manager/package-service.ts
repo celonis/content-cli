@@ -1,4 +1,4 @@
-import {logger} from "../../util/logger";
+import {FatalError, logger} from "../../util/logger";
 import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
@@ -123,7 +123,11 @@ class PackageService {
         const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
 
         for (const version of versionsOfPackage) {
-            await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
+            try {
+                await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
+            } catch (e) {
+                logger.error(`Problem import package with key: ${packageToImport.packageKey} ${version} ${e}`);
+            }
         }
     }
 
