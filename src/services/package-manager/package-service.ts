@@ -123,7 +123,11 @@ class PackageService {
         const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
 
         for (const version of versionsOfPackage) {
-            await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
+            try {
+                await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
+            } catch (e) {
+                logger.error(`Problem import package with key: ${packageToImport.packageKey} ${version} ${e}`);
+            }
         }
     }
 
