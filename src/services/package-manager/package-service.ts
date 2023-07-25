@@ -1,4 +1,4 @@
-import {FatalError, logger} from "../../util/logger";
+import {logger} from "../../util/logger";
 import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
