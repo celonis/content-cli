@@ -58,11 +58,11 @@ export abstract class BaseManager {
     }
 
     public async push(): Promise<any> {
+        const config = this.getConfig();
         return new Promise<any>((resolve, reject) => {
             this.httpClientService
-                .pushData(this.getConfig().pushUrl, this._profile, this.getBody())
+                .pushData(config.pushUrl, this._profile, this.getBody())
                 .then(data => {
-                    const config = this.getConfig();
                     if (data) {
                         this.writeToFileWithGivenName(data, config.pushReportFileName);
                     }
