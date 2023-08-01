@@ -368,7 +368,7 @@ In order to batch push a list of data pools use the following command:
 isn't used, then the old implementation is used which doesn't support the import of shared
 objects. Thus, for the old implementation, the imported Data Pools that rely on shared objects
 will not be functional.
-* The command outputs a 
+
 * The JSON request looks the following way:
 
 ```
@@ -404,5 +404,18 @@ In the above JSON:
 3. ```dataSourceMappings```: the source Data Source ID to destination Data Source ID mappings.
 4. ```dataPool```: the Data Pool data exported via the ```pull data-pool -v2 true``` command.
 
+#### Output
 
+The command outputs a report file in the current directory with name: ```push_report_<timestamp>.json```
+  (for example: ```push_report_1690883430946.json```). The file will contain a JSON with a list of
+  Data Model ID mappings computed during the Data Pool import process.
+
+Example push report:
+  ```
+  {
+    "dataModelIdMappings":{
+          "14ded083-82de-4ca1-80a4-9d1b8d9d8fd2":"1d7dc449-1291-4c83-8e35-f1ce8b0afb64"
+    }
+  }
+  ```
 |--------------------------------------------------------------------------------------------------------------------------------|
