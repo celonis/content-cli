@@ -166,7 +166,7 @@ class Push {
             .option("-p, --profile <profile>", "Profile which you want to use to push the data pools")
             .requiredOption("-f, --file <file>", "The file with the json request you want to push")
             .option(
-                "-bi, --batchImport <version2>",
+                "-bi, --batchImport <batchImport>",
                 "Does a batch push of multiple data pools specified in the given json file (using the --file option)",
                 false
             )

@@ -344,4 +344,65 @@ the same command as with pushing other assets to Studio:
 // Push analysis to Studio
 content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
 ```
+
+### Data Pool push / pull commands
+
+#### Pull Data Pool
+
+In order to pull a Data Pool you can execute the following command:
+
+```node content-cli.js pull data-pool --id <replace-with-pool-id> --profile local -v2 true```
+
+* Note: The ```-v2``` flag enables you to export Data Pool data that can then later be used to 'Batch Push multiple Data Pools'.
+Without this flag, the export uses the old implementation that is not compatible with Batch Push.
+
+#### Batch Push multiple Data Pools
+
+In order to batch push a list of data pools use the following command:
+
+```node content-cli.js push data-pools --batchImport true -f ./request.json --profile dev1```
+
+* The ```request.json``` file contains the batch import JSON request.
+* The ```--batchImport``` flag enables import of multiple Data Pools together with data shared accross Data Pools
+  (for example, imported data connections, cross-pool scheduling triggers). If this flag 
+isn't used, then the old implementation is used which doesn't support the import of shared
+objects. Thus, for the old implementation, the imported Data Pools that rely on shared objects
+will not be functional.
+* The command outputs a 
+* The JSON request looks the following way:
+
+```
+{
+    "targetTeamDomain": "dev1",
+    "dataPoolImports": [
+        {
+            "sourcePoolId": "850728cc-c679-4925-954a-87fb39abb12b",
+            "targetPoolId": "80a1389d-50c5-4976-ad6e-fb5b7a2b5517",
+            "dataSourceMappings": {
+                "69e7c6b8-a36c-48ee-8dba-9bb89baf41dd": "98b4b2d9-898d-4b72-aeb9-ebd87c097cb3",
+                "2ec72366-c84f-4896-9f7a-9db1891aeb54": "082a754f-e971-44d8-993a-053707e4a307"
+            },
+            "dataPool": {...}
+        },
+        {
+            "sourcePoolId": "510fde4e-4a53-4a4e-9331-31038bcaf891",
+            "targetPoolId": "1b9b368b-e0df-4e74-99e8-59e2febe9687",
+            "dataSourceMappings": {
+                "e9359d63-5ccf-4f0d-8da3-24cda8a42c01": "096c0280-4cb9-4279-a003-b77698287aba",
+                "8a1b2a1e-1015-4c7b-8cdc-b8efea1ad894": "e971e8d1-96d4-488a-9e1d-6cff0c4a9813"
+            },
+            "dataPool": {...}
+        }
+    ]
+}
+```
+
+In the above JSON:
+1. ```targetTeamDomain```: the destination team domain, into which the data pools data is pushed.
+2. ```sourcePoolId```: the source Data Pool ID.
+2. ```targetPoolId```: the target Data Pool ID to which the source Data Pool ID should be mapped to.
+3. ```dataSourceMappings```: the source Data Source ID to destination Data Source ID mappings.
+4. ```dataPool```: the Data Pool data exported via the ```pull data-pool -v2 true``` command.
+
+
 |--------------------------------------------------------------------------------------------------------------------------------|

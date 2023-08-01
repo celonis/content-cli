@@ -76,7 +76,7 @@ class Pull {
             .option("-p, --profile <profile>", "Profile which you want to use to pull the data pool")
             .option(
                 "-v2, --version2 <version2>",
-                "Use v2 of the export that's adapted for the 'push data-pools' command",
+                "Use v2 of the export that's adapted for the 'push data-pools --batchImport true' command",
                 false
             )
             .requiredOption("--id <id>", "Id of the data pool you want to pull")
