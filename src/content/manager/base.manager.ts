@@ -62,7 +62,11 @@ export abstract class BaseManager {
             this.httpClientService
                 .pushData(this.getConfig().pushUrl, this._profile, this.getBody())
                 .then(data => {
-                    logger.info(this.getConfig().onPushSuccessMessage(data));
+                    const config = this.getConfig();
+                    if (data) {
+                        this.writeToFileWithGivenName(data, config.pushReportFileName);
+                    }
+                    logger.info(config.onPushSuccessMessage(data));
                     resolve(data);
                 })
                 .catch(err => {
@@ -104,7 +108,7 @@ export abstract class BaseManager {
 
     protected writeToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
-        this.writeToFileWithGivenName(data, filename)
+        this.writeToFileWithGivenName(data, filename);
         return filename;
     }
 
@@ -114,7 +118,7 @@ export abstract class BaseManager {
         return filename;
     }
 
-    protected writeToFileWithGivenName(data: any, filename:string): void {
+    protected writeToFileWithGivenName(data: any, filename: string): void {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
         });

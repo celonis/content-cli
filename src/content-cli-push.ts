@@ -156,7 +156,6 @@ class Push {
                 await new DataPoolCommand().pushDataPool(cmd.profile, cmd.file);
                 process.exit();
             });
-
         return program;
     }
 
@@ -165,8 +164,14 @@ class Push {
             .command("data-pools")
             .description("Command to push data pools")
             .option("-p, --profile <profile>", "Profile which you want to use to push the data pools")
+            .requiredOption("-f, --file <file>", "The file with the json request you want to push")
+            .option(
+                "-bi, --batchImport <version2>",
+                "Does a batch push of multiple data pools specified in the given json file (using the --file option)",
+                false
+            )
             .action(async cmd => {
-                await new DataPoolCommand().pushDataPools(cmd.profile);
+                await new DataPoolCommand().pushDataPools(cmd.profile, cmd.file, cmd.batchImport);
                 process.exit();
             });
 

@@ -4,7 +4,24 @@ import { FatalError, logger } from "../../util/logger";
 import { DataPoolManager } from "../manager/data-pool.manager";
 
 export class DataPoolManagerFactory {
-    public createManager(id: string, filename: string): DataPoolManager {
+    public createBatchPushManager(filename: string): DataPoolManager {
+        const dataPoolManager = this.createBaseManager(null, filename);
+        dataPoolManager.batchImport = true;
+        return dataPoolManager;
+    }
+
+    public createPushManager(id: string, filename: string): DataPoolManager {
+        return this.createBaseManager(id, filename);
+    }
+
+    public createPullManager(id: string, filename: string, pullVersion: number): DataPoolManager {
+        const dataPoolManager = this.createBaseManager(id, filename);
+        dataPoolManager.pullVersion = pullVersion;
+
+        return dataPoolManager;
+    }
+
+    public createBaseManager(id: string, filename: string): DataPoolManager {
         const dataPoolManager = new DataPoolManager();
         dataPoolManager.id = id;
         if (filename !== null) {
