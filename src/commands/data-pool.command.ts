@@ -18,6 +18,9 @@ export class DataPoolCommand {
         if (!batchImport) {
             await this.contentService.batchPush(profile, this.dataPoolManagerFactory.createManagers());
         } else {
+            if (!filename) {
+                throw new Error("Request file should be specified using -f,--file option");
+            }
             await this.contentService.push(profile, this.dataPoolManagerFactory.createBatchPushManager(filename));
         }
     }
