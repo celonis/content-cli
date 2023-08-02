@@ -10,6 +10,10 @@ export class DataPoolCommand {
         await this.contentService.pull(profile, this.dataPoolManagerFactory.createManager(id, null));
     }
 
+    public async pushDataPool(profile: string, filename: string): Promise<void> {
+        await this.contentService.push(profile, this.dataPoolManagerFactory.createManager(null, filename));
+    }
+
     public async exportDataPool(poolId: string, outputToJsonFile: boolean): Promise<void> {
         await dataPoolService.exportDataPool(poolId, outputToJsonFile);
     }
@@ -20,10 +24,6 @@ export class DataPoolCommand {
 
     public async batchImportDataPools(requestFile: string, outputToJsonFile: boolean): Promise<void> {
         await dataPoolService.batchImportDataPools(requestFile, outputToJsonFile);
-    }
-
-    public async pushDataPool(profile: string, filename: string): Promise<void> {
-        await this.contentService.push(profile, this.dataPoolManagerFactory.createManager(null, filename));
     }
 
     public async updateDataPool(profile: string, id: string, filename: string): Promise<any> {
