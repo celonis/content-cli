@@ -255,6 +255,38 @@ When you use overwrite the following is to be taken into consideration:
 content-cli push package -p my-profile-name --spaceKey my-space -f <path-to-my-local-package> --overwrite
 ```
 
+### Export multiple packages at once from Studio
+
+You can use the export packages command to export multiple packages at once from studio.
+
+```
+//Exporting multiple packages at once
+content-cli export packages -p <profileName> --packageKeys <package1> <package2>
+```
+
+You can use the --includeDependencies flag to also export the dependencies of the specified packages.
+
+```
+//Exporting multiple packages at once with dependencies
+content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies
+```
+
+### Importing multiple packages into Studio
+
+You can use the `import packages` command to import multiple packages that were exported using `export packages` at once into studio.
+
+```
+//Importing multiple packages at once
+content-cli import packages -p <profileName> --file <exportedPackagesFile>
+```
+
+You can also use the `--spaceMappings` flag to provide a mapping of packages to spaces in target team:
+
+```
+// Example usage of spaceMappings
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
+```
+
 ### List all spaces in Studio
 With this command you can retrieve a list of all spaces within a team.
 The command takes your permissions into consideration and only lists the

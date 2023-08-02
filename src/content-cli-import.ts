@@ -6,23 +6,16 @@ import { ContextInitializer } from "./util/context-initializer";
 import { logger } from "./util/logger";
 
 export class Import {
+
     public static packages(program: CommanderStatic): CommanderStatic {
         program
             .command("packages")
             .description("Command to import all given packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
-            .option(
-                "--spaceMappings <spaceMappings...>",
-                "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'"
-            )
-            .option("--exportedDatapoolsFile <exportedDatapoolsFile>", "Exported datapool file (relative path)", "")
-            .requiredOption("--exportedPackagesFile <exportedPackagesFile>", "Exported packages file (relative path)")
+            .option("--spaceMappings <spaceMappings...>", "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'")
+            .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(
-                    cmd.spaceMappings,
-                    cmd.exportedDatapoolsFile,
-                    cmd.exportedPackagesFile
-                );
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.file)
                 process.exit();
             });
 

@@ -18,9 +18,7 @@ export class FileService {
     }
 
     public readManifestFile(importedFileName: string): Promise<ManifestNodeTransport[]> {
-        const manifest: ManifestNodeTransport[] = YAML.parse(
-            fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), { encoding: "utf-8" })
-        );
+        const manifest: ManifestNodeTransport[] = YAML.parse(fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), { encoding: "utf-8" }));
         return Promise.all(manifest);
     }
 

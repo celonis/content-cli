@@ -1,6 +1,6 @@
 import {PackageDependencyTransport} from "../interfaces/package-manager.interfaces";
 import {httpClientV2} from "../services/http-client-service.v2";
-import {FatalError, logger} from "../util/logger";
+import {FatalError} from "../util/logger";
 
 class PackageDependenciesApi {
     public static readonly INSTANCE = new PackageDependenciesApi();
@@ -21,6 +21,18 @@ class PackageDependenciesApi {
 
     public async updatePackageDependency(nodeId: string, packageDependency: PackageDependencyTransport): Promise<void> {
         await httpClientV2.put(`/package-manager/api/package-dependencies/${nodeId}/dependency/by-key/${packageDependency.key}`, packageDependency).catch(e => {
+            throw new FatalError(`Problem updating package dependency: ${e}`);
+        });
+    }
+
+    public async createDependencies(packageId: string, packageDependency: PackageDependencyTransport[]): Promise<void> {
+        await httpClientV2.post(`/package-manager/api/package-dependencies/${packageId}`, packageDependency).catch(e => {
+            throw new FatalError(`Problem updating package dependency: ${e}`);
+        });
+    }
+
+    public async deleteDependency(packageId: string, packageDependencyKey: string): Promise<void> {
+        await httpClientV2.delete(`/package-manager/api/package-dependencies/${packageId}/dependency/by-key/${packageDependencyKey}`).catch(e => {
             throw new FatalError(`Problem updating package dependency: ${e}`);
         });
     }
