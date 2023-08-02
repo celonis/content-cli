@@ -14,7 +14,7 @@ export class Export {
             .requiredOption("--packageKeys <packageKeys...>", "Exports only given package keys")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
-                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies)
+                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies);
                 process.exit();
             });
 
@@ -25,8 +25,8 @@ export class Export {
         program
             .command("data-pool")
             .description("Command to export a data pool")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the data pool")
-            .requiredOption("--id <id>", "Id of the data pool you want to pull")
+            .option("-p, --profile <profile>", "Profile which you want to use to export the data pool")
+            .requiredOption("--id <id>", "ID of the data pool you want to export")
             .option("--outputToJsonFile", "Output the exported data pool to a JSON file")
             .action(async cmd => {
                 await new DataPoolCommand().exportDataPool(cmd.id, cmd.outputToJsonFile);
