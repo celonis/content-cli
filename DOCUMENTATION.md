@@ -345,22 +345,24 @@ the same command as with pushing other assets to Studio:
 content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
 ```
 
-### Data Pool push / pull commands
+### Data Pool export / import commands
 
-#### Pull Data Pool
+#### Export Data Pool
 
 In order to pull a Data Pool you can execute the following command:
 
-```node content-cli.js pull data-pool --id <replace-with-pool-id> --profile local -v2 true```
+```content-cli export data-pool --id <replace-with-pool-id> --profile local --outputToJsonFile```
 
-* Note: The ```-v2``` flag enables you to export Data Pool data that can then later be used to 'Batch Push multiple Data Pools'.
-Without this flag, the export uses the old implementation that is not compatible with Batch Push.
+_Note_: The ```--outputToJsonFile``` is optional. If specified, the exported data pool is saved in a JSON file. The 
+command output will give you all the details.
 
-#### Batch Push multiple Data Pools
+#### Batch Import multiple Data Pools
 
 In order to batch push a list of data pools use the following command:
 
-```node content-cli.js push data-pools --batchImport true -f ./request.json --profile dev1```
+```content-cli import data-pools --jsonFile ./request.json --profile dev1 --outputToJsonFile```
+
+#### Input
 
 * The ```request.json``` file contains the batch import JSON request.
 * The ```--batchImport``` flag enables import of multiple Data Pools together with data shared accross Data Pools
@@ -402,20 +404,14 @@ In the above JSON:
 2. ```sourcePoolId```: the source Data Pool ID.
 2. ```targetPoolId```: the target Data Pool ID to which the source Data Pool ID should be mapped to.
 3. ```dataSourceMappings```: the source Data Source ID to destination Data Source ID mappings.
-4. ```dataPool```: the Data Pool data exported via the ```pull data-pool -v2 true``` command.
+4. ```dataPool```: the Data Pool data exported via the `export data-pool` command
 
 #### Output
 
-The command outputs a report file in the current directory with name: ```push_report_<timestamp>.json```
-  (for example: ```push_report_1690883430946.json```). The file will contain a JSON with a list of
-  Data Model ID mappings computed during the Data Pool import process.
+The command outputs an import report.
 
-Example push report:
-  ```
-  {
-    "dataModelIdMappings":{
-          "14ded083-82de-4ca1-80a4-9d1b8d9d8fd2":"1d7dc449-1291-4c83-8e35-f1ce8b0afb64"
-    }
-  }
-  ```
+If the `--outputToJsonFile` option is specified, the import report will be written to a JSON file.
+The command output will give you all the details.
+
+
 |--------------------------------------------------------------------------------------------------------------------------------|
