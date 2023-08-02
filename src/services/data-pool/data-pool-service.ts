@@ -20,6 +20,20 @@ class DataPoolService {
         }
     }
 
+    public async exportDataPool(poolId: string, outputToJsonFile: boolean): Promise<void> {
+        const exportedDataPool = await dataPoolApi.exportDataPool(poolId);
+        const exportedDataPoolString = JSON.stringify(exportedDataPool, null, 4);
+
+        logger.info("Data Pools export succeeded!");
+        if (outputToJsonFile) {
+            const reportFileName = "data_pool_" + poolId + ".json";
+            fileService.writeToFileWithGivenName(exportedDataPoolString, reportFileName);
+            logger.info("Export file: " + reportFileName);
+        } else {
+            logger.info("Exported Data Pool: \n" + exportedDataPoolString);
+        }
+    }
+
     public async listDataPools(): Promise<void> {
         const dataPools = await this.findAllPools();
         dataPools.forEach(pool => {

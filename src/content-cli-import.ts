@@ -3,6 +3,7 @@ import { CommanderStatic } from "commander";
 import { PackageCommand } from "./commands/package.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { ContextInitializer } from "./util/context-initializer";
+import { logger } from "./util/logger";
 
 export class Import {
     public static packages(program: CommanderStatic): CommanderStatic {
@@ -53,7 +54,7 @@ ContextInitializer.initContext()
         }
     )
     .catch(e => {
-        console.error(e);
+        logger.error(e);
     });
 
 if (!process.argv.slice(2).length) {
@@ -61,7 +62,7 @@ if (!process.argv.slice(2).length) {
     process.exit(1);
 }
 
-function getAllCommands() {
+function getAllCommands(): void {
     Import.packages(commander);
     Import.dataPools(commander);
 

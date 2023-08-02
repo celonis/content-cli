@@ -16,6 +16,12 @@ class DataPoolApi {
             throw new FatalError(`Data Pool batch import failed: : ${e}`);
         });
     }
+
+    public async exportDataPool(poolId: string): Promise<string> {
+        return httpClientV2.get(`/integration/api/pools/${poolId}/v2/export`).catch(e => {
+            throw new FatalError(`Data Pool export failed: : ${e}`);
+        });
+    }
 }
 
 export const dataPoolApi = DataPoolApi.INSTANCE;

@@ -6,8 +6,12 @@ export class DataPoolCommand {
     private contentService = new ContentService();
     private dataPoolManagerFactory = new DataPoolManagerFactory();
 
-    public async pullDataPool(profile: string, id: string, pullVersion: number): Promise<void> {
-        await this.contentService.pull(profile, this.dataPoolManagerFactory.createPullManager(id, null, pullVersion));
+    public async pullDataPool(profile: string, id: string): Promise<void> {
+        await this.contentService.pull(profile, this.dataPoolManagerFactory.createManager(id, null));
+    }
+
+    public async exportDataPool(poolId: string, outputToJsonFile: boolean): Promise<void> {
+        await dataPoolService.exportDataPool(poolId, outputToJsonFile);
     }
 
     public async pushDataPools(profile: string): Promise<void> {
@@ -19,11 +23,11 @@ export class DataPoolCommand {
     }
 
     public async pushDataPool(profile: string, filename: string): Promise<void> {
-        await this.contentService.push(profile, this.dataPoolManagerFactory.createPushManager(null, filename));
+        await this.contentService.push(profile, this.dataPoolManagerFactory.createManager(null, filename));
     }
 
     public async updateDataPool(profile: string, id: string, filename: string): Promise<any> {
-        await this.contentService.update(profile, this.dataPoolManagerFactory.createBaseManager(id, filename));
+        await this.contentService.update(profile, this.dataPoolManagerFactory.createManager(id, filename));
     }
 
     public async listDataPools(profile: string, jsonResponse: boolean): Promise<any> {
