@@ -37,15 +37,12 @@ export class Export {
     }
 }
 
+const loadCommands = () => {
+    getAllCommands();
+};
+
 ContextInitializer.initContext()
-    .then(
-        () => {
-            getAllCommands();
-        },
-        () => {
-            getAllCommands();
-        }
-    )
+    .then(loadCommands, loadCommands)
     .catch(e => {
         logger.error(e);
     });

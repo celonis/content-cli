@@ -44,15 +44,13 @@ export class Import {
         return program;
     }
 }
+
+const loadCommands = () => {
+    getAllCommands();
+};
+
 ContextInitializer.initContext()
-    .then(
-        () => {
-            getAllCommands();
-        },
-        () => {
-            getAllCommands();
-        }
-    )
+    .then(loadCommands, loadCommands)
     .catch(e => {
         logger.error(e);
     });
