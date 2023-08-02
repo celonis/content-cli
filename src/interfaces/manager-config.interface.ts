@@ -4,7 +4,6 @@ export interface ManagerConfig {
     updateUrl?: string;
     findAllUrl?: string;
     exportFileName?: string;
-    pushReportFileName?: string;
     onPushSuccessMessage?: (data: any) => string;
     onUpdateSuccessMessage?: () => string;
     onFindAll?: (data: any) => void;
