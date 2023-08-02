@@ -24,3 +24,7 @@ export declare class DataPoolPageTransport {
     pageNumber: number;
     totalCount: number;
 }
+
+export declare class DataPoolInstallVersionReport {
+    dataModelIdMappings: Map<String, String>;
+}

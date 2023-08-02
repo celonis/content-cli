@@ -10,19 +10,16 @@ export class DataPoolCommand {
         await this.contentService.pull(profile, this.dataPoolManagerFactory.createPullManager(id, null, pullVersion));
     }
 
-    public async pushDataPool(profile: string, filename: string): Promise<void> {
-        await this.contentService.push(profile, this.dataPoolManagerFactory.createPushManager(null, filename));
+    public async pushDataPools(profile: string): Promise<void> {
+        await this.contentService.batchPush(profile, this.dataPoolManagerFactory.createManagers());
     }
 
-    public async pushDataPools(profile: string, filename: string, batchImport: boolean): Promise<void> {
-        if (!batchImport) {
-            await this.contentService.batchPush(profile, this.dataPoolManagerFactory.createManagers());
-        } else {
-            if (!filename) {
-                throw new Error("Request file should be specified using -f,--file option");
-            }
-            await this.contentService.push(profile, this.dataPoolManagerFactory.createBatchPushManager(filename));
-        }
+    public async batchImportDataPools(requestFile: string, outputToJsonFile: boolean): Promise<void> {
+        await dataPoolService.batchImportDataPools(requestFile, outputToJsonFile);
+    }
+
+    public async pushDataPool(profile: string, filename: string): Promise<void> {
+        await this.contentService.push(profile, this.dataPoolManagerFactory.createPushManager(null, filename));
     }
 
     public async updateDataPool(profile: string, id: string, filename: string): Promise<any> {
