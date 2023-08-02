@@ -1,8 +1,6 @@
+import * as commander from "commander";
 import { CommanderStatic } from "commander";
 import { PackageCommand } from "./commands/package.command";
-import { logger } from "./util/logger";
-import { contextService } from "./services/context.service";
-import * as commander from "commander";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { ContextInitializer } from "./util/context-initializer";
 
