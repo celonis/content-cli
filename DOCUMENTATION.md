@@ -12,9 +12,9 @@
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [Asset options for Analysis](#asset-options-for-analysis)
-    -   [Data Pool export / import commands](#data-pool-export-import-commands)
-        - [Export Data Pool](#export-data-pool)
-        - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
+-   [Data Pool export / import commands](#data-pool-export--import-commands)
+    - [Export Data Pool](#export-data-pool)
+    - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
 
 ## Content CLI Core Features
 
