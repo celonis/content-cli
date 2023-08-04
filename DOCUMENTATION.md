@@ -12,6 +12,9 @@
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [Asset options for Analysis](#asset-options-for-analysis)
+    -   [Data Pool export / import commands](#data-pool-export-import-commands)
+        - [Export Data Pool](#export-data-pool)
+        - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
 
 ## Content CLI Core Features
 
@@ -381,6 +384,9 @@ content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f1
 
 #### Export Data Pool
 
+The export operation allows export of a Data Pool together with its dependencies. Dependencies
+could be imported data sources and related objects, data source exports, scheduling triggers and other.
+
 In order to pull a Data Pool you can execute the following command:
 
 ```content-cli export data-pool --id <replace-with-pool-id> --profile local --outputToJsonFile```
@@ -390,6 +396,9 @@ command output will give you all the details.
 
 #### Batch Import multiple Data Pools
 
+The import operation allows import of multiple Data Pools together with their dependencies. Dependencies
+could be imported data sources and related objects, data source exports, scheduling triggers and other.
+
 In order to batch push a list of data pools use the following command:
 
 ```content-cli import data-pools --jsonFile ./request.json --profile dev1 --outputToJsonFile```
@@ -397,12 +406,6 @@ In order to batch push a list of data pools use the following command:
 #### Input
 
 * The ```request.json``` file contains the batch import JSON request.
-* The ```--batchImport``` flag enables import of multiple Data Pools together with data shared accross Data Pools
-  (for example, imported data connections, cross-pool scheduling triggers). If this flag 
-isn't used, then the old implementation is used which doesn't support the import of shared
-objects. Thus, for the old implementation, the imported Data Pools that rely on shared objects
-will not be functional.
-
 * The JSON request looks the following way:
 
 ```
