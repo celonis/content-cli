@@ -384,6 +384,9 @@ content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f1
 
 #### Export Data Pool
 
+The export operation allows export of a Data Pool together with its dependencies. Dependencies
+could be imported data sources and related objects, data source exports, scheduling triggers and other.
+
 In order to pull a Data Pool you can execute the following command:
 
 ```content-cli export data-pool --id <replace-with-pool-id> --profile local --outputToJsonFile```
@@ -392,6 +395,9 @@ _Note_: The ```--outputToJsonFile``` is optional. If specified, the exported dat
 command output will give you all the details.
 
 #### Batch Import multiple Data Pools
+
+The import operation allows import of multiple Data Pools together with their dependencies. Dependencies
+could be imported data sources and related objects, data source exports, scheduling triggers and other.
 
 In order to batch push a list of data pools use the following command:
 
