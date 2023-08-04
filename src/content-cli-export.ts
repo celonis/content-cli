@@ -1,8 +1,9 @@
-import {CommanderStatic} from "commander";
-import {PackageCommand} from "./commands/package.command";
-import {logger} from "./util/logger";
-import {contextService} from "./services/context.service";
 import * as commander from "commander";
+import { CommanderStatic } from "commander";
+import { PackageCommand } from "./commands/package.command";
+import { logger } from "./util/logger";
+import { DataPoolCommand } from "./commands/data-pool.command";
+import { ContextInitializer } from "./util/context-initializer";
 
 export class Export {
     public static packages(program: CommanderStatic): CommanderStatic {
@@ -13,7 +14,22 @@ export class Export {
             .requiredOption("--packageKeys <packageKeys...>", "Exports only given package keys")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
-                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies)
+                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies);
+                process.exit();
+            });
+
+        return program;
+    }
+
+    public static dataPool(program: CommanderStatic): CommanderStatic {
+        program
+            .command("data-pool")
+            .description("Command to export a data pool")
+            .option("-p, --profile <profile>", "Profile which you want to use to export the data pool")
+            .requiredOption("--id <id>", "ID of the data pool you want to export")
+            .option("--outputToJsonFile", "Output the exported data pool to a JSON file")
+            .action(async cmd => {
+                await new DataPoolCommand().exportDataPool(cmd.id, cmd.outputToJsonFile);
                 process.exit();
             });
 
@@ -21,28 +37,24 @@ export class Export {
     }
 }
 
-const options = commander.parseOptions(process.argv)
-const indexOfProfileOption = options.unknown.indexOf('-p') !== -1 ? options.unknown.indexOf('-p') : options.unknown.indexOf('--profile');
-
-process.on("unhandledRejection", (e, promise) => {
-    logger.error(e.toString());
-})
-
-contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
+const loadCommands = () => {
     getAllCommands();
-}, ()=> {
-    getAllCommands();
-}).catch(e => {
-    console.log(e)
-});
+};
+
+ContextInitializer.initContext()
+    .then(loadCommands, loadCommands)
+    .catch(e => {
+        logger.error(e);
+    });
 
 if (!process.argv.slice(2).length) {
     commander.outputHelp();
     process.exit(1);
 }
 
-function getAllCommands() {
+function getAllCommands(): void {
     Export.packages(commander);
+    Export.dataPool(commander);
 
     commander.parse(process.argv);
 }

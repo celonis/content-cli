@@ -156,7 +156,6 @@ class Push {
                 await new DataPoolCommand().pushDataPool(cmd.profile, cmd.file);
                 process.exit();
             });
-
         return program;
     }
 

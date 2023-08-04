@@ -104,7 +104,7 @@ export abstract class BaseManager {
 
     protected writeToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
-        this.writeToFileWithGivenName(data, filename)
+        this.writeToFileWithGivenName(data, filename);
         return filename;
     }
 
@@ -114,7 +114,7 @@ export abstract class BaseManager {
         return filename;
     }
 
-    protected writeToFileWithGivenName(data: any, filename:string): void {
+    protected writeToFileWithGivenName(data: any, filename: string): void {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
         });
