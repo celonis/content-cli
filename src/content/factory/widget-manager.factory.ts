@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import { FatalError, logger } from "../../util/logger";
-import * as YAML from "yaml";
 import { WidgetManager } from "../manager/widget.manager";
 import * as AdmZip from "adm-zip";
+import {parse} from "../../util/yaml";
 
 interface Manifest {
     key: string;
@@ -46,11 +46,11 @@ export class WidgetManagerFactory {
 
     public fetchManifest(): Manifest {
         if (fs.existsSync(path.resolve(process.cwd(), "manifest.yaml"))) {
-            return YAML.parse(fs.readFileSync(path.resolve(process.cwd(), "manifest.yaml"), { encoding: "utf-8" }));
+            return parse(fs.readFileSync(path.resolve(process.cwd(), "manifest.yaml"), { encoding: "utf-8" }));
         }
 
         if (fs.existsSync(path.resolve(process.cwd(), "manifest.yml"))) {
-            return YAML.parse(fs.readFileSync(path.resolve(process.cwd(), "manifest.yml"), { encoding: "utf-8" }));
+            return parse(fs.readFileSync(path.resolve(process.cwd(), "manifest.yml"), { encoding: "utf-8" }));
         }
 
         return null;

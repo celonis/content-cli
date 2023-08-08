@@ -9,13 +9,13 @@ import {nodeApi} from "../../api/node-api";
 import {packageDependenciesApi} from "../../api/package-dependencies-api";
 import {variableService} from "./variable-service";
 import {spaceService} from "./space-service";
-import * as YAML from "yaml";
 import * as fs from "fs";
 import AdmZip = require("adm-zip");
 import * as path from "path";
 import {tmpdir} from "os";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manifest-transport";
+import {stringify} from "../../util/yaml";
 
 class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -426,7 +426,7 @@ class PackageService {
 
         const zip = new AdmZip();
 
-        zip.addFile("manifest.yml", Buffer.from(YAML.stringify(manifestNodes), "utf8"));
+        zip.addFile("manifest.yml", Buffer.from(stringify(manifestNodes), "utf8"));
         for (const packageZip of packageZips) {
             zip.addFile(`${packageZip.packageKey}_${packageZip.version}.zip`, packageZip.data)
         }
