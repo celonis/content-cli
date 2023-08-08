@@ -15,9 +15,10 @@ export class Import {
                 "--spaceMappings <spaceMappings...>",
                 "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'"
             )
+            .option("--dataModelMappingsFile <dataModelMappingsFile>", "DataModel variable mappings file path")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.file);
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.dataModelMappingsFile, cmd.file);
                 process.exit();
             });
 
