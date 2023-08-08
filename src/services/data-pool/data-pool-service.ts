@@ -13,7 +13,7 @@ class DataPoolService {
         if (outputToJsonFile) {
             const reportFileName = "batch_import_report_" + uuidv4() + ".json";
             fileService.writeToFileWithGivenName(importReportString, reportFileName);
-            logger.info(FileService.fileDownloadedMessage + reportFileName);
+            logger.info("Batch import report file: " + reportFileName);
         } else {
             logger.info("Batch import report: \n" + importReportString);
         }
