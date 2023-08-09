@@ -9,6 +9,8 @@
         -   [Pull package for EMS Store](#pull-package-for-ems-store)
     -   [Pull/Push individual assets from/to Studio](#pullpush-individual-assets-fromto-studio)
     -   [Overwrite Package In Studio](#overwrite-package-in-studio)
+    -   [Export multiple packages at once from Studio](#export-multiple-packages-at-once-from-studio)
+    -   [Importing multiple packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [Asset options for Analysis](#asset-options-for-analysis)
@@ -288,6 +290,14 @@ You can also use the `--spaceMappings` flag to provide a mapping of packages to 
 ```
 // Example usage of spaceMappings
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
+```
+
+If you want to update dataModel variables. You can do so by using the --dataModelMappingsFile option and providng the output file from
+the data pool import command.
+
+```
+// Example usage of dataModelMappingsFile
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile>
 ```
 
 ### List all spaces in Studio

@@ -17,6 +17,7 @@ import {tmpdir} from "os";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manifest-transport";
 import {DataPoolInstallVersionReport} from "../../interfaces/data-pool-manager.interfaces";
+import {SemanticVersioning} from "../../util/semantic-versioning";
 
 class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -77,7 +78,7 @@ class PackageService {
 
         let dmTargetIdsBySourceIds: Map<string, string>;
         if (dataModelMappingsFilePath) {
-            const dataModelMappings: DataPoolInstallVersionReport = await fileService.readFileToJson<DataPoolInstallVersionReport>(datamodelMappingsFilePath);
+            const dataModelMappings: DataPoolInstallVersionReport = await fileService.readFileToJson<DataPoolInstallVersionReport>(dataModelMappingsFilePath);
             dmTargetIdsBySourceIds = new Map(Object.entries(dataModelMappings.dataModelIdMappings));
         }
 
@@ -129,7 +130,11 @@ class PackageService {
                                 draftIdsByPackageKeyAndVersion: Map<string, string>,
                                 importedFilePath: string): Promise<void> {
         const importedPackageVersion = importedVersionsByNodeKey.get(packageToImport.packageKey) ?? [];
-        const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => this.compareVersions(k1, k2)).filter(version => !importedPackageVersion.includes(version));
+        const versionsOfPackage = [...packageToImport.dependenciesByVersion.keys()].sort((k1, k2) => {
+            const version1 = new SemanticVersioning(k1);
+            const version2 = new SemanticVersioning(k1);
+            return version1.isGreaterThan(version2) ? 1 : -1;
+        }).filter(version => !importedPackageVersion.includes(version));
 
         for (const version of versionsOfPackage) {
             try {
@@ -153,7 +158,7 @@ class PackageService {
         const patchVersion1 = splitVersion1[2];
         const patchVersion2 = splitVersion2[2];
 
-        const firstVersionIsGreaterThanFirst = (majorVersion1 > majorVersion2) || (minorVersion1 > minorVersion2) || (patchVersion1 > patchVersion2);
+        const firstVersionIsGreaterThanFirst = (majorVersion1 >= majorVersion2) || (minorVersion1 >= minorVersion2) || (patchVersion1 >= patchVersion2);
         return firstVersionIsGreaterThanFirst ? 1 : -1;
     }
 
@@ -192,18 +197,15 @@ class PackageService {
 
         nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
 
+        if (this.isLatestVersion(versionOfPackageBeingImported, [...packageToImport.dependenciesByVersion.keys()])) {
+            const variableAssignments = packageToImport.variables
+                .filter(variable => variable.type === "DATA_MODEL").map(variable => {
+                    variable.value = dmTargetIdsBySourceIds.get(variable.value.toString()) as unknown as object;
+                    return variable;
+                })
 
-        // Add comparison to only udpate on latest version of package..
-        if () {
-
+            await variableService.assignVariableValues(nodeInTargetTeam.key, variableAssignments);
         }
-        const variableAssignments = packageToImport.variables
-            .filter(variable => variable.type === "DATA_MODEL").map(variable => {
-                variable.value = dmTargetIdsBySourceIds.get(variable.value.toString()) as unknown as object;
-                return variable;
-            })
-
-        await variableService.assignVariableValues(nodeInTargetTeam.key, variableAssignments);
 
         draftIdsByPackageKeyAndVersion.set(`${nodeInTargetTeam.key}_${versionOfPackageBeingImported}`, nodeInTargetTeam.workingDraftId);
 
@@ -223,6 +225,22 @@ class PackageService {
         const mappedVersion = sourceToTargetVersionsByNodeKey.get(packageToImport.packageKey).get(versionOfPackageBeingImported);
 
         logger.info(`Imported package with key: ${packageToImport.packageKey} ${versionOfPackageBeingImported} successfully. New version: ${mappedVersion}`)
+    }
+
+    private isLatestVersion(packageVersion: string, allPackageVersions: string[]): boolean {
+        let isLatestVersion = true;
+
+        for (const version of allPackageVersions) {
+            const version1 = new SemanticVersioning(packageVersion);
+            const version2 = new SemanticVersioning(version);
+
+            if (version2.isGreaterThan(version1)) {
+                isLatestVersion = false;
+                break;
+            }
+        }
+
+        return isLatestVersion;
     }
 
     private async importDependencyPackages(dependenciesToImport: ManifestDependency[],
