@@ -1,9 +1,6 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
-import * as YAML from "yaml";
 import * as fs from "fs";
-
-YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
 
 export class AnalysisBookmarksManager extends BaseManager {
     private static BASE_URL = "/process-analytics/api/bookmarks/";
