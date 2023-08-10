@@ -17,8 +17,9 @@ export class List {
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--json", "Return response as json type", "")
             .option("--includeDependencies", "Include variables and dependencies", "")
+            .option("--packageKeys <packageKeys...>", "Lists only given package keys")
             .action(async cmd => {
-                await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies)
+                await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies, cmd.packageKeys)
                 process.exit();
             });
 
