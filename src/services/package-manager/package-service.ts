@@ -27,10 +27,15 @@ class PackageService {
         });
     }
 
-    public async findAndExportListOfAllPackages(includeDependencies: boolean): Promise<void> {
+    public async findAndExportListOfAllPackages(includeDependencies: boolean, packageKeys:string[]): Promise<void> {
         const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
+        if (packageKeys.length > 0) {
+            nodesListToExport = nodesListToExport.filter(node => {
+                return packageKeys.includes(node.rootNodeKey);
+            })
+        }
 
         if (includeDependencies) {
             fieldsToInclude.push("type", "value", "dependencies", "id", "updateAvailable", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels");

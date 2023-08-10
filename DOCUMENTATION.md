@@ -308,7 +308,8 @@ The command takes your permissions into consideration and only lists the
 packages you have access to. 
 
 -   It is also possible to download packages in JSON format by adding '--json' option.
--   It is also possible to include package dependencies by adding '--includeDependencies' flag
+-   When the JSON format option is used, also possible to include package dependencies by adding '--includeDependencies' flag
+-   When the JSON format option is used, also possible to filter packages by adding '--packageKeys' flag 
 
 ```
 content-cli list packages -p <your-chosen-profile>
