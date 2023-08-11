@@ -318,10 +318,12 @@ The command takes your permissions into consideration and only lists the
 packages you have access to. 
 
 -   It is also possible to download packages in JSON format by adding '--json' option.
--   It is also possible to include package dependencies by adding '--includeDependencies' flag
+-   When the JSON format option is used, also possible to include package dependencies by adding '--includeDependencies' flag
+-   When the JSON format option is used, also possible to filter packages by adding '--packageKeys' parameter 
 
 ```
 content-cli list packages -p <your-chosen-profile>
+content-cli list packages -p <profileName> --json --packageKeys <package1> <package2>
 ```
 
 ### List all data pools of the team
@@ -421,7 +423,7 @@ In order to batch push a list of data pools use the following command:
 ```
 {
     "targetTeamDomain": "dev1",
-    "dataPoolImports": [
+    "dataPoolImportRequests": [
         {
             "sourcePoolId": "850728cc-c679-4925-954a-87fb39abb12b",
             "targetPoolId": "80a1389d-50c5-4976-ad6e-fb5b7a2b5517",

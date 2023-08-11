@@ -1,8 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as YAML from "yaml";
-import {ManifestNodeTransport} from "../interfaces/manifest-transport";
-import {FatalError, logger} from "../util/logger";
+import { ManifestNodeTransport } from "../interfaces/manifest-transport";
+import { FatalError, logger } from "../util/logger";
+import {parse} from "../util/yaml";
 
 export class FileService {
     public static readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -18,8 +18,8 @@ export class FileService {
     }
 
     public readManifestFile(importedFileName: string): Promise<ManifestNodeTransport[]> {
-        const manifest: ManifestNodeTransport[] = YAML.parse(
-            fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), {encoding: "utf-8"})
+        const manifest: ManifestNodeTransport[] = parse(
+            fs.readFileSync(path.resolve(importedFileName + "/manifest.yml"), { encoding: "utf-8" })
         );
         return Promise.all(manifest);
     }

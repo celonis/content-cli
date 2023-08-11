@@ -10,7 +10,6 @@ class DataPoolService {
         const importReport = await dataPoolApi.executeDataPoolsBatchImport(requestFileContent);
         const importReportString = JSON.stringify(importReport, null, 4);
 
-        logger.info("Data Pools batch import succeeded!");
         if (outputToJsonFile) {
             const reportFileName = "batch_import_report_" + uuidv4() + ".json";
             fileService.writeToFileWithGivenName(importReportString, reportFileName);
@@ -24,11 +23,10 @@ class DataPoolService {
         const exportedDataPool = await dataPoolApi.exportDataPool(poolId);
         const exportedDataPoolString = JSON.stringify(exportedDataPool, null, 4);
 
-        logger.info("Data Pools export succeeded!");
         if (outputToJsonFile) {
-            const reportFileName = "data_pool_" + poolId + ".json";
+            const reportFileName = uuidv4() + "data_pool_" + poolId + ".json";
             fileService.writeToFileWithGivenName(exportedDataPoolString, reportFileName);
-            logger.info("Export file: " + reportFileName);
+            logger.info(FileService.fileDownloadedMessage + reportFileName);
         } else {
             logger.info("Exported Data Pool: \n" + exportedDataPoolString);
         }

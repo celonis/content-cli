@@ -36,9 +36,9 @@ export class PackageCommand {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
-    public async listPackages(jsonResponse: boolean, includeDependencies: boolean): Promise<void> {
+    public async listPackages(jsonResponse: boolean, includeDependencies: boolean, packageKeys:string[]): Promise<void> {
         if (jsonResponse) {
-            await packageService.findAndExportListOfAllPackages(includeDependencies);
+            await packageService.findAndExportListOfAllPackages(includeDependencies, packageKeys ?? []);
         } else {
             await packageService.listPackages();
         }

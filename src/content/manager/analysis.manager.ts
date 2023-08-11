@@ -1,10 +1,8 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
-import * as YAML from "yaml";
 import { AssetManager } from "./asset.manager";
 import * as fs from "fs";
-
-YAML.scalarOptions.str.doubleQuoted.jsonEncoding = true;
+import {stringify} from "../../util/yaml";
 
 export class AnalysisManager extends BaseManager {
     private static BASE_URL = "/process-mining/api/analysis/";
@@ -77,7 +75,7 @@ export class AnalysisManager extends BaseManager {
 
     protected getSerializedFileContent(data: any): string {
         if (this.packageManager) {
-            return YAML.stringify(data);
+            return stringify(data);
         }
         return JSON.stringify(data);
     }
