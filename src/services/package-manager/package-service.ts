@@ -145,23 +145,6 @@ class PackageService {
         }
     }
 
-    private compareVersions(version1: string, version2: string): number {
-        const splitVersion1 = version1.split(".");
-        const splitVersion2 = version2.split(".");
-
-        const majorVersion1 = splitVersion1[0];
-        const majorVersion2 = splitVersion2[0];
-
-        const minorVersion1 = splitVersion1[1];
-        const minorVersion2 = splitVersion2[1];
-
-        const patchVersion1 = splitVersion1[2];
-        const patchVersion2 = splitVersion2[2];
-
-        const firstVersionIsGreaterThanFirst = (majorVersion1 >= majorVersion2) || (minorVersion1 >= minorVersion2) || (patchVersion1 >= patchVersion2);
-        return firstVersionIsGreaterThanFirst ? 1 : -1;
-    }
-
     private async importPackageVersion(packageToImport: ManifestNodeTransport,
                                        manifestNodes: ManifestNodeTransport[],
                                        sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
