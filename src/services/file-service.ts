@@ -24,11 +24,17 @@ export class FileService {
         return Promise.all(manifest);
     }
 
+    public async readFileToJson<T>(fileName: string): Promise<T> {
+        const fileContent = this.readFile(fileName);
+
+        return JSON.parse(fileContent);
+    }
+
     public readFile(filename: string): string {
         if (!fs.existsSync(path.resolve(process.cwd(), filename))) {
             logger.error(new FatalError(`The provided file '${filename}' does not exit`));
         }
-        return fs.readFileSync(path.resolve(process.cwd(), filename), { encoding: "utf-8" });
+        return fs.readFileSync(path.resolve(process.cwd(), filename), {encoding: "utf-8"});
     }
 
     private getSerializedFileContent(data: any): string {

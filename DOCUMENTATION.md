@@ -9,6 +9,8 @@
         -   [Pull package for EMS Store](#pull-package-for-ems-store)
     -   [Pull/Push individual assets from/to Studio](#pullpush-individual-assets-fromto-studio)
     -   [Overwrite Package In Studio](#overwrite-package-in-studio)
+    -   [Batch Export packages from Studio](#export-multiple-packages-at-once-from-studio)
+    -   [Batch import packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [Asset options for Analysis](#asset-options-for-analysis)
@@ -258,28 +260,28 @@ When you use overwrite the following is to be taken into consideration:
 content-cli push package -p my-profile-name --spaceKey my-space -f <path-to-my-local-package> --overwrite
 ```
 
-### Export multiple packages at once from Studio
+### Batch export packages from Studio
 
-You can use the export packages command to export multiple packages at once from studio.
+You can use the export packages command to batch export packages from studio.
 
 ```
-//Exporting multiple packages at once
+//Batch export packages
 content-cli export packages -p <profileName> --packageKeys <package1> <package2>
 ```
 
 You can use the --includeDependencies flag to also export the dependencies of the specified packages.
 
 ```
-//Exporting multiple packages at once with dependencies
+//Batch export packages with dependencies
 content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies
 ```
 
-### Importing multiple packages into Studio
+### Batch import packages into Studio
 
-You can use the `import packages` command to import multiple packages that were exported using `export packages` at once into studio.
+You can use the `import packages` command to batch import packages that were exported using `export packages` at once into studio.
 
 ```
-//Importing multiple packages at once
+//Batch import packages
 content-cli import packages -p <profileName> --file <exportedPackagesFile>
 ```
 
@@ -288,6 +290,14 @@ You can also use the `--spaceMappings` flag to provide a mapping of packages to 
 ```
 // Example usage of spaceMappings
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
+```
+
+If you want to update dataModel variables. You can do so by using the --dataModelMappingsFile option and providng the output file from
+the data pool import command.
+
+```
+// Example usage of dataModelMappingsFile
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile>
 ```
 
 ### List all spaces in Studio

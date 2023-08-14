@@ -26,5 +26,5 @@ export declare class DataPoolPageTransport {
 }
 
 export declare class DataPoolInstallVersionReport {
-    dataModelIdMappings: Map<String, String>;
+    dataModelIdMappings: Map<string, string>;
 }

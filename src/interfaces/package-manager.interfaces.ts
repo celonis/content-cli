@@ -20,6 +20,7 @@ export interface ActivatePackageTransport {
     publishMessage: string;
     nodeIdsToExclude: string[];
 }
+
 export interface DataModelTransport {
     id: string;
     name: string,
@@ -54,6 +55,15 @@ export interface VariablesAssignments {
     key: string;
     value: object;
     type: string;
+}
+
+export interface VariableDefinitionWithValue {
+    key: string;
+    type: string;
+    description?: string;
+    source?: string;
+    runtime?: boolean;
+    metadata?: object;
 }
 
 export interface PackageHistoryTransport {
