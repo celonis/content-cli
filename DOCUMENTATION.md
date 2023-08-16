@@ -143,7 +143,7 @@ content-cli push --help
 
 _This functionality supports .CTP files generated on a cpm4 instance version 4.6+._ 
 
-By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the EMS, like the following examples:
+By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the EMS, like this:
 
 ```
 // Push the analysis extracted from the .CTP file
@@ -161,7 +161,7 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 
 By using content-cli pull package, you can pull the published version of packages from Studio to
 your local machine (You can use the ***--draft*** option to pull the draft version
-of your package, see example below), like the following example:
+of your package, see example below), like this:
 
 ```
 // Pull single package
@@ -189,7 +189,7 @@ content-cli push packages -p my-other-profile --spaceKey my-space
 
 By default, the `pull package` command will pull the last published version 
 of the package. You can use the ***--draft*** option to pull the draft version
-of your package, like the following example:
+of your package like this:
 
 ```
 // Pull draft version of package
@@ -199,8 +199,7 @@ content-cli pull package -p my-profile-name --key ap-operational-app --draft
 #### Pull package for EMS Store
 
 You can use the ***--store*** option to pull the package including the
-store metadata you need to upload the package to the EMS Store, like the
-following example:
+store metadata you need to upload the package to the EMS Store, like this:
 
 ```
 // Pull package with store metadata
@@ -231,7 +230,7 @@ content-cli push asset -p my-profile-name -f asset_km-test.yml --package new-pac
 
 Additionally, you can use content-cli push assets to push all the 
 assets you have in your current directory to a single package,
-like the following example:
+like this:
 
 ```
 // Push multiple assets to package
@@ -242,16 +241,16 @@ content-cli push assets -p my-profile-name --package test-package
 
 ### Overwrite Package In Studio
 
-When you use overwrite the following is to be taken into consideration:
+When you use overwrite, the following is to be taken into consideration:
 
 -   Assets that exist in the destination package, but not in the source
     package, will be removed
 -   The data model variable assignment of the destination package will
     not be overwritten, it will remain the same
 -   The permissions set on the destination package will remain. This is
-    helpful to not have to assign the same permissions again
+    helpful because you don't have to assign the same permissions again
 -   The package dependencies of the destination package will be
-    overwritten with the ones of the source package
+    overwritten with the dependencies of the source package
 -   The URLs of the assets from the destination package will not change,
     they remain the same
 
@@ -292,7 +291,7 @@ You can also use the `--spaceMappings` flag to provide a mapping of packages to 
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
-If you want to update dataModel variables. You can do so by using the --dataModelMappingsFile option and providng the output file from
+If you want to update dataModel variables, you can do so by using the --dataModelMappingsFile option and providng the output file from
 the data pool import command.
 
 ```
@@ -408,10 +407,10 @@ command output will give you all the details.
 
 #### Batch Import multiple Data Pools
 
-The import operation allows import of multiple Data Pools together with their dependencies. Dependencies
-could be imported data sources and related objects, data source exports, scheduling triggers and other.
+The import operation allows you to import multiple Data Pools together with their dependencies. Dependencies
+could be imported data sources and related objects, data source exports, scheduling triggers and others.
 
-In order to batch push a list of data pools use the following command:
+To batch push a list of data pools, use the following command:
 
 ```content-cli import data-pools --jsonFile ./request.json --profile dev1 --outputToJsonFile```
 
@@ -446,8 +445,8 @@ In order to batch push a list of data pools use the following command:
 }
 ```
 
-In the above JSON:
-1. ```targetTeamDomain```: the destination team domain, into which the data pools data is pushed.
+In the JSON above:
+1. ```targetTeamDomain```: the destination team domain, into which the data pool's data is pushed.
 2. ```sourcePoolId```: the source Data Pool ID.
 2. ```targetPoolId```: the target Data Pool ID to which the source Data Pool ID should be mapped to.
 3. ```dataSourceMappings```: the source Data Source ID to destination Data Source ID mappings.
