@@ -81,7 +81,7 @@ class PackageService {
 
         const manifestNodes = await fileService.readManifestFile(importedFilePath);
 
-        let dmTargetIdsBySourceIds: Map<string, string>;
+        let dmTargetIdsBySourceIds: Map<string, string> = new Map();
         if (dataModelMappingsFilePath) {
             const dataModelMappings: DataPoolInstallVersionReport = await fileService.readFileToJson<DataPoolInstallVersionReport>(dataModelMappingsFilePath);
             dmTargetIdsBySourceIds = new Map(Object.entries(dataModelMappings.dataModelIdMappings));
@@ -188,7 +188,7 @@ class PackageService {
         if (this.isLatestVersion(versionOfPackageBeingImported, [...packageToImport.dependenciesByVersion.keys()])) {
             const variableAssignments = packageToImport.variables
                 .filter(variable => variable.type === "DATA_MODEL").map(variable => {
-                    variable.value = dmTargetIdsBySourceIds.get(variable.value.toString()) as unknown as object;
+                    variable.value = dmTargetIdsBySourceIds.get(variable.value?.toString()) as unknown as object;
                     return variable;
                 })
 
