@@ -1,11 +1,10 @@
-import {PackageCommand} from "./commands/package.command";
-import {SpaceCommand} from "./commands/space.command";
-import {DataPoolCommand} from "./commands/data-pool.command";
-import {AssetCommand} from "./commands/asset.command";
-
+import { PackageCommand } from "./commands/package.command";
+import { SpaceCommand } from "./commands/space.command";
+import { DataPoolCommand } from "./commands/data-pool.command";
+import { AssetCommand } from "./commands/asset.command";
+import { logger } from "./util/logger";
 import commander = require("commander");
-import {contextService} from "./services/context.service";
-import {logger} from "./util/logger";
+import { ContextInitializer } from "./util/context-initializer";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -19,7 +18,7 @@ export class List {
             .option("--includeDependencies", "Include variables and dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only given package keys")
             .action(async cmd => {
-                await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies, cmd.packageKeys)
+                await new PackageCommand().listPackages(cmd.json, cmd.includeDependencies, cmd.packageKeys);
                 process.exit();
             });
 
@@ -69,24 +68,24 @@ export class List {
     }
 }
 
-
-const options = commander.parseOptions(process.argv)
-const indexOfProfileOption = options.unknown.indexOf('-p') ?? options.unknown.indexOf('--profile');
-
 process.on("unhandledRejection", (e, promise) => {
     logger.error(e.toString());
-})
+});
 
-contextService.resolveProfile(options.unknown[indexOfProfileOption + 1]).then(() => {
+const loadAllCommands = () => {
     List.packages(commander);
     List.spaces(commander);
     List.dataPools(commander);
     List.assets(commander);
 
     commander.parse(process.argv);
-}).catch(e => {
-    console.log(e)
-});
+};
+
+ContextInitializer.initContext()
+    .then(loadAllCommands)
+    .catch(e => {
+        logger.error(e);
+    });
 
 if (!process.argv.slice(2).length) {
     commander.outputHelp();

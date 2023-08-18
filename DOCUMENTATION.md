@@ -425,7 +425,6 @@ In order to batch push a list of data pools use the following command:
     "targetTeamDomain": "dev1",
     "dataPoolImportRequests": [
         {
-            "sourcePoolId": "850728cc-c679-4925-954a-87fb39abb12b",
             "targetPoolId": "80a1389d-50c5-4976-ad6e-fb5b7a2b5517",
             "dataSourceMappings": {
                 "69e7c6b8-a36c-48ee-8dba-9bb89baf41dd": "98b4b2d9-898d-4b72-aeb9-ebd87c097cb3",
@@ -434,7 +433,6 @@ In order to batch push a list of data pools use the following command:
             "dataPool": {...}
         },
         {
-            "sourcePoolId": "510fde4e-4a53-4a4e-9331-31038bcaf891",
             "targetPoolId": "1b9b368b-e0df-4e74-99e8-59e2febe9687",
             "dataSourceMappings": {
                 "e9359d63-5ccf-4f0d-8da3-24cda8a42c01": "096c0280-4cb9-4279-a003-b77698287aba",

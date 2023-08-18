@@ -24,7 +24,7 @@ class DataPoolService {
         const exportedDataPoolString = JSON.stringify(exportedDataPool, null, 4);
 
         if (outputToJsonFile) {
-            const reportFileName = uuidv4() + "data_pool_" + poolId + ".json";
+            const reportFileName = uuidv4() + "_data_pool_" + poolId + ".json";
             fileService.writeToFileWithGivenName(exportedDataPoolString, reportFileName);
             logger.info(FileService.fileDownloadedMessage + reportFileName);
         } else {
