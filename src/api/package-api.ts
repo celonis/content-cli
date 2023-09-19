@@ -1,7 +1,10 @@
 import {httpClientV2} from "../services/http-client-service.v2";
 import {
     ActivatePackageTransport,
-    ContentNodeTransport, PackageHistoryTransport, PackageManagerVariableType, PackageWithVariableAssignments
+    ContentNodeTransport,
+    PackageHistoryTransport,
+    PackageManagerVariableType,
+    PackageWithVariableAssignments
 } from "../interfaces/package-manager.interfaces";
 import {FatalError} from "../util/logger";
 
