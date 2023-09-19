@@ -1,22 +1,31 @@
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {computePoolApi} from "../../api/compute-pool-api";
-import {StudioDataModelTransport} from "../../interfaces/package-manager.interfaces";
+import {
+    PackageManagerVariableType,
+    StudioComputeNodeDescriptor
+} from "../../interfaces/package-manager.interfaces";
+import {variableService} from "./variable-service";
 
-class DatamodelService {
+class DataModelService {
+    public static readonly INSTANCE = new DataModelService();
 
-    public static readonly INSTANCE = new DatamodelService();
+    public async getDataModelDetailsForNodes(nodes: BatchExportNodeTransport[]): Promise<Map<string, StudioComputeNodeDescriptor[]>> {
+        const dataModelsMap = new Map<string, StudioComputeNodeDescriptor[]>();
+        const allAvailableDataModels = await computePoolApi.findAllDataModelsDetails();
 
-    public async getDatamodelsForNodes(nodesListToExport: BatchExportNodeTransport[]): Promise<Map<string, StudioDataModelTransport[]>> {
-        const dataModelsMap = new Map<string, StudioDataModelTransport[]>();
+        const packageWithVariableAssignments = await variableService.getVariableAssignmentsForNodes(PackageManagerVariableType.DATA_MODEL);
 
-        for(const node of nodesListToExport) {
-            const assignedDataModels = await computePoolApi.findAssignedDatamodels(node.key);
-            dataModelsMap.set(node.key, assignedDataModels)
+        for (const node of nodes) {
+            const variablesOfPackage = packageWithVariableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
+            const dataModelIds = variablesOfPackage.filter(variable => variable.value).map(variable => variable.value.toString());
+
+            const assignedDataModels = allAvailableDataModels.filter(dataModel => dataModelIds.includes(dataModel.dataModelId));
+            dataModelsMap.set(node.key, assignedDataModels);
         }
-
         return dataModelsMap;
     }
 
+
 }
 
-export const dataModelService = DatamodelService.INSTANCE;
+export const dataModelService = DataModelService.INSTANCE;

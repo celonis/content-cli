@@ -4,7 +4,11 @@ import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
 import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {dataModelService} from "./datamodel-service";
-import {ContentNodeTransport, PackageDependencyTransport} from "../../interfaces/package-manager.interfaces";
+import {
+    ContentNodeTransport,
+    PackageDependencyTransport,
+    PackageManagerVariableType
+} from "../../interfaces/package-manager.interfaces";
 import {nodeApi} from "../../api/node-api";
 import {packageDependenciesApi} from "../../api/package-dependencies-api";
 import {variableService} from "./variable-service";
@@ -34,30 +38,24 @@ class PackageService {
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
         if (packageKeys.length > 0) {
-            nodesListToExport = nodesListToExport.filter(node => {
-                return packageKeys.includes(node.rootNodeKey);
-            })
+            nodesListToExport = nodesListToExport.filter(node => packageKeys.includes(node.rootNodeKey));
         }
 
         if (includeDependencies) {
             fieldsToInclude.push("type", "value", "dependencies", "id", "updateAvailable", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels");
 
             const packagesKeyWithActionFlows = (await nodeApi.findAllNodesOfType("SCENARIO")).map(node => node.rootNodeKey);
-            nodesListToExport = nodesListToExport.filter(node => {
-                return !packagesKeyWithActionFlows.includes(node.rootNodeKey);
-            })
+            nodesListToExport = nodesListToExport.filter(node => !packagesKeyWithActionFlows.includes(node.rootNodeKey));
 
             const unPublishedNodes = nodesListToExport.filter(node => !node.activatedDraftId);
             let publishedNodes = nodesListToExport.filter(node => node.activatedDraftId);
-
             publishedNodes = await this.getNodesWithActiveVersion(publishedNodes);
-
             nodesListToExport = [...publishedNodes, ...unPublishedNodes];
 
-            const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+            const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForNodes(nodesListToExport);
             nodesListToExport.forEach(node => {
-                node.datamodels = dataModelAssignments.get(node.key);
-            })
+                node.datamodels = dataModelDetailsByNode.get(node.key);
+            });
 
             const draftIdByNodeId = new Map<string, string>();
             nodesListToExport.forEach(node => draftIdByNodeId.set(node.workingDraftId, node.id));
@@ -199,7 +197,7 @@ class PackageService {
 
         if (this.isLatestVersion(versionOfPackageBeingImported, [...packageToImport.dependenciesByVersion.keys()])) {
             const variableAssignments = packageToImport.variables
-                .filter(variable => variable.type === "DATA_MODEL").map(variable => {
+                .filter(variable => variable.type === PackageManagerVariableType.DATA_MODEL).map(variable => {
                     variable.value = dmTargetIdsBySourceIds.get(variable.value?.toString()) as unknown as object;
                     return variable;
                 })
@@ -352,20 +350,19 @@ class PackageService {
             }
         }
 
-
         nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
         if (includeDependencies) {
             const dependencyPackages = await this.getDependencyPackages(nodesListToExport, [], allPackages, actionFlowsPackageKeys, [], versionsByNodeKey);
             nodesListToExport.push(...dependencyPackages);
         }
 
-        const variableAssignments = await variableService.getVariableAssignmentsForNodes(nodesListToExport);
+        const packagesWithVariableAssignments = await variableService.getVariableAssignmentsForNodes();
 
         nodesListToExport.forEach(node => {
-            node.variables = variableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
+            node.variables = packagesWithVariableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
         });
 
-        const dataModelAssignments = await dataModelService.getDatamodelsForNodes(nodesListToExport);
+        const dataModelAssignments = await dataModelService.getDataModelDetailsForNodes(nodesListToExport);
         nodesListToExport.forEach(node => {
             node.datamodels = dataModelAssignments.get(node.key);
         });
@@ -492,15 +489,14 @@ class PackageService {
                 spaceIcon: node.space.iconReference
             }
             manifestNode.variables = node.variables?.map((variable) => {
-                if (variable.type === "DATA_MODEL") {
+                if (variable.type === PackageManagerVariableType.DATA_MODEL) {
                     // @ts-ignore
-                    const dataModel = node.datamodels?.find(dataModel => dataModel.node.dataModelId === variable.value);
+                    const dataModel = node.datamodels?.find(dataModel => dataModel.dataModelId === variable.value);
                     return {
                         key: variable.key,
                         type: variable.type,
                         value: variable.value,
-                        dataModelName: dataModel?.node.name,
-                        dataPoolName: dataModel?.dataPool.name
+                        dataModelName: dataModel?.name,
                     }
                 }
                 return variable;

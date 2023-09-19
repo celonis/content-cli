@@ -1,7 +1,7 @@
 import {httpClientV2} from "../services/http-client-service.v2";
 import {
     ActivatePackageTransport,
-    ContentNodeTransport, PackageHistoryTransport, PackageWithVariableAssignments
+    ContentNodeTransport, PackageHistoryTransport, PackageManagerVariableType, PackageWithVariableAssignments
 } from "../interfaces/package-manager.interfaces";
 import {FatalError} from "../util/logger";
 
@@ -25,8 +25,13 @@ class PackageApi {
         });
     }
 
-    public async findAllPackagesWithVariableAssignments(): Promise<PackageWithVariableAssignments[]> {
-        return httpClientV2.get("/package-manager/api/packages/with-variable-assignments").catch(e => {
+    public async findAllPackagesWithVariableAssignments(type: PackageManagerVariableType): Promise<PackageWithVariableAssignments[]> {
+        const queryParams = new URLSearchParams();
+        if (type) {
+            queryParams.set("type", type);
+        }
+
+        return httpClientV2.get(`/package-manager/api/packages/with-variable-assignments?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting variables of packages: : ${e}`);
         });
     }
