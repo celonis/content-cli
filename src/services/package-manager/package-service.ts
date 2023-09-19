@@ -52,7 +52,8 @@ class PackageService {
             publishedNodes = await this.getNodesWithActiveVersion(publishedNodes);
             nodesListToExport = [...publishedNodes, ...unPublishedNodes];
 
-            const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForNodes(nodesListToExport);
+            const packageWithDataModelVariableAssignments = await variableService.getVariableAssignmentsForNodes(PackageManagerVariableType.DATA_MODEL);
+            const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForPackages(packageWithDataModelVariableAssignments);
             nodesListToExport.forEach(node => {
                 node.datamodels = dataModelDetailsByNode.get(node.key);
             });
@@ -362,13 +363,17 @@ class PackageService {
             node.variables = packagesWithVariableAssignments.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
         });
 
-        const dataModelAssignments = await dataModelService.getDataModelDetailsForNodes(nodesListToExport);
+        const packagesWithDataModelVariables = packagesWithVariableAssignments.map(packageWithVariablesAssignments => {
+            packageWithVariablesAssignments.variableAssignments = packageWithVariablesAssignments.variableAssignments.filter(variable => variable.value && variable.type === PackageManagerVariableType.DATA_MODEL);
+            return packageWithVariablesAssignments;
+        });
+        const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForPackages(packagesWithDataModelVariables);
+
         nodesListToExport.forEach(node => {
-            node.datamodels = dataModelAssignments.get(node.key);
+            node.datamodels = dataModelDetailsByNode.get(node.key);
         });
 
         nodesListToExport = await spaceService.getParentSpaces(nodesListToExport);
-
         await this.exportToZip(nodesListToExport, versionsByNodeKey);
     }
 
