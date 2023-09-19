@@ -30,7 +30,7 @@ class PackageService {
     }
 
     public async findAndExportListOfAllPackages(includeDependencies: boolean, packageKeys: string[]): Promise<void> {
-        const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId","workingDraftId", "spaceId"];
+        const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "workingDraftId", "spaceId"];
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
         if (packageKeys.length > 0) {
@@ -88,7 +88,7 @@ class PackageService {
                 .filter(node => manifestNodeKeys.includes(node.key))
                 .forEach(node => {
                     if (node.workingDraftId !== node.activatedDraftId) {
-                        throw new FatalError(`Cannot overwrite package that has unpublished changes. Package with key ${node.key}`)
+                        throw new FatalError("Failed to import. Cannot overwrite packages.");
                     }
                 })
         }

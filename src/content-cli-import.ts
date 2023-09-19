@@ -15,7 +15,7 @@ export class Import {
                 "--spaceMappings <spaceMappings...>",
                 "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'"
             )
-            .option("-o --overwrite", "Flag to allow overwriting of packages")
+            .option("--overwrite", "Flag to allow overwriting of packages")
             .option("--dataModelMappingsFile <dataModelMappingsFile>", "DataModel variable mappings file path")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
