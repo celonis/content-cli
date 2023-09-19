@@ -1,4 +1,4 @@
-import {logger} from "../../util/logger";
+import {FatalError, logger} from "../../util/logger";
 import {packageApi} from "../../api/package-api";
 import {v4 as uuidv4} from "uuid";
 import {FileService, fileService} from "../file-service";
@@ -29,7 +29,7 @@ class PackageService {
         });
     }
 
-    public async findAndExportListOfAllPackages(includeDependencies: boolean, packageKeys:string[]): Promise<void> {
+    public async findAndExportListOfAllPackages(includeDependencies: boolean, packageKeys: string[]): Promise<void> {
         const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
@@ -72,7 +72,7 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
-    public async batchImportPackages(spaceMappings: string[], dataModelMappingsFilePath: string, exportedPackagesFile: string): Promise<void> {
+    public async batchImportPackages(spaceMappings: string[], dataModelMappingsFilePath: string, exportedPackagesFile: string, overwrite: boolean): Promise<void> {
         exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
         const zip = new AdmZip(exportedPackagesFile);
         const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
@@ -80,6 +80,18 @@ class PackageService {
         await zip.extractAllTo(importedFilePath);
 
         const manifestNodes = await fileService.readManifestFile(importedFilePath);
+
+        if (!overwrite) {
+            const allTargetPackages = await packageApi.findAllPackages();
+            const manifestNodeKeys = manifestNodes.map(node => node.packageKey);
+            allTargetPackages
+                .filter(node => manifestNodeKeys.includes(node.key))
+                .forEach(node => {
+                    if (node.workingDraftId !== node.activatedDraftId) {
+                        throw new FatalError(`Cannot overwrite package that has unpublished changes. Package with key ${node.key}`)
+                    }
+                })
+        }
 
         let dmTargetIdsBySourceIds: Map<string, string> = new Map();
         if (dataModelMappingsFilePath) {
