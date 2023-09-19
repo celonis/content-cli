@@ -300,11 +300,11 @@ the data pool import command.
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile>
 ```
 
-By default, you can not overwrite a package in the target team. To do this you can use the overwrite flag -o --overwrite
+By default, you can not overwrite a package in the target team. To do this you can use the overwrite flag -o, --overwrite
 
 ```
 // Example usage of dataModelMappingsFile
-content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> -o/--overwrite
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> --overwrite
 ```
 
 ### List all spaces in Studio

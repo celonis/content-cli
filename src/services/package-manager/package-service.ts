@@ -30,7 +30,7 @@ class PackageService {
     }
 
     public async findAndExportListOfAllPackages(includeDependencies: boolean, packageKeys: string[]): Promise<void> {
-        const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId", "spaceId"];
+        const fieldsToInclude = ["key", "name", "changeDate", "activatedDraftId","workingDraftId", "spaceId"];
 
         let nodesListToExport: BatchExportNodeTransport[] = await packageApi.findAllPackages();
         if (packageKeys.length > 0) {
