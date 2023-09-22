@@ -278,7 +278,7 @@ class PackageService {
 
     private async getTargetSpaceForExportedPackage(packageToImport: ManifestNodeTransport, spaceMappings: Map<string, string>): Promise<SpaceTransport> {
         let targetSpace;
-        const allSpaces = await spaceService.getAllSpaces();
+        const allSpaces = await spaceService.refreshAndGetAllSpaces();
         if (spaceMappings.has(packageToImport.packageKey)) {
             const customSpaceId = spaceMappings.get(packageToImport.packageKey);
             const customSpace = allSpaces.find(space => space.id === customSpaceId);
