@@ -1,6 +1,6 @@
 import {
     ContentNodeTransport,
-    VariableDefinitionWithValue, VariablesAssignments
+    VariablesAssignments
 } from "../interfaces/package-manager.interfaces";
 import {httpClientV2} from "../services/http-client-service.v2";
 import {FatalError} from "../util/logger";

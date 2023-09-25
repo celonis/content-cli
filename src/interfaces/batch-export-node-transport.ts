@@ -1,7 +1,9 @@
 import {
-    ContentNodeTransport, DataModelTransport,
+    ContentNodeTransport,
     PackageDependencyTransport,
-    PackageHistoryTransport, StudioDataModelTransport, VariablesAssignments
+    PackageHistoryTransport,
+    StudioComputeNodeDescriptor,
+    VariablesAssignments
 } from "./package-manager.interfaces";
 import {SpaceTransport} from "./save-space.interface";
 
@@ -10,7 +12,7 @@ export interface BatchExportNodeTransport extends ContentNodeTransport {
     activatedDraftId: string;
     version?: PackageHistoryTransport;
     dependencies?: PackageDependencyTransport[];
-    datamodels?: StudioDataModelTransport[];
+    datamodels?: StudioComputeNodeDescriptor[];
     variables?: VariablesAssignments[];
     space?: SpaceTransport;
 }
