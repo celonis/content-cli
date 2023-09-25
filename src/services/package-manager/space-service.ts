@@ -28,15 +28,17 @@ class SpaceService {
             iconReference: spaceIcon
         });
 
+        await this.refreshAndGetAllSpaces();
         this.allSpaces.push(newSpace);
         return newSpace;
     }
 
-    public async getAllSpaces(): Promise<SpaceTransport[]> {
+    public async refreshAndGetAllSpaces(): Promise<SpaceTransport[]> {
         if (this.allSpaces.length) {
             return this.allSpaces;
         }
-        return await spaceApi.findAllSpaces();
+        this.allSpaces = await spaceApi.findAllSpaces();
+        return this.allSpaces;
     }
 }
 
