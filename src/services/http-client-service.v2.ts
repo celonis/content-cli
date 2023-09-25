@@ -4,6 +4,7 @@ import request = require("request");
 import { contextService } from "./context.service";
 import { FatalError, logger } from "../util/logger";
 import * as querystring from "querystring";
+import {TracingUtils} from "../util/tracing";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
@@ -117,7 +118,7 @@ class HttpClientServiceV2 {
 
     private makeFileDownloadOptions(profile: Profile): object {
         return {
-            headers: this.buildAuthorizationHeaders(profile),
+            headers: this.buildHeaders(profile),
             responseType: "binary",
         };
     }
@@ -154,7 +155,7 @@ class HttpClientServiceV2 {
 
     private makeOptions(profile: Profile, body: object = {}): CoreOptions {
         const options = {
-            headers: this.buildAuthorizationHeaders(profile),
+            headers: this.buildHeaders(profile),
         };
 
         return Object.assign(options, body);
@@ -162,9 +163,17 @@ class HttpClientServiceV2 {
 
     private makeOptionsJson(profile: Profile, body?: any, contentType?: string): CoreOptions {
         return {
-            headers: this.buildAuthorizationHeaders(profile, contentType),
+            headers: this.buildHeaders(profile, contentType),
             body: body,
         };
+    }
+
+    private buildHeaders(profile: Profile, contentType?: string): Headers {
+        return {
+            ...this.buildAuthorizationHeaders(profile, contentType),
+            ...TracingUtils.getTracingHeaders(),
+            "User-Agent": "content-cli v" + process.version
+        }
     }
 
     private buildAuthorizationHeaders(profile: Profile, contentType?: string): Headers {
