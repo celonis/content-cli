@@ -83,13 +83,13 @@ class PackageService {
         if (!overwrite) {
             const allTargetPackages = await packageApi.findAllPackages();
             const manifestNodeKeys = manifestNodes.map(node => node.packageKey);
-            allTargetPackages
-                .filter(node => manifestNodeKeys.includes(node.key))
-                .forEach(node => {
-                    if (node.workingDraftId !== node.activatedDraftId) {
-                        throw new FatalError("Failed to import. Cannot overwrite packages.");
-                    }
-                })
+            const packagesWithDraftChanges = allTargetPackages
+                .filter(node => manifestNodeKeys.includes(node.key) && node.workingDraftId !== node.activatedDraftId)
+                .map(node => node.key)
+                .join(", ");
+            if (!!packagesWithDraftChanges) {
+                throw new FatalError(`Failed to import. Cannot overwrite packages with key(s) ${packagesWithDraftChanges}`)
+            }
         }
 
         let dmTargetIdsBySourceIds: Map<string, string> = new Map();
@@ -277,7 +277,7 @@ class PackageService {
 
     private async getTargetSpaceForExportedPackage(packageToImport: ManifestNodeTransport, spaceMappings: Map<string, string>): Promise<SpaceTransport> {
         let targetSpace;
-        const allSpaces = await spaceService.getAllSpaces();
+        const allSpaces = await spaceService.refreshAndGetAllSpaces();
         if (spaceMappings.has(packageToImport.packageKey)) {
             const customSpaceId = spaceMappings.get(packageToImport.packageKey);
             const customSpace = allSpaces.find(space => space.id === customSpaceId);
