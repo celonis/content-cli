@@ -3,8 +3,7 @@
 import { logger } from "./util/logger";
 import semverSatisfies = require("semver/functions/satisfies");
 import program = require("commander");
-// tslint:disable-next-line:no-var-requires
-const { version } = require("./package.json");
+import {VersionUtils} from "./util/version";
 
 const requiredVersion = ">=10.10.0";
 if (!semverSatisfies(process.version, requiredVersion)) {
@@ -27,7 +26,7 @@ program.command("update", "Commands to update content.");
 
 program.command("list", "Commands to list content.").alias("ls");
 
-program.version(version);
+program.version(VersionUtils.getCurrentCliVersion());
 program.parse(process.argv);
 
 if (!process.argv.slice(2).length) {

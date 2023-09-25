@@ -5,6 +5,7 @@ import { contextService } from "./context.service";
 import { FatalError, logger } from "../util/logger";
 import * as querystring from "querystring";
 import {TracingUtils} from "../util/tracing";
+import {VersionUtils} from "../util/version";
 
 class HttpClientServiceV2 {
     public async get(url: string): Promise<any> {
@@ -172,7 +173,7 @@ class HttpClientServiceV2 {
         return {
             ...this.buildAuthorizationHeaders(profile, contentType),
             ...TracingUtils.getTracingHeaders(),
-            "User-Agent": "content-cli v" + process.version
+            "User-Agent": "content-cli v" + VersionUtils.getCurrentCliVersion()
         }
     }
 
