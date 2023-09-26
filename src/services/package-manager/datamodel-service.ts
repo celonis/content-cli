@@ -1,22 +1,25 @@
-import {BatchExportNodeTransport} from "../../interfaces/batch-export-node-transport";
 import {computePoolApi} from "../../api/compute-pool-api";
-import {StudioDataModelTransport} from "../../interfaces/package-manager.interfaces";
+import {
+    PackageWithVariableAssignments,
+    StudioComputeNodeDescriptor
+} from "../../interfaces/package-manager.interfaces";
 
-class DatamodelService {
+class DataModelService {
+    public static readonly INSTANCE = new DataModelService();
 
-    public static readonly INSTANCE = new DatamodelService();
+    public async getDataModelDetailsForPackages(packagesWithDataModelVariables: PackageWithVariableAssignments[]): Promise<Map<string, StudioComputeNodeDescriptor[]>> {
+        const dataModelsMap = new Map<string, StudioComputeNodeDescriptor[]>();
+        const allAvailableDataModels = await computePoolApi.findAllDataModelsDetails();
 
-    public async getDatamodelsForNodes(nodesListToExport: BatchExportNodeTransport[]): Promise<Map<string, StudioDataModelTransport[]>> {
-        const dataModelsMap = new Map<string, StudioDataModelTransport[]>();
+        for (const node of packagesWithDataModelVariables) {
+            const variablesOfPackage = packagesWithDataModelVariables.find(nodeWithVariablesAssignment => nodeWithVariablesAssignment.key === node.key)?.variableAssignments;
+            const dataModelIds = variablesOfPackage.filter(variable => variable.value).map(variable => variable.value.toString());
 
-        for(const node of nodesListToExport) {
-            const assignedDataModels = await computePoolApi.findAssignedDatamodels(node.key);
-            dataModelsMap.set(node.key, assignedDataModels)
+            const assignedDataModels = allAvailableDataModels.filter(dataModel => dataModelIds.includes(dataModel.dataModelId));
+            dataModelsMap.set(node.key, assignedDataModels);
         }
-
         return dataModelsMap;
     }
-
 }
 
-export const dataModelService = DatamodelService.INSTANCE;
+export const dataModelService = DataModelService.INSTANCE;

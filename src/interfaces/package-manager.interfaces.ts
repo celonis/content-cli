@@ -59,11 +59,18 @@ export interface VariablesAssignments {
 
 export interface VariableDefinitionWithValue {
     key: string;
-    type: string;
+    type: PackageManagerVariableType;
     description?: string;
     source?: string;
     runtime?: boolean;
     metadata?: object;
+}
+
+export enum PackageManagerVariableType {
+    DATA_MODEL="DATA_MODEL",
+    CONNECTION="CONNECTION",
+    ASSIGNMENT_RULE="ASSIGNMENT_RULE",
+    PLAIN_TEXT= "PLAIN_TEXT"
 }
 
 export interface PackageHistoryTransport {
@@ -81,6 +88,7 @@ export interface StudioDataModelTransport {
 export interface StudioComputeNodeDescriptor {
     name: string;
     dataModelId: string;
+    poolId: string;
 }
 
 export interface ComputePoolTransport {
