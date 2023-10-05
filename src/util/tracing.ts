@@ -5,7 +5,7 @@ export class TracingUtils {
     public static getTracingHeaders(): { [key: string]: string } {
         return {
             "x-datadog-trace-id": this.getTraceId(),
-            "x-datadog-parent-id": this.getParentId(),
+            "x-datadog-parent-id": this.getTraceParentId(),
             "x-datadog-sampling-priority": "1",
         };
     }
@@ -14,8 +14,8 @@ export class TracingUtils {
         return process.env.TRACE_ID || this.generateId();
     }
 
-    private static getParentId(): string {
-        return process.env.PARENT_ID || this.generateId();
+    private static getTraceParentId(): string {
+        return process.env.PARENT_TRACE_ID || this.generateId();
     }
 
     private static generateId(): string {
