@@ -18,7 +18,6 @@ export class TracingUtils {
         return process.env.PARENT_ID || this.generateId();
     }
 
-
     private static generateId(): string {
         return crypto.randomBytes(8).toString("hex");
     }
