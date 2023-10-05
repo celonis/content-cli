@@ -5,6 +5,7 @@ export class TracingUtils {
     public static getTracingHeaders(): { [key: string]: string } {
         return {
             "x-datadog-trace-id": this.getTraceId(),
+            "x-datadog-parent-id": this.getTraceId(),
             "x-datadog-sampling-priority": "1",
         };
     }
