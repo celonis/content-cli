@@ -5,6 +5,7 @@ import { AssetCommand } from "./commands/asset.command";
 import { logger } from "./util/logger";
 import commander = require("commander");
 import { ContextInitializer } from "./util/context-initializer";
+import {VariableCommand} from "./commands/variable.command";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -66,6 +67,22 @@ export class List {
 
         return program;
     }
+
+    public static assignments(program: CommanderStatic): CommanderStatic {
+        program
+            .command("assignments")
+            .description("Command to list possible variable assignments for a type")
+            .option("-p, --profile <profile>", "Profile which you want to use to list possible variable assignments")
+            .option("--json", "Return response as json type", "")
+            .option("--type <type>", "Type of variable")
+            .option("--params <params>", "Variable query params")
+            .action(async cmd => {
+                await new VariableCommand().listAssignments(cmd.type, cmd.json, cmd.params);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 process.on("unhandledRejection", (e, promise) => {
@@ -77,6 +94,7 @@ const loadAllCommands = () => {
     List.spaces(commander);
     List.dataPools(commander);
     List.assets(commander);
+    List.assignments(commander);
 
     commander.parse(process.argv);
 };
