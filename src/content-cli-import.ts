@@ -16,10 +16,9 @@ export class Import {
                 "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'"
             )
             .option("--overwrite", "Flag to allow overwriting of packages")
-            .option("--dataModelMappingsFile <dataModelMappingsFile>", "DataModel variable mappings file path")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.dataModelMappingsFile, cmd.file, cmd.overwrite);
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.file, cmd.overwrite);
                 process.exit();
             });
 
