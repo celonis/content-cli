@@ -71,7 +71,7 @@ class PackageService {
         this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
-    public async batchImportPackages(spaceMappings: string[], exportedPackagesFile: string, overwrite: boolean): Promise<void> {
+    public async batchImportPackages(spaceMappings: string[], dataModelMappingsFilePath: string, exportedPackagesFile: string, overwrite: boolean): Promise<void> {
         exportedPackagesFile = exportedPackagesFile + (exportedPackagesFile.includes(".zip") ? "" : ".zip");
         const zip = new AdmZip(exportedPackagesFile);
         const importedFilePath = path.resolve(tmpdir(), "export_" + uuidv4());
@@ -90,6 +90,12 @@ class PackageService {
             if (!!packagesWithDraftChanges) {
                 throw new FatalError(`Failed to import. Cannot overwrite packages with key(s) ${packagesWithDraftChanges}`)
             }
+        }
+
+        let dmTargetIdsBySourceIds: Map<string, string> = new Map();
+        if (dataModelMappingsFilePath) {
+            const dataModelMappings: DataPoolInstallVersionReport = await fileService.readFileToJson<DataPoolInstallVersionReport>(dataModelMappingsFilePath);
+            dmTargetIdsBySourceIds = new Map(Object.entries(dataModelMappings.dataModelIdMappings));
         }
 
         manifestNodes.map(node => node.dependenciesByVersion = new Map(Object.entries(node.dependenciesByVersion)));
@@ -111,7 +117,7 @@ class PackageService {
 
         const draftIdsByPackageKeyAndVersion = new Map<string, string>();
         for (const node of manifestNodes) {
-            await this.importPackage(node, manifestNodes, sourceToTargetVersionsByNodeKey, customSpacesMap, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath)
+            await this.importPackage(node, manifestNodes, sourceToTargetVersionsByNodeKey, customSpacesMap, dmTargetIdsBySourceIds, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath)
         }
     }
 
@@ -135,6 +141,7 @@ class PackageService {
                                 manifestNodes: ManifestNodeTransport[],
                                 sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
                                 spaceMappings: Map<string, string>,
+                                dmTargetIdsBySourceIds: Map<string, string>,
                                 importedVersionsByNodeKey: Map<string, string[]>,
                                 draftIdsByPackageKeyAndVersion: Map<string, string>,
                                 importedFilePath: string): Promise<void> {
@@ -147,7 +154,7 @@ class PackageService {
 
         for (const version of versionsOfPackage) {
             try {
-                await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
+                await this.importPackageVersion(packageToImport, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, dmTargetIdsBySourceIds, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, version);
             } catch (e) {
                 logger.error(`Problem import package with key: ${packageToImport.packageKey} ${version} ${e}`);
             }
@@ -158,13 +165,14 @@ class PackageService {
                                        manifestNodes: ManifestNodeTransport[],
                                        sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
                                        spaceMappings: Map<string, string>,
+                                       dmTargetIdsBySourceIds: Map<string, string>,
                                        importedVersionsByNodeKey: Map<string, string[]>,
                                        draftIdsByPackageKeyAndVersion: Map<string, string>,
                                        importedFilePath: string,
                                        versionOfPackageBeingImported: string): Promise<void> {
         if (packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported).length) {
             const dependenciesOfPackageVersion = packageToImport.dependenciesByVersion.get(versionOfPackageBeingImported);
-            await this.importDependencyPackages(dependenciesOfPackageVersion, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings,
+            await this.importDependencyPackages(dependenciesOfPackageVersion, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, dmTargetIdsBySourceIds,
                 importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath
             );
         }
@@ -189,7 +197,17 @@ class PackageService {
         nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
 
         if (this.isLatestVersion(versionOfPackageBeingImported, [...packageToImport.dependenciesByVersion.keys()])) {
-            await variableService.assignVariableValues(nodeInTargetTeam.key, packageToImport.variables);
+            if (dmTargetIdsBySourceIds.size > 0) {
+                const variableAssignments = packageToImport.variables
+                    .filter(variable => variable.type === PackageManagerVariableType.DATA_MODEL).map(variable => {
+                        variable.value = dmTargetIdsBySourceIds.get(variable.value?.toString()) as unknown as object;
+                        return variable;
+                    })
+
+                await variableService.assignVariableValues(nodeInTargetTeam.key, variableAssignments);
+            } else {
+                await variableService.assignVariableValues(nodeInTargetTeam.key, packageToImport.variables);
+            }
         }
 
         draftIdsByPackageKeyAndVersion.set(`${nodeInTargetTeam.key}_${versionOfPackageBeingImported}`, nodeInTargetTeam.workingDraftId);
@@ -232,6 +250,7 @@ class PackageService {
                                            manifestNodes: ManifestNodeTransport[],
                                            sourceToTargetVersionsByNodeKey: Map<string, Map<string, string>>,
                                            spaceMappings: Map<string, string>,
+                                           dmTargetIdsBySourceIds: Map<string, string>,
                                            importedVersionsByNodeKey: Map<string, string[]>,
                                            draftIdsByPackageKeyAndVersion: Map<string, string>,
                                            importedFilePath: string): Promise<void> {
@@ -241,7 +260,7 @@ class PackageService {
             }
 
             const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
-            await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath);
+            await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, dmTargetIdsBySourceIds, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath);
         }
     }
 
