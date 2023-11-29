@@ -18,7 +18,7 @@ class VariablesApi {
         });
     }
 
-    public async getCandidateAssignments(type: string, params?: URLSearchParams): Promise<Object[]> {
+    public async getCandidateAssignments(type: string, params?: URLSearchParams): Promise<object[]> {
         const apiUrl: string = VariablesApi.ASSIGNMENT_APIS[type].url;
 
         if (apiUrl == null) {
