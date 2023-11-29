@@ -18,35 +18,16 @@ class VariablesApi {
         });
     }
 
-    public async getCandidateAssignments(type: string, params?: string): Promise<Object[]> {
+    public async getCandidateAssignments(type: string, params?: URLSearchParams): Promise<Object[]> {
         const apiUrl: string = VariablesApi.ASSIGNMENT_APIS[type].url;
 
         if (apiUrl == null) {
             throw new FatalError(`Variable type ${type} not supported.`);
         }
 
-        const queryParams = this.parseParams(params);
-
-        return httpClientV2.get(apiUrl + `?${queryParams?.toString()}`).catch(e => {
+        return httpClientV2.get(apiUrl + `?${params?.toString()}`).catch(e => {
             throw new FatalError(`Problem getting variables assignment values for type ${type}: ${e}`);
         });
-    }
-
-    private parseParams(params?: string): URLSearchParams {
-        const queryParams = new URLSearchParams();
-
-        if (params) {
-            try {
-                params.split(",").forEach((param: string) => {
-                    const paramKeyValuePair: string[] = param.split("=");
-                    queryParams.set(paramKeyValuePair[0], paramKeyValuePair[1]);
-                })
-            } catch (e) {
-                throw new FatalError(`Problem parsing query params: ${e}`);
-            }
-        }
-
-        return queryParams;
     }
 }
 
