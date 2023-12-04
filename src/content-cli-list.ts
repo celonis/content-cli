@@ -74,7 +74,7 @@ export class List {
             .description("Command to list possible variable assignments for a type")
             .option("-p, --profile <profile>", "Profile which you want to use to list possible variable assignments")
             .option("--json", "Return response as json type", "")
-            .option("--type <type>", "Type of variable")
+            .requiredOption("--type <type>", "Type of variable")
             .option("--params <params>", "Variable query params")
             .action(async cmd => {
                 await new VariableCommand().listAssignments(cmd.type, cmd.json, cmd.params);
