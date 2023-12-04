@@ -18,14 +18,18 @@ class VariablesApi {
         });
     }
 
-    public async getCandidateAssignments(type: string, params?: URLSearchParams): Promise<object[]> {
-        const apiUrl: string = VariablesApi.ASSIGNMENT_APIS[type].url;
+    public async getCandidateAssignments(type: string, params: URLSearchParams): Promise<object[]> {
+        let apiUrl: string = VariablesApi.ASSIGNMENT_APIS[type]?.url;
 
         if (apiUrl == null) {
             throw new FatalError(`Variable type ${type} not supported.`);
         }
 
-        return httpClientV2.get(apiUrl + `?${params?.toString()}`).catch(e => {
+        if (params.toString().length) {
+            apiUrl += `?${params.toString()}`
+        }
+
+        return httpClientV2.get(apiUrl).catch(e => {
             throw new FatalError(`Problem getting variables assignment values for type ${type}: ${e}`);
         });
     }
