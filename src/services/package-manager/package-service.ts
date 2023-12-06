@@ -197,13 +197,17 @@ class PackageService {
         nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
 
         if (this.isLatestVersion(versionOfPackageBeingImported, [...packageToImport.dependenciesByVersion.keys()])) {
-            const variableAssignments = packageToImport.variables
-                .filter(variable => variable.type === PackageManagerVariableType.DATA_MODEL).map(variable => {
-                    variable.value = dmTargetIdsBySourceIds.get(variable.value?.toString()) as unknown as object;
-                    return variable;
-                })
+            if (dmTargetIdsBySourceIds.size > 0) {
+                const variableAssignments = packageToImport.variables
+                    .filter(variable => variable.type === PackageManagerVariableType.DATA_MODEL).map(variable => {
+                        variable.value = dmTargetIdsBySourceIds.get(variable.value?.toString()) as unknown as object;
+                        return variable;
+                    })
 
-            await variableService.assignVariableValues(nodeInTargetTeam.key, variableAssignments);
+                await variableService.assignVariableValues(nodeInTargetTeam.key, variableAssignments);
+            } else {
+                await variableService.assignVariableValues(nodeInTargetTeam.key, packageToImport.variables);
+            }
         }
 
         draftIdsByPackageKeyAndVersion.set(`${nodeInTargetTeam.key}_${versionOfPackageBeingImported}`, nodeInTargetTeam.workingDraftId);
