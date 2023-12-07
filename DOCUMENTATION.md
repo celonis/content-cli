@@ -293,7 +293,7 @@ You can also use the `--spaceMappings` flag to provide a mapping of packages to 
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
-If you want to update dataModel variables. You can do so by using the --dataModelMappingsFile option and providng the output file from
+By default, all variables are assigned to the imported packages as defined in the `manifest.yml` file of the exported packages. Alternatively, if you want to update only the dataModel variables, you can do so by using the --dataModelMappingsFile option and providing the output file from
 the data pool import command.
 
 ```
