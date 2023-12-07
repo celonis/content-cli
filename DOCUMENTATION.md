@@ -484,6 +484,6 @@ get a full list of properties for a data source connection:
 
 You can then update the property you want to update using the `set` command:
 
-```content-cli set connection --rpofile <profile> --dataPoolId <dataPoolId> --connectionId <connectionId> --property <property> --value <value>```
+```content-cli set connection --profile <profile> --dataPoolId <dataPoolId> --connectionId <connectionId> --property <property> --value <value>```
 
 |--------------------------------------------------------------------------------------------------------------------------------|
