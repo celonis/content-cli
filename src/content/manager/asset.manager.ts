@@ -55,9 +55,7 @@ export class AssetManager extends BaseManager {
     }
 
     public getBody(): any {
-        return {
-            body: JSON.stringify(this.toNodeTransport()),
-        };
+        return this.toNodeTransport();
     }
 
     private toNodeTransport(): SaveContentNode {

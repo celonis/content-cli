@@ -35,10 +35,8 @@ export class ObjectiveManager extends BaseManager {
 
     public getBody(): any {
         return {
-            body: JSON.stringify({
-                useDataModelId: "dummy",
-                serializedObjectiveExports: this.content,
-            }),
+            useDataModelId: "dummy",
+            serializedObjectiveExports: this.content,
         };
     }
 

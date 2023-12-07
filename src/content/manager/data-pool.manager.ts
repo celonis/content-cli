@@ -49,14 +49,10 @@ export class DataPoolManager extends BaseManager {
     public getBody(): any {
         if (this.id != null) {
             const parsedContent = JSON.parse(this.content);
-            return {
-                body: JSON.stringify(parsedContent.dataPool),
-            };
+            return parsedContent.dataPool;
         }
 
-        return {
-            body: this.content,
-        };
+        return this.content;
     }
 
     protected getSerializedFileContent(data: any): string {

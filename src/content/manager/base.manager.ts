@@ -21,7 +21,7 @@ export abstract class BaseManager {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     public async pull(): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.httpClientService
                 .pullData(this.getConfig().pullUrl, this._profile)
                 .then(data => {
@@ -42,7 +42,7 @@ export abstract class BaseManager {
     }
 
     public async pullFile(): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.httpClientService
                 .pullFileData(this.getConfig().pullUrl, this._profile)
                 .then(data => {

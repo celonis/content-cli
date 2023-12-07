@@ -1,105 +1,121 @@
 import { AuthenticationType, Profile } from "../interfaces/profile.interface";
-import { CoreOptions, Headers, Response } from "request";
-import request = require("request");
 import { contextService } from "./context.service";
 import { FatalError, logger } from "../util/logger";
-import * as querystring from "querystring";
 import {TracingUtils} from "../util/tracing";
 import {VersionUtils} from "../util/version";
+import axios, {AxiosResponse, RawAxiosRequestHeaders} from "axios";
+import * as FormData from "form-data";
 
 class HttpClientServiceV2 {
+
     public async get(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.get(
-                this.resolveUrl(url),
-                this.makeOptions(contextService.getContext().profile, null),
-                (err, res) => {
-                    this.handleResponse(res, resolve, reject);
-                }
-            );
+            axios.get(this.resolveUrl(url), {
+                headers: this.buildHeaders(contextService.getContext().profile)
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
         }).catch(e => {
             throw new FatalError(e);
-        });
+        })
     }
 
     public async postFile(url: string, body: any, parameters?: {}): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.post(
-                this.resolveUrl(url) + "?" + querystring.stringify(parameters),
-                this.makeOptions(contextService.getContext().profile, body),
-                (err, res) => {
-                    this.handleResponse(res, resolve, reject);
+            const formData = new FormData();
+            formData.append("package", body.formData.package);
+            axios.post(
+                this.resolveUrl(url),
+                formData,
+                {
+                    headers: {
+                        ...this.buildHeaders(contextService.getContext().profile, "multipart/form-data"),
+                        ...formData.getHeaders()
+                    },
+                    params: parameters
                 }
-            );
+            ).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
         }).catch(e => {
             throw new FatalError(e);
-        });
+        })
     }
 
     public async post(url: string, body: any): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.post(
+            axios.post(
                 this.resolveUrl(url),
-                this.makeOptionsJson(
-                    contextService.getContext().profile,
-                    typeof body === "string" || body instanceof String ? body : JSON.stringify(body),
-                    "application/json;charset=utf-8"
-                ),
-                (err, res) => {
-                    this.handleResponse(res, resolve, reject);
+                typeof body === "string" || body instanceof String ? body : JSON.stringify(body),
+                {
+                    headers: this.buildHeaders(contextService.getContext().profile, "application/json;charset=utf-8")
                 }
-            );
+            ).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
         }).catch(e => {
             throw new FatalError(e);
-        });
+        })
     }
 
     public async put(url: string, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.put(
+            axios.put(
                 this.resolveUrl(url),
-                this.makeOptionsJson(
-                    contextService.getContext().profile,
-                    JSON.stringify(body),
-                    "application/json;charset=utf-8"
-                ),
-                (err, res) => {
-                    this.handleResponse(res, resolve, reject);
+                JSON.stringify(body),
+                {
+                    headers: this.buildHeaders(contextService.getContext().profile, "application/json;charset=utf-8")
                 }
-            );
+            ).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
         }).catch(e => {
             throw new FatalError(e);
-        });
+        })
     }
 
     public async delete(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.delete(this.resolveUrl(url), this.makeOptionsJson(contextService.getContext().profile, "application/json;charset=utf-8"), (err, res) => {
-                this.handleResponse(res, resolve, reject);
-            });
+            axios.delete(this.resolveUrl(url), {
+                headers: this.buildHeaders(contextService.getContext().profile, "application/json;charset=utf-8")
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
         }).catch(e => {
             throw new FatalError(e);
-        });
+        })
     }
 
     public async downloadFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request
-                .post(this.resolveUrl(url), this.makeFileDownloadOptions(contextService.getContext().profile))
-                .on("response", (response: Response) => {
-                    const data: Buffer[] = [];
-                    response.on("data", (chunk: Buffer) => {
-                        data.push(chunk);
-                    });
-                    response.on("end", () => {
-                        if (this.checkBadRequest(response.statusCode)) {
-                            this.handleBadRequest(response.statusCode, data.toString(), reject);
-                        } else {
-                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
-                        }
-                    });
+            axios.post(this.resolveUrl(url), null, {
+                headers: this.buildHeaders(contextService.getContext().profile),
+                responseType: "stream"
+            }).then(response => {
+                const data: Buffer[] = [];
+                response.data.on("data", (chunk: Buffer) => {
+                    data.push(chunk);
+                });
+                response.data.on("end", () => {
+                    if (this.checkBadRequest(response.status)) {
+                        this.handleBadRequest(response.status, data.toString(), reject);
+                    } else {
+                        this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                    }
                 })
-                .on("error", error => reject(error));
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
         });
     }
 
@@ -117,28 +133,20 @@ class HttpClientServiceV2 {
         return contextService.getContext().profile.team.replace(/\/?$/, url);
     }
 
-    private makeFileDownloadOptions(profile: Profile): object {
-        return {
-            headers: this.buildHeaders(profile),
-            responseType: "binary",
-        };
+    private handleResponse(res: AxiosResponse, resolve, reject): void {
+        if (this.checkBadRequest(res.status)) {
+            this.handleBadRequest(res.status, res.data, reject);
+            return;
+        }
+        resolve(res.data);
     }
 
-    private handleResponse(res: Response, resolve, reject): void {
-        if (this.checkBadRequest(res.statusCode)) {
-            this.handleBadRequest(res.statusCode, res.body, reject);
-            return;
+    private handleError(err: any, resolve, reject): void {
+        if (err.response) {
+            this.handleResponse(err.response, resolve, reject);
+        } else {
+            reject(err.message);
         }
-        let body = {};
-        try {
-            if (res.body) {
-                body = JSON.parse(res.body);
-            }
-        } catch (e) {
-            reject("Something went wrong. Please check that you have the right url and api key.");
-            return;
-        }
-        resolve(body);
     }
 
     private checkBadRequest(statusCode: number): boolean {
@@ -154,22 +162,7 @@ class HttpClientServiceV2 {
         }
     }
 
-    private makeOptions(profile: Profile, body: object = {}): CoreOptions {
-        const options = {
-            headers: this.buildHeaders(profile),
-        };
-
-        return Object.assign(options, body);
-    }
-
-    private makeOptionsJson(profile: Profile, body?: any, contentType?: string): CoreOptions {
-        return {
-            headers: this.buildHeaders(profile, contentType),
-            body: body,
-        };
-    }
-
-    private buildHeaders(profile: Profile, contentType?: string): Headers {
+    private buildHeaders(profile: Profile, contentType?: string): RawAxiosRequestHeaders {
         return {
             ...this.buildAuthorizationHeaders(profile, contentType),
             ...TracingUtils.getTracingHeaders(),
@@ -177,11 +170,11 @@ class HttpClientServiceV2 {
         }
     }
 
-    private buildAuthorizationHeaders(profile: Profile, contentType?: string): Headers {
+    private buildAuthorizationHeaders(profile: Profile, contentType?: string): RawAxiosRequestHeaders {
         const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
         return {
-            authorization: `${authenticationType} ${profile.apiToken}`,
-            "content-type": contentType ?? "application/json",
+            Authorization: `${authenticationType} ${profile.apiToken}`,
+            "Content-Type": contentType ?? "application/json",
         };
     }
 }

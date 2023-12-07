@@ -5,6 +5,7 @@ import {logger} from "../../util/logger";
 import {
     SaveContentNode,
 } from "../../interfaces/save-content-node.interface";
+import * as FormData from "form-data";
 
 export class PackageManager extends BaseManager {
     public static PACKAGE_FILE_PREFIX = "package_";
@@ -99,11 +100,9 @@ export class PackageManager extends BaseManager {
     }
 
     public getBody(): any {
-        return {
-            formData: {
-                package: fs.createReadStream(this.fileName),
-            },
-        };
+        const formData = new FormData();
+        formData.append("package", fs.createReadStream(this.fileName));
+        return formData;
     }
 
     protected getSerializedFileContent(data: any): string {
