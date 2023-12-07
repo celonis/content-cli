@@ -13,6 +13,7 @@
     -   [Batch import packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
+    -   [List assignments](#list-assignments)
     -   [Asset options for Analysis](#asset-options-for-analysis)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
@@ -355,6 +356,28 @@ assets you have access to. 
 
 ```
 content-cli list assets -p <your-chosen-profile> --assetType SCENARIO
+```
+
+### List assignments
+
+With this command you can retrieve a list of possible variable assignment values for a variable type.
+The command takes your permissions into consideration and only lists the values you have access to.  
+
+-   It is also possible to download packages in JSON format by adding '--json' option.
+
+```
+content-cli list assignments -p <your-chosen-profile> --variableType <your-chosen-variable-type>
+```
+
+Currently, only variables of type DATA_MODEL and CONNECTION are supported.  
+
+The command includes an optional --params option for additional value filtering. 
+Parameters should be provided in CSV format. 
+For instance, when dealing with variables of type CONNECTION, you can use the --params option to retrieve 
+only the potential assignment values for connections with the appName 'Celonis' using the following command:
+
+```
+content-cli list assignments -p <your-chosen-profile> --variableType CONNECTION --params appName=Celonis
 ```
 
 ### Asset options for Analysis
