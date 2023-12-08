@@ -26,6 +26,10 @@ program.command("update", "Commands to update content.");
 
 program.command("list", "Commands to list content.").alias("ls");
 
+program.command("get", "Commands to get configuration properties.");
+
+program.command("set", "Commands to set configuration properties.");
+
 program.version(VersionUtils.getCurrentCliVersion());
 program.parse(process.argv);
 

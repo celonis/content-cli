@@ -17,6 +17,7 @@
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
+-   [Updating connection properties](#updating-connection-properties-programmatically)
 
 ## Content CLI Core Features
 
@@ -465,5 +466,24 @@ The command outputs an import report.
 If the `--outputToJsonFile` option is specified, the import report will be written to a JSON file.
 The command output will give you all the details.
 
+### Updating connection properties programmatically
+
+In some cases, it might be required to update connection properties in data pools programmatically. 
+Examples include governance and compliance reasons or mechanisms which are rotating credentials automatically.
+
+With the `get` and `set` commands, users can update properties from connections in an automated fashion.
+
+You can get a list of all connections in a data pool using the `list` command: 
+
+```content-cli list connection --profile <profile> --dataPoolId <dataPoolId>```
+
+Depending on the type of source, the updatable properties may differ. You can use the following command to
+get a full list of properties for a data source connection:
+
+```content-cli get connection --profile <profile> --dataPoolId <dataPoolId> --connectionId <connectionId>```
+
+You can then update the property you want to update using the `set` command:
+
+```content-cli set connection --profile <profile> --dataPoolId <dataPoolId> --connectionId <connectionId> --property <property> --value <value>```
 
 |--------------------------------------------------------------------------------------------------------------------------------|
