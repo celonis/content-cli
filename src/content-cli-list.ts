@@ -5,7 +5,8 @@ import { AssetCommand } from "./commands/asset.command";
 import { logger } from "./util/logger";
 import commander = require("commander");
 import { ContextInitializer } from "./util/context-initializer";
-import {VariableCommand} from "./commands/variable.command";
+import { ConnectionCommand } from "./commands/connection.command";
+import { VariableCommand } from "./commands/variable.command";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -53,6 +54,20 @@ export class List {
 
         return program;
     }
+
+    public static connections(program: CommanderStatic):CommanderStatic {
+        program
+            .command("connection")
+            .description("Command to list all connections in a Data Pool")
+            .option("-p, --profile <profile>", "Profile which you want to use to list connections")
+            .requiredOption("--dataPoolId <dataPoolId>", "ID of the data pool")
+            .action(async cmd => {
+                await new ConnectionCommand().listConnections(cmd.profile, cmd.dataPoolId);
+                process.exit();
+            });
+        return program;
+    }
+
     public static assets(program: CommanderStatic): CommanderStatic {
         program
             .command("assets")
@@ -94,8 +109,8 @@ const loadAllCommands = () => {
     List.spaces(commander);
     List.dataPools(commander);
     List.assets(commander);
+    List.connections(commander);
     List.assignments(commander);
-
     commander.parse(process.argv);
 };
 
