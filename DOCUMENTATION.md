@@ -13,6 +13,7 @@
     -   [Batch import packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
+    -   [List assignments](#list-assignments)
     -   [Asset options for Analysis](#asset-options-for-analysis)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
@@ -293,13 +294,16 @@ You can also use the `--spaceMappings` flag to provide a mapping of packages to 
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
-By default, all variables are assigned to the imported packages as defined in the `manifest.yml` file of the exported packages. Alternatively, if you want to update only the dataModel variables, you can do so by using the --dataModelMappingsFile option and providing the output file from
-the data pool import command.
+By default, all imported package variables will be assigned values as defined in the `manifest.yml` file of the exported packages. 
+Alternatively, if you want to update only the dataModel variables, you can do so by using the --dataModelMappingsFile option and 
+providing the output file from the data pool import command.
 
 ```
 // Example usage of dataModelMappingsFile
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile>
 ```
+
+**Note: The --dataModelMappingsFile option is deprecated and will be removed in future releases.**
 
 By default, you can not overwrite a package in the target team. To do this you can use the overwrite flag --overwrite
 
@@ -356,6 +360,28 @@ assets you have access to. 
 
 ```
 content-cli list assets -p <your-chosen-profile> --assetType SCENARIO
+```
+
+### List assignments
+
+With this command you can retrieve a list of possible variable assignment values for a variable type.
+The command takes your permissions into consideration and only lists the values you have access to.  
+
+-   It is also possible to download packages in JSON format by adding '--json' option.
+
+```
+content-cli list assignments -p <your-chosen-profile> --variableType <your-chosen-variable-type>
+```
+
+Currently, only variables of type DATA_MODEL and CONNECTION are supported.  
+
+The command includes an optional --params option for additional value filtering. 
+Parameters should be provided in CSV format. 
+For instance, when dealing with variables of type CONNECTION, you can use the --params option to retrieve 
+only the potential assignment values for connections with the appName 'Celonis' using the following command:
+
+```
+content-cli list assignments -p <your-chosen-profile> --variableType CONNECTION --params appName=Celonis
 ```
 
 ### Asset options for Analysis
