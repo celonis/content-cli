@@ -12,5 +12,6 @@
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
-  }
+  },
+  "exclude": ["./tests", "./jest.config.ts"]
 }
