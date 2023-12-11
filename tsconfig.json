@@ -11,7 +11,8 @@
     "module": "umd",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "types": ["node", "jest"],
   },
   "exclude": ["./tests", "./jest.config.ts"]
 }

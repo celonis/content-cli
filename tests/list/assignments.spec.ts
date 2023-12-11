@@ -1,24 +1,11 @@
 import {VariableCommand} from "../../src/commands/variable.command";
 import axios from "axios";
-import {logger} from "../../src/util/logger";
-import {TestTransport} from "../utls/test-transport";
-import {setDefaultProfile} from "../utls/context-mock";
 import {FileService} from "../../src/services/file-service";
 import * as fs from "fs";
 import * as path from "path";
-
-jest.mock("axios");
-jest.mock("fs");
+import {testTransport} from "../jest.setup";
 
 describe("List assignments", () => {
-    let testTransport;
-
-    beforeEach(() => {
-        testTransport = new TestTransport({})
-        logger.add(testTransport);
-
-        setDefaultProfile();
-    })
 
     it("Should list assignments for supported type and non-json response", async () => {
         const mockAssignmentValues = [
@@ -44,8 +31,6 @@ describe("List assignments", () => {
         ];
         const resp = {data: mockAssignmentValues};
         (axios.get as jest.Mock).mockResolvedValue(resp);
-
-        (fs.writeFileSync as jest.Mock).mockImplementation();
 
         await new VariableCommand().listAssignments("DATA_MODEL", true, "");
 
