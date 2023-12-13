@@ -156,7 +156,7 @@ class HttpClientServiceV2 {
     // tslint:disable-next-line:typedef
     private handleBadRequest(statusCode, data, reject): void {
         if (data) {
-            reject(data);
+            reject(JSON.stringify(data));
         } else {
             reject("Backend responded with status code " + statusCode);
         }
