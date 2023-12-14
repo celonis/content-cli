@@ -1,4 +1,5 @@
 import { CtpManager } from "./ctp.manager";
+import * as FormData from "form-data";
 
 export class CtpAnalysisManager extends CtpManager {
     private static BASE_URL = "/process-analytics/import/ctp";
@@ -8,12 +9,10 @@ export class CtpAnalysisManager extends CtpManager {
     }
 
     public getBody(): any {
-        return {
-            formData: {
-                file: this.content,
-                password: this.password,
-                spaceId: this.spaceKey,
-            },
-        };
+        const formData = new FormData();
+        formData.append("file", this.content);
+        formData.append("password", this.password);
+        formData.append("spaceId", this.spaceKey);
+        return formData;
     }
 }

@@ -1,83 +1,91 @@
 import { AuthenticationType, Profile } from "../interfaces/profile.interface";
-import { logger } from "../util/logger";
-import { CoreOptions, Headers, Response } from "request";
-
-import request = require("request");
+import {logger} from "../util/logger";
+import axios, {AxiosResponse, RawAxiosRequestHeaders} from "axios";
+import * as FormData from "form-data";
 
 export class HttpClientService {
-    public async pushData(url: string, profile: Profile, body: object): Promise<any> {
+    public async pushData(url: string, profile: Profile, body: any): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.post(url, this.makeOptions(profile, body), (err, res) => {
-                this.handleResponse(res, resolve, reject);
+            const headers = this.buildAuthorizationHeaders(profile);
+
+            if (body instanceof FormData) {
+                headers["Content-Type"] = "multipart/form-data";
+            }
+
+            axios.post(url, body, {
+                headers
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
             });
         });
     }
 
     public async pullData(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.get(url, this.makeOptions(profile, null), (err, res) => {
-                this.handleResponse(res, resolve, reject);
+            axios.get(url, {
+                headers: this.buildAuthorizationHeaders(profile)
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
             });
         });
     }
 
     public async pullFileData(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request
-                .post(url, this.makeFileDownloadOptions(profile))
-                .on("response", (response: Response) => {
-                    const data: Buffer[] = [];
-                    response.on("data", (chunk: Buffer) => {
-                        data.push(chunk);
-                    });
-                    response.on("end", () => {
-                        if (this.checkBadRequest(response.statusCode)) {
-                            this.handleBadRequest(response.statusCode, data.toString(), reject);
-                        } else {
-                            this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
-                        }
-                    });
+            axios.post(url, null, {
+                headers: this.buildAuthorizationHeaders(profile),
+                responseType: "stream"
+            }).then(response => {
+                const data: Buffer[] = [];
+                response.data.on("data", (chunk: Buffer) => {
+                    data.push(chunk);
+                });
+                response.data.on("end", () => {
+                    if (this.checkBadRequest(response.status)) {
+                        this.handleBadRequest(response.status, data.toString(), reject);
+                    } else {
+                        this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                    }
                 })
-                .on("error", error => reject(error));
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            });
         });
     }
 
     public async updateData(url: string, profile: Profile, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.put(url, this.makeOptions(profile, body), (err, res) => {
-                this.handleResponse(res, resolve, reject);
+            axios.put(url, body, {
+                headers: this.buildAuthorizationHeaders(profile)
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
             });
         });
     }
 
     public async findAll(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            request.get(url, this.makeOptions(profile, null), (err, res) => {
-                this.handleResponse(res, resolve, reject);
+            axios.get(url, {
+                headers: this.buildAuthorizationHeaders(profile)
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
             });
         });
     }
 
-    private makeOptions(profile: Profile, body: object = {}): CoreOptions {
-        const options = {
-            headers: this.buildAuthorizationHeaders(profile),
-        };
-
-        return Object.assign(options, body);
-    }
-
-    private makeFileDownloadOptions(profile: Profile): object {
-        return {
-            headers: this.buildAuthorizationHeaders(profile),
-            responseType: "binary",
-        };
-    }
-
-    private buildAuthorizationHeaders(profile: Profile): Headers {
+    private buildAuthorizationHeaders(profile: Profile): RawAxiosRequestHeaders {
         const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
         return {
-            authorization: `${authenticationType} ${profile.apiToken}`,
-            "content-type": "application/json",
+            Authorization: `${authenticationType} ${profile.apiToken}`,
+            "Content-Type": "application/json",
         };
     }
 
@@ -93,21 +101,20 @@ export class HttpClientService {
     }
 
     // tslint:disable-next-line:typedef
-    private handleResponse(res: Response, resolve, reject): void {
-        if (this.checkBadRequest(res.statusCode)) {
-            this.handleBadRequest(res.statusCode, res.body, reject);
+    private handleResponse(res: AxiosResponse, resolve, reject): void {
+        if (this.checkBadRequest(res.status)) {
+            this.handleBadRequest(res.status, res.data, reject);
             return;
         }
-        let body = {};
-        try {
-            if (res.body) {
-                body = JSON.parse(res.body);
-            }
-        } catch (e) {
-            reject("Something went wrong. Please check that you have the right url and api key.");
-            return;
+        resolve(res.data);
+    }
+
+    private handleError(err: any, resolve, reject): void {
+        if (err.response) {
+            this.handleResponse(err.response, resolve, reject);
+        } else {
+            reject(err.message);
         }
-        resolve(body);
     }
 
     private checkBadRequest(statusCode: number): boolean {
@@ -117,7 +124,7 @@ export class HttpClientService {
     // tslint:disable-next-line:typedef
     private handleBadRequest(statusCode, data, reject): void {
         if (data) {
-            reject(data);
+            reject(JSON.stringify(data));
         } else {
             reject("Backend responded with status code " + statusCode);
         }

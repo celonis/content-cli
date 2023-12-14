@@ -1,5 +1,6 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
+import * as FormData from "form-data";
 
 export class SkillManager extends BaseManager {
     private static BASE_URL = "/action-engine/api/projects/";
@@ -45,11 +46,9 @@ export class SkillManager extends BaseManager {
     }
 
     public getBody(): any {
-        return {
-            formData: {
-                file: this.content,
-            },
-        };
+        const formData = new FormData();
+        formData.append("file", this.content);
+        return formData;
     }
 
     protected getSerializedFileContent(data: any): string {

@@ -7,7 +7,7 @@ export class ContentService {
     private profileService = new ProfileService();
 
     public async pull(profileName: string, baseManager: BaseManager): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
@@ -24,7 +24,7 @@ export class ContentService {
     }
 
     public async pullFile(profileName: string, baseManager: BaseManager): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
@@ -41,7 +41,7 @@ export class ContentService {
     }
 
     public async push(profileName: string, baseManager: BaseManager): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
@@ -58,7 +58,7 @@ export class ContentService {
     }
 
     public async batchPush(profileName: string, baseManagers: BaseManager[]): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
@@ -81,7 +81,7 @@ export class ContentService {
     }
 
     public async update(profileName: string, baseManager: BaseManager): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
@@ -98,7 +98,7 @@ export class ContentService {
     }
 
     public async findAll(profileName: string, baseManager: BaseManager): Promise<any> {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             this.profileService
                 .findProfile(this.resolveProfile(profileName))
                 .then((profile: Profile) => {
