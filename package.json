@@ -1,6 +1,6 @@
 {
   "name": "@celonis/content-cli",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "description": "CLI Tool to help manage content in Celonis EMS",
   "main": "content-cli.js",
   "bin": {
@@ -17,18 +17,18 @@
   "dependencies": {
     "@datadog/datadog-ci": "^0.17.12",
     "adm-zip": "^0.4.14",
-    "axios": "^1.6.2",
+    "axios": "1.6.2",
     "commander": "^6.0.0",
-    "form-data": "^4.0.0",
+    "form-data": "4.0.0",
     "semver": "^7.3.2",
     "valid-url": "^1.0.9",
     "winston": "^3.1.0",
-    "yaml": "2.0.0-8"
+    "yaml": "2.2.2"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.4.34",
     "@types/jest": "^29.5.11",
-    "@types/node": "^20.10.4",
+    "@types/node": "20.10.4",
     "jest": "^29.7.0",
     "lint-staged": "^9.5.0",
     "prettier": "^1.19.1",
@@ -37,7 +37,7 @@
     "tslint": "^5.20.1",
     "tslint-config-prettier": "^1.18.0",
     "tslint-consistent-codestyle": "^1.16.0",
-    "typescript": "^5.3.3"
+    "typescript": "5.3.3"
   },
   "lint-staged": {
     "src/**/*.ts": [
