@@ -75,6 +75,9 @@ export class ProfileService {
             team: profileVariables.teamUrl,
             apiToken: profileVariables.apiToken,
             authenticationType: AuthenticationType.BEARER,
+            type: "Key",
+            clientId: null,
+            clientSecret: null
         };
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
         return profile;

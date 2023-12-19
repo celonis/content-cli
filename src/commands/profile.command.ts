@@ -11,7 +11,16 @@ export class ProfileCommand {
         const profile: Profile = {} as Profile;
         profile.name = await QuestionService.ask("Name of the profile: ");
         profile.team = await QuestionService.ask("Your team (please provide the full url): ");
-        profile.apiToken = await QuestionService.ask("Your api token: ");
+        const type = await QuestionService.ask("Profile type: OAuth (1) or Key-based (2):" );
+        if (type === "1") {
+            profile.type = "OAuth";
+            profile.clientId = await QuestionService.ask("Your OAuth client id: ");
+            profile.clientSecret = await QuestionService.ask("Your OAuth client secret: ");
+        }
+        else {
+            profile.type = "Key";
+            profile.apiToken = await QuestionService.ask("Your api token: ");
+        }
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
         this.profileService.storeProfile(profile);
         if (setAsDefault) {
