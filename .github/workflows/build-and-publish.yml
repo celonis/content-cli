@@ -27,6 +27,9 @@ jobs:
       - name: Yarn Build
         run: yarn build
 
+      - name: Yarn Test
+        run: yarn test
+
       - name: Move files to build
         run: |
           cp README.md dist/README.md

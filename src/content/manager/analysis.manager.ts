@@ -3,6 +3,7 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { AssetManager } from "./asset.manager";
 import * as fs from "fs";
 import {stringify} from "../../util/yaml";
+import * as FormData from "form-data";
 
 export class AnalysisManager extends BaseManager {
     private static BASE_URL = "/process-mining/api/analysis/";
@@ -66,11 +67,9 @@ export class AnalysisManager extends BaseManager {
     }
 
     public getBody(): any {
-        return {
-            formData: {
-                file: fs.createReadStream(this.fileName),
-            },
-        };
+        const formData = new FormData();
+        formData.append("file", fs.createReadStream(this.fileName));
+        return formData;
     }
 
     protected getSerializedFileContent(data: any): string {

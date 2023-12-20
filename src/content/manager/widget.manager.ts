@@ -1,5 +1,6 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
+import * as FormData from "form-data";
 
 export class WidgetManager extends BaseManager {
     private static PACKAGE_MANAGER_BASE_URL = "/package-manager";
@@ -50,11 +51,9 @@ export class WidgetManager extends BaseManager {
     }
 
     public getBody(): any {
-        return {
-            formData: {
-                file: this.content,
-            },
-        };
+        const formData = new FormData();
+        formData.append("file", this.content);
+        return formData;
     }
 
     protected getSerializedFileContent(data: any): string {

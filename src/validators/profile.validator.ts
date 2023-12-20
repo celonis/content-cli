@@ -1,15 +1,11 @@
 import { AuthenticationType, Profile } from "../interfaces/profile.interface";
 import { FatalError, logger } from "../util/logger";
 import validUrl = require("valid-url");
-import request = require("request");
-
-interface CloudResponse {
-    domain: string;
-}
+import axios from "axios";
 
 export class ProfileValidator {
     public static async validateProfile(profile: Profile): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
+        return new Promise<any>(async (resolve, reject) => {
             if (profile.name == null) {
                 logger.error(new FatalError("The name can not be empty"));
             }
@@ -25,45 +21,37 @@ export class ProfileValidator {
             if (!validUrl.isUri(profile.team)) {
                 logger.error(new FatalError("The provided url is not a valid url."));
             }
+            const url = profile.team.replace(/\/?$/, "/api/cloud/team");
 
-            if (profile.type === "OAuth") {
+            this.tryAuthenticationType(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
                 resolve(AuthenticationType.BEARER);
-            }
-            else {
-                const url = profile.team.replace(/\/?$/, "/api/cloud/team");
-
-                const options = {
-                    headers: {
-                        authorization: `${AuthenticationType.BEARER} ${profile.apiToken}`,
-                    },
-                };
-
-                request.get(url, options, (err, res) => {
-                    let body : CloudResponse = this.parseBody(res.body);
-                    if (res.statusCode >= 400 || !body?.domain) {
-                        options.headers.authorization = `${AuthenticationType.APPKEY} ${profile.apiToken}`;
-                        request.get(url, options, (err, res) => {
-                            body = this.parseBody(res.body);
-                            if (res.statusCode === 200 && body?.domain) {
-                                resolve(AuthenticationType.APPKEY);
-                            } else {
-                                logger.error(new FatalError("The provided team or api key is wrong."));
-                                reject();
-                            }
-                        });
-                    } else {
-                        resolve(AuthenticationType.BEARER);
-                    }
-                });
-            }
+            }).catch(() => {
+                this.tryAuthenticationType(url, AuthenticationType.APPKEY, profile.apiToken).then(() => {
+                    resolve(AuthenticationType.APPKEY);
+                }).catch(() => {
+                    logger.error(new FatalError("The provided team or api key is wrong."));
+                    reject();
+                })
+            });
         });
     }
 
-    private static parseBody(responseBody: string): CloudResponse {
-        try {
-            return JSON.parse(responseBody);
-            // tslint:disable-next-line:no-empty
-        } catch (ignored) {}
+    private static tryAuthenticationType(url: string, authType: AuthenticationType, apiToken: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            axios.get(url, {
+                headers: {
+                    Authorization: `${authType} ${apiToken}`
+                }
+            }).then(response => {
+                if (response.status === 200 && response.data.domain) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            }).catch(() => {
+                reject();
+            })
+        })
     }
 
     private static getScopes(): string {
