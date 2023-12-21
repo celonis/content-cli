@@ -5,7 +5,7 @@
     "declarationDir": "./dist/lib",
     "noImplicitAny": false,
     "target": "es2015",
-    "sourceMap": true,
+    "sourceMap": false,
     "declaration": true,
     "stripInternal": true,
     "module": "umd",

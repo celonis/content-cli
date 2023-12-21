@@ -77,7 +77,18 @@ your profiles by running the ***content-cli profile list*** command.
 | Note: Please do not use blanks in profile names |
 |-------------------------------------------------|
 
-#### API Token
+#### Profile Types
+You can create profiles of two types: using OAuth (Device Code) or 
+using API Tokens (Application Key / API Key):
+
+##### OAuth
+
+If OAuth is chosen, when creating the profile an authorization flow 
+(using the OAuth 2.0 Device code) will be started. You will be prompted 
+to follow an authorization link where you must authorize the **Content CLI** 
+to be able to access the EMS environment on your behalf. 
+
+##### API Token
 
 You can choose between two different options when asked for an API token. 
 The first option is to use an API key, which identifies the user that created 
