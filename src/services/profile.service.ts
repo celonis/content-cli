@@ -1,9 +1,9 @@
-import {AuthenticationType, Profile} from "../interfaces/profile.interface";
-import {ProfileValidator} from "../validators/profile.validator";
+import { AuthenticationType, Profile } from "../interfaces/profile.interface";
+import { ProfileValidator } from "../validators/profile.validator";
 import * as path from "path";
 import * as fs from "fs";
-import {FatalError, logger} from "../util/logger";
-import {Issuer} from "openid-client";
+import { FatalError, logger } from "../util/logger";
+import { Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
 

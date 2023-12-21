@@ -2,7 +2,7 @@ import { QuestionService } from "../services/question.service";
 import { Profile } from "../interfaces/profile.interface";
 import { ProfileService } from "../services/profile.service";
 import { ProfileValidator } from "../validators/profile.validator";
-import {FatalError, logger} from "../util/logger";
+import { FatalError, logger } from "../util/logger";
 
 export class ProfileCommand {
     private profileService = new ProfileService();
