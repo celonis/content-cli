@@ -160,14 +160,10 @@ export class ProfileService {
     }
 
     public async refreshProfile(profile: Profile) : Promise<void> {
-        if (profile.type === "Key") {
-            return;
-        }
         if (!this.isProfileExpired(profile, expiryBuffer)) {
             return;
         }
         try {
-            logger.debug("Refreshing the access token...");
             const issuer = await Issuer.discover(profile.team);
             const oauthClient = new issuer.Client({
                 client_id: "content-cli",
