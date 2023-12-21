@@ -78,15 +78,25 @@ your profiles by running the ***content-cli profile list*** command.
 |-------------------------------------------------|
 
 #### Profile Types
-You can create profiles of two types: using OAuth (Device Code) or 
-using API Tokens (Application Key / API Key):
+You can create profiles of two types: using OAuth (Device Code 
+or Client Credentials) or using API Tokens (Application Key / API Key):
 
 ##### OAuth
 
-If OAuth is chosen, when creating the profile an authorization flow 
-(using the OAuth 2.0 Device code) will be started. You will be prompted 
-to follow an authorization link where you must authorize the **Content CLI** 
-to be able to access the EMS environment on your behalf. 
+OAuth supports with two grant types: Device Code & Client Credentials. 
+
+With Device Code, creating the profile will trigger an authorization flow 
+(using the OAuth 2.0 Device code). You will be prompted to follow an authorization 
+link where you must authorize the **Content CLI** to be able to access the EMS environment 
+on your behalf. 
+
+With Client Credentials, you need to provide the credentials (Client ID, Client Secret)
+and Client Authentication Method configured for your OAuth client. You can create and configure 
+an OAuth clients in the `Team Settings` section of your EMS account, under `Applications`. 
+The OAuth client needs to have the following scopes configured: studio.spaces, studio.packages, 
+studio.widgets, integration.data-models:read, integration.data-pools, transformation-center.kpis, 
+transformation-center.content:export. After creating an OAuth client, you can assign it different
+permissions based on how much power you want to give to the client owner.
 
 ##### API Token
 

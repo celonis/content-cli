@@ -13,6 +13,9 @@ export class ProfileValidator {
         if (profile.type === "Key" && profile.apiToken == null) {
             logger.error(new FatalError("The api token can not be empty for this profile type"));
         }
+        if (profile.type === "Client Credentials" && (profile.clientId == null || profile.clientSecret == null)) {
+            logger.error(new FatalError("The client id and secret can not be empty for this profile type"));
+        }
         if (!validUrl.isUri(profile.team)) {
             logger.error(new FatalError("The provided url is not a valid url."));
         }

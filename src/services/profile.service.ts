@@ -130,32 +130,51 @@ export class ProfileService {
     }
 
     public async authorizeProfile(profile: Profile) : Promise<void> {
-        if (profile.type === "Key") {
-            const url = profile.team.replace(/\/?$/, "/api/cloud/team");
-            this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
-                profile.authenticationType = AuthenticationType.BEARER;
-            }).catch(() => {
-                this.tryKeyAuthentication(url, AuthenticationType.APPKEY, profile.apiToken).then(() => {
-                    profile.authenticationType = AuthenticationType.APPKEY;
+        switch (profile.type) {
+            case "Key":
+                const url = profile.team.replace(/\/?$/, "/api/cloud/team");
+                this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
+                    profile.authenticationType = AuthenticationType.BEARER;
                 }).catch(() => {
-                    logger.error(new FatalError("The provided team or api key is wrong."));
-                })
-            });
-        }
-        else {
-            const issuer = await Issuer.discover(profile.team);
-            const oauthClient = new issuer.Client({
-                client_id: "content-cli",
-                token_endpoint_auth_method: "none",
-            });
-            const deviceCodeHandle = await oauthClient.deviceAuthorization({
-                scope: scopes.join(" ")
-            });
-            logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
-            const tokenSet = await deviceCodeHandle.poll();
-            profile.apiToken = tokenSet.access_token;
-            profile.refresh_token = tokenSet.refresh_token;
-            profile.expires_at = tokenSet.expires_at;
+                    this.tryKeyAuthentication(url, AuthenticationType.APPKEY, profile.apiToken).then(() => {
+                        profile.authenticationType = AuthenticationType.APPKEY;
+                    }).catch(() => {
+                        logger.error(new FatalError("The provided team or api key is wrong."));
+                    })
+                });
+                break;
+            case "Device Code":
+                const deviceCodeIssuer = await Issuer.discover(profile.team);
+                const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
+                    client_id: "content-cli",
+                    token_endpoint_auth_method: "none",
+                });
+                const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
+                    scope: scopes.join(" ")
+                });
+                logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
+                const deviceCodeTokenSet = await deviceCodeHandle.poll();
+                profile.apiToken = deviceCodeTokenSet.access_token;
+                profile.refreshToken = deviceCodeTokenSet.refresh_token;
+                profile.expiresAt = deviceCodeTokenSet.expires_at;
+                break;
+            case "Client Credentials":
+                const clientCredentialsIssuer = await Issuer.discover(profile.team);
+                const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
+                    client_id: profile.clientId,
+                    client_secret: profile.clientSecret,
+                    token_endpoint_auth_method: profile.clientAuthenticationMethod,
+                });
+                const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
+                    grant_type: "client_credentials",
+                    scope: scopes.join(" ")
+                });
+                profile.apiToken = clientCredentialsTokenSet.access_token;
+                profile.expiresAt = clientCredentialsTokenSet.expires_at;
+                break;
+            default:
+                logger.error(new FatalError("Unsupported profile type"));
+                break;
         }
     }
 
@@ -163,19 +182,39 @@ export class ProfileService {
         if (!this.isProfileExpired(profile, expiryBuffer)) {
             return;
         }
-        try {
-            const issuer = await Issuer.discover(profile.team);
-            const oauthClient = new issuer.Client({
-                client_id: "content-cli",
-                token_endpoint_auth_method: "none",
-            });
-            const tokenSet = await oauthClient.refresh(profile.refresh_token);
-            profile.apiToken = tokenSet.access_token;
-            profile.expires_at = tokenSet.expires_at;
-            profile.refresh_token = tokenSet.refresh_token;
-            this.storeProfile(profile);
-        } catch (err) {
-            logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
+        const issuer = await Issuer.discover(profile.team);
+        if (profile.type === "Device Code") {
+            try {
+                const oauthClient = new issuer.Client({
+                    client_id: "content-cli",
+                    token_endpoint_auth_method: "none",
+                });
+                const tokenSet = await oauthClient.refresh(profile.refreshToken);
+                profile.apiToken = tokenSet.access_token;
+                profile.expiresAt = tokenSet.expires_at;
+                profile.refreshToken = tokenSet.refresh_token;
+                this.storeProfile(profile);
+
+            } catch (err) {
+                logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
+            }
+        }
+        else {
+            try {
+                const oauthClient = new issuer.Client({
+                    client_id: profile.clientId,
+                    client_secret: profile.clientSecret,
+                    token_endpoint_auth_method: profile.clientAuthenticationMethod,
+                });
+                const tokenSet = await oauthClient.grant({
+                    grant_type: "client_credentials",
+                    scope: scopes.join(" ")
+                });
+                profile.apiToken = tokenSet.access_token;
+                profile.expiresAt = tokenSet.expires_at;
+            } catch (err) {
+                logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
+            }
         }
     }
 
@@ -200,7 +239,7 @@ export class ProfileService {
             return false;
         }
         const now = new Date();
-        const expirationTime = new Date(profile.expires_at * 1000 - buffer);
+        const expirationTime = new Date(profile.expiresAt * 1000 - buffer);
 
         return now > expirationTime;
     }

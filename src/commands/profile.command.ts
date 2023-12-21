@@ -11,17 +11,32 @@ export class ProfileCommand {
         const profile: Profile = {} as Profile;
         profile.name = await QuestionService.ask("Name of the profile: ");
         profile.team = await QuestionService.ask("Your team (please provide the full url): ");
-        const type = await QuestionService.ask("Profile type: OAuth Device Code (1) or Application Key / API Key (2): " );
+        const type = await QuestionService.ask("Profile type: OAuth Device Code (1), OAuth Client Credentials (2) or Application Key / API Key (3): " );
         switch (type) {
             case "1":
                 profile.type = "Device Code";
                 break;
             case "2":
+                profile.type = "Client Credentials";
+                profile.clientId = await QuestionService.ask("Your client id: ");
+                profile.clientSecret = await QuestionService.ask("Your client secret: ");
+                const authenticationMethod = await QuestionService.ask("Client authentication method: Client Secret Basic (1) or Client Secret Post (2): " );
+                if (authenticationMethod === "1") {
+                    profile.clientAuthenticationMethod = "client_secret_basic";
+                }
+                else if (authenticationMethod === "2") {
+                    profile.clientAuthenticationMethod = "client_secret_post";
+                }
+                else {
+                    logger.error(new FatalError("Invalid authentication method"));
+                }
+                break;
+            case "3":
                 profile.type = "Key";
                 profile.apiToken = await QuestionService.ask("Your api token: ");
                 break;
             default:
-                logger.error(new FatalError("Invalid choice"));
+                logger.error(new FatalError("Invalid type"));
                 break;
         }
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
