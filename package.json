@@ -20,6 +20,7 @@
     "axios": "1.6.2",
     "commander": "^6.0.0",
     "form-data": "4.0.0",
+    "openid-client": "^5.6.1",
     "semver": "^7.3.2",
     "valid-url": "^1.0.9",
     "winston": "^3.1.0",

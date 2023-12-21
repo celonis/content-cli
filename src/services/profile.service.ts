@@ -1,11 +1,17 @@
-import { AuthenticationType, Profile } from "../interfaces/profile.interface";
-import { ProfileValidator } from "../validators/profile.validator";
+import {AuthenticationType, Profile} from "../interfaces/profile.interface";
+import {ProfileValidator} from "../validators/profile.validator";
 import * as path from "path";
 import * as fs from "fs";
-import { FatalError, logger } from "../util/logger";
-
+import {FatalError, logger} from "../util/logger";
+import {Issuer} from "openid-client";
+import axios from "axios";
 import os = require("os");
+
 const homedir = os.homedir();
+// use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
+const expiryBuffer = 5000;
+const scopes = ["studio.spaces", "studio.packages", "studio.widgets", "integration.data-models:read",
+    "integration.data-pools", "transformation-center.kpis", "transformation-center.content:export"];
 
 export interface Config {
     defaultProfile: string;
@@ -25,7 +31,9 @@ export class ProfileService {
                         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                         { encoding: "utf-8" }
                     );
-                    resolve(JSON.parse(file));
+                    const profile : Profile = JSON.parse(file);
+                    this.refreshProfile(profile)
+                        .then(() => resolve(profile));
                 }
             } catch (e) {
                 reject(
@@ -76,8 +84,7 @@ export class ProfileService {
             apiToken: profileVariables.apiToken,
             authenticationType: AuthenticationType.BEARER,
             type: "Key",
-            clientId: null,
-            clientSecret: null
+            tokenSet: null
         };
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
         return profile;
@@ -123,6 +130,56 @@ export class ProfileService {
         return fileNames;
     }
 
+    public async authorizeProfile(profile: Profile) : Promise<void> {
+        if (profile.type === "Key") {
+            const url = profile.team.replace(/\/?$/, "/api/cloud/team");
+            this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
+                profile.authenticationType = AuthenticationType.BEARER;
+            }).catch(() => {
+                this.tryKeyAuthentication(url, AuthenticationType.APPKEY, profile.apiToken).then(() => {
+                    profile.authenticationType = AuthenticationType.APPKEY;
+                }).catch(() => {
+                    logger.error(new FatalError("The provided team or api key is wrong."));
+                })
+            });
+        }
+        else {
+            const issuer = await Issuer.discover(profile.team);
+            const oauthClient = new issuer.Client({
+                client_id: "content-cli",
+                token_endpoint_auth_method: "none",
+            });
+            const deviceCodeHandle = await oauthClient.deviceAuthorization({
+                scope: scopes.join(" ")
+            });
+            logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
+            profile.tokenSet = await deviceCodeHandle.poll();
+            profile.apiToken = profile.tokenSet.access_token;
+        }
+    }
+
+    public async refreshProfile(profile: Profile) : Promise<void> {
+        if (profile.type === "Key") {
+            return;
+        }
+        if (!this.isProfileExpired(profile, expiryBuffer)) {
+            return;
+        }
+        try {
+            logger.debug("Refreshing the access token...");
+            const issuer = await Issuer.discover(profile.team);
+            const oauthClient = new issuer.Client({
+                client_id: "content-cli",
+                token_endpoint_auth_method: "none",
+            });
+            profile.tokenSet = await oauthClient.refresh(profile.tokenSet);
+            profile.apiToken = profile.tokenSet.access_token;
+            this.storeProfile(profile);
+        } catch (err) {
+            logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
+        }
+    }
+
     private getProfileEnvVariables(): any {
         return {
             teamUrl: this.getBaseTeamUrl(process.env.TEAM_URL),
@@ -137,6 +194,34 @@ export class ProfileService {
 
         const url = new URL(teamUrl);
         return url.origin;
+    }
+
+    private isProfileExpired(profile: Profile, buffer: number = 0): boolean {
+        if (profile.type === "Key") {
+            return false;
+        }
+        const now = new Date();
+        const expirationTime = new Date(profile.tokenSet.expires_at * 1000 - buffer);
+
+        return now > expirationTime;
+    }
+
+    private tryKeyAuthentication(url: string, authType: AuthenticationType, apiToken: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            axios.get(url, {
+                headers: {
+                    Authorization: `${authType} ${apiToken}`
+                }
+            }).then(response => {
+                if (response.status === 200 && response.data.domain) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            }).catch(() => {
+                reject();
+            })
+        })
     }
 }
 

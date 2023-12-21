@@ -2,7 +2,7 @@ import { QuestionService } from "../services/question.service";
 import { Profile } from "../interfaces/profile.interface";
 import { ProfileService } from "../services/profile.service";
 import { ProfileValidator } from "../validators/profile.validator";
-import { logger } from "../util/logger";
+import {FatalError, logger} from "../util/logger";
 
 export class ProfileCommand {
     private profileService = new ProfileService();
@@ -11,17 +11,22 @@ export class ProfileCommand {
         const profile: Profile = {} as Profile;
         profile.name = await QuestionService.ask("Name of the profile: ");
         profile.team = await QuestionService.ask("Your team (please provide the full url): ");
-        const type = await QuestionService.ask("Profile type: OAuth (1) or Key-based (2):" );
-        if (type === "1") {
-            profile.type = "OAuth";
-            profile.clientId = await QuestionService.ask("Your OAuth client id: ");
-            profile.clientSecret = await QuestionService.ask("Your OAuth client secret: ");
-        }
-        else {
-            profile.type = "Key";
-            profile.apiToken = await QuestionService.ask("Your api token: ");
+        const type = await QuestionService.ask("Profile type: OAuth Device Code (1) or Application Key / API Key (2): " );
+        switch (type) {
+            case "1":
+                profile.type = "Device Code";
+                break;
+            case "2":
+                profile.type = "Key";
+                profile.apiToken = await QuestionService.ask("Your api token: ");
+                break;
+            default:
+                logger.error(new FatalError("Invalid choice"));
+                break;
         }
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
+        await this.profileService.authorizeProfile(profile);
+
         this.profileService.storeProfile(profile);
         if (setAsDefault) {
             await this.makeDefaultProfile(profile.name);
