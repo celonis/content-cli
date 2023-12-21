@@ -83,8 +83,7 @@ export class ProfileService {
             team: profileVariables.teamUrl,
             apiToken: profileVariables.apiToken,
             authenticationType: AuthenticationType.BEARER,
-            type: "Key",
-            tokenSet: null
+            type: "Key"
         };
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
         return profile;
@@ -153,8 +152,10 @@ export class ProfileService {
                 scope: scopes.join(" ")
             });
             logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
-            profile.tokenSet = await deviceCodeHandle.poll();
-            profile.apiToken = profile.tokenSet.access_token;
+            const tokenSet = await deviceCodeHandle.poll();
+            profile.apiToken = tokenSet.access_token;
+            profile.refresh_token = tokenSet.refresh_token;
+            profile.expires_at = tokenSet.expires_at;
         }
     }
 
@@ -172,8 +173,10 @@ export class ProfileService {
                 client_id: "content-cli",
                 token_endpoint_auth_method: "none",
             });
-            profile.tokenSet = await oauthClient.refresh(profile.tokenSet);
-            profile.apiToken = profile.tokenSet.access_token;
+            const tokenSet = await oauthClient.refresh(profile.refresh_token);
+            profile.apiToken = tokenSet.access_token;
+            profile.expires_at = tokenSet.expires_at;
+            profile.refresh_token = tokenSet.refresh_token;
             this.storeProfile(profile);
         } catch (err) {
             logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
@@ -201,7 +204,7 @@ export class ProfileService {
             return false;
         }
         const now = new Date();
-        const expirationTime = new Date(profile.tokenSet.expires_at * 1000 - buffer);
+        const expirationTime = new Date(profile.expires_at * 1000 - buffer);
 
         return now > expirationTime;
     }

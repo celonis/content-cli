@@ -1,12 +1,11 @@
-import {TokenSet} from "openid-client";
-
 export interface Profile {
     name: string;
     team: string;
     type: ProfileType;
     apiToken: string;
     authenticationType: AuthenticationType;
-    tokenSet: TokenSet;
+    refresh_token?: string;
+    expires_at?: number;
 }
 
 export type AuthenticationType = "Bearer" | "AppKey";
