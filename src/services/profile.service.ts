@@ -144,34 +144,43 @@ export class ProfileService {
                 });
                 break;
             case "Device Code":
-                const deviceCodeIssuer = await Issuer.discover(profile.team);
-                const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
-                    client_id: "content-cli",
-                    token_endpoint_auth_method: "none",
-                });
-                const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
-                    scope: scopes.join(" ")
-                });
-                logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
-                const deviceCodeTokenSet = await deviceCodeHandle.poll();
-                profile.apiToken = deviceCodeTokenSet.access_token;
-                profile.refreshToken = deviceCodeTokenSet.refresh_token;
-                profile.expiresAt = deviceCodeTokenSet.expires_at;
+                try {
+                    const deviceCodeIssuer = await Issuer.discover(profile.team);
+                    const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
+                        client_id: "content-cli",
+                        token_endpoint_auth_method: "none",
+                    });
+                    const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
+                        scope: scopes.join(" ")
+                    });
+                    logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
+                    const deviceCodeTokenSet = await deviceCodeHandle.poll();
+                    profile.apiToken = deviceCodeTokenSet.access_token;
+                    profile.refreshToken = deviceCodeTokenSet.refresh_token;
+                    profile.expiresAt = deviceCodeTokenSet.expires_at;
+                } catch (err) {
+                    logger.error(new FatalError("The provided team is wrong."));
+                }
                 break;
             case "Client Credentials":
-                const clientCredentialsIssuer = await Issuer.discover(profile.team);
-                const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
-                    client_id: profile.clientId,
-                    client_secret: profile.clientSecret,
-                    token_endpoint_auth_method: profile.clientAuthenticationMethod,
-                });
-                const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
-                    grant_type: "client_credentials",
-                    scope: scopes.join(" ")
-                });
-                profile.scopes = [...scopes];
-                profile.apiToken = clientCredentialsTokenSet.access_token;
-                profile.expiresAt = clientCredentialsTokenSet.expires_at;
+                try {
+                    const clientCredentialsIssuer = await Issuer.discover(profile.team);
+                    const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
+                        client_id: profile.clientId,
+                        client_secret: profile.clientSecret,
+                        token_endpoint_auth_method: profile.clientAuthenticationMethod,
+                    });
+                    const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
+                        grant_type: "client_credentials",
+                        scope: scopes.join(" ")
+                    });
+                    profile.scopes = [...scopes];
+                    profile.apiToken = clientCredentialsTokenSet.access_token;
+                    profile.expiresAt = clientCredentialsTokenSet.expires_at;
+                } catch (err) {
+                    logger.error(new FatalError("The OAuth client configuration is incorrect. " +
+                        "Check the id, secret and scopes for correctness."));
+                }
                 break;
             default:
                 logger.error(new FatalError("Unsupported profile type"));
@@ -194,8 +203,6 @@ export class ProfileService {
                 profile.apiToken = tokenSet.access_token;
                 profile.expiresAt = tokenSet.expires_at;
                 profile.refreshToken = tokenSet.refresh_token;
-                this.storeProfile(profile);
-
             } catch (err) {
                 logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
             }
@@ -217,6 +224,8 @@ export class ProfileService {
                 logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
             }
         }
+
+        this.storeProfile(profile);
     }
 
     private getProfileEnvVariables(): any {
