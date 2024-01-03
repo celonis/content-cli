@@ -169,6 +169,7 @@ export class ProfileService {
                     grant_type: "client_credentials",
                     scope: scopes.join(" ")
                 });
+                profile.scopes = [...scopes];
                 profile.apiToken = clientCredentialsTokenSet.access_token;
                 profile.expiresAt = clientCredentialsTokenSet.expires_at;
                 break;
@@ -208,7 +209,7 @@ export class ProfileService {
                 });
                 const tokenSet = await oauthClient.grant({
                     grant_type: "client_credentials",
-                    scope: scopes.join(" ")
+                    scope: profile.scopes.join(" ")
                 });
                 profile.apiToken = tokenSet.access_token;
                 profile.expiresAt = tokenSet.expires_at;

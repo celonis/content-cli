@@ -6,6 +6,7 @@ export interface Profile {
     authenticationType: AuthenticationType;
     clientId?: string;
     clientSecret?: string;
+    scopes?: string[];
     clientAuthenticationMethod?: ClientAuthenticationMethod;
     refreshToken?: string;
     expiresAt?: number;
