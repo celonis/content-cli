@@ -186,7 +186,7 @@ describe("List exportPackages", () => {
             activatedDraftId: "",
             workingDraftId: "",
             flavor: "",
-            version: null,
+            version: "",
             dependencies: null,
         };
     }
