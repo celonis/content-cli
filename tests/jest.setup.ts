@@ -7,9 +7,12 @@ import {logger} from "../src/util/logger";
 jest.mock('axios');
 jest.mock('fs');
 
-(fs.writeFileSync as jest.Mock).mockImplementation(() => {
-    // Mock implementation here if needed
-});
+const mockWriteFileSync = jest.fn();
+(fs.writeFileSync as jest.Mock).mockImplementation(mockWriteFileSync);
+
+afterEach(() => {
+    mockWriteFileSync.mockClear();
+})
 
 beforeAll(() => {
     setDefaultProfile();
@@ -22,4 +25,4 @@ beforeEach(() => {
     logger.add(testTransport);
 })
 
-export {testTransport};
+export {testTransport, mockWriteFileSync};

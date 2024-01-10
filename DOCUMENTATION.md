@@ -13,6 +13,7 @@
     -   [Batch import packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
+    -   [List all packages across flavors](#list-all-packages-across-flavors)
     -   [List assignments](#list-assignments)
     -   [Asset options for Analysis](#asset-options-for-analysis)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
@@ -336,6 +337,21 @@ packages you have access to. 
 ```
 content-cli list packages -p <your-chosen-profile>
 content-cli list packages -p <profileName> --json --packageKeys <package1> <package2>
+```
+
+### List all packages across flavors
+
+With this command you can retrieve a list of all packages across flavors within a team.
+The command takes your permissions into consideration and only lists the
+packages you have access to.
+
+-   It is also possible to download packages in JSON format by adding '--json' option.
+-   When the JSON format option is used, it is also possible to include package dependencies by adding '--includeDependencies' flag.
+-   When the JSON format option is used, it is also possible to filter packages by adding '--packageKeys' parameter
+
+```
+content-cli list exportPackages -p <your-chosen-profile>
+content-cli list exportPackages -p <profileName> --json --packageKeys <package1> <package2>
 ```
 
 ### List all data pools of the team
