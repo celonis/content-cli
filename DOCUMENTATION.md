@@ -346,7 +346,7 @@ The command takes your permissions into consideration and only lists the
 packages you have access to.
 
 -   It is also possible to download packages in JSON format by adding '--json' option.
--   When the JSON format option is used, it is also possible to include package dependencies by adding '--includeDependencies' flag.
+-   When the JSON format option is used, it is also possible to include package dependencies by adding '--withDependencies' flag.
 -   When the JSON format option is used, it is also possible to filter packages by adding '--packageKeys' parameter
 
 ```
