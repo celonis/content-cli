@@ -3,10 +3,7 @@ import {logger} from "../../util/logger";
 import {v4 as uuidv4} from "uuid";
 import {PackageExportTransport} from "../../interfaces/package-export-transport";
 import {FileService, fileService} from "../file-service";
-import {packageApi} from "../../api/package-api";
-import {variableService} from "./variable-service";
-import {PackageManagerVariableType} from "../../interfaces/package-manager.interfaces";
-import {dataModelService} from "./datamodel-service";
+import {studioService} from "../studio/studio.service";
 
 class BatchImportExportService {
 
@@ -26,25 +23,11 @@ class BatchImportExportService {
             packagesToExport = await batchImportExportApi.findAllActivePackages(flavors, withDependencies);
         }
 
-        const packageByKey = new Map<string, PackageExportTransport>();
-        packagesToExport.forEach(pkg => packageByKey.set(pkg.key, pkg));
+        await studioService.setSpaceIdForStudioPackages(packagesToExport);
 
         if (withDependencies) {
-            const studioPackageWithDataModelVariableAssignments = await variableService.getVariableAssignmentsForNodes(PackageManagerVariableType.DATA_MODEL);
-            const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForPackages(studioPackageWithDataModelVariableAssignments);
-            studioPackageWithDataModelVariableAssignments.forEach(studioPackage => {
-                if (packageByKey.has(studioPackage.key)) {
-                    packageByKey.get(studioPackage.key).datamodels = dataModelDetailsByNode.get(studioPackage.key);
-                }
-            });
+            await studioService.setDataModelsForStudioPackages(packagesToExport);
         }
-
-        const studioPackages = await packageApi.findAllPackages();
-        studioPackages.forEach(studioPackage => {
-            if (packageByKey.has(studioPackage.key)) {
-                packageByKey.get(studioPackage.key).spaceId = studioPackage.spaceId;
-            }
-        });
 
         this.exportListOfPackages(packagesToExport);
     }
