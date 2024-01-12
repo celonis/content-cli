@@ -6,7 +6,7 @@ import {dataModelService} from "../package-manager/datamodel-service";
 class StudioService {
 
     public async getExportPackagesWithStudioData(packagesToExport: PackageExportTransport[], withDependencies: boolean) {
-        const studioPackagesWithDataModels = await studioService.findAllPackagesWithDataModelVariables();
+        const studioPackagesWithDataModels = await packageApi.findAllPackagesWithVariableAssignments(PackageManagerVariableType.DATA_MODEL);
 
         await studioService.setSpaceIdForStudioPackages(packagesToExport, studioPackagesWithDataModels);
 
@@ -15,10 +15,6 @@ class StudioService {
         }
 
         return packagesToExport;
-    }
-
-    private async findAllPackagesWithDataModelVariables(): Promise<PackageWithVariableAssignments[]> {
-        return await packageApi.findAllPackagesWithVariableAssignments(PackageManagerVariableType.DATA_MODEL);
     }
 
     private async setSpaceIdForStudioPackages(packages: PackageExportTransport[], studioPackages: PackageWithVariableAssignments[]): Promise<void> {
