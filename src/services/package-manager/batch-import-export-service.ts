@@ -23,11 +23,7 @@ class BatchImportExportService {
             packagesToExport = await batchImportExportApi.findAllActivePackages(flavors, withDependencies);
         }
 
-        await studioService.setSpaceIdForStudioPackages(packagesToExport);
-
-        if (withDependencies) {
-            await studioService.setDataModelsForStudioPackages(packagesToExport);
-        }
+        packagesToExport = await studioService.getExportPackagesWithStudioData(packagesToExport, withDependencies);
 
         this.exportListOfPackages(packagesToExport);
     }

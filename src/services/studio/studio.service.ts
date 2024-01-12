@@ -1,16 +1,30 @@
 import {PackageExportTransport} from "../../interfaces/package-export-transport";
 import {packageApi} from "../../api/package-api";
-import {variableService} from "../package-manager/variable-service";
-import {PackageManagerVariableType} from "../../interfaces/package-manager.interfaces";
+import {PackageManagerVariableType, PackageWithVariableAssignments} from "../../interfaces/package-manager.interfaces";
 import {dataModelService} from "../package-manager/datamodel-service";
 
 class StudioService {
 
-    public async setSpaceIdForStudioPackages(packages: PackageExportTransport[]): Promise<void> {
+    public async getExportPackagesWithStudioData(packagesToExport: PackageExportTransport[], withDependencies: boolean) {
+        const studioPackagesWithDataModels = await studioService.findAllPackagesWithDataModelVariables();
+
+        await studioService.setSpaceIdForStudioPackages(packagesToExport, studioPackagesWithDataModels);
+
+        if (withDependencies) {
+            await studioService.setDataModelsForStudioPackages(packagesToExport, studioPackagesWithDataModels);
+        }
+
+        return packagesToExport;
+    }
+
+    private async findAllPackagesWithDataModelVariables(): Promise<PackageWithVariableAssignments[]> {
+        return await packageApi.findAllPackagesWithVariableAssignments(PackageManagerVariableType.DATA_MODEL);
+    }
+
+    private async setSpaceIdForStudioPackages(packages: PackageExportTransport[], studioPackages: PackageWithVariableAssignments[]): Promise<void> {
         const packageByKey = new Map<string, PackageExportTransport>();
         packages.forEach(pkg => packageByKey.set(pkg.key, pkg));
 
-        const studioPackages = await packageApi.findAllPackages();
         studioPackages.forEach(studioPackage => {
             if (packageByKey.has(studioPackage.key)) {
                 packageByKey.get(studioPackage.key).spaceId = studioPackage.spaceId;
@@ -18,15 +32,19 @@ class StudioService {
         });
     }
 
-    public async setDataModelsForStudioPackages(packages: PackageExportTransport[]): Promise<void> {
+    private async setDataModelsForStudioPackages(packages: PackageExportTransport[], studioPackageWithDataModels: PackageWithVariableAssignments[]): Promise<void> {
         const packageByKey = new Map<string, PackageExportTransport>();
         packages.forEach(pkg => packageByKey.set(pkg.key, pkg));
 
-        const studioPackageWithDataModelVariableAssignments = await variableService.getVariableAssignmentsForNodes(PackageManagerVariableType.DATA_MODEL);
-        const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForPackages(studioPackageWithDataModelVariableAssignments);
-        studioPackageWithDataModelVariableAssignments.forEach(studioPackage => {
+        const dataModelDetailsByNode = await dataModelService.getDataModelDetailsForPackages(studioPackageWithDataModels);
+        studioPackageWithDataModels.forEach(studioPackage => {
             if (packageByKey.has(studioPackage.key)) {
-                packageByKey.get(studioPackage.key).datamodels = dataModelDetailsByNode.get(studioPackage.key);
+                packageByKey.get(studioPackage.key).datamodels = dataModelDetailsByNode.get(studioPackage.key)
+                    .map(dataModel => ({
+                        name: dataModel.name,
+                        poolId: dataModel.poolId,
+                        dataModelId: dataModel.dataModelId
+                    }));
             }
         });
     }

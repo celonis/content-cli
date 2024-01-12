@@ -44,7 +44,7 @@ describe("List exportPackages", () => {
         const studioPackage: ContentNodeTransport = buildContentNodeTransport("key-1", "spaceId-1");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false", [{...firstPackage}, {...secondPackage}]);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", [studioPackage]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
         await new BatchImportExportCommand().listActivePackages(true, [], false, []);
 
@@ -67,13 +67,14 @@ describe("List exportPackages", () => {
         const secondPackage = buildPackageExportTransport("key-2", "name-2");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=true", [{...firstPackage}, {...secondPackage}]);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
 
         const dataModelVariableAssignmentResponse: PackageWithVariableAssignments = {
             id: "var-id",
             key: firstPackage.key,
             name: "var-name",
             createdBy: "",
+            spaceId: undefined,
             variableAssignments: [
                 {
                     key: "var-key",
@@ -114,7 +115,7 @@ describe("List exportPackages", () => {
         const studioPackage: ContentNodeTransport = buildContentNodeTransport("key-1", "spaceId-1");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=false", [{...firstPackage}, {...secondPackage}]);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", [studioPackage]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
         await new BatchImportExportCommand().listActivePackages(true, [], false, [firstPackage.key, secondPackage.key]);
 
@@ -137,13 +138,14 @@ describe("List exportPackages", () => {
         const secondPackage = buildPackageExportTransport("key-2", "name-2");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=true", [{...firstPackage}, {...secondPackage}]);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
 
         const dataModelVariableAssignmentResponse: PackageWithVariableAssignments = {
             id: "var-id",
             key: firstPackage.key,
             name: "var-name",
             createdBy: "",
+            spaceId: undefined,
             variableAssignments: [
                 {
                     key: "var-key",
