@@ -522,6 +522,7 @@ You can then update the property you want to update using the `set` command:
 With this command you can retrieve a list of all packages across flavors within a team.
 The command takes your permissions into consideration and only lists the
 packages you have access to.
+To list only packages of certain flavors you can use the `--flavors` option and pass a list of flavors.
 
 -   It is also possible to download packages in JSON format by adding '--json' option.
 -   When the JSON format option is used, it is also possible to include package dependencies by adding '--withDependencies' flag.
@@ -529,7 +530,7 @@ packages you have access to.
 
 ```
 content-cli config list -p <your-chosen-profile>
-content-cli config list -p <profileName> --json --packageKeys <package1> <package2>
+content-cli config list -p <profileName> --json --packageKeys <package1> <package2> --flavors <flavor1> <flavor2>
 ```
 
 |--------------------------------------------------------------------------------------------------------------------------------|
