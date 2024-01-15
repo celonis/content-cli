@@ -5,7 +5,7 @@ import {FatalError} from "../util/logger";
 class BatchImportExportApi {
     public static readonly INSTANCE = new BatchImportExportApi();
 
-    public async findAllActivePackages(flavors: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
+    public findAllActivePackages(flavors: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         queryParams.set("withDependencies", withDependencies.toString());
@@ -16,7 +16,7 @@ class BatchImportExportApi {
         });
     }
 
-    public async findActivePackagesByKeys(packageKeys: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
+    public findActivePackagesByKeys(packageKeys: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         packageKeys.forEach(key => queryParams.append("packageKeys", key))

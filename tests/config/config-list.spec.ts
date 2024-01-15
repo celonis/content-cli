@@ -9,6 +9,7 @@ import {
 import * as path from "path";
 import {FileService} from "../../src/services/file-service";
 import {mockAxiosGet} from "../utls/http-requests-mock";
+import {PackageManagerApiUtils} from "../utls/package-manager-api.utils";
 
 describe("Config list", () => {
 
@@ -18,8 +19,8 @@ describe("Config list", () => {
     ])(
         "Should list all packages by key for non-json response with flavors: %p",
         async (flavors: string) => {
-            const firstPackage = buildPackageExportTransport("key-1", "name-1");
-            const secondPackage = buildPackageExportTransport("key-2", "name-2");
+            const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+            const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
 
             const flavorsArray = flavors !== "" ? flavors.split(",") : [];
 
@@ -38,10 +39,10 @@ describe("Config list", () => {
     )
 
     it("Should export all packages for json response with spaceId set for studio packages", async () => {
-        const firstPackage = buildPackageExportTransport("key-1", "name-1");
-        const secondPackage = buildPackageExportTransport("key-2", "name-2");
+        const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
 
-        const studioPackage: ContentNodeTransport = buildContentNodeTransport("key-1", "spaceId-1");
+        const studioPackage: ContentNodeTransport = PackageManagerApiUtils.buildContentNodeTransport("key-1", "spaceId-1");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
@@ -63,8 +64,8 @@ describe("Config list", () => {
     })
 
     it("Should export all packages with dependencies and data models set for json response and withDependencies option", async () => {
-        const firstPackage = buildPackageExportTransport("key-1", "name-1");
-        const secondPackage = buildPackageExportTransport("key-2", "name-2");
+        const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=true", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
@@ -109,10 +110,10 @@ describe("Config list", () => {
     })
 
     it("Should export packagesByKeys with spaceId set for studio packages", async () => {
-        const firstPackage = buildPackageExportTransport("key-1", "name-1");
-        const secondPackage = buildPackageExportTransport("key-2", "name-2");
+        const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
 
-        const studioPackage: ContentNodeTransport = buildContentNodeTransport("key-1", "spaceId-1");
+        const studioPackage: ContentNodeTransport = PackageManagerApiUtils.buildContentNodeTransport("key-1", "spaceId-1");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
@@ -134,8 +135,8 @@ describe("Config list", () => {
     })
 
     it("Should export packagesByKeys with dependencies and data models set for withDependencies option", async () => {
-        const firstPackage = buildPackageExportTransport("key-1", "name-1");
-        const secondPackage = buildPackageExportTransport("key-2", "name-2");
+        const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=true", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
@@ -178,32 +179,4 @@ describe("Config list", () => {
         expect(exportedSecondPackage).toEqual(secondPackage);
         expect(exportedFirstPackage).toEqual({...firstPackage, datamodels: [{...dataModelDetailResponse}]});
     })
-
-    const buildPackageExportTransport = (key: string, name: string): PackageExportTransport => {
-        return {
-            id: "",
-            key,
-            name,
-            changeDate: null,
-            activatedDraftId: "",
-            workingDraftId: "",
-            flavor: "",
-            version: "",
-            dependencies: null,
-        };
-    }
-
-    const buildContentNodeTransport = (key: string, spaceId: string): ContentNodeTransport => {
-        return {
-            id: "",
-            key,
-            name: "",
-            rootNodeKey: "",
-            workingDraftId: "",
-            activatedDraftId: "",
-            rootNodeId: "",
-            assetMetadataTransport: null,
-            spaceId
-        }
-    }
 })
