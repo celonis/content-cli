@@ -7,7 +7,6 @@ import commander = require("commander");
 import { ContextInitializer } from "./util/context-initializer";
 import { ConnectionCommand } from "./commands/connection.command";
 import { VariableCommand } from "./commands/variable.command";
-import {BatchImportExportCommand} from "./commands/batch-import-export.command";
 
 type CommanderStatic = commander.CommanderStatic;
 
@@ -99,23 +98,6 @@ export class List {
 
         return program;
     }
-
-    public static exportPackages(program: CommanderStatic): CommanderStatic {
-        program
-            .command("exportPackages")
-            .description("Command to list active packages that can be exported")
-            .option("-p, --profile <profile>", "Profile which you want to use to list possible variable assignments")
-            .option("--json", "Return response as json type", "")
-            .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
-            .option("--withDependencies", "Include dependencies", "")
-            .option("--packageKeys <packageKeys...>", "Lists only given package keys")
-            .action(async cmd => {
-                await new BatchImportExportCommand().listActivePackages(cmd.json, cmd.flavors, cmd.withDependencies, cmd.packageKeys);
-                process.exit();
-            });
-
-        return program;
-    }
 }
 
 process.on("unhandledRejection", (e, promise) => {
@@ -129,7 +111,6 @@ const loadAllCommands = () => {
     List.assets(commander);
     List.connections(commander);
     List.assignments(commander);
-    List.exportPackages(commander);
     commander.parse(process.argv);
 };
 

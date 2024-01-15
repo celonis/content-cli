@@ -1,5 +1,5 @@
 import {PackageExportTransport} from "../../src/interfaces/package-export-transport";
-import {BatchImportExportCommand} from "../../src/commands/batch-import-export.command";
+import {ConfigCommand} from "../../src/commands/config.command";
 import {mockWriteFileSync, testTransport} from "../jest.setup";
 import {
     ContentNodeTransport,
@@ -10,7 +10,7 @@ import * as path from "path";
 import {FileService} from "../../src/services/file-service";
 import {mockAxiosGet} from "../utls/http-requests-mock";
 
-describe("List exportPackages", () => {
+describe("Config list", () => {
 
     it.each([
         "",
@@ -29,7 +29,7 @@ describe("List exportPackages", () => {
 
             mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
-            await new BatchImportExportCommand().listActivePackages(false, flavorsArray, false, []);
+            await new ConfigCommand().listActivePackages(false, flavorsArray, false, []);
 
             expect(testTransport.logMessages.length).toBe(2);
             expect(testTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -46,7 +46,7 @@ describe("List exportPackages", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new BatchImportExportCommand().listActivePackages(true, [], false, []);
+        await new ConfigCommand().listActivePackages(true, [], false, []);
 
         const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -92,7 +92,7 @@ describe("List exportPackages", () => {
         };
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/compute-pools/data-models/details", [dataModelDetailResponse]);
 
-        await new BatchImportExportCommand().listActivePackages(true, [], true, []);
+        await new ConfigCommand().listActivePackages(true, [], true, []);
 
         const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -117,7 +117,7 @@ describe("List exportPackages", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new BatchImportExportCommand().listActivePackages(true, [], false, [firstPackage.key, secondPackage.key]);
+        await new ConfigCommand().listActivePackages(true, [], false, [firstPackage.key, secondPackage.key]);
 
         const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -163,7 +163,7 @@ describe("List exportPackages", () => {
         };
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/compute-pools/data-models/details", [dataModelDetailResponse]);
 
-        await new BatchImportExportCommand().listActivePackages(true, [], true, [firstPackage.key, secondPackage.key]);
+        await new ConfigCommand().listActivePackages(true, [], true, [firstPackage.key, secondPackage.key]);
 
         const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 

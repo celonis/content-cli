@@ -13,13 +13,14 @@
     -   [Batch import packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
-    -   [List all packages across flavors](#list-all-packages-across-flavors)
     -   [List assignments](#list-assignments)
     -   [Asset options for Analysis](#asset-options-for-analysis)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
 -   [Updating connection properties](#updating-connection-properties-programmatically)
+-   [Config commands](#config-commands)
+    -   [List all packages across flavors](#list-all-packages-across-flavors)
 
 ## Content CLI Core Features
 
@@ -339,21 +340,6 @@ content-cli list packages -p <your-chosen-profile>
 content-cli list packages -p <profileName> --json --packageKeys <package1> <package2>
 ```
 
-### List all packages across flavors
-
-With this command you can retrieve a list of all packages across flavors within a team.
-The command takes your permissions into consideration and only lists the
-packages you have access to.
-
--   It is also possible to download packages in JSON format by adding '--json' option.
--   When the JSON format option is used, it is also possible to include package dependencies by adding '--withDependencies' flag.
--   When the JSON format option is used, it is also possible to filter packages by adding '--packageKeys' parameter
-
-```
-content-cli list exportPackages -p <your-chosen-profile>
-content-cli list exportPackages -p <profileName> --json --packageKeys <package1> <package2>
-```
-
 ### List all data pools of the team
 
 With this command you can retrieve a list of all data pools within a team.
@@ -527,5 +513,23 @@ get a full list of properties for a data source connection:
 You can then update the property you want to update using the `set` command:
 
 ```content-cli set connection --profile <profile> --dataPoolId <dataPoolId> --connectionId <connectionId> --property <property> --value <value>```
+
+### Config commands
+
+
+### List all packages across flavors
+
+With this command you can retrieve a list of all packages across flavors within a team.
+The command takes your permissions into consideration and only lists the
+packages you have access to.
+
+-   It is also possible to download packages in JSON format by adding '--json' option.
+-   When the JSON format option is used, it is also possible to include package dependencies by adding '--withDependencies' flag.
+-   When the JSON format option is used, it is also possible to filter packages by adding '--packageKeys' parameter
+
+```
+content-cli config list -p <your-chosen-profile>
+content-cli config list -p <profileName> --json --packageKeys <package1> <package2>
+```
 
 |--------------------------------------------------------------------------------------------------------------------------------|
