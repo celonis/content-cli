@@ -57,7 +57,7 @@ class PackageService {
             const draftIdByNodeId = new Map<string, string>();
             nodesListToExport.forEach(node => draftIdByNodeId.set(node.workingDraftId, node.id));
 
-            const dependenciesByPackageIds = await this.getPackagesWithDependencies(draftIdByNodeId, []);
+            const dependenciesByPackageIds = await this.getPackagesWithDependencies(draftIdByNodeId);
 
             nodesListToExport = nodesListToExport.map(nodeToExport => {
                 nodeToExport.dependencies = dependenciesByPackageIds[nodeToExport.workingDraftId] ?? [];
@@ -354,7 +354,7 @@ class PackageService {
 
         nodesListToExport = await this.getNodesWithActiveVersion(nodesListToExport);
         if (includeDependencies) {
-            const dependencyPackages = await this.getDependencyPackages(nodesListToExport, [], allPackages, [], [], versionsByNodeKey);
+            const dependencyPackages = await this.getDependencyPackages(nodesListToExport, [], allPackages, [], versionsByNodeKey);
             nodesListToExport.push(...dependencyPackages);
         }
 
