@@ -278,6 +278,13 @@ You can use the --includeDependencies flag to also export the dependencies of th
 content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies
 ```
 
+If you don't want to export any Action Flows with the packages you can use --excludeActionFlows flag
+
+```
+//Batch export packages with excluded Action Flows
+content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies --excludeActionFlows
+```
+
 ### Batch import packages into Studio
 
 You can use the `import packages` command to batch import packages that were exported using `export packages` at once into studio.
@@ -310,6 +317,13 @@ By default, you can not overwrite a package in the target team. To do this you c
 ```
 // Example usage of dataModelMappingsFile
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> --overwrite
+```
+
+If you want to not overwrite a package but not the Action Flows inside that package you can use the --excludeActionFlows flag
+
+```
+// Example usage of excludeActionFlows
+content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> --overwrite --excludeActionFlows
 ```
 
 ### List all spaces in Studio
