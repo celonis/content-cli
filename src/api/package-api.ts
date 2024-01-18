@@ -22,9 +22,7 @@ class PackageApi {
         const queryParams = new URLSearchParams();
         queryParams.set("newKey", rootPackageKey);
         queryParams.set("version", version ?? "");
-        if (excludeActionFlows) {
-            queryParams.set("excludeActionFlows", "true");
-        }
+        queryParams.set("excludeActionFlows", excludeActionFlows ? "true" : "false");
 
         return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Pacakge ${rootPackageKey}_${version} failed to export.`)

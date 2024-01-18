@@ -319,7 +319,7 @@ By default, you can not overwrite a package in the target team. To do this you c
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> --overwrite
 ```
 
-If you want to not overwrite a package but not the Action Flows inside that package you can use the --excludeActionFlows flag
+If you want to overwrite a package but not the Action Flows inside that package you can use the --excludeActionFlows flag
 
 ```
 // Example usage of excludeActionFlows

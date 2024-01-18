@@ -13,9 +13,9 @@ export class Export {
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .requiredOption("--packageKeys <packageKeys...>", "Exports only given package keys")
             .option("--includeDependencies", "Include variables and dependencies", "")
-            .option("--excludeActionFlows", "Don't export action flows", "false")
+            .option("--excludeActionFlows", "Don't export action flows")
             .action(async cmd => {
-                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies, cmd.excludeActionFlows);
+                await new PackageCommand().batchExportPackages(cmd.packageKeys, cmd.includeDependencies, cmd.excludeActionFlows ?? false);
                 process.exit();
             });
 
