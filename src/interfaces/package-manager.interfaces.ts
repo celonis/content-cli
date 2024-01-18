@@ -48,6 +48,7 @@ export interface PackageWithVariableAssignments {
     key: string;
     name: string;
     createdBy: string;
+    spaceId: string;
     variableAssignments: VariablesAssignments[]
 }
 
