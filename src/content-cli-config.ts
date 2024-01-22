@@ -22,6 +22,21 @@ export class Config {
 
         return program;
     }
+
+    public static export(program: CommanderStatic): CommanderStatic {
+        program
+            .command("export")
+            .description("Command to export package configs")
+            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
+            .option("--withDependencies", "Include variables and dependencies", "")
+            .action(async cmd => {
+                await new ConfigCommand().batchExportPackages(cmd.packageKeys, cmd.withDependencies);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 process.on("unhandledRejection", (e, promise) => {
@@ -30,6 +45,7 @@ process.on("unhandledRejection", (e, promise) => {
 
 const loadAllCommands = () => {
     Config.list(commander);
+    Config.export(commander);
     commander.parse(process.argv);
 };
 
