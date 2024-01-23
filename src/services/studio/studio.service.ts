@@ -69,33 +69,8 @@ class StudioService {
     public getPackageWithoutActionFlowsAndFixedConnectionVariables(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
         const packageZip = new AdmZip(exportedPackage.getData());
         packageZip.getEntries().forEach(entry => {
-            if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
-                const node: NodeExportTransport = parse(entry.getData().toString());
-                if (node.type === "SCENARIO") {
-                    packageZip.deleteFile(entry);
-                }
-            }
-
-            if (entry.name === "package.yml") {
-                const packageKeyAndVersion = exportedPackage.name.replace(".zip", "").split("_");
-                const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
-
-                if (connectionVariablesByKey.size) {
-                    const exportedNode: NodeExportTransport = parse(entry.getData().toString());
-                    const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
-
-                    nodeContent.variables = nodeContent.variables.map(variable => ({
-                        ...variable,
-                        metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
-                            ...variable.metadata,
-                            ...connectionVariablesByKey.get(variable.key).metadata
-                        } : variable.metadata
-                    }));
-
-                    exportedNode.serializedContent = stringify(nodeContent);
-                    packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
-                }
-            }
+            this.deleteFileIfTypeScenario(packageZip, entry);
+            this.fixConnectionVariablesIfRootNodeFile(packageZip, entry, exportedPackage.name, exportedVariables);
         });
 
         return packageZip;
@@ -130,6 +105,38 @@ class StudioService {
                             }))
             } : pkg;
         });
+    }
+
+    private deleteFileIfTypeScenario(packageZip: AdmZip, entry: IZipEntry): void {
+        if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
+            const node: NodeExportTransport = parse(entry.getData().toString());
+            if (node.type === "SCENARIO") {
+                packageZip.deleteFile(entry);
+            }
+        }
+    }
+
+    private fixConnectionVariablesIfRootNodeFile(packageZip: AdmZip, entry: IZipEntry, zipName: string, exportedVariables: VariableManifestTransport[]): void {
+        if (entry.name === "package.yml") {
+            const packageKeyAndVersion = zipName.replace(".zip", "").split("_");
+            const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
+
+            if (connectionVariablesByKey.size) {
+                const exportedNode: NodeExportTransport = parse(entry.getData().toString());
+                const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+
+                nodeContent.variables = nodeContent.variables.map(variable => ({
+                    ...variable,
+                    metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
+                        ...variable.metadata,
+                        ...connectionVariablesByKey.get(variable.key).metadata
+                    } : variable.metadata
+                }));
+
+                exportedNode.serializedContent = stringify(nodeContent);
+                packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
+            }
+        }
     }
 
     private getConnectionVariablesByKeyForPackage(packageKey: string, packageVersion: string, variables: VariableManifestTransport[]): Map<string, VariableExportTransport> {
