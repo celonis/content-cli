@@ -66,7 +66,7 @@ class StudioService {
         return studioManifests;
     }
 
-    public getPackageWithoutActionFlowsAndFixedConnectionVariables(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
+    public processPackageForExport(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
         const packageZip = new AdmZip(exportedPackage.getData());
         packageZip.getEntries().forEach(entry => {
             this.deleteFileIfTypeScenario(packageZip, entry);
