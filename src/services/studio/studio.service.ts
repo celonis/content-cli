@@ -1,7 +1,10 @@
 import {
-    NodeExportTransport, NodeSerializedContent,
+    NodeExportTransport,
+    NodeSerializedContent,
     PackageExportTransport,
-    PackageManifestTransport, StudioPackageManifest, VariableExportTransport,
+    PackageManifestTransport,
+    StudioPackageManifest,
+    VariableExportTransport,
     VariableManifestTransport
 } from "../../interfaces/package-export-transport";
 import {packageApi} from "../../api/package-api";
@@ -11,9 +14,9 @@ import {
     StudioComputeNodeDescriptor
 } from "../../interfaces/package-manager.interfaces";
 import {dataModelService} from "../package-manager/datamodel-service";
-import AdmZip = require("adm-zip");
 import {IZipEntry} from "adm-zip";
 import {parse, stringify} from "../../util/yaml";
+import AdmZip = require("adm-zip");
 
 class StudioService {
 
@@ -63,7 +66,7 @@ class StudioService {
         return studioManifests;
     }
 
-    public getPackageWithoutActionFlowsAndFixConnectionVariables(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
+    public getPackageWithoutActionFlowsAndFixedConnectionVariables(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
         const packageZip = new AdmZip(exportedPackage.getData());
         packageZip.getEntries().forEach(entry => {
             if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
@@ -75,25 +78,19 @@ class StudioService {
 
             if (entry.name === "package.yml") {
                 const packageKeyAndVersion = exportedPackage.name.replace(".zip", "").split("_");
-                const connectionVariables = this.getConnectionVariablesForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
+                const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
 
-                if (connectionVariables.length) {
-                    const variableValuesByKey = new Map<string, VariableExportTransport>();
-                    connectionVariables.forEach(variable => variableValuesByKey.set(variable.key, variable));
-
+                if (connectionVariablesByKey.size) {
                     const exportedNode: NodeExportTransport = parse(entry.getData().toString());
                     const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
 
-                    nodeContent.variables = nodeContent.variables.map(variable => {
-                        if (variable.type === PackageManagerVariableType.CONNECTION) {
-                            variable = {
-                                ...variable,
-                                metadata: variableValuesByKey.get(variable.key).metadata
-                            }
-                        }
-
-                        return variable;
-                    })
+                    nodeContent.variables = nodeContent.variables.map(variable => ({
+                        ...variable,
+                        metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
+                            ...variable.metadata,
+                            ...connectionVariablesByKey.get(variable.key).metadata
+                        } : { ...variable.metadata }
+                    }));
 
                     exportedNode.serializedContent = stringify(nodeContent);
                     packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
@@ -135,14 +132,16 @@ class StudioService {
         });
     }
 
-    private getConnectionVariablesForPackage(packageKey: string, packageVersion: string, variables: VariableManifestTransport[]): VariableExportTransport[] {
+    private getConnectionVariablesByKeyForPackage(packageKey: string, packageVersion: string, variables: VariableManifestTransport[]): Map<string, VariableExportTransport> {
+        const variablesByKey = new Map<string, VariableExportTransport>();
         const packageVariables = variables.find(exportedVariable => exportedVariable.packageKey === packageKey && exportedVariable.version === packageVersion);
 
         if (packageVariables && packageVariables.variables.length) {
-            return packageVariables.variables.filter(variable => variable.type === PackageManagerVariableType.CONNECTION);
+            packageVariables.variables.filter(variable => variable.type === PackageManagerVariableType.CONNECTION)
+                .forEach(variable => variablesByKey.set(variable.key, variable));
         }
 
-        return [];
+        return variablesByKey;
     }
 }
 

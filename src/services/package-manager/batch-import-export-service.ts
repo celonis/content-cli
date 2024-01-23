@@ -53,7 +53,7 @@ class BatchImportExportService {
 
         exportedPackagesZip.getEntries().forEach(entry => {
             if (entry.name.endsWith(".zip")) {
-                const updatedPackage = studioService.getPackageWithoutActionFlowsAndFixConnectionVariables(entry, exportedVariables);
+                const updatedPackage = studioService.getPackageWithoutActionFlowsAndFixedConnectionVariables(entry, exportedVariables);
 
                 exportedPackagesZip.updateFile(entry, updatedPackage.toBuffer());
             }
