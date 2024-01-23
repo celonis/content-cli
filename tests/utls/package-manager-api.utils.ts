@@ -1,5 +1,9 @@
 import {PackageExportTransport} from "../../src/interfaces/package-export-transport";
-import {ContentNodeTransport} from "../../src/interfaces/package-manager.interfaces";
+import {
+    ContentNodeTransport,
+    PackageWithVariableAssignments,
+    VariablesAssignments
+} from "../../src/interfaces/package-manager.interfaces";
 
 export class PackageManagerApiUtils {
     public static buildPackageExportTransport = (key: string, name: string): PackageExportTransport => {
@@ -28,5 +32,16 @@ export class PackageManagerApiUtils {
             assetMetadataTransport: null,
             spaceId
         }
+    }
+
+    public static buildPackageWithVariableAssignments = (key: string, spaceId: string, variableAssignments: VariablesAssignments[]): PackageWithVariableAssignments => {
+        return {
+            id: "package-id",
+            key,
+            name: "package-name",
+            createdBy: "",
+            spaceId,
+            variableAssignments
+        };
     }
 }

@@ -138,7 +138,7 @@ class StudioService {
     private getConnectionVariablesForPackage(packageKey: string, packageVersion: string, variables: VariableManifestTransport[]): VariableExportTransport[] {
         const packageVariables = variables.find(exportedVariable => exportedVariable.packageKey === packageKey && exportedVariable.version === packageVersion);
 
-        if (packageVariables.variables.length) {
+        if (packageVariables && packageVariables.variables.length) {
             return packageVariables.variables.filter(variable => variable.type === PackageManagerVariableType.CONNECTION);
         }
 
