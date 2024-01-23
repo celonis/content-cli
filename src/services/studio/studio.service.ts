@@ -89,7 +89,7 @@ class StudioService {
                         metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
                             ...variable.metadata,
                             ...connectionVariablesByKey.get(variable.key).metadata
-                        } : { ...variable.metadata }
+                        } : variable.metadata
                     }));
 
                     exportedNode.serializedContent = stringify(nodeContent);
