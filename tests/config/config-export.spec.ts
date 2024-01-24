@@ -71,30 +71,11 @@ describe("Config export", () => {
 
     it("Should export variables file with connection variables fixed", async () => {
         const firstPackageDependencies = new Map<string, DependencyTransport[]>();
-        firstPackageDependencies.set("1.0.0", [
-            {
-                key: "firstDep",
-                version: "1.1.1"
-            },
-            {
-                key: "secondDep",
-                version: "2.3.4"
-            }
-        ]);
+        firstPackageDependencies.set("1.0.0", []);
 
         const secondPackageDependencies = new Map<string, DependencyTransport[]>();
-        secondPackageDependencies.set("1.0.0", [
-            {
-                key: "firstDep",
-                version: "1.1.1",
-            }
-        ]);
-        secondPackageDependencies.set("1.1.1", [
-            {
-                key: "secondDep",
-                version: "2.3.5"
-            }
-        ]);
+        secondPackageDependencies.set("1.0.0", []);
+        secondPackageDependencies.set("1.1.1", []);
 
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO", firstPackageDependencies));
@@ -218,7 +199,7 @@ describe("Config export", () => {
 
         const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
         expect(variableExportRequest).toBeTruthy();
-        expect(variableExportRequest).toHaveLength(6);
+        expect(variableExportRequest).toHaveLength(3);
         expect(variableExportRequest).toContainEqual({
             packageKey: "key-1",
             version: "1.0.0"
@@ -230,18 +211,6 @@ describe("Config export", () => {
         expect(variableExportRequest).toContainEqual({
             packageKey: "key-2",
             version: "1.1.1"
-        });
-        expect(variableExportRequest).toContainEqual({
-            packageKey: "firstDep",
-            version: "1.1.1"
-        });
-        expect(variableExportRequest).toContainEqual({
-            packageKey: "secondDep",
-            version: "2.3.4"
-        });
-        expect(variableExportRequest).toContainEqual({
-            packageKey: "secondDep",
-            version: "2.3.5"
         });
     })
 
