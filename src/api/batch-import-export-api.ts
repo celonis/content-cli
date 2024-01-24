@@ -1,4 +1,8 @@
-import {PackageExportTransport, VariableManifestTransport} from "../interfaces/package-export-transport";
+import {
+    PackageExportTransport,
+    PackageKeyAndVersionPair,
+    VariableManifestTransport
+} from "../interfaces/package-export-transport";
 import {httpClientV2} from "../services/http-client-service.v2";
 import {FatalError} from "../util/logger";
 
@@ -37,7 +41,7 @@ class BatchImportExportApi {
         });
     }
 
-    public findVariablesWithValuesByPackageKeysAndVersion(packagesByKeyAndVersion: VariableManifestTransport[]): Promise<VariableManifestTransport[]> {
+    public findVariablesWithValuesByPackageKeysAndVersion(packagesByKeyAndVersion: PackageKeyAndVersionPair[]): Promise<VariableManifestTransport[]> {
         return httpClientV2.post("/package-manager/api/core/packages/export/batch/variables-with-assignments", packagesByKeyAndVersion).catch(e => {
             throw new FatalError(`Problem exporting package variables: ${e}`);
         })

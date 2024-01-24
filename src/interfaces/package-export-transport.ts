@@ -42,6 +42,11 @@ export interface VariableManifestTransport {
     variables?: VariableExportTransport[];
 }
 
+export interface PackageKeyAndVersionPair {
+    packageKey: string;
+    version: string;
+}
+
 export interface NodeExportTransport {
     key: string;
     parentNodeKey: string;

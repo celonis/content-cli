@@ -3,6 +3,7 @@ import {logger} from "../../util/logger";
 import {v4 as uuidv4} from "uuid";
 import {
     PackageExportTransport,
+    PackageKeyAndVersionPair,
     PackageManifestTransport,
     VariableManifestTransport
 } from "../../interfaces/package-export-transport";
@@ -84,7 +85,7 @@ class BatchImportExportService {
     }
 
     private getVersionedVariablesForPackagesWithKeys(versionsByPackageKey: Map<string, string[]>): Promise<VariableManifestTransport[]> {
-        const variableExportRequest: VariableManifestTransport[] = [];
+        const variableExportRequest: PackageKeyAndVersionPair[] = [];
         versionsByPackageKey?.forEach((versions, key) => {
             versions?.forEach(version => {
                 variableExportRequest.push({
