@@ -49,12 +49,14 @@ class StudioService {
     }
 
     public async getStudioPackageManifests(manifests: PackageManifestTransport[]): Promise<StudioPackageManifest[]> {
-        const studioManifests = [];
-        const exportedPackageKeys = manifests.map(exportedPackage => exportedPackage.packageKey);
+        const studioManifests: StudioPackageManifest[] = [];
+        const exportedStudioPackageKeys = manifests
+            .filter(manifest => manifest.flavor === "STUDIO")
+            .map(exportedPackage => exportedPackage.packageKey);
 
         const packageWithVariableAssignmentsByKey = await packageApi.findAllPackagesWithVariableAssignments(PackageManagerVariableType.PLAIN_TEXT);
         packageWithVariableAssignmentsByKey.forEach(pkg => {
-            if (exportedPackageKeys.includes(pkg.key)) {
+            if (exportedStudioPackageKeys.includes(pkg.key)) {
                 studioManifests.push({
                     packageKey: pkg.key,
                     spaceId: pkg.spaceId,
@@ -127,10 +129,8 @@ class StudioService {
 
                 nodeContent.variables = nodeContent.variables.map(variable => ({
                     ...variable,
-                    metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
-                        ...variable.metadata,
-                        ...connectionVariablesByKey.get(variable.key).metadata
-                    } : variable.metadata
+                    metadata: variable.type === PackageManagerVariableType.CONNECTION ?
+                        connectionVariablesByKey.get(variable.key).metadata : variable.metadata
                 }));
 
                 exportedNode.serializedContent = stringify(nodeContent);

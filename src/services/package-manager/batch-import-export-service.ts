@@ -51,8 +51,11 @@ class BatchImportExportService {
         const studioData = await studioService.getStudioPackageManifests(manifest);
         exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioData), "utf8"));
 
+        const studioPackageKeys = manifest.filter(packageManifest => packageManifest.flavor === "STUDIO")
+            .map(packageManifest => packageManifest.packageKey);
+
         exportedPackagesZip.getEntries().forEach(entry => {
-            if (entry.name.endsWith(".zip")) {
+            if (entry.name.endsWith(".zip") && studioPackageKeys.includes(entry.name.split("_")[0])) {
                 const updatedPackage = studioService.processPackageForExport(entry, exportedVariables);
 
                 exportedPackagesZip.updateFile(entry, updatedPackage.toBuffer());
@@ -74,27 +77,10 @@ class BatchImportExportService {
     private getVersionsByPackageKey(manifests: PackageManifestTransport[]): Map<string, string[]> {
         const versionsByPackageKey = new Map<string, string[]>();
         manifests.forEach(packageManifest => {
-            Object.keys(packageManifest.dependenciesByVersion).forEach(version => {
-                this.addVersionForPackageKey(packageManifest.packageKey, version, versionsByPackageKey);
-
-                const dependenciesByVersion = packageManifest.dependenciesByVersion[version];
-                dependenciesByVersion.forEach(dependency => {
-                    this.addVersionForPackageKey(dependency.key, dependency.version, versionsByPackageKey);
-                })
-            });
+            versionsByPackageKey.set(packageManifest.packageKey, Object.keys(packageManifest.dependenciesByVersion));
         })
 
         return versionsByPackageKey;
-    }
-
-    private addVersionForPackageKey(key: string, version: string, versionsByPackageKey: Map<string, string[]>): void {
-        if (versionsByPackageKey.has(key)) {
-            if (!versionsByPackageKey.get(key).includes(version)) {
-                versionsByPackageKey.get(key).push(version);
-            }
-        } else {
-            versionsByPackageKey.set(key, [version]);
-        }
     }
 
     private getVersionedVariablesForPackagesWithKeys(versionsByPackageKey: Map<string, string[]>): Promise<VariableManifestTransport[]> {
