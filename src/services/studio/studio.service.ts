@@ -19,6 +19,8 @@ import {parse, stringify} from "../../util/yaml";
 import AdmZip = require("adm-zip");
 import {nodeApi} from "../../api/node-api";
 import {variablesApi} from "../../api/variables-api";
+import {spaceApi} from "../../api/space-api";
+import {SpaceTransport} from "../../interfaces/save-space.interface";
 
 class StudioService {
 
@@ -57,11 +59,15 @@ class StudioService {
 
         return Promise.all(exportedStudioPackageKeys.map(async packageKey => {
             const node = await nodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
+            const nodeSpace: SpaceTransport = await spaceApi.findOne(node.spaceId);
             const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey);
 
             return {
                 packageKey: packageKey,
-                spaceId: node.spaceId,
+                space: {
+                    name: nodeSpace.name,
+                    iconReference: nodeSpace.iconReference
+                },
                 runtimeVariableAssignments: variableAssignments
             }
         }));

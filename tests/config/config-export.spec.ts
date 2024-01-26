@@ -22,13 +22,14 @@ import {
 
 describe("Config export", () => {
 
-    beforeAll(() => {
-        (fs.openSync as jest.Mock).mockReturnValue(100);
-    });
+    const firstSpace = PackageManagerApiUtils.buildSpaceTransport("space-1", "First space", "Icon1");
+    const secondSpace = PackageManagerApiUtils.buildSpaceTransport("space-2", "Second space", "Icon2");
 
-    afterAll(() => {
-        (fs.openSync as jest.Mock).mockClear();
-    })
+    beforeEach(() => {
+        (fs.openSync as jest.Mock).mockReturnValue(100);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-1", {...firstSpace});
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-2", {...secondSpace});
+    });
 
     it("Should export studio file for studio packageKeys", async () => {
         const manifest: PackageManifestTransport[] = [];
@@ -66,12 +67,18 @@ describe("Config export", () => {
         expect(studioManifest).toHaveLength(2);
         expect(studioManifest).toContainEqual({
             packageKey: firstStudioPackage.key,
-            spaceId: firstStudioPackage.spaceId,
+            space: {
+                name: firstSpace.name,
+                iconReference: firstSpace.iconReference
+            },
             runtimeVariableAssignments: [firstPackageRuntimeVariable]
         });
         expect(studioManifest).toContainEqual({
             packageKey: secondStudioPackage.key,
-            spaceId: secondStudioPackage.spaceId,
+            space: {
+                name: secondSpace.name,
+                iconReference: secondSpace.iconReference
+            },
             runtimeVariableAssignments: []
         });
     })
@@ -155,8 +162,8 @@ describe("Config export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", [...exportedVariables]);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, firstPackageNode);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, secondPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
 
@@ -243,8 +250,8 @@ describe("Config export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, firstPackageNode);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, secondPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
 
@@ -346,8 +353,8 @@ describe("Config export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", exportedVariables);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, firstPackageNode);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, secondPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
 

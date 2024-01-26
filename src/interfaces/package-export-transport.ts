@@ -70,6 +70,6 @@ export interface NodeSerializedContent {
 
 export interface StudioPackageManifest {
     packageKey: string;
-    spaceId: string;
+    space: Partial<SpaceTransport>;
     runtimeVariableAssignments: VariablesAssignments[];
 }
