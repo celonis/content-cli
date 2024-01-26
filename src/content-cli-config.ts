@@ -22,6 +22,22 @@ export class Config {
 
         return program;
     }
+
+    public static listVariables(program: CommanderStatic): CommanderStatic {
+        program
+            .command("listVariables")
+            .description("Command to list versioned variables of packages")
+            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("--json", "Return response as json type", "")
+            .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", "")
+            .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
+            .action(async cmd => {
+                await new ConfigCommand().listVariables(cmd.json, cmd.keysByVersion, cmd.keysByVersionFile);
+                process.exit();
+            })
+
+        return program;
+    }
 }
 
 process.on("unhandledRejection", (e, promise) => {
@@ -30,6 +46,7 @@ process.on("unhandledRejection", (e, promise) => {
 
 const loadAllCommands = () => {
     Config.list(commander);
+    Config.listVariables(commander);
     commander.parse(process.argv);
 };
 

@@ -1,4 +1,4 @@
-import {PackageExportTransport} from "../../interfaces/package-export-transport";
+import {PackageExportTransport, VariableManifestTransport} from "../../interfaces/package-export-transport";
 import {packageApi} from "../../api/package-api";
 import {
     PackageManagerVariableType,
@@ -20,6 +20,21 @@ class StudioService {
         }
 
         return packagesToExport;
+    }
+
+    public fixConnectionVariables(variables: VariableManifestTransport[]): VariableManifestTransport[] {
+        return variables.map(variableManifest => ({
+            ...variableManifest,
+            variables: variableManifest.variables.map(variable => ({
+                ...variable,
+                metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
+                    ...variable.metadata,
+                    appName: variable.value["appName"] || ""
+                } : {
+                    ...variable.metadata
+                }
+            }))
+        }));
     }
 
     private setSpaceIdForStudioPackages(packages: PackageExportTransport[], studioPackages: PackageWithVariableAssignments[]): PackageExportTransport[] {

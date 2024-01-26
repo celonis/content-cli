@@ -1,6 +1,7 @@
 import axios from "axios";
 
 const mockedResponseByUrl = new Map<string, any>();
+const mockedPostRequestBodyByUrl = new Map<string, any>();
 
 const mockAxiosGet = (url: string, responseData: any) => {
     mockedResponseByUrl.set(url, responseData);
@@ -14,8 +15,23 @@ const mockAxiosGet = (url: string, responseData: any) => {
     });
 };
 
+const mockAxiosPost = (url: string, responseData: any) => {
+    mockedResponseByUrl.set(url, responseData);
+
+    (axios.post as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
+        if (mockedResponseByUrl.has(requestUrl)) {
+            const response = { data: mockedResponseByUrl.get(requestUrl) };
+            mockedPostRequestBodyByUrl.set(requestUrl, data);
+
+            return Promise.resolve(response);
+        } else {
+            fail("API call not mocked.")
+        }
+    })
+}
+
 afterEach(() => {
     mockedResponseByUrl.clear();
 })
 
-export {mockAxiosGet};
+export {mockAxiosGet, mockAxiosPost, mockedPostRequestBodyByUrl};

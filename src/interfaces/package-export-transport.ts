@@ -18,3 +18,21 @@ export interface PackageExportTransport {
     spaceId?: string;
     datamodels?: StudioComputeNodeDescriptor[];
 }
+
+export interface VariableExportTransport {
+    key: string;
+    value: object;
+    type: string;
+    metadata: object;
+}
+
+export interface VariableManifestTransport {
+    packageKey: string;
+    version: string;
+    variables?: VariableExportTransport[];
+}
+
+export interface PackageKeyAndVersionPair {
+    packageKey: string;
+    version: string;
+}

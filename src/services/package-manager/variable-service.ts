@@ -9,6 +9,9 @@ import { v4 as uuidv4 } from "uuid";
 import {FatalError, logger} from "../../util/logger";
 import {FileService, fileService} from "../file-service";
 import {URLSearchParams} from "url";
+import {studioService} from "../studio/studio.service";
+import {batchImportExportApi} from "../../api/batch-import-export-api";
+import {PackageKeyAndVersionPair, VariableManifestTransport} from "../../interfaces/package-export-transport";
 
 class VariableService {
 
@@ -33,9 +36,21 @@ class VariableService {
         const parsedParams = this.parseParams(params);
         const assignments = await variablesApi.getCandidateAssignments(type, parsedParams);
 
-        const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(assignments), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        this.exportToJson(assignments)
+    }
+
+    public async listVariables(keysByVersion: string[], keysByVersionFile: string): Promise<void> {
+        const variableManifests = await this.getVersionedVariablesByKeyVersionPairs(keysByVersion, keysByVersionFile);
+
+        variableManifests.forEach(variableManifest => {
+            logger.info(JSON.stringify(variableManifest));
+        });
+    }
+
+    public async exportVariables(keysByVersion: string[], keysByVersionFile: string): Promise<void> {
+        const variableManifests = await this.getVersionedVariablesByKeyVersionPairs(keysByVersion, keysByVersionFile);
+
+        this.exportToJson(variableManifests);
     }
 
     private parseParams(params?: string): URLSearchParams {
@@ -53,6 +68,33 @@ class VariableService {
         }
 
         return queryParams;
+    }
+
+    private async getVersionedVariablesByKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<VariableManifestTransport[]> {
+        let variablesExportRequest: PackageKeyAndVersionPair[] = [];
+
+        if (keysByVersion.length) {
+            variablesExportRequest = keysByVersion.map(keyAndVersion => {
+                const keyAndVersionSplit = keyAndVersion.split(":");
+                return {
+                    packageKey: keyAndVersionSplit[0],
+                    version: keyAndVersionSplit[1]
+                };
+            });
+        } else if (!keysByVersion.length && keysByVersionFile.length) {
+            variablesExportRequest = await fileService.readFileToJson(keysByVersionFile);
+        } else {
+            throw new FatalError("Please provide keysByVersion mappings or file path!");
+        }
+
+        const variableManifests = await batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variablesExportRequest);
+        return studioService.fixConnectionVariables(variableManifests);
+    }
+
+    private exportToJson(data: any): void {
+        const filename = uuidv4() + ".json";
+        fileService.writeToFileWithGivenName(JSON.stringify(data), filename);
+        logger.info(FileService.fileDownloadedMessage + filename);
     }
 }
 
