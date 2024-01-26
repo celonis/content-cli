@@ -14,7 +14,11 @@ import * as fs from "fs";
 import AdmZip = require("adm-zip");
 
 import { parse, stringify } from "../../src/util/yaml";
-import {PackageManagerVariableType, VariableDefinition} from "../../src/interfaces/package-manager.interfaces";
+import {
+    PackageManagerVariableType,
+    VariableDefinition,
+    VariablesAssignments
+} from "../../src/interfaces/package-manager.interfaces";
 
 describe("Config export", () => {
 
@@ -33,18 +37,21 @@ describe("Config export", () => {
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-3", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
 
-        const firstStudioPackage = PackageManagerApiUtils.buildPackageWithVariableAssignments("key-1", "space-1", [
-            {
-                key: "varKey",
-                type: PackageManagerVariableType.PLAIN_TEXT,
-                value: "default-value" as unknown as object
-            }
-        ]);
-        const secondStudioPackage = PackageManagerApiUtils.buildPackageWithVariableAssignments("key-2", "space-2", []);
+        const firstStudioPackage = PackageManagerApiUtils.buildContentNodeTransport("key-1", "space-1");
+        const firstPackageRuntimeVariable: VariablesAssignments = {
+            key: "varKey",
+            type: PackageManagerVariableType.PLAIN_TEXT,
+            value: "default-value" as unknown as object
+        };
+
+        const secondStudioPackage = PackageManagerApiUtils.buildContentNodeTransport("key-2", "space-2");
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&packageKeys=key-3&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=PLAIN_TEXT", [{...firstStudioPackage}, {...secondStudioPackage}]);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstStudioPackage.key}/${firstStudioPackage.key}`, firstStudioPackage);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondStudioPackage.key}/${secondStudioPackage.key}`, secondStudioPackage);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstStudioPackage.key}/variables/runtime-values`, [firstPackageRuntimeVariable]);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2", "key-3"], true);
 
@@ -60,12 +67,12 @@ describe("Config export", () => {
         expect(studioManifest).toContainEqual({
             packageKey: firstStudioPackage.key,
             spaceId: firstStudioPackage.spaceId,
-            runtimeVariableAssignments: [...firstStudioPackage.variableAssignments]
+            runtimeVariableAssignments: [firstPackageRuntimeVariable]
         });
         expect(studioManifest).toContainEqual({
             packageKey: secondStudioPackage.key,
             spaceId: secondStudioPackage.spaceId,
-            runtimeVariableAssignments: [...secondStudioPackage.variableAssignments]
+            runtimeVariableAssignments: []
         });
     })
 
@@ -148,7 +155,10 @@ describe("Config export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", [...exportedVariables]);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=PLAIN_TEXT", []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, firstPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, secondPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2"], true);
 
@@ -233,7 +243,10 @@ describe("Config export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=PLAIN_TEXT", []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, firstPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, secondPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2"], true);
 
@@ -333,7 +346,10 @@ describe("Config export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", exportedVariables);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=PLAIN_TEXT", []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, firstPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, secondPackageNode);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2"], true);
 
@@ -371,13 +387,12 @@ describe("Config export", () => {
 
     it("Should export by packageKeys without dependencies", async () => {
         const manifest: PackageManifestTransport[] = [];
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "STUDIO"));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&packageKeys=key-3&withDependencies=false", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=PLAIN_TEXT", []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2", "key-3"], false);
 

@@ -17,6 +17,8 @@ import {dataModelService} from "../package-manager/datamodel-service";
 import {IZipEntry} from "adm-zip";
 import {parse, stringify} from "../../util/yaml";
 import AdmZip = require("adm-zip");
+import {nodeApi} from "../../api/node-api";
+import {variablesApi} from "../../api/variables-api";
 
 class StudioService {
 
@@ -49,23 +51,20 @@ class StudioService {
     }
 
     public async getStudioPackageManifests(manifests: PackageManifestTransport[]): Promise<StudioPackageManifest[]> {
-        const studioManifests: StudioPackageManifest[] = [];
         const exportedStudioPackageKeys = manifests
             .filter(manifest => manifest.flavor === "STUDIO")
             .map(exportedPackage => exportedPackage.packageKey);
 
-        const packageWithVariableAssignmentsByKey = await packageApi.findAllPackagesWithVariableAssignments(PackageManagerVariableType.PLAIN_TEXT);
-        packageWithVariableAssignmentsByKey.forEach(pkg => {
-            if (exportedStudioPackageKeys.includes(pkg.key)) {
-                studioManifests.push({
-                    packageKey: pkg.key,
-                    spaceId: pkg.spaceId,
-                    runtimeVariableAssignments: pkg.variableAssignments
-                })
-            }
-        });
+        return Promise.all(exportedStudioPackageKeys.map(async packageKey => {
+            const node = await nodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
+            const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey);
 
-        return studioManifests;
+            return {
+                packageKey: packageKey,
+                spaceId: node.spaceId,
+                runtimeVariableAssignments: variableAssignments
+            }
+        }));
     }
 
     public processPackageForExport(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
