@@ -71,24 +71,34 @@ class VariableService {
     }
 
     private async getVersionedVariablesByKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<VariableManifestTransport[]> {
+        const variablesExportRequest: PackageKeyAndVersionPair[] = await this.buildKeyVersionPairs(keysByVersion, keysByVersionFile);
+
+        const variableManifests = await batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variablesExportRequest);
+        return studioService.fixConnectionVariables(variableManifests);
+    }
+
+    private async buildKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<PackageKeyAndVersionPair[]> {
         let variablesExportRequest: PackageKeyAndVersionPair[] = [];
 
         if (keysByVersion.length) {
-            variablesExportRequest = keysByVersion.map(keyAndVersion => {
-                const keyAndVersionSplit = keyAndVersion.split(":");
-                return {
-                    packageKey: keyAndVersionSplit[0],
-                    version: keyAndVersionSplit[1]
-                };
-            });
+            variablesExportRequest = this.buildKeyAndVersionPairsFromArrayInput(keysByVersion);
         } else if (!keysByVersion.length && keysByVersionFile.length) {
             variablesExportRequest = await fileService.readFileToJson(keysByVersionFile);
         } else {
             throw new FatalError("Please provide keysByVersion mappings or file path!");
         }
 
-        const variableManifests = await batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variablesExportRequest);
-        return studioService.fixConnectionVariables(variableManifests);
+        return variablesExportRequest;
+    }
+
+    private buildKeyAndVersionPairsFromArrayInput(keysByVersion: string[]): PackageKeyAndVersionPair[] {
+        return keysByVersion.map(keyAndVersion => {
+            const keyAndVersionSplit = keyAndVersion.split(":");
+            return {
+                packageKey: keyAndVersionSplit[0],
+                version: keyAndVersionSplit[1]
+            };
+        });
     }
 
     private exportToJson(data: any): void {
