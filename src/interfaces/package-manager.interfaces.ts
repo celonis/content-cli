@@ -58,7 +58,7 @@ export interface VariablesAssignments {
     type: string;
 }
 
-export interface VariableDefinitionWithValue {
+export interface VariableDefinition {
     key: string;
     type: PackageManagerVariableType;
     description?: string;

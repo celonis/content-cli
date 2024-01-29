@@ -1,4 +1,5 @@
-import {StudioComputeNodeDescriptor} from "./package-manager.interfaces";
+import {StudioComputeNodeDescriptor, VariableDefinition, VariablesAssignments} from "./package-manager.interfaces";
+import {SpaceTransport} from "./save-space.interface";
 
 export interface DependencyTransport {
     key: string;
@@ -19,6 +20,15 @@ export interface PackageExportTransport {
     datamodels?: StudioComputeNodeDescriptor[];
 }
 
+export interface PackageManifestTransport {
+    packageKey: string;
+    flavor: string;
+    activeVersion: string;
+    space?: SpaceTransport;
+    variableAssignments?: VariablesAssignments[];
+    dependenciesByVersion: Map<string, DependencyTransport[]>;
+}
+
 export interface VariableExportTransport {
     key: string;
     value: object;
@@ -35,4 +45,31 @@ export interface VariableManifestTransport {
 export interface PackageKeyAndVersionPair {
     packageKey: string;
     version: string;
+}
+
+export interface NodeExportTransport {
+    key: string;
+    parentNodeKey: string;
+    packageNodeKey: string;
+    name: string;
+    type: string;
+    exportSerializationType: string;
+    serializedContent: string;
+    schemaVersion: number;
+
+    unversionedMetadata: object;
+    versionedMetdata: object;
+
+    invalidContent?: boolean;
+    serializedDocument: Buffer;
+}
+
+export interface NodeSerializedContent {
+    variables: VariableDefinition[]
+}
+
+export interface StudioPackageManifest {
+    packageKey: string;
+    space: Partial<SpaceTransport>;
+    runtimeVariableAssignments: VariablesAssignments[];
 }

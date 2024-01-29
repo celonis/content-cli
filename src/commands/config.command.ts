@@ -18,4 +18,8 @@ export class ConfigCommand {
             await variableService.listVariables(keysByVersion, keysByVersionFile);
         }
     }
+
+    public batchExportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<void> {
+        return batchImportExportService.batchExportPackages(packageKeys, withDependencies);
+    }
 }

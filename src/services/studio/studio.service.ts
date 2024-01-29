@@ -1,4 +1,11 @@
-import {PackageExportTransport, VariableManifestTransport} from "../../interfaces/package-export-transport";
+import {
+    NodeExportTransport,
+    NodeSerializedContent,
+    PackageExportTransport,
+    StudioPackageManifest,
+    VariableExportTransport,
+    VariableManifestTransport
+} from "../../interfaces/package-export-transport";
 import {packageApi} from "../../api/package-api";
 import {
     PackageManagerVariableType,
@@ -6,6 +13,13 @@ import {
     StudioComputeNodeDescriptor
 } from "../../interfaces/package-manager.interfaces";
 import {dataModelService} from "../package-manager/datamodel-service";
+import {IZipEntry} from "adm-zip";
+import {parse, stringify} from "../../util/yaml";
+import AdmZip = require("adm-zip");
+import {nodeApi} from "../../api/node-api";
+import {variablesApi} from "../../api/variables-api";
+import {spaceApi} from "../../api/space-api";
+import {SpaceTransport} from "../../interfaces/save-space.interface";
 
 class StudioService {
 
@@ -37,6 +51,33 @@ class StudioService {
         }));
     }
 
+    public async getStudioPackageManifests(studioPackageKeys: string[]): Promise<StudioPackageManifest[]> {
+        return Promise.all(studioPackageKeys.map(async packageKey => {
+            const node = await nodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
+            const nodeSpace: SpaceTransport = await spaceApi.findOne(node.spaceId);
+            const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey);
+
+            return {
+                packageKey: packageKey,
+                space: {
+                    name: nodeSpace.name,
+                    iconReference: nodeSpace.iconReference
+                },
+                runtimeVariableAssignments: variableAssignments
+            }
+        }));
+    }
+
+    public processPackageForExport(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
+        const packageZip = new AdmZip(exportedPackage.getData());
+        packageZip.getEntries().forEach(entry => {
+            this.deleteFileIfTypeScenario(packageZip, entry);
+            this.fixConnectionVariablesIfRootNodeFile(packageZip, entry, exportedPackage.name, exportedVariables);
+        });
+
+        return packageZip;
+    }
+
     private setSpaceIdForStudioPackages(packages: PackageExportTransport[], studioPackages: PackageWithVariableAssignments[]): PackageExportTransport[] {
         const studioPackageByKey = new Map<string, PackageWithVariableAssignments>();
         studioPackages.forEach(pkg => studioPackageByKey.set(pkg.key, pkg));
@@ -66,6 +107,48 @@ class StudioService {
                             }))
             } : pkg;
         });
+    }
+
+    private deleteFileIfTypeScenario(packageZip: AdmZip, entry: IZipEntry): void {
+        if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
+            const node: NodeExportTransport = parse(entry.getData().toString());
+            if (node.type === "SCENARIO") {
+                packageZip.deleteFile(entry);
+            }
+        }
+    }
+
+    private fixConnectionVariablesIfRootNodeFile(packageZip: AdmZip, entry: IZipEntry, zipName: string, exportedVariables: VariableManifestTransport[]): void {
+        if (entry.name === "package.yml") {
+            const packageKeyAndVersion = zipName.replace(".zip", "").split("_");
+            const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
+
+            if (connectionVariablesByKey.size) {
+                const exportedNode: NodeExportTransport = parse(entry.getData().toString());
+                const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+
+                nodeContent.variables = nodeContent.variables.map(variable => ({
+                    ...variable,
+                    metadata: variable.type === PackageManagerVariableType.CONNECTION ?
+                        connectionVariablesByKey.get(variable.key).metadata : variable.metadata
+                }));
+
+                exportedNode.serializedContent = stringify(nodeContent);
+                packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
+            }
+        }
+    }
+
+    private getConnectionVariablesByKeyForPackage(packageKey: string, packageVersion: string, variables: VariableManifestTransport[]): Map<string, VariableExportTransport> {
+        const variablesByKey = new Map<string, VariableExportTransport>();
+        const packageVariables = variables.find(exportedVariable => exportedVariable.packageKey === packageKey && exportedVariable.version === packageVersion);
+
+        if (packageVariables && packageVariables.variables.length) {
+            packageVariables.variables.filter(variable => variable.type === PackageManagerVariableType.CONNECTION)
+                .forEach(variable => variablesByKey.set(variable.key, variable));
+        }
+
+        return variablesByKey;
     }
 }
 
