@@ -2,7 +2,6 @@ import {
     NodeExportTransport,
     NodeSerializedContent,
     PackageExportTransport,
-    PackageManifestTransport,
     StudioPackageManifest,
     VariableExportTransport,
     VariableManifestTransport
@@ -52,12 +51,8 @@ class StudioService {
         }));
     }
 
-    public async getStudioPackageManifests(manifests: PackageManifestTransport[]): Promise<StudioPackageManifest[]> {
-        const exportedStudioPackageKeys = manifests
-            .filter(manifest => manifest.flavor === "STUDIO")
-            .map(exportedPackage => exportedPackage.packageKey);
-
-        return Promise.all(exportedStudioPackageKeys.map(async packageKey => {
+    public async getStudioPackageManifests(studioPackageKeys: string[]): Promise<StudioPackageManifest[]> {
+        return Promise.all(studioPackageKeys.map(async packageKey => {
             const node = await nodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
             const nodeSpace: SpaceTransport = await spaceApi.findOne(node.spaceId);
             const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey);

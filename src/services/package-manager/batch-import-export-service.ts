@@ -49,11 +49,11 @@ class BatchImportExportService {
         exportedVariables = studioService.fixConnectionVariables(exportedVariables);
         exportedPackagesZip.addFile("variables.yml", Buffer.from(stringify(exportedVariables), "utf8"));
 
-        const studioData = await studioService.getStudioPackageManifests(manifest);
-        exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioData), "utf8"));
-
         const studioPackageKeys = manifest.filter(packageManifest => packageManifest.flavor === "STUDIO")
             .map(packageManifest => packageManifest.packageKey);
+
+        const studioData = await studioService.getStudioPackageManifests(studioPackageKeys);
+        exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioData), "utf8"));
 
         exportedPackagesZip.getEntries().forEach(entry => {
             if (entry.name.endsWith(".zip") && studioPackageKeys.includes(entry.name.split("_")[0])) {
