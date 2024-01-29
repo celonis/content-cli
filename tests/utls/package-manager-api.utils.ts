@@ -1,4 +1,5 @@
 import {PackageExportTransport} from "../../src/interfaces/package-export-transport";
+import {SpaceTransport} from "../../src/interfaces/save-space.interface";
 import {ContentNodeTransport} from "../../src/interfaces/package-manager.interfaces";
 
 export class PackageManagerApiUtils {
@@ -28,5 +29,13 @@ export class PackageManagerApiUtils {
             assetMetadataTransport: null,
             spaceId
         }
+    }
+
+    public static buildSpaceTransport = (id: string, name: string = "space-name", iconReference: string = "icon"): SpaceTransport => {
+        return {
+            id,
+            name,
+            iconReference,
+        };
     }
 }

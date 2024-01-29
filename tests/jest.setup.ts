@@ -10,8 +10,12 @@ jest.mock('fs');
 const mockWriteFileSync = jest.fn();
 (fs.writeFileSync as jest.Mock).mockImplementation(mockWriteFileSync);
 
+const mockWriteSync = jest.fn();
+(fs.writeSync as jest.Mock).mockImplementation(mockWriteSync);
+
 afterEach(() => {
     mockWriteFileSync.mockClear();
+    mockWriteSync.mockClear();
 })
 
 beforeAll(() => {
@@ -25,4 +29,4 @@ beforeEach(() => {
     logger.add(testTransport);
 })
 
-export {testTransport, mockWriteFileSync};
+export {testTransport, mockWriteFileSync, mockWriteSync};

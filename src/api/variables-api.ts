@@ -29,6 +29,12 @@ class VariablesApi {
             throw new FatalError(`Problem getting variables assignment values for type ${type}: ${e}`);
         });
     }
+
+    public getRuntimeVariableValues(packageKey: string): Promise<VariablesAssignments[]> {
+        return httpClientV2.get(`/package-manager/api/nodes/by-package-key/${packageKey}/variables/runtime-values`).catch(e => {
+            throw new FatalError(`Problem getting runtime variables of package ${packageKey}: ${e}`);
+        });
+    }
 }
 
 export const variablesApi = VariablesApi.INSTANCE;

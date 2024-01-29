@@ -9,4 +9,8 @@ export class ConfigCommand {
             await batchImportExportService.listActivePackages(flavors ?? []);
         }
     }
+
+    public batchExportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<void> {
+        return batchImportExportService.batchExportPackages(packageKeys, withDependencies);
+    }
 }
