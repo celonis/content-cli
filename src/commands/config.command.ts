@@ -1,4 +1,5 @@
 import {batchImportExportService} from "../services/package-manager/batch-import-export-service";
+import {variableService} from "../services/package-manager/variable-service";
 
 export class ConfigCommand {
 
@@ -7,6 +8,14 @@ export class ConfigCommand {
             await batchImportExportService.findAndExportListOfActivePackages(flavors ?? [], packageKeys ?? [], withDependencies)
         } else {
             await batchImportExportService.listActivePackages(flavors ?? []);
+        }
+    }
+
+    public async listVariables(jsonResponse: boolean, keysByVersion: string[], keysByVersionFile: string): Promise<void> {
+        if (jsonResponse) {
+            await variableService.exportVariables(keysByVersion, keysByVersionFile);
+        } else {
+            await variableService.listVariables(keysByVersion, keysByVersionFile);
         }
     }
 
