@@ -73,3 +73,13 @@ export interface StudioPackageManifest {
     space: Partial<SpaceTransport>;
     runtimeVariableAssignments: VariablesAssignments[];
 }
+
+export interface PackageVersionImport {
+    oldVersion: string;
+    newVersion: string;
+}
+
+export interface PostPackageImportData {
+    packageKey: string;
+    importedVersions: PackageVersionImport[];
+}

@@ -20,6 +20,8 @@ import {nodeApi} from "../../api/node-api";
 import {variablesApi} from "../../api/variables-api";
 import {spaceApi} from "../../api/space-api";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
+import {spaceService} from "../package-manager/space-service";
+import {variableService} from "../package-manager/variable-service";
 
 class StudioService {
 
@@ -76,6 +78,19 @@ class StudioService {
         });
 
         return packageZip;
+    }
+
+    public async processImportedPackages(configs: AdmZip): Promise<void> {
+        const studioFile = configs.getEntry("studio.yml");
+
+        if (studioFile) {
+            const studioManifests: StudioPackageManifest[] = parse(configs.getEntry("studio.yml").getData().toString());
+
+            await Promise.all(studioManifests.map(async manifest => {
+                await this.movePackageToSpace(manifest);
+                await this.assignRuntimeVariables(manifest);
+            }));
+        }
     }
 
     private setSpaceIdForStudioPackages(packages: PackageExportTransport[], studioPackages: PackageWithVariableAssignments[]): PackageExportTransport[] {
@@ -149,6 +164,25 @@ class StudioService {
         }
 
         return variablesByKey;
+    }
+
+    private async movePackageToSpace(manifest: StudioPackageManifest): Promise<void> {
+        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(manifest.packageKey, manifest.packageKey);
+
+        const allSpaces = await spaceService.refreshAndGetAllSpaces();
+        let targetSpace = allSpaces.find(space => space.name === manifest.space.name);
+
+        if (!targetSpace) {
+            targetSpace = await spaceService.createSpace(manifest.space.name, manifest.space.iconReference);
+        }
+
+        await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpace.id);
+    }
+
+    private async assignRuntimeVariables(manifest: StudioPackageManifest): Promise<void> {
+        if (manifest.runtimeVariableAssignments.length) {
+            await variableService.assignVariableValues(manifest.packageKey, manifest.runtimeVariableAssignments);
+        }
     }
 }
 

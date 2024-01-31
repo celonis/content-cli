@@ -11,6 +11,8 @@ import {FileService, fileService} from "../file-service";
 import {studioService} from "../studio/studio.service";
 import {parse, stringify} from "../../util/yaml"
 import AdmZip = require("adm-zip");
+import * as fs from "fs";
+import * as FormData from "form-data";
 
 class BatchImportExportService {
 
@@ -69,6 +71,19 @@ class BatchImportExportService {
         logger.info(fileDownloadedMessage + filename);
     }
 
+    public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
+        const configs = new AdmZip(file);
+
+        const formData = this.buildBodyForImport(file, configs);
+
+        const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
+        await studioService.processImportedPackages(configs);
+
+        const reportFileName = "config_import_report_" + uuidv4() + ".json";
+        fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
+        logger.info("Config import report file: " + reportFileName);
+    }
+
     private exportListOfPackages(packages: PackageExportTransport[]): void {
         const filename = uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(packages), filename);
@@ -96,6 +111,21 @@ class BatchImportExportService {
         });
 
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
+    }
+
+    private buildBodyForImport(file: string, configs: AdmZip): FormData {
+        const formData = new FormData();
+
+        formData.append("file", fs.createReadStream(file, {encoding: null}));
+
+        const variablesEntry = configs.getEntry("variables.yml");
+        if (variablesEntry) {
+            formData.append("mappedVariables", JSON.stringify(parse(variablesEntry.getData().toString())), {
+                contentType: "application/json"
+            });
+        }
+
+        return formData;
     }
 }
 

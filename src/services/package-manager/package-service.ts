@@ -22,6 +22,7 @@ import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manife
 import {DataPoolInstallVersionReport} from "../../interfaces/data-pool-manager.interfaces";
 import {SemanticVersioning} from "../../util/semantic-versioning"
 import {stringify} from "../../util/yaml";
+import * as FormData from "form-data";
 
 class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -184,7 +185,7 @@ class PackageService {
         let nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(packageToImport.packageKey, packageToImport.packageKey);
 
         const pathToZipFile = path.resolve(importedFilePath, packageToImport.packageKey + "_" + versionOfPackageBeingImported + ".zip");
-        const packageZip = await this.createBodyForImport(pathToZipFile);
+        const packageZip = this.createBodyForImport(pathToZipFile);
 
         await packageApi.importPackage(packageZip, targetSpace.id, !!nodeInTargetTeam, excludeActionFlows);
 
@@ -270,12 +271,11 @@ class PackageService {
         return importedPackages.includes(version);
     }
 
-    private async createBodyForImport(filename: string): Promise<object> {
-        return {
-            formData: {
-                package: await fs.createReadStream(filename, {encoding: null})
-            },
-        }
+    private createBodyForImport(filename: string): FormData {
+        const formData = new FormData();
+        formData.append("package", fs.createReadStream(filename, {encoding: null}));
+
+        return formData;
     }
 
     private async getTargetSpaceForExportedPackage(packageToImport: ManifestNodeTransport, spaceMappings: Map<string, string>): Promise<SpaceTransport> {

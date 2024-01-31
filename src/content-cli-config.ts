@@ -34,7 +34,7 @@ export class Config {
             .action(async cmd => {
                 await new ConfigCommand().listVariables(cmd.json, cmd.keysByVersion, cmd.keysByVersionFile);
                 process.exit();
-            })
+            });
 
         return program;
     }
@@ -53,6 +53,21 @@ export class Config {
 
         return program;
     }
+
+    public static import(program: CommanderStatic): CommanderStatic {
+        program
+            .command("import")
+            .description("Command to import package configs")
+            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("--overwrite", "Flag to allow overwriting of packages")
+            .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
+            .action(async cmd => {
+                await new ConfigCommand().batchImportPackages(cmd.file, cmd.overwrite);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 process.on("unhandledRejection", (e, promise) => {
@@ -63,6 +78,7 @@ const loadAllCommands = () => {
     Config.list(commander);
     Config.listVariables(commander);
     Config.export(commander);
+    Config.import(commander);
     commander.parse(process.argv);
 };
 
