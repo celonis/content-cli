@@ -13,6 +13,7 @@ import {SpaceTransport} from "../../src/interfaces/save-space.interface";
 import {packageApi} from "../../src/api/package-api";
 import {PackageManagerVariableType, VariablesAssignments} from "../../src/interfaces/package-manager.interfaces";
 import {mockCreateReadStream, mockExistsSync, mockReadFileSync} from "../utls/fs-mock-utils";
+import {BatchExportImportConstants} from "../../src/interfaces/batch-export-import-constants";
 
 describe("Config import", () => {
 
@@ -61,7 +62,7 @@ describe("Config import", () => {
             },
             runtimeVariableAssignments: []
         }];
-        exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioManifest)));
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioManifest)));
 
         mockReadFileSync(exportedPackagesZip.toBuffer());
         mockCreateReadStream(exportedPackagesZip.toBuffer());
@@ -112,7 +113,7 @@ describe("Config import", () => {
             },
             runtimeVariableAssignments: []
         }];
-        exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioManifest)));
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioManifest)));
 
         mockReadFileSync(exportedPackagesZip.toBuffer());
         mockCreateReadStream(exportedPackagesZip.toBuffer());
@@ -174,7 +175,7 @@ describe("Config import", () => {
             },
             runtimeVariableAssignments: [variableAssignment]
         }];
-        exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioManifest)));
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioManifest)));
 
         mockReadFileSync(exportedPackagesZip.toBuffer());
         mockCreateReadStream(exportedPackagesZip.toBuffer());

@@ -22,6 +22,7 @@ import {spaceApi} from "../../api/space-api";
 import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {spaceService} from "../package-manager/space-service";
 import {variableService} from "../package-manager/variable-service";
+import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 
 class StudioService {
 
@@ -81,10 +82,10 @@ class StudioService {
     }
 
     public async processImportedPackages(configs: AdmZip): Promise<void> {
-        const studioFile = configs.getEntry("studio.yml");
+        const studioFile = configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME);
 
         if (studioFile) {
-            const studioManifests: StudioPackageManifest[] = parse(configs.getEntry("studio.yml").getData().toString());
+            const studioManifests: StudioPackageManifest[] = parse(configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
 
             await Promise.all(studioManifests.map(async manifest => {
                 await this.movePackageToSpace(manifest);

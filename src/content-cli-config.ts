@@ -58,7 +58,7 @@ export class Config {
         program
             .command("import")
             .description("Command to import package configs")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("-p, --profile <profile>", "Profile which you want to use to import packages")
             .option("--overwrite", "Flag to allow overwriting of packages")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
