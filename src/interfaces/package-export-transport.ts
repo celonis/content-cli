@@ -24,8 +24,6 @@ export interface PackageManifestTransport {
     packageKey: string;
     flavor: string;
     activeVersion: string;
-    space?: SpaceTransport;
-    variableAssignments?: VariablesAssignments[];
     dependenciesByVersion: Map<string, DependencyTransport[]>;
 }
 
