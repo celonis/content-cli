@@ -24,8 +24,6 @@ export interface PackageManifestTransport {
     packageKey: string;
     flavor: string;
     activeVersion: string;
-    space?: SpaceTransport;
-    variableAssignments?: VariablesAssignments[];
     dependenciesByVersion: Map<string, DependencyTransport[]>;
 }
 
@@ -72,4 +70,14 @@ export interface StudioPackageManifest {
     packageKey: string;
     space: Partial<SpaceTransport>;
     runtimeVariableAssignments: VariablesAssignments[];
+}
+
+export interface PackageVersionImport {
+    oldVersion: string;
+    newVersion: string;
+}
+
+export interface PostPackageImportData {
+    packageKey: string;
+    importedVersions: PackageVersionImport[];
 }

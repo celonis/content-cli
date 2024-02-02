@@ -22,4 +22,8 @@ export class ConfigCommand {
     public batchExportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<void> {
         return batchImportExportService.batchExportPackages(packageKeys, withDependencies);
     }
+
+    public batchImportPackages(file: string, overwrite: boolean): Promise<void> {
+        return batchImportExportService.batchImportPackages(file, overwrite);
+    }
 }

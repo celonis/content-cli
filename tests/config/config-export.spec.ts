@@ -19,6 +19,7 @@ import {
     VariableDefinition,
     VariablesAssignments
 } from "../../src/interfaces/package-manager.interfaces";
+import {BatchExportImportConstants} from "../../src/interfaces/batch-export-import-constants";
 
 describe("Config export", () => {
 
@@ -33,8 +34,8 @@ describe("Config export", () => {
 
     it("Should export studio file for studio packageKeys", async () => {
         const manifest: PackageManifestTransport[] = [];
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "STUDIO"));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO));
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-3", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
 
@@ -63,7 +64,7 @@ describe("Config export", () => {
         const fileBuffer = mockWriteSync.mock.calls[0][1];
         const actualZip = new AdmZip(fileBuffer);
 
-        const studioManifest: StudioPackageManifest[] = parse(actualZip.getEntry("studio.yml").getData().toString());
+        const studioManifest: StudioPackageManifest[] = parse(actualZip.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
         expect(studioManifest).toHaveLength(2);
         expect(studioManifest).toContainEqual({
             packageKey: firstStudioPackage.key,
@@ -92,8 +93,8 @@ describe("Config export", () => {
         secondPackageDependencies.set("1.1.1", []);
 
         const manifest: PackageManifestTransport[] = [];
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO", firstPackageDependencies));
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "STUDIO", secondPackageDependencies));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO, firstPackageDependencies));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO, secondPackageDependencies));
 
         const firstPackageVariableDefinition: VariableDefinition[] = [
             {
@@ -176,7 +177,7 @@ describe("Config export", () => {
         const fileBuffer = mockWriteSync.mock.calls[0][1];
         const actualZip = new AdmZip(fileBuffer);
 
-        const exportedVariablesFileContent: VariableManifestTransport[] = parse(actualZip.getEntry("variables.yml").getData().toString());
+        const exportedVariablesFileContent: VariableManifestTransport[] = parse(actualZip.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString());
         expect(exportedVariablesFileContent).toHaveLength(2);
         expect(exportedVariablesFileContent).toContainEqual({
             packageKey: "key-1",
@@ -233,8 +234,8 @@ describe("Config export", () => {
 
     it("Should remove SCENARIO asset files of packages", async () => {
         const manifest: PackageManifestTransport[] = [];
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "STUDIO"));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO));
 
         const firstPackageNode = ConfigUtils.buildPackageNode("key-1", "");
         const firstPackageScenarioChild = ConfigUtils.buildChildNode("child-1-scenario", firstPackageNode.key, "SCENARIO");
@@ -275,8 +276,8 @@ describe("Config export", () => {
 
     it("Should add appName to metadata for CONNECTION variables of package.yml files", async () => {
         const manifest: PackageManifestTransport[] = [];
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "STUDIO"));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO));
 
         const firstPackageVariableDefinition: VariableDefinition[] = [
             {

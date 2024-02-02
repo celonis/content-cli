@@ -45,10 +45,8 @@ class HttpClientServiceV2 {
         });
     }
 
-    public async postFile(url: string, body: any, parameters?: {}): Promise<any> {
+    public async postFile(url: string, formData: FormData, parameters?: {}): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            const formData = new FormData();
-            formData.append("package", body.formData.package);
             axios.post(
                 this.resolveUrl(url),
                 formData,

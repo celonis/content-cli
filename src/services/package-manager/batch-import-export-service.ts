@@ -11,6 +11,9 @@ import {FileService, fileService} from "../file-service";
 import {studioService} from "../studio/studio.service";
 import {parse, stringify} from "../../util/yaml"
 import AdmZip = require("adm-zip");
+import * as fs from "fs";
+import * as FormData from "form-data";
+import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 
 class BatchImportExportService {
 
@@ -40,20 +43,20 @@ class BatchImportExportService {
         const exportedPackagesZip: AdmZip = new AdmZip(exportedPackagesData);
 
         const manifest: PackageManifestTransport[] = parse(
-            exportedPackagesZip.getEntry("manifest.yml").getData().toString()
+            exportedPackagesZip.getEntry(BatchExportImportConstants.MANIFEST_FILE_NAME).getData().toString()
         );
 
         const versionsByPackageKey = this.getVersionsByPackageKey(manifest);
 
         let exportedVariables = await this.getVersionedVariablesForPackagesWithKeys(versionsByPackageKey);
         exportedVariables = studioService.fixConnectionVariables(exportedVariables);
-        exportedPackagesZip.addFile("variables.yml", Buffer.from(stringify(exportedVariables), "utf8"));
+        exportedPackagesZip.addFile(BatchExportImportConstants.VARIABLES_FILE_NAME, Buffer.from(stringify(exportedVariables), "utf8"));
 
-        const studioPackageKeys = manifest.filter(packageManifest => packageManifest.flavor === "STUDIO")
+        const studioPackageKeys = manifest.filter(packageManifest => packageManifest.flavor === BatchExportImportConstants.STUDIO)
             .map(packageManifest => packageManifest.packageKey);
 
         const studioData = await studioService.getStudioPackageManifests(studioPackageKeys);
-        exportedPackagesZip.addFile("studio.yml", Buffer.from(stringify(studioData), "utf8"));
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioData), "utf8"));
 
         exportedPackagesZip.getEntries().forEach(entry => {
             if (entry.name.endsWith(".zip") && studioPackageKeys.includes(entry.name.split("_")[0])) {
@@ -67,6 +70,19 @@ class BatchImportExportService {
         const filename = `export_${uuidv4()}.zip`;
         exportedPackagesZip.writeZip(filename);
         logger.info(fileDownloadedMessage + filename);
+    }
+
+    public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
+        const configs = new AdmZip(file);
+
+        const formData = this.buildBodyForImport(file, configs);
+
+        const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
+        await studioService.processImportedPackages(configs);
+
+        const reportFileName = "config_import_report_" + uuidv4() + ".json";
+        fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
+        logger.info("Config import report file: " + reportFileName);
     }
 
     private exportListOfPackages(packages: PackageExportTransport[]): void {
@@ -96,6 +112,21 @@ class BatchImportExportService {
         });
 
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
+    }
+
+    private buildBodyForImport(file: string, configs: AdmZip): FormData {
+        const formData = new FormData();
+
+        formData.append("file", fs.createReadStream(file));
+
+        const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME);
+        if (variablesEntry) {
+            formData.append("mappedVariables", JSON.stringify(parse(variablesEntry.getData().toString())), {
+                contentType: "application/json"
+            });
+        }
+
+        return formData;
     }
 }
 

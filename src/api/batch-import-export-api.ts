@@ -1,10 +1,11 @@
 import {
     PackageExportTransport,
-    PackageKeyAndVersionPair,
+    PackageKeyAndVersionPair, PostPackageImportData,
     VariableManifestTransport
 } from "../interfaces/package-export-transport";
 import {httpClientV2} from "../services/http-client-service.v2";
 import {FatalError} from "../util/logger";
+import * as FormData from "form-data";
 
 class BatchImportExportApi {
     public static readonly INSTANCE = new BatchImportExportApi();
@@ -39,6 +40,14 @@ class BatchImportExportApi {
         return httpClientV2.getFile(`/package-manager/api/core/packages/export/batch?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem exporting packages: ${e}`);
         });
+    }
+
+    public importPackages(data: FormData, overwrite: boolean): Promise<PostPackageImportData[]> {
+        return httpClientV2.postFile(
+            "/package-manager/api/core/packages/import/batch",
+            data,
+            {overwrite}
+        );
     }
 
     public findVariablesWithValuesByPackageKeysAndVersion(packagesByKeyAndVersion: PackageKeyAndVersionPair[]): Promise<VariableManifestTransport[]> {
