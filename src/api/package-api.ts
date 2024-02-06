@@ -18,10 +18,11 @@ class PackageApi {
         });
     }
 
-    public async exportPackage(rootPackageKey: string, version?: string): Promise<Buffer> {
+    public async exportPackage(rootPackageKey: string, version?: string, excludeActionFlows?: boolean): Promise<Buffer> {
         const queryParams = new URLSearchParams();
         queryParams.set("newKey", rootPackageKey);
         queryParams.set("version", version ?? "");
+        queryParams.set("excludeActionFlows", excludeActionFlows ? "true" : "false");
 
         return await httpClientV2.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Pacakge ${rootPackageKey}_${version} failed to export.`)
@@ -63,10 +64,11 @@ class PackageApi {
         });
     }
 
-    public async importPackage(nodeContent: any, spaceId: string, overwrite: boolean): Promise<any> {
+    public async importPackage(nodeContent: any, spaceId: string, overwrite: boolean, excludeActionFlows?: boolean): Promise<any> {
         await httpClientV2.postFile("/package-manager/api/packages/import", nodeContent, {
             spaceId: spaceId,
-            overwrite: overwrite
+            overwrite: overwrite,
+            excludeActionFlows: excludeActionFlows
         }).catch(e => {
             throw new FatalError(`Problem importing package: ${e}`);
         });

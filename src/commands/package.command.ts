@@ -36,7 +36,7 @@ export class PackageCommand {
         await this.contentService.batchPush(profile, this.packageManagerFactory.createPushManagers(spaceKey));
     }
 
-    public async listPackages(jsonResponse: boolean, includeDependencies: boolean, packageKeys:string[]): Promise<void> {
+    public async listPackages(jsonResponse: boolean, includeDependencies: boolean, packageKeys: string[]): Promise<void> {
         if (jsonResponse) {
             await packageService.findAndExportListOfAllPackages(includeDependencies, packageKeys ?? []);
         } else {
@@ -44,11 +44,11 @@ export class PackageCommand {
         }
     }
 
-    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean): Promise<void> {
-        await packageService.batchExportPackages(packageKeys, includeDependencies);
+    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean, excludeActionFlows?: boolean): Promise<void> {
+        await packageService.batchExportPackages(packageKeys, includeDependencies, excludeActionFlows);
     }
 
-    public async batchImportPackages(spaceMappings: string[], dataModelMappingsFilePath: string, exportedPackagesFile: string, overwrite: boolean): Promise<void> {
-        await packageService.batchImportPackages(spaceMappings ?? [], dataModelMappingsFilePath, exportedPackagesFile, overwrite);
+    public async batchImportPackages(spaceMappings: string[], dataModelMappingsFilePath: string, exportedPackagesFile: string, overwrite: boolean, excludeActionFlows?: boolean): Promise<void> {
+        await packageService.batchImportPackages(spaceMappings ?? [], dataModelMappingsFilePath, exportedPackagesFile, overwrite, excludeActionFlows);
     }
 }

@@ -1,9 +1,8 @@
 import {VariableCommand} from "../../src/commands/variable.command";
 import axios from "axios";
 import {FileService} from "../../src/services/file-service";
-import * as fs from "fs";
 import * as path from "path";
-import {testTransport} from "../jest.setup";
+import {mockWriteFileSync, testTransport} from "../jest.setup";
 
 describe("List assignments", () => {
 
@@ -39,7 +38,7 @@ describe("List assignments", () => {
 
         const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(fs.writeFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAssignmentValues), {encoding: "utf-8"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAssignmentValues), {encoding: "utf-8"});
     })
 
     it("Should contain url params in the url", async () => {

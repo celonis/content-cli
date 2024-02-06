@@ -16,10 +16,11 @@ export class Import {
                 "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'"
             )
             .option("--overwrite", "Flag to allow overwriting of packages")
+            .option("--excludeActionFlows", "Skip overwrite of action flows of package")
             .option("--dataModelMappingsFile <dataModelMappingsFile>", "DataModel variable mappings file path. If missing, variables will be mapped from manifest file.")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(async cmd => {
-                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.dataModelMappingsFile, cmd.file, cmd.overwrite);
+                await new PackageCommand().batchImportPackages(cmd.spaceMappings, cmd.dataModelMappingsFile, cmd.file, cmd.overwrite, cmd.excludeActionFlows);
                 process.exit();
             });
 

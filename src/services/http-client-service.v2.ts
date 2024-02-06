@@ -22,10 +22,31 @@ class HttpClientServiceV2 {
         })
     }
 
-    public async postFile(url: string, body: any, parameters?: {}): Promise<any> {
+    public async getFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            const formData = new FormData();
-            formData.append("package", body.formData.package);
+            axios.get(this.resolveUrl(url), {
+                headers: this.buildHeaders(contextService.getContext().profile),
+                responseType: "stream"
+            }).then(response => {
+                const data: Buffer[] = [];
+                response.data.on("data", (chunk: Buffer) => {
+                    data.push(chunk);
+                });
+                response.data.on("end", () => {
+                    if (this.checkBadRequest(response.status)) {
+                        this.handleBadRequest(response.status, response.data, reject);
+                    } else {
+                        this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
+                    }
+                });
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
+        });
+    }
+
+    public async postFile(url: string, formData: FormData, parameters?: {}): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
             axios.post(
                 this.resolveUrl(url),
                 formData,
