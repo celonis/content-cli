@@ -139,7 +139,7 @@ describe("Config listVariables", () => {
         expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);
     })
 
-    it("Should throw error if no mapping or file path is provided", async () => {
+    it("Should throw error if no mapping and no file path is provided", async () => {
         try {
             await new ConfigCommand().listVariables(true, [], "");
         } catch (e) {

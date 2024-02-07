@@ -170,11 +170,22 @@ class StudioService {
     private async movePackageToSpace(manifest: StudioPackageManifest): Promise<void> {
         const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(manifest.packageKey, manifest.packageKey);
 
+        let targetSpace;
         const allSpaces = await spaceService.refreshAndGetAllSpaces();
-        let targetSpace = allSpaces.find(space => space.name === manifest.space.name);
 
-        if (!targetSpace) {
-            targetSpace = await spaceService.createSpace(manifest.space.name, manifest.space.iconReference);
+        if (manifest.space.id) {
+            const customSpace = allSpaces.find(space => space.id === manifest.space.id);
+
+            if (!customSpace) {
+                throw Error("Provided space id does not exist.");
+            }
+
+            targetSpace = customSpace;
+        } else {
+            targetSpace = allSpaces.find(space => space.name === manifest.space.name);
+            if (!targetSpace) {
+                targetSpace = await spaceService.createSpace(manifest.space.name, manifest.space.iconReference);
+            }
         }
 
         await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpace.id);

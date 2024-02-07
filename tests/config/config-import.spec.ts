@@ -50,13 +50,14 @@ describe("Config import", () => {
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
     })
 
-    it("Should move studio package to target space after import", async () => {
+    it("Should move STUDIO package to space id defined in STUDIO manifest", async () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
         const studioManifest: StudioPackageManifest[] = [{
             packageKey: "key-1",
             space: {
+                id: "space-id",
                 name: "space",
                 iconReference: "earth"
             },
@@ -101,7 +102,107 @@ describe("Config import", () => {
         expect(movePackageToSpaceSpy).toHaveBeenCalledWith("node-id", "space-id");
     })
 
-    it("Should create space to move package after import if target space does not exist", async () => {
+    it("Should throw error if space id from STUDIO manifest does not exist", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+        const studioManifest: StudioPackageManifest[] = [{
+            packageKey: "key-1",
+            space: {
+                id: "space-id",
+                name: "space",
+                iconReference: "earth"
+            },
+            runtimeVariableAssignments: []
+        }];
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioManifest)));
+
+        mockReadFileSync(exportedPackagesZip.toBuffer());
+        mockCreateReadStream(exportedPackagesZip.toBuffer());
+
+        const importResponse: PostPackageImportData[] = [{
+            packageKey: "key-1",
+            importedVersions: [{
+                oldVersion: "1.0.2",
+                newVersion: "1.0.0"
+            }]
+        }];
+
+        const node = {
+            id: "node-id",
+            key: "key-1"
+        }
+
+        const space: SpaceTransport = {
+            id: "space-id-2",
+            name: "space",
+            iconReference: "earth"
+        };
+
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/nodes/key-1/key-1", node);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
+        mockAxiosPut("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/space-id", {});
+
+        try {
+            await new ConfigCommand().batchImportPackages("./export_file.zip", true);
+        } catch (e) {
+            expect(e.message).toEqual("Provided space id does not exist.");
+        }
+    })
+
+    it("Should move STUDIO package to existing space name defined in STUDIO manifest", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+        const studioManifest: StudioPackageManifest[] = [{
+            packageKey: "key-1",
+            space: {
+                name: "space",
+                iconReference: "earth"
+            },
+            runtimeVariableAssignments: []
+        }];
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioManifest)));
+
+        mockReadFileSync(exportedPackagesZip.toBuffer());
+        mockCreateReadStream(exportedPackagesZip.toBuffer());
+
+        const importResponse: PostPackageImportData[] = [{
+            packageKey: "key-1",
+            importedVersions: [{
+                oldVersion: "1.0.2",
+                newVersion: "1.0.0"
+            }]
+        }];
+
+        const node = {
+            id: "node-id",
+            key: "key-1"
+        }
+
+        const space: SpaceTransport = {
+            id: "space-id",
+            name: "space",
+            iconReference: "earth"
+        };
+
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/nodes/key-1/key-1", node);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
+        mockAxiosPut("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/space-id", {});
+
+        const movePackageToSpaceSpy = jest.spyOn(packageApi, "movePackageToSpace");
+
+        await new ConfigCommand().batchImportPackages("./export_file.zip", true);
+
+        const expectedFileName = testTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
+
+        expect(movePackageToSpaceSpy).toHaveBeenCalledWith("node-id", "space-id");
+    })
+
+    it("Should create and move STUDIO package to space name defined in STUDIO manifest", async () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "STUDIO"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);

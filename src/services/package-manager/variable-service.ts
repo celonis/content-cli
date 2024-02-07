@@ -80,9 +80,9 @@ class VariableService {
     private async buildKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<PackageKeyAndVersionPair[]> {
         let variablesExportRequest: PackageKeyAndVersionPair[] = [];
 
-        if (keysByVersion.length) {
+        if (keysByVersion.length !== 0) {
             variablesExportRequest = this.buildKeyAndVersionPairsFromArrayInput(keysByVersion);
-        } else if (!keysByVersion.length && keysByVersionFile.length) {
+        } else if (keysByVersion.length === 0 && keysByVersionFile !== "") {
             variablesExportRequest = await fileService.readFileToJson(keysByVersionFile);
         } else {
             throw new FatalError("Please provide keysByVersion mappings or file path!");
