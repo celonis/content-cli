@@ -26,6 +26,7 @@ export class Config {
     public static listVariables(program: CommanderStatic): CommanderStatic {
         program
             .command("variables")
+            .description("Commands related to variable configs")
             .command("list")
             .description("Command to list versioned variables of packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
