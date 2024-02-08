@@ -71,10 +71,6 @@ export class Config {
     }
 }
 
-process.on("unhandledRejection", (e, promise) => {
-    logger.error(e.toString());
-});
-
 const loadAllCommands = () => {
     Config.list(commander);
     Config.listVariables(commander);
@@ -84,7 +80,7 @@ const loadAllCommands = () => {
 };
 
 ContextInitializer.initContext()
-    .then(loadAllCommands)
+    .then(loadAllCommands, loadAllCommands)
     .catch(e => {
         logger.error(e);
     });

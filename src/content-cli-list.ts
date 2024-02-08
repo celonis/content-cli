@@ -100,10 +100,6 @@ export class List {
     }
 }
 
-process.on("unhandledRejection", (e, promise) => {
-    logger.error(e.toString());
-});
-
 const loadAllCommands = () => {
     List.packages(commander);
     List.spaces(commander);
@@ -115,7 +111,7 @@ const loadAllCommands = () => {
 };
 
 ContextInitializer.initContext()
-    .then(loadAllCommands)
+    .then(loadAllCommands, loadAllCommands)
     .catch(e => {
         logger.error(e);
     });
