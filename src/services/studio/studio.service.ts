@@ -58,7 +58,7 @@ class StudioService {
         return Promise.all(studioPackageKeys.map(async packageKey => {
             const node = await nodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
             const nodeSpace: SpaceTransport = await spaceApi.findOne(node.spaceId);
-            const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey);
+            const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey, BatchExportImportConstants.APP_MODE_VIEWER);
 
             return {
                 packageKey: packageKey,
