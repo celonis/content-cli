@@ -87,10 +87,10 @@ class StudioService {
         if (studioFile) {
             const studioManifests: StudioPackageManifest[] = parse(configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
 
-            await Promise.all(studioManifests.map(async manifest => {
+            for (const manifest of studioManifests) {
                 await this.movePackageToSpace(manifest);
                 await this.assignRuntimeVariables(manifest);
-            }));
+            }
         }
     }
 
