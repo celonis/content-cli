@@ -31,7 +31,7 @@ class VariablesApi {
     }
 
     public getRuntimeVariableValues(packageKey: string): Promise<VariablesAssignments[]> {
-        return httpClientV2.get(`/package-manager/api/nodes/by-package-key/${packageKey}/variables/runtime-values`).catch(e => {
+        return httpClientV2.get(`/package-manager/api/nodes/by-package-key/${packageKey}/variables/runtime-values?appMode=VIEWER`).catch(e => {
             throw new FatalError(`Problem getting runtime variables of package ${packageKey}: ${e}`);
         });
     }
