@@ -59,10 +59,14 @@ class BatchImportExportService {
         exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioData), "utf8"));
 
         exportedPackagesZip.getEntries().forEach(entry => {
-            if (entry.name.endsWith(".zip") && studioPackageKeys.includes(entry.name.split("_")[0])) {
-                const updatedPackage = studioService.processPackageForExport(entry, exportedVariables);
+            if (entry.name.endsWith(".zip")) {
+                const lastUnderscoreIndex = entry.name.lastIndexOf("_");
+                const namePart = entry.name.substring(0, lastUnderscoreIndex);
 
-                exportedPackagesZip.updateFile(entry, updatedPackage.toBuffer());
+                if (studioPackageKeys.includes(namePart)) {
+                    const updatedPackage = studioService.processPackageForExport(entry, exportedVariables);
+                    exportedPackagesZip.updateFile(entry, updatedPackage.toBuffer());
+                }
             }
         });
 
