@@ -2,6 +2,7 @@ import {
     NodeExportTransport,
     NodeSerializedContent,
     PackageExportTransport,
+    PackageKeyAndVersionPair,
     StudioPackageManifest,
     VariableExportTransport,
     VariableManifestTransport
@@ -137,11 +138,9 @@ class StudioService {
     private fixConnectionVariablesForRootNodeFiles(packageZip: AdmZip, zipName: string, exportedVariables: VariableManifestTransport[]): void {
         packageZip.getEntries().forEach(entry => {
             if (entry.name === "package.yml") {
-                const lastUnderscoreIndex = zipName.lastIndexOf("_");
-                const packageKey = zipName.replace(".zip", "").substring(0, lastUnderscoreIndex);
-                const packageVersion = zipName.replace(".zip", "").substring(lastUnderscoreIndex + 1);
+                const packageKeyAndVersion = this.getPackageKeyAndVersion(zipName);
 
-                const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKey, packageVersion, exportedVariables);
+                const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
 
                 if (connectionVariablesByKey.size) {
                     const exportedNode: NodeExportTransport = parse(entry.getData().toString());
@@ -158,6 +157,17 @@ class StudioService {
                 }
             }
         })
+    }
+
+    private getPackageKeyAndVersion(zipName: string): PackageKeyAndVersionPair {
+        const lastUnderscoreIndex = zipName.lastIndexOf("_");
+        const packageKey = zipName.replace(".zip", "").substring(0, lastUnderscoreIndex);
+        const packageVersion = zipName.replace(".zip", "").substring(lastUnderscoreIndex + 1);
+
+        return {
+            packageKey: packageKey,
+            version: packageVersion
+        }
     }
 
     private getConnectionVariablesByKeyForPackage(packageKey: string, packageVersion: string, variables: VariableManifestTransport[]): Map<string, VariableExportTransport> {
