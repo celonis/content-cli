@@ -443,7 +443,7 @@ describe("Config export", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key_with_underscores_1&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", exportedVariables);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
         await new ConfigCommand().batchExportPackages(["key_with_underscores_1"], true);
 
