@@ -14,6 +14,8 @@ import AdmZip = require("adm-zip");
 import * as fs from "fs";
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
+import {packageApi} from "../../api/package-api";
+import {Readable} from "stream";
 
 class BatchImportExportService {
 
@@ -75,10 +77,23 @@ class BatchImportExportService {
     public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
         const configs = new AdmZip(file);
 
-        const formData = this.buildBodyForImport(file, configs);
+        const updatedFiles = await studioService.mapSpaces(configs);
+
+        const filename = `export_${uuidv4()}.zip`;
+        console.log(filename)
+
+        const workingDirectory = process.cwd();
+        console.log(workingDirectory)
+
+        const zipFilePath = `${workingDirectory}/${filename}`;
+        console.log(zipFilePath)
+
+        fs.writeFileSync(zipFilePath, updatedFiles.toBuffer());
+
+        const formData = this.buildBodyForImport(zipFilePath, filename, file, configs);
 
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
-        await studioService.processImportedPackages(configs);
+        await studioService.processImportedPackages(configs, []);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
@@ -114,10 +129,12 @@ class BatchImportExportService {
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
     }
 
-    private buildBodyForImport(file: string, configs: AdmZip): FormData {
+    private buildBodyForImport(file: string, filename: string, s: string, configs: AdmZip): FormData {
         const formData = new FormData();
 
-        formData.append("file", fs.createReadStream(file));
+        formData.append("file", fs.createReadStream(file), {
+            filename: filename
+        });
 
         const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME);
         if (variablesEntry) {
