@@ -4,7 +4,7 @@ import {v4 as uuidv4} from "uuid";
 import {
     PackageExportTransport,
     PackageKeyAndVersionPair,
-    PackageManifestTransport,
+    PackageManifestTransport, StudioPackageManifest,
     VariableManifestTransport
 } from "../../interfaces/package-export-transport";
 import {FileService, fileService} from "../file-service";
@@ -76,24 +76,20 @@ class BatchImportExportService {
 
     public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
         const configs = new AdmZip(file);
+        const studioManifests: StudioPackageManifest[] = parse(configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
+        const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString();
 
-        const updatedFiles = await studioService.mapSpaces(configs);
+        const updatedFiles = await studioService.mapSpaces(configs, studioManifests);
 
         const filename = `export_${uuidv4()}.zip`;
-        console.log(filename)
-
         const workingDirectory = process.cwd();
-        console.log(workingDirectory)
-
         const zipFilePath = `${workingDirectory}/${filename}`;
-        console.log(zipFilePath)
-
         fs.writeFileSync(zipFilePath, updatedFiles.toBuffer());
 
-        const formData = this.buildBodyForImport(zipFilePath, filename, file, configs);
+        const formData = this.buildBodyForImport(zipFilePath, filename, file, updatedFiles, variablesEntry);
 
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
-        await studioService.processImportedPackages(configs, []);
+        await studioService.processImportedPackages(updatedFiles, [], studioManifests);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
@@ -129,16 +125,15 @@ class BatchImportExportService {
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
     }
 
-    private buildBodyForImport(file: string, filename: string, s: string, configs: AdmZip): FormData {
+    private buildBodyForImport(file: string, filename: string, s: string, configs: AdmZip, variablesEntry: string): FormData {
         const formData = new FormData();
 
         formData.append("file", fs.createReadStream(file), {
             filename: filename
         });
 
-        const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME);
         if (variablesEntry) {
-            formData.append("mappedVariables", JSON.stringify(parse(variablesEntry.getData().toString())), {
+            formData.append("mappedVariables", JSON.stringify(parse(variablesEntry)), {
                 contentType: "application/json"
             });
         }
