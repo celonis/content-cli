@@ -125,38 +125,35 @@ class StudioService {
     }
 
     private deleteScenarioAssets(packageZip: AdmZip): void {
-        packageZip.getEntries().forEach(entry => {
-            if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
+        packageZip.getEntries().filter(entry => entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml"))
+            .forEach(entry => {
                 const node: NodeExportTransport = parse(entry.getData().toString());
                 if (node.type === "SCENARIO") {
                     packageZip.deleteFile(entry);
                 }
-            }
-        })
+            });
     }
 
     private fixConnectionVariablesForRootNodeFiles(packageZip: AdmZip, zipName: string, exportedVariables: VariableManifestTransport[]): void {
-        packageZip.getEntries().forEach(entry => {
-            if (entry.name === "package.yml") {
-                const packageKeyAndVersion = this.getPackageKeyAndVersion(zipName);
+        const packageKeyAndVersion = this.getPackageKeyAndVersion(zipName);
 
-                const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
+        const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
 
-                if (connectionVariablesByKey.size) {
-                    const exportedNode: NodeExportTransport = parse(entry.getData().toString());
-                    const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+        if (connectionVariablesByKey.size) {
+            const packageEntry = packageZip.getEntry("package.yml");
 
-                    nodeContent.variables = nodeContent.variables.map(variable => ({
-                        ...variable,
-                        metadata: variable.type === PackageManagerVariableType.CONNECTION ?
-                            connectionVariablesByKey.get(variable.key).metadata : variable.metadata
-                    }));
+            const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
+            const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
 
-                    exportedNode.serializedContent = stringify(nodeContent);
-                    packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
-                }
-            }
-        })
+            nodeContent.variables = nodeContent.variables.map(variable => ({
+                ...variable,
+                metadata: variable.type === PackageManagerVariableType.CONNECTION ?
+                    connectionVariablesByKey.get(variable.key).metadata : variable.metadata
+            }));
+
+            exportedNode.serializedContent = stringify(nodeContent);
+            packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
+        }
     }
 
     private getPackageKeyAndVersion(zipName: string): PackageKeyAndVersionPair {
