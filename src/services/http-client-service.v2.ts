@@ -36,6 +36,7 @@ class HttpClientServiceV2 {
                 response.data.on("end", () => {
                     if (response.status !== 200) {
                         reject(Buffer.concat(data).toString());
+                        return;
                     }
 
                     this.handleResponseStreamData(Buffer.concat(data), resolve, reject);
