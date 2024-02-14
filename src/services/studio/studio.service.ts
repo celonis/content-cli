@@ -139,21 +139,23 @@ class StudioService {
 
         const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
 
-        if (connectionVariablesByKey.size) {
-            const packageEntry = packageZip.getEntry("package.yml");
-
-            const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
-            const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
-
-            nodeContent.variables = nodeContent.variables.map(variable => ({
-                ...variable,
-                metadata: variable.type === PackageManagerVariableType.CONNECTION ?
-                    connectionVariablesByKey.get(variable.key).metadata : variable.metadata
-            }));
-
-            exportedNode.serializedContent = stringify(nodeContent);
-            packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
+        if (connectionVariablesByKey.size === 0) {
+            return;
         }
+
+        const packageEntry = packageZip.getEntry("package.yml");
+
+        const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
+        const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+
+        nodeContent.variables = nodeContent.variables.map(variable => ({
+            ...variable,
+            metadata: variable.type === PackageManagerVariableType.CONNECTION ?
+                connectionVariablesByKey.get(variable.key).metadata : variable.metadata
+        }));
+
+        exportedNode.serializedContent = stringify(nodeContent);
+        packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
     }
 
     private getPackageKeyAndVersion(zipName: string): PackageKeyAndVersionPair {
