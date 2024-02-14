@@ -86,6 +86,7 @@ class StudioService {
 
     public async processImportedPackages(configs: AdmZip, existingStudioPackages: ContentNodeTransport[], studioManifests: StudioPackageManifest[]): Promise<void> {
             await Promise.all(studioManifests.map(async manifest => {
+                console.log("Moving to space", manifest.packageKey, manifest.space )
                 const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(manifest.packageKey, manifest.packageKey);
                 await packageApi.movePackageToSpace(nodeInTargetTeam.id, manifest.space.id);
             }));
@@ -191,9 +192,9 @@ class StudioService {
                     const packageZip = new AdmZip(entry.getData());
                     console.log("entries", packageZip.getEntries().length)
                     packageZip.getEntries().forEach(entry => {
-                        if(entry.entryName === "package.yml") {
+                        if(entry.entryName.endsWith("yml")) {
                             const updatedNodeFile = this.updateSpaceIdForNode(entry, spaceId);
-                            studioManifests
+                            // console.log("node-i", updatedNodeFile)
                             packageZip.updateFile(entry, Buffer.from(stringify(updatedNodeFile)));
                         }
                     });
@@ -245,15 +246,19 @@ class StudioService {
 
     // tslint:disable-next-line:typedef
     private updateSpaceIdForNode(entry: AdmZip.IZipEntry, spaceId: string) {
-        const exportedNode: NodeExportTransport = parse(entry.getData().toString());
-        // console.log("Before update", exportedNode);
+        console.log("contenti \n", entry.getData().toString());
 
-        // console.log("Before update", exportedNode.unversionedMetadata);
-        const unversionedMetadata = exportedNode.unversionedMetadata;
+        const exportedNode: NodeExportTransport = parse(entry.getData().toString());
         // @ts-ignore
-        unversionedMetadata.spaceId = spaceId;
-        // console.log("After update", unversionedMetadata);
-        return exportedNode;
+        const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
+        console.log("Old space id",oldSpaceId)
+        console.log("New space id",spaceId)
+
+        let content  = entry.getData().toString();
+        content = content.replaceAll(oldSpaceId, spaceId);
+        console.log("contenti updated \n", content);
+        // @ts-ignore
+        return content;
     }
 }
 
