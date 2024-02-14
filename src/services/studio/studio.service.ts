@@ -195,7 +195,7 @@ class StudioService {
                         if(entry.entryName.endsWith("yml")) {
                             const updatedNodeFile = this.updateSpaceIdForNode(entry, spaceId);
                             // console.log("node-i", updatedNodeFile)
-                            packageZip.updateFile(entry, Buffer.from(stringify(updatedNodeFile)));
+                            packageZip.updateFile(entry, Buffer.from(updatedNodeFile));
                         }
                     });
                     exportedFiles.updateFile(entry.entryName, packageZip.toBuffer());
@@ -233,7 +233,6 @@ class StudioService {
             }
 
             const spaceTransport = await spaceService.createSpace(studioPackageManifest.space.name, studioPackageManifest.space.iconReference);
-            console.log("Created space by name ", targetSpaceByName.id, targetSpaceByName.name)
             return spaceTransport.id;
         }
     }
@@ -246,17 +245,17 @@ class StudioService {
 
     // tslint:disable-next-line:typedef
     private updateSpaceIdForNode(entry: AdmZip.IZipEntry, spaceId: string) {
-        console.log("contenti \n", entry.getData().toString());
+        console.log(entry.getData().toString());
+        let content = entry.getData().toString();
 
-        const exportedNode: NodeExportTransport = parse(entry.getData().toString());
+        const exportedNode: NodeExportTransport = parse(content);
         // @ts-ignore
         const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
         console.log("Old space id",oldSpaceId)
         console.log("New space id",spaceId)
 
-        let content  = entry.getData().toString();
-        content = content.replaceAll(oldSpaceId, spaceId);
-        console.log("contenti updated \n", content);
+        content = content.replace(oldSpaceId, spaceId);
+        console.log(content);
         // @ts-ignore
         return content;
     }
