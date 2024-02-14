@@ -89,12 +89,10 @@ class StudioService {
 
         if (studioFile) {
             const studioManifests: StudioPackageManifest[] = parse(configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
+            for (const manifest of studioManifests) {
+                await this.movePackageToSpace(manifest);
 
-            await Promise.all(studioManifests.map(async manifest => {
-                if(existingStudioPackages.some(obj => obj.key === manifest.packageKey)){
-                    await this.movePackageToSpace(manifest);
-                }
-            }));
+            }
         }
     }
 
@@ -198,10 +196,10 @@ class StudioService {
                     const packageZip = new AdmZip(entry.getData());
                     console.log("entries", packageZip.getEntries().length)
                     packageZip.getEntries().forEach(entry => {
-                        if(entry.entryName.endsWith(".yml")) {
-                            console.log(entry.entryName)
+                        if(entry.entryName === "package.yml") {
+                            console.log("beforeUpdate ", entry.getData().toString())
                             const updatedNodeFile = this.updateSpaceIdForNode(entry, spaceId);
-                            console.log(updatedNodeFile)
+                            console.log("afterUpdate  ", updatedNodeFile)
                             packageZip.updateFile(entry, Buffer.from(stringify(updatedNodeFile)));
                         }
                     });

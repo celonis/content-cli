@@ -93,7 +93,7 @@ class BatchImportExportService {
         const formData = this.buildBodyForImport(zipFilePath, filename, file, configs);
 
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
-        await studioService.processImportedPackages(configs, []);
+        await studioService.processImportedPackages(updatedFiles, []);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
@@ -132,11 +132,11 @@ class BatchImportExportService {
     private buildBodyForImport(file: string, filename: string, s: string, configs: AdmZip): FormData {
         const formData = new FormData();
 
-        formData.append("file", fs.createReadStream(file), {
-            filename: filename
-        });
+        const newConfigs = new AdmZip(file);
 
-        const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME);
+        formData.append("file", fs.createReadStream(file));
+
+        const variablesEntry = newConfigs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME);
         if (variablesEntry) {
             formData.append("mappedVariables", JSON.stringify(parse(variablesEntry.getData().toString())), {
                 contentType: "application/json"
