@@ -2,6 +2,7 @@ import {
     NodeExportTransport,
     NodeSerializedContent,
     PackageExportTransport,
+    PackageKeyAndVersionPair,
     StudioPackageManifest,
     VariableExportTransport,
     VariableManifestTransport
@@ -73,10 +74,8 @@ class StudioService {
 
     public processPackageForExport(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
         const packageZip = new AdmZip(exportedPackage.getData());
-        packageZip.getEntries().forEach(entry => {
-            this.deleteFileIfTypeScenario(packageZip, entry);
-            this.fixConnectionVariablesIfRootNodeFile(packageZip, entry, exportedPackage.name, exportedVariables);
-        });
+        this.deleteScenarioAssets(packageZip);
+        this.fixConnectionVariablesForRootNodeFiles(packageZip, exportedPackage.name, exportedVariables);
 
         return packageZip;
     }
@@ -125,33 +124,48 @@ class StudioService {
         });
     }
 
-    private deleteFileIfTypeScenario(packageZip: AdmZip, entry: IZipEntry): void {
-        if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
-            const node: NodeExportTransport = parse(entry.getData().toString());
-            if (node.type === "SCENARIO") {
-                packageZip.deleteFile(entry);
-            }
-        }
+    private deleteScenarioAssets(packageZip: AdmZip): void {
+        packageZip.getEntries().filter(entry => entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml"))
+            .forEach(entry => {
+                const node: NodeExportTransport = parse(entry.getData().toString());
+                if (node.type === "SCENARIO") {
+                    packageZip.deleteFile(entry);
+                }
+            });
     }
 
-    private fixConnectionVariablesIfRootNodeFile(packageZip: AdmZip, entry: IZipEntry, zipName: string, exportedVariables: VariableManifestTransport[]): void {
-        if (entry.name === "package.yml") {
-            const packageKeyAndVersion = zipName.replace(".zip", "").split("_");
-            const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
+    private fixConnectionVariablesForRootNodeFiles(packageZip: AdmZip, zipName: string, exportedVariables: VariableManifestTransport[]): void {
+        const packageKeyAndVersion = this.getPackageKeyAndVersion(zipName);
 
-            if (connectionVariablesByKey.size) {
-                const exportedNode: NodeExportTransport = parse(entry.getData().toString());
-                const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+        const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
 
-                nodeContent.variables = nodeContent.variables.map(variable => ({
-                    ...variable,
-                    metadata: variable.type === PackageManagerVariableType.CONNECTION ?
-                        connectionVariablesByKey.get(variable.key).metadata : variable.metadata
-                }));
+        if (connectionVariablesByKey.size === 0) {
+            return;
+        }
 
-                exportedNode.serializedContent = stringify(nodeContent);
-                packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
-            }
+        const packageEntry = packageZip.getEntry("package.yml");
+
+        const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
+        const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+
+        nodeContent.variables = nodeContent.variables.map(variable => ({
+            ...variable,
+            metadata: variable.type === PackageManagerVariableType.CONNECTION ?
+                connectionVariablesByKey.get(variable.key).metadata : variable.metadata
+        }));
+
+        exportedNode.serializedContent = stringify(nodeContent);
+        packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
+    }
+
+    private getPackageKeyAndVersion(zipName: string): PackageKeyAndVersionPair {
+        const lastUnderscoreIndex = zipName.lastIndexOf("_");
+        const packageKey = zipName.replace(".zip", "").substring(0, lastUnderscoreIndex);
+        const packageVersion = zipName.replace(".zip", "").substring(lastUnderscoreIndex + 1);
+
+        return {
+            packageKey: packageKey,
+            version: packageVersion
         }
     }
 
