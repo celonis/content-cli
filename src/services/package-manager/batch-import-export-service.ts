@@ -95,7 +95,6 @@ class BatchImportExportService {
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
         logger.info("Config import report file: " + reportFileName);
         this.cleanUpFileSystem(rootDirectoryZipPath);
-
     }
 
     private rezipRoot(updatedFiles: AdmZip) {
@@ -155,7 +154,6 @@ class BatchImportExportService {
 
     private cleanUpFileSystem(rootDirectoryZipPath: string) {
         fs.unlinkSync(rootDirectoryZipPath);
-
     }
 }
 
