@@ -17,6 +17,7 @@ const mockAxiosGet = (url: string, responseData: any) => {
                 readableStream.push(response.data)
                 readableStream.push(null);
                 return Promise.resolve({
+                    status: 200,
                     data: readableStream,
                 });
             } else {
