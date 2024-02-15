@@ -55,7 +55,7 @@ export interface NodeExportTransport {
     serializedContent: string;
     schemaVersion: number;
 
-    unversionedMetadata: object;
+    unversionedMetadata: any;
     versionedMetdata: object;
 
     invalidContent?: boolean;
