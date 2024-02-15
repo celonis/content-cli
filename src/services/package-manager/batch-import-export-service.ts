@@ -15,6 +15,7 @@ import * as fs from "fs";
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 import AdmZip = require("adm-zip");
+import {packageApi} from "../../api/package-api";
 
 class BatchImportExportService {
 
@@ -81,14 +82,14 @@ class BatchImportExportService {
         const configs = new AdmZip(file);
         const studioManifests: StudioPackageManifest[] = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
         const variablesManifest = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as string;
-
+        const existingStudioPackages = await packageApi.findAllPackages();
 
         const updatedFiles = await studioService.mapSpaces(configs, studioManifests);
         const rootDirectoryZipPath= this.rezipRoot(updatedFiles);
         const formData = this.buildBodyForImport(rootDirectoryZipPath, variablesManifest);
 
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
-        await studioService.processImportedPackages(updatedFiles, [], studioManifests);
+        await studioService.processImportedPackages(updatedFiles, existingStudioPackages, studioManifests);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);

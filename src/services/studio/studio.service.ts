@@ -190,12 +190,15 @@ class StudioService {
 
                             const spaceId = await this.findDesiredSpaceIdForPackage(packageKey, studioManifest);
                             studioManifest.space.id = spaceId;
+                            console.log(studioManifest)
 
                             const packageZip = new AdmZip(packageZipFile.getData());
                             packageZip.getEntries().forEach(nodeFile => {
                                 if (nodeFile.entryName.endsWith("yml")) {
+                                    console.log(nodeFile.entryName)
                                     const updatedNodeFile = this.updateSpaceIdForNode(nodeFile.getData().toString(), spaceId);
-                                    packageZip.updateFile(nodeFile, Buffer.from(stringify(updatedNodeFile)));
+                                    console.log(updatedNodeFile)
+                                    packageZip.updateFile(nodeFile, Buffer.from(updatedNodeFile));
                                 }
                             });
                             exportedFiles.updateFile(packageZipFile, packageZip.toBuffer());
@@ -238,9 +241,14 @@ class StudioService {
     }
     private updateSpaceIdForNode(nodeContent: string, spaceId: string): string {
         const exportedNode: NodeExportTransport = parse(nodeContent);
+        console.log(exportedNode.packageNodeKey)
+        const key: string = "spaceId";
+        console.log(exportedNode)
         // @ts-ignore
-        const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
-        nodeContent = nodeContent.replaceAll(oldSpaceId, spaceId);
+        const oldSpaceId = exportedNode.unversionedMetadata[key]
+        console.log(oldSpaceId)
+
+        nodeContent = nodeContent.replace(new RegExp(oldSpaceId, "g"), spaceId);
         return nodeContent;
     }
 }
