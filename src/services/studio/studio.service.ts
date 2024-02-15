@@ -85,9 +85,11 @@ class StudioService {
 
     public async processImportedPackages(configs: AdmZip, existingStudioPackages: ContentNodeTransport[], studioManifests: StudioPackageManifest[]): Promise<void> {
             for (const  manifest of studioManifests) {
-                // add only for existing ones
-                const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(manifest.packageKey, manifest.packageKey);
-                await packageApi.movePackageToSpace(nodeInTargetTeam.id, manifest.space.id);
+                const existingPackage = existingStudioPackages.find(existingPackage => existingPackage.key === manifest.packageKey);
+                if(existingPackage) {
+                    await packageApi.movePackageToSpace(existingPackage.id, manifest.space.id);
+                }
+                await this.assignRuntimeVariables(manifest);
             }
     }
 
@@ -134,7 +136,6 @@ class StudioService {
 
     private fixConnectionVariablesForRootNodeFiles(packageZip: AdmZip, zipName: string, exportedVariables: VariableManifestTransport[]): void {
         const packageKeyAndVersion = this.getPackageKeyAndVersion(zipName);
-
         const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
 
         if (connectionVariablesByKey.size === 0) {
@@ -179,42 +180,28 @@ class StudioService {
         return variablesByKey;
     }
 
-    private async movePackageToSpace(manifest: StudioPackageManifest): Promise<void> {
-        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(manifest.packageKey, manifest.packageKey);
+    public async mapSpaces(exportedFiles: AdmZip, studioManifests: StudioPackageManifest[]): Promise<AdmZip> {
+            for (const packageZipFile of exportedFiles.getEntries()) {
+                if(packageZipFile.name.endsWith(".zip")) {
+                    const packageKey = this.getPackageKeyAndVersion(packageZipFile.name).packageKey;
+                    if(this.isStudioPackage(studioManifests, packageKey)) {
+                        const studioManifest = studioManifests.find(manifest => manifest.packageKey === packageKey);
+                        if (studioManifest) {
 
-        const allSpaces = await spaceService.refreshAndGetAllSpaces();
-        let targetSpace = allSpaces.find(space => space.name === manifest.space.name);
+                            const spaceId = await this.findDesiredSpaceIdForPackage(packageKey, studioManifest);
+                            studioManifest.space.id = spaceId;
 
-        if (!targetSpace) {
-            targetSpace = await spaceService.createSpace(manifest.space.name, manifest.space.iconReference);
-        }
-
-        await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpace.id);
-    }
-
-    // tslint:disable-next-line:typedef
-    public async mapSpaces(exportedFiles: AdmZip, studioManifests: StudioPackageManifest[]) {
-        console.log("mapping spaces ", studioManifests)
-
-            for (const entry of exportedFiles.getEntries()) {
-                const packageKey = entry.name.split("_")[0];
-                if (entry.name.endsWith(".zip") && this.isStudioPackage(studioManifests, packageKey)) {
-                    const studioManifest = studioManifests.find(manifest => manifest.packageKey === packageKey);
-                    const spaceId =  await this.getMappedOrFindSpaceIdForPackage(packageKey, studioManifests);
-                    studioManifest.space.id = spaceId;
-
-                    const packageZip = new AdmZip(entry.getData());
-                    console.log("entries", packageZip.getEntries().length)
-                    packageZip.getEntries().forEach(entry => {
-                        if(entry.entryName.endsWith("yml")) {
-                            const updatedNodeFile = this.updateSpaceIdForNode(entry, spaceId);
-                            // console.log("node-i", updatedNodeFile)
-                            packageZip.updateFile(entry, Buffer.from(stringify(updatedNodeFile)));
+                            const packageZip = new AdmZip(packageZipFile.getData());
+                            packageZip.getEntries().forEach(nodeFile => {
+                                if (nodeFile.entryName.endsWith("yml")) {
+                                    const updatedNodeFile = this.updateSpaceIdForNode(nodeFile.getData().toString(), spaceId);
+                                    packageZip.updateFile(nodeFile, Buffer.from(stringify(updatedNodeFile)));
+                                }
+                            });
+                            exportedFiles.updateFile(packageZipFile, packageZip.toBuffer());
                         }
-                    });
-                    exportedFiles.updateFile(entry.entryName, packageZip.toBuffer());
+                    }
                 }
-
         }
         return exportedFiles;
     }
@@ -223,16 +210,10 @@ class StudioService {
         return studioManifests.some(manifest => manifest.packageKey === packageKey);
     }
 
-    private async getMappedOrFindSpaceIdForPackage(packageKey: string, studioPackageManifestList: StudioPackageManifest[]): Promise<string> {
-        const studioPackageManifest = studioPackageManifestList.find(manifest => manifest.packageKey === packageKey);
+    private async findDesiredSpaceIdForPackage(packageKey: string, studioPackageManifest: StudioPackageManifest): Promise<string> {
         const allSpaces = await spaceService.refreshAndGetAllSpaces();
-        console.log("studioPackageManifest ", studioPackageManifest)
 
-        if (studioPackageManifest) {
-            console.log("studioPackageManifest ", true)
-            console.log(studioPackageManifest)
             if(studioPackageManifest.space.id) {
-                console.log("Found mapped space id ", studioPackageManifest.space.id)
                 const targetSpace = allSpaces.find(space => space.id === studioPackageManifest.space.id);
                 if (!targetSpace) {
                     throw Error("Provided space ID does not exist.");
@@ -242,14 +223,12 @@ class StudioService {
 
             const targetSpaceByName = allSpaces.find(space => space.name === studioPackageManifest.space.name);
             if(targetSpaceByName) {
-                console.log("Found space by name ", targetSpaceByName.id, targetSpaceByName.name)
                 return targetSpaceByName.id;
             }
 
             const spaceTransport = await spaceService.createSpace(studioPackageManifest.space.name, studioPackageManifest.space.iconReference);
-            console.log("Created space by name ", targetSpaceByName.id, targetSpaceByName.name)
             return spaceTransport.id;
-        }
+
     }
 
     private async assignRuntimeVariables(manifest: StudioPackageManifest): Promise<void> {
@@ -257,22 +236,12 @@ class StudioService {
             await variableService.assignVariableValues(manifest.packageKey, manifest.runtimeVariableAssignments);
         }
     }
-
-    // tslint:disable-next-line:typedef
-    private updateSpaceIdForNode(entry: AdmZip.IZipEntry, spaceId: string) {
-        console.log("contenti \n", entry.getData().toString());
-
-        const exportedNode: NodeExportTransport = parse(entry.getData().toString());
+    private updateSpaceIdForNode(nodeContent: string, spaceId: string): string {
+        const exportedNode: NodeExportTransport = parse(nodeContent);
         // @ts-ignore
         const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
-        console.log("Old space id",oldSpaceId)
-        console.log("New space id",spaceId)
-
-        let content  = entry.getData().toString();
-        content = content.replaceAll(oldSpaceId, spaceId);
-        console.log("contenti updated \n", content);
-        // @ts-ignore
-        return content;
+        nodeContent = nodeContent.replaceAll(oldSpaceId, spaceId);
+        return nodeContent;
     }
 }
 

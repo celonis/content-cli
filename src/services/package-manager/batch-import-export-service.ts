@@ -4,18 +4,17 @@ import {v4 as uuidv4} from "uuid";
 import {
     PackageExportTransport,
     PackageKeyAndVersionPair,
-    PackageManifestTransport, StudioPackageManifest,
+    PackageManifestTransport,
+    StudioPackageManifest,
     VariableManifestTransport
 } from "../../interfaces/package-export-transport";
 import {FileService, fileService} from "../file-service";
 import {studioService} from "../studio/studio.service";
 import {parse, stringify} from "../../util/yaml"
-import AdmZip = require("adm-zip");
 import * as fs from "fs";
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
-import {packageApi} from "../../api/package-api";
-import {Readable} from "stream";
+import AdmZip = require("adm-zip");
 
 class BatchImportExportService {
 
@@ -80,17 +79,13 @@ class BatchImportExportService {
 
     public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
         const configs = new AdmZip(file);
-        const studioManifests: StudioPackageManifest[] = parse(configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
-        const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString();
+        const studioManifests: StudioPackageManifest[] = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
+        const variablesManifest = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as string;
+
 
         const updatedFiles = await studioService.mapSpaces(configs, studioManifests);
-
-        const filename = `export_${uuidv4()}.zip`;
-        const workingDirectory = process.cwd();
-        const zipFilePath = `${workingDirectory}/${filename}`;
-        fs.writeFileSync(zipFilePath, updatedFiles.toBuffer());
-
-        const formData = this.buildBodyForImport(zipFilePath, filename, file, updatedFiles, variablesEntry);
+        const rootDirectoryZipPath= this.rezipRoot(updatedFiles);
+        const formData = this.buildBodyForImport(rootDirectoryZipPath, variablesManifest);
 
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
         await studioService.processImportedPackages(updatedFiles, [], studioManifests);
@@ -98,6 +93,16 @@ class BatchImportExportService {
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
         logger.info("Config import report file: " + reportFileName);
+        this.cleanUpFileSystem(rootDirectoryZipPath);
+
+    }
+
+    private rezipRoot(updatedFiles: AdmZip) {
+        const filename = `export_${uuidv4()}.zip`;
+        const workingDirectory = process.cwd();
+        const zipFilePath = `${workingDirectory}/${filename}`;
+        fs.writeFileSync(zipFilePath, updatedFiles.toBuffer());
+        return zipFilePath;
     }
 
     private exportListOfPackages(packages: PackageExportTransport[]): void {
@@ -129,20 +134,27 @@ class BatchImportExportService {
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
     }
 
-    private buildBodyForImport(file: string, filename: string, s: string, configs: AdmZip, variablesEntry: string): FormData {
+    private buildBodyForImport(filePath: string, variablesEntry: string): FormData {
         const formData = new FormData();
 
-        formData.append("file", fs.createReadStream(file), {
-            filename: filename
-        });
+        formData.append("file", fs.createReadStream(filePath));
 
         if (variablesEntry) {
-            formData.append("mappedVariables", JSON.stringify(parse(variablesEntry)), {
+            formData.append("mappedVariables", JSON.stringify(variablesEntry), {
                 contentType: "application/json"
             });
         }
 
         return formData;
+    }
+
+    private parseEntryData(configs: AdmZip, FILE_NAME: BatchExportImportConstants) {
+        return parse(configs.getEntry(FILE_NAME).getData().toString());
+    }
+
+    private cleanUpFileSystem(rootDirectoryZipPath: string) {
+        fs.unlinkSync(rootDirectoryZipPath);
+
     }
 }
 
