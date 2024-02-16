@@ -43,15 +43,13 @@ class StudioService {
     public fixConnectionVariables(variables: VariableManifestTransport[]): VariableManifestTransport[] {
         return variables.map(variableManifest => ({
             ...variableManifest,
-            variables: variableManifest.variables.map(variable => ({
-                ...variable,
-                metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
-                    ...variable.metadata,
-                    appName: variable.value["appName"] || ""
-                } : {
-                    ...variable.metadata
+            variables: variableManifest.variables.map(variable => {
+                if (variable.type !== PackageManagerVariableType.CONNECTION) {
+                    return variable;
                 }
-            }))
+
+                return this.fixConnectionVariable(variable);
+            })
         }));
     }
 
@@ -122,6 +120,20 @@ class StudioService {
                             }))
             } : pkg;
         });
+    }
+
+    private fixConnectionVariable(variable: VariableExportTransport): VariableExportTransport {
+        if (!variable.value.appName) {
+            return variable;
+        }
+
+        return {
+            ...variable,
+            metadata: {
+                ...variable.metadata,
+                appName: variable.value.appName
+            }
+        }
     }
 
     private deleteScenarioAssets(packageZip: AdmZip): void {

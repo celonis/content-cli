@@ -117,6 +117,11 @@ describe("Config export", () => {
                 key: "key2-var",
                 type: PackageManagerVariableType.DATA_MODEL,
                 runtime: false
+            },
+            {
+                key: "key-2-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
             }
         ];
 
@@ -156,6 +161,14 @@ describe("Config export", () => {
                         type: PackageManagerVariableType.DATA_MODEL,
                         value: "dm-id" as unknown as object,
                         metadata: {}
+                    },
+                    {
+                        key: "key-2-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: "connection-id",
+                        metadata: {
+                            appName: "nameOfApp"
+                        }
                     }
                 ]
             },
@@ -211,6 +224,14 @@ describe("Config export", () => {
                     type: PackageManagerVariableType.DATA_MODEL,
                     value: "dm-id",
                     metadata: {}
+                },
+                {
+                    key: "key-2-connection",
+                    type: PackageManagerVariableType.CONNECTION,
+                    value: "connection-id",
+                    metadata: {
+                        appName: "nameOfApp"
+                    }
                 }
             ]
         });
@@ -303,6 +324,11 @@ describe("Config export", () => {
                 metadata: {
                     appName: "celonis"
                 }
+            },
+            {
+                key: "key-2-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
             }
         ];
 
@@ -347,6 +373,14 @@ describe("Config export", () => {
                         metadata: {
                             appName: "celonis"
                         }
+                    },
+                    {
+                        key: "key-2-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: "connection-id",
+                        metadata: {
+                            appName: "nameOfApp"
+                        }
                     }
                 ]
             },
@@ -389,8 +423,17 @@ describe("Config export", () => {
         const secondPackageExportedNode: NodeExportTransport = parse(secondPackageExportedZip.getEntry("package.yml").getData().toString());
         expect(secondPackageExportedNode).toBeTruthy();
         const secondPackageContent: NodeSerializedContent = parse(secondPackageExportedNode.serializedContent);
-        expect(secondPackageContent.variables).toHaveLength(1);
-        expect(secondPackageContent.variables).toEqual([...secondPackageVariableDefinition]);
+        expect(secondPackageContent.variables).toHaveLength(2);
+        expect(secondPackageContent.variables).toEqual([{
+                ...secondPackageVariableDefinition[0],
+            },
+            {
+                ...secondPackageVariableDefinition[1],
+                metadata: {
+                    appName: "nameOfApp"
+                }
+            }
+        ]);
     })
 
     it("Should export with SCENARIO nodes removed and CONNECTION variables fixed for package key with multiple underscores", async () => {
@@ -405,6 +448,11 @@ describe("Config export", () => {
             },
             {
                 key: "key-1-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
+            },
+            {
+                key: "key-1-another-connection",
                 type: PackageManagerVariableType.CONNECTION,
                 runtime: false
             }
@@ -435,6 +483,14 @@ describe("Config export", () => {
                             connectionId: "connection-id"
                         } as unknown as object,
                         metadata: null
+                    },
+                    {
+                        key: "key-1-another-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: "connection-id",
+                        metadata: {
+                            appName: "nameOfApp"
+                        }
                     }
                 ]
             }
@@ -458,7 +514,7 @@ describe("Config export", () => {
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.yml").getData().toString());
         expect(firstPackageExportedNode).toBeTruthy();
         const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.serializedContent);
-        expect(firstPackageContent.variables).toHaveLength(2);
+        expect(firstPackageContent.variables).toHaveLength(3);
         expect(firstPackageContent.variables).toEqual([
             {
                 ...firstPackageVariableDefinition[0],
@@ -467,6 +523,11 @@ describe("Config export", () => {
                 ...firstPackageVariableDefinition[1],
                 metadata: {
                     appName: "celonis"
+                }
+            }, {
+                ...firstPackageVariableDefinition[2],
+                metadata: {
+                    appName: "nameOfApp"
                 }
             }
         ]);
