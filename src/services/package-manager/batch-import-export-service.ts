@@ -14,8 +14,8 @@ import {parse, stringify} from "../../util/yaml"
 import * as fs from "fs";
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
-import AdmZip = require("adm-zip");
 import {packageApi} from "../../api/package-api";
+import AdmZip = require("adm-zip");
 
 class BatchImportExportService {
 
@@ -79,30 +79,20 @@ class BatchImportExportService {
     }
 
     public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
-        const configs = new AdmZip(file);
-        const studioManifests: StudioPackageManifest[] = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
-        const variablesManifest = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as string;
-        const existingStudioPackages = await packageApi.findAllPackages();
+        let configs = new AdmZip(file);
+        const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
+        const variablesManifests: VariableManifestTransport[] = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as VariableManifestTransport[];
 
-        const updatedFiles = await studioService.mapSpaces(configs, studioManifests);
-        const rootDirectoryZipPath= this.rezipRoot(updatedFiles);
-        const formData = this.buildBodyForImport(rootDirectoryZipPath, variablesManifest);
+        configs = await studioService.mapSpaces(configs, studioManifests);
+        const existingStudioPackages = await packageApi.findAllPackages();
+        const formData = this.buildBodyForImport(configs, variablesManifests);
 
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
-        await studioService.processImportedPackages(updatedFiles, existingStudioPackages, studioManifests);
+        await studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
         logger.info("Config import report file: " + reportFileName);
-        this.cleanUpFileSystem(rootDirectoryZipPath);
-    }
-
-    private rezipRoot(updatedFiles: AdmZip) {
-        const filename = `export_${uuidv4()}.zip`;
-        const workingDirectory = process.cwd();
-        const zipFilePath = `${workingDirectory}/${filename}`;
-        fs.writeFileSync(zipFilePath, updatedFiles.toBuffer());
-        return zipFilePath;
     }
 
     private exportListOfPackages(packages: PackageExportTransport[]): void {
@@ -134,13 +124,13 @@ class BatchImportExportService {
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
     }
 
-    private buildBodyForImport(filePath: string, variablesEntry: string): FormData {
+    private buildBodyForImport(configs: AdmZip, variablesManifests: VariableManifestTransport[]): FormData {
         const formData = new FormData();
 
-        formData.append("file", fs.createReadStream(filePath));
+        formData.append("file", fs.createReadStream(configs.toBuffer()));
 
-        if (variablesEntry) {
-            formData.append("mappedVariables", JSON.stringify(variablesEntry), {
+        if (variablesManifests) {
+            formData.append("mappedVariables", JSON.stringify(variablesManifests), {
                 contentType: "application/json"
             });
         }
@@ -148,12 +138,12 @@ class BatchImportExportService {
         return formData;
     }
 
-    private parseEntryData(configs: AdmZip, FILE_NAME: BatchExportImportConstants) {
-        return parse(configs.getEntry(FILE_NAME).getData().toString());
-    }
-
-    private cleanUpFileSystem(rootDirectoryZipPath: string) {
-        fs.unlinkSync(rootDirectoryZipPath);
+    private parseEntryData(configs: AdmZip, fileName: string): any {
+        const entry = configs.getEntry(fileName);
+        if(entry) {
+            return (parse(entry.getData().toString()));
+        }
+        return null;
     }
 }
 

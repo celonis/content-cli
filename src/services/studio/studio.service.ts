@@ -27,7 +27,6 @@ import {variableService} from "../package-manager/variable-service";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 import AdmZip = require("adm-zip");
 
-
 class StudioService {
 
     public async getExportPackagesWithStudioData(packagesToExport: PackageExportTransport[], withDependencies: boolean): Promise<PackageExportTransport[]> {
@@ -84,13 +83,16 @@ class StudioService {
     }
 
     public async processImportedPackages(configs: AdmZip, existingStudioPackages: ContentNodeTransport[], studioManifests: StudioPackageManifest[]): Promise<void> {
-            for (const  manifest of studioManifests) {
-                const existingPackage = existingStudioPackages.find(existingPackage => existingPackage.key === manifest.packageKey);
-                if(existingPackage) {
-                    await packageApi.movePackageToSpace(existingPackage.id, manifest.space.id);
-                }
-                await this.assignRuntimeVariables(manifest);
+        if(studioManifests == null) {
+            return;
+        }
+        for (const  manifest of studioManifests) {
+            const existingPackage = existingStudioPackages.find(existingPackage => existingPackage.key === manifest.packageKey);
+            if (existingPackage) {
+                await packageApi.movePackageToSpace(existingPackage.id, manifest.space.id);
             }
+            await this.assignRuntimeVariables(manifest);
+        }
     }
 
     private setSpaceIdForStudioPackages(packages: PackageExportTransport[], studioPackages: PackageWithVariableAssignments[]): PackageExportTransport[] {
@@ -125,10 +127,10 @@ class StudioService {
     }
 
     private deleteScenarioAssets(packageZip: AdmZip): void {
-        packageZip.getEntries().filter(entry => entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml"))
+        packageZip.getEntries().filter(entry => entry.entryName.startsWith(BatchExportImportConstants.NODES_FOLDER_NAME) && entry.entryName.endsWith(BatchExportImportConstants.YAML_EXTENSION))
             .forEach(entry => {
                 const node: NodeExportTransport = parse(entry.getData().toString());
-                if (node.type === "SCENARIO") {
+                if (node.type === BatchExportImportConstants.SCENARIO_NODE) {
                     packageZip.deleteFile(entry);
                 }
             });
@@ -159,8 +161,8 @@ class StudioService {
 
     private getPackageKeyAndVersion(zipName: string): PackageKeyAndVersionPair {
         const lastUnderscoreIndex = zipName.lastIndexOf("_");
-        const packageKey = zipName.replace(".zip", "").substring(0, lastUnderscoreIndex);
-        const packageVersion = zipName.replace(".zip", "").substring(lastUnderscoreIndex + 1);
+        const packageKey = zipName.replace(BatchExportImportConstants.ZIP_EXTENSION, "").substring(0, lastUnderscoreIndex);
+        const packageVersion = zipName.replace(BatchExportImportConstants.ZIP_EXTENSION, "").substring(lastUnderscoreIndex + 1);
 
         return {
             packageKey: packageKey,
@@ -181,27 +183,31 @@ class StudioService {
     }
 
     public async mapSpaces(exportedFiles: AdmZip, studioManifests: StudioPackageManifest[]): Promise<AdmZip> {
-            for (const packageZipFile of exportedFiles.getEntries()) {
-                if(packageZipFile.name.endsWith(".zip")) {
-                    const packageKey = this.getPackageKeyAndVersion(packageZipFile.name).packageKey;
-                    if(this.isStudioPackage(studioManifests, packageKey)) {
-                        const studioManifest = studioManifests.find(manifest => manifest.packageKey === packageKey);
-                        if (studioManifest) {
+        if (studioManifests == null) {
+            return exportedFiles;
+        }
+        for (const file of exportedFiles.getEntries()) {
+            if(file.name.endsWith(BatchExportImportConstants.ZIP_EXTENSION)) {
+                const packageKey = this.getPackageKeyAndVersion(file.name).packageKey;
 
-                            const spaceId = await this.findDesiredSpaceIdForPackage(packageKey, studioManifest);
-                            studioManifest.space.id = spaceId;
+                if (this.isStudioPackage(studioManifests, packageKey)) {
+                    const studioManifest = studioManifests.find(manifest => manifest.packageKey === packageKey);
 
-                            const packageZip = new AdmZip(packageZipFile.getData());
-                            packageZip.getEntries().forEach(nodeFile => {
-                                if (nodeFile.entryName.endsWith("yml")) {
-                                    const updatedNodeFile = this.updateSpaceIdForNode(nodeFile.getData().toString(), spaceId);
-                                    packageZip.updateFile(nodeFile, Buffer.from(updatedNodeFile));
-                                }
-                            });
-                            exportedFiles.updateFile(packageZipFile, packageZip.toBuffer());
-                        }
+                    if (studioManifest) {
+                        const spaceId = await this.findDesiredSpaceIdForPackage(studioManifest);
+                        studioManifest.space.id = spaceId;
+
+                        const packageZip = new AdmZip(file.getData());
+                        packageZip.getEntries().forEach(nodeFile => {
+                            if (nodeFile.entryName.endsWith(BatchExportImportConstants.YAML_EXTENSION)) {
+                                const updatedNodeFile = this.updateSpaceIdForNode(nodeFile.getData().toString(), spaceId);
+                                packageZip.updateFile(nodeFile, Buffer.from(updatedNodeFile));
+                            }
+                        });
+                        exportedFiles.updateFile(file, packageZip.toBuffer());
                     }
                 }
+            }
         }
         return exportedFiles;
     }
@@ -210,19 +216,19 @@ class StudioService {
         return studioManifests.some(manifest => manifest.packageKey === packageKey);
     }
 
-    private async findDesiredSpaceIdForPackage(packageKey: string, studioPackageManifest: StudioPackageManifest): Promise<string> {
+    private async findDesiredSpaceIdForPackage(studioPackageManifest: StudioPackageManifest): Promise<string> {
         const allSpaces = await spaceService.refreshAndGetAllSpaces();
 
-            if(studioPackageManifest.space.id) {
+            if (studioPackageManifest.space.id) {
                 const targetSpace = allSpaces.find(space => space.id === studioPackageManifest.space.id);
-                if (!targetSpace) {
+               if (!targetSpace) {
                     throw Error("Provided space ID does not exist.");
                 }
                 return targetSpace.id;
             }
 
             const targetSpaceByName = allSpaces.find(space => space.name === studioPackageManifest.space.name);
-            if(targetSpaceByName) {
+            if (targetSpaceByName) {
                 return targetSpaceByName.id;
             }
 
