@@ -140,7 +140,7 @@ class BatchImportExportService {
 
     private parseEntryData(configs: AdmZip, fileName: string): any {
         const entry = configs.getEntry(fileName);
-        if(entry) {
+        if (entry) {
             return (parse(entry.getData().toString()));
         }
         return null;

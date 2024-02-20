@@ -23,7 +23,7 @@ import {
 import {mockCreateReadStream, mockExistsSync, mockReadFileSync} from "../utls/fs-mock-utils";
 import {BatchExportImportConstants} from "../../src/interfaces/batch-export-import-constants";
 
-import axios from "axios";
+import {spaceApi} from "../../src/api/space-api";
 
 describe("Config import", () => {
 
@@ -211,11 +211,13 @@ describe("Config import", () => {
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+        const createSpaceSpy = jest.spyOn(spaceApi, "createSpace");
 
         await new ConfigCommand().batchImportPackages("./export_file.zip", true);
 
         const expectedFileName = testTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
+        expect(createSpaceSpy).toBeCalledTimes(0)
     })
 
     it("Should batch import configs & create new space", async () => {
@@ -223,7 +225,7 @@ describe("Config import", () => {
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", "STUDIO"));
 
         const studioManifest: StudioPackageManifest[] = [];
-        studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "spaceName", null));
+        studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "otherName", null));
 
         const firstPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: []}));
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
@@ -236,8 +238,8 @@ describe("Config import", () => {
         };
 
         const newSpace: SpaceTransport = {
-            id: "spaceId",
-            name: "spaceName",
+            id: "otherId",
+            name: "otherName",
             iconReference: "earth"
         };
 
@@ -257,11 +259,13 @@ describe("Config import", () => {
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+        const createSpaceSpy = jest.spyOn(spaceApi, "createSpace");
 
         await new ConfigCommand().batchImportPackages("./export_file.zip", true);
 
         const expectedFileName = testTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
+        expect(createSpaceSpy).toBeCalledTimes(1)
     })
 
     it("Should assign studio runtime variable values after import", async () => {
