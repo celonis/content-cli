@@ -1,5 +1,11 @@
 import {ConfigCommand} from "../../src/commands/config.command";
-import {mockAxiosGet, mockAxiosPost, mockAxiosPut, mockedPostRequestBodyByUrl} from "../utls/http-requests-mock";
+import {
+    mockAxiosGet,
+    mockAxiosPost,
+    mockAxiosPut,
+    mockAxios,
+    mockedPostRequestBodyByUrl
+} from "../utls/http-requests-mock";
 import {
     PackageManifestTransport,
     PostPackageImportData,
@@ -14,6 +20,7 @@ import {packageApi} from "../../src/api/package-api";
 import {PackageManagerVariableType, VariablesAssignments} from "../../src/interfaces/package-manager.interfaces";
 import {mockCreateReadStream, mockExistsSync, mockReadFileSync} from "../utls/fs-mock-utils";
 import {BatchExportImportConstants} from "../../src/interfaces/batch-export-import-constants";
+import axios from "axios";
 
 describe("Config import", () => {
 
@@ -159,6 +166,8 @@ describe("Config import", () => {
     })
 
     it("Should assign studio runtime variable values after import", async () => {
+        const {get, post, put} = mockAxios();
+
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
@@ -201,17 +210,17 @@ describe("Config import", () => {
 
         const assignVariablesUrl = "https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/key-1/variables/values";
 
-        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/nodes/key-1/key-1", node);
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
-        mockAxiosPut("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/space-id", {});
-        mockAxiosPost(assignVariablesUrl, {});
+        post("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+        get("https://myTeam.celonis.cloud/package-manager/api/nodes/key-1/key-1", node);
+        get("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
+        put("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/space-id", {});
+        post(assignVariablesUrl, {});
 
         await new ConfigCommand().batchImportPackages("./export_file.zip", true);
 
         const expectedFileName = testTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
 
-        expect(mockedPostRequestBodyByUrl.get(assignVariablesUrl)).toEqual(JSON.stringify([variableAssignment]));
+        expect(axios.post as jest.Mock).toHaveBeenCalledWith(assignVariablesUrl, JSON.stringify([variableAssignment]), expect.any(Object));
     })
 })
