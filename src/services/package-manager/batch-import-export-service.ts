@@ -61,7 +61,7 @@ class BatchImportExportService {
         exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioData), "utf8"));
 
         exportedPackagesZip.getEntries().forEach(entry => {
-            if (entry.name.endsWith(".zip")) {
+            if (entry.name.endsWith(BatchExportImportConstants.ZIP_EXTENSION)) {
                 const lastUnderscoreIndex = entry.name.lastIndexOf("_");
                 const packageKey = entry.name.substring(0, lastUnderscoreIndex);
 

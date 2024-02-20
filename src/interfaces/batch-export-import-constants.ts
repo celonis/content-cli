@@ -6,6 +6,6 @@ export enum BatchExportImportConstants {
     APP_MODE_VIEWER = "VIEWER",
     ZIP_EXTENSION = ".zip",
     YAML_EXTENSION = ".yml",
-    NODES_FOLDER_NAME = "/nodes",
+    NODES_FOLDER_NAME = "nodes/",
     SCENARIO_NODE = "SCENARIO"
 }
