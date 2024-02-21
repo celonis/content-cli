@@ -11,10 +11,10 @@ import {
 import {FileService, fileService} from "../file-service";
 import {studioService} from "../studio/studio.service";
 import {parse, stringify} from "../../util/yaml"
-import * as fs from "fs";
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 import {packageApi} from "../../api/package-api";
+import {Readable} from "stream";
 import AdmZip = require("adm-zip");
 
 class BatchImportExportService {
@@ -85,8 +85,8 @@ class BatchImportExportService {
 
         configs = await studioService.mapSpaces(configs, studioManifests);
         const existingStudioPackages = await packageApi.findAllPackages();
-        const formData = this.buildBodyForImport(configs, variablesManifests);
 
+        const formData = this.buildBodyForImport(configs, variablesManifests);
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
         await studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
@@ -126,8 +126,9 @@ class BatchImportExportService {
 
     private buildBodyForImport(configs: AdmZip, variablesManifests: VariableManifestTransport[]): FormData {
         const formData = new FormData();
+        const readableStream = this.getReadableStream(configs);
 
-        formData.append("file", fs.createReadStream(configs.toBuffer()));
+        formData.append("file", readableStream, {filename: "configs.zip"});
 
         if (variablesManifests) {
             formData.append("mappedVariables", JSON.stringify(variablesManifests), {
@@ -136,6 +137,15 @@ class BatchImportExportService {
         }
 
         return formData;
+    }
+
+    private getReadableStream(configs: AdmZip): Readable {
+        return new Readable({
+            read(): void {
+                this.push(configs.toBuffer());
+                this.push(null);
+            },
+        });
     }
 
     private parseEntryData(configs: AdmZip, fileName: string): any {
