@@ -15,7 +15,7 @@ import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 import {packageApi} from "../../api/package-api";
 import {Readable} from "stream";
-import AdmZip = require("adm-zip");
+import * as AdmZip from "adm-zip";
 
 class BatchImportExportService {
 
