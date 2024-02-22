@@ -127,11 +127,9 @@ describe("Config import", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
 
-        try{
-            await new ConfigCommand().batchImportPackages("./export_file.zip", true);
-        } catch (err) {
-            expect(err.message).toBe("Provided space ID does not exist.")
-        }
+        await expect(
+            new ConfigCommand().batchImportPackages("./export_file.zip", true)
+        ).rejects.toThrow("Provided space ID does not exist.");
     })
 
     it("Should batch import configs & map space ID as specified in manifest file for Studio Packages & move to space for existing packages.", async () => {

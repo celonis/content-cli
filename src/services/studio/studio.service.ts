@@ -219,22 +219,21 @@ class StudioService {
     private async findDesiredSpaceIdForPackage(studioPackageManifest: StudioPackageManifest): Promise<string> {
         const allSpaces = await spaceService.refreshAndGetAllSpaces();
 
-            if (studioPackageManifest.space.id) {
-                const targetSpace = allSpaces.find(space => space.id === studioPackageManifest.space.id);
-               if (!targetSpace) {
-                    throw Error("Provided space ID does not exist.");
-                }
-                return targetSpace.id;
+        if (studioPackageManifest.space.id) {
+            const targetSpace = allSpaces.find(space => space.id === studioPackageManifest.space.id);
+           if (!targetSpace) {
+                throw Error("Provided space ID does not exist.");
             }
+            return targetSpace.id;
+        }
 
-            const targetSpaceByName = allSpaces.find(space => space.name === studioPackageManifest.space.name);
-            if (targetSpaceByName) {
-                return targetSpaceByName.id;
-            }
+        const targetSpaceByName = allSpaces.find(space => space.name === studioPackageManifest.space.name);
+        if (targetSpaceByName) {
+            return targetSpaceByName.id;
+        }
 
-            const spaceTransport = await spaceService.createSpace(studioPackageManifest.space.name, studioPackageManifest.space.iconReference);
-            return spaceTransport.id;
-
+        const spaceTransport = await spaceService.createSpace(studioPackageManifest.space.name, studioPackageManifest.space.iconReference);
+        return spaceTransport.id;
     }
 
     private async assignRuntimeVariables(manifest: StudioPackageManifest): Promise<void> {
