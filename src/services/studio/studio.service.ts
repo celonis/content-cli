@@ -25,7 +25,8 @@ import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {spaceService} from "../package-manager/space-service";
 import {variableService} from "../package-manager/variable-service";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
-import AdmZip = require("adm-zip");
+import * as AdmZip from "adm-zip";
+
 
 class StudioService {
 
