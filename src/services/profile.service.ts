@@ -10,8 +10,7 @@ import os = require("os");
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
 const expiryBuffer = 5000;
-const scopes = ["studio.spaces", "studio.packages", "studio.widgets", "integration.data-models:read",
-    "integration.data-pools", "transformation-center.kpis", "transformation-center.content:export", "action-engine.projects"];
+const scopes = ["studio", "integration.data-pools", "transformation-center.kpis", "transformation-center.content:export", "action-engine.projects"];
 
 export interface Config {
     defaultProfile: string;
