@@ -52,8 +52,8 @@ describe("Config export", () => {
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstStudioPackage.key}/${firstStudioPackage.key}`, firstStudioPackage);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondStudioPackage.key}/${secondStudioPackage.key}`, secondStudioPackage);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstStudioPackage.key}/variables/runtime-values`, [firstPackageRuntimeVariable]);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, [firstPackageRuntimeVariable]);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2", "key-3"], true);
 
@@ -117,6 +117,11 @@ describe("Config export", () => {
                 key: "key2-var",
                 type: PackageManagerVariableType.DATA_MODEL,
                 runtime: false
+            },
+            {
+                key: "key-2-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
             }
         ];
 
@@ -156,6 +161,14 @@ describe("Config export", () => {
                         type: PackageManagerVariableType.DATA_MODEL,
                         value: "dm-id" as unknown as object,
                         metadata: {}
+                    },
+                    {
+                        key: "key-2-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: "connection-id",
+                        metadata: {
+                            appName: "nameOfApp"
+                        }
                     }
                 ]
             },
@@ -165,8 +178,8 @@ describe("Config export", () => {
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", [...exportedVariables]);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2"], true);
 
@@ -211,6 +224,14 @@ describe("Config export", () => {
                     type: PackageManagerVariableType.DATA_MODEL,
                     value: "dm-id",
                     metadata: {}
+                },
+                {
+                    key: "key-2-connection",
+                    type: PackageManagerVariableType.CONNECTION,
+                    value: "connection-id",
+                    metadata: {
+                        appName: "nameOfApp"
+                    }
                 }
             ]
         });
@@ -253,8 +274,8 @@ describe("Config export", () => {
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2"], true);
 
@@ -303,6 +324,11 @@ describe("Config export", () => {
                 metadata: {
                     appName: "celonis"
                 }
+            },
+            {
+                key: "key-2-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
             }
         ];
 
@@ -347,6 +373,14 @@ describe("Config export", () => {
                         metadata: {
                             appName: "celonis"
                         }
+                    },
+                    {
+                        key: "key-2-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: "connection-id",
+                        metadata: {
+                            appName: "nameOfApp"
+                        }
                     }
                 ]
             },
@@ -356,8 +390,8 @@ describe("Config export", () => {
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", exportedVariables);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values`, []);
-        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
         await new ConfigCommand().batchExportPackages(["key-1", "key-2"], true);
 
@@ -389,8 +423,116 @@ describe("Config export", () => {
         const secondPackageExportedNode: NodeExportTransport = parse(secondPackageExportedZip.getEntry("package.yml").getData().toString());
         expect(secondPackageExportedNode).toBeTruthy();
         const secondPackageContent: NodeSerializedContent = parse(secondPackageExportedNode.serializedContent);
-        expect(secondPackageContent.variables).toHaveLength(1);
-        expect(secondPackageContent.variables).toEqual([...secondPackageVariableDefinition]);
+        expect(secondPackageContent.variables).toHaveLength(2);
+        expect(secondPackageContent.variables).toEqual([{
+                ...secondPackageVariableDefinition[0],
+            },
+            {
+                ...secondPackageVariableDefinition[1],
+                metadata: {
+                    appName: "nameOfApp"
+                }
+            }
+        ]);
+    })
+
+    it("Should export with SCENARIO nodes removed and CONNECTION variables fixed for package key with multiple underscores", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key_with_underscores_1", BatchExportImportConstants.STUDIO));
+
+        const firstPackageVariableDefinition: VariableDefinition[] = [
+            {
+                key: "key1-var",
+                type: PackageManagerVariableType.DATA_MODEL,
+                runtime: false
+            },
+            {
+                key: "key-1-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
+            },
+            {
+                key: "key-1-another-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
+            }
+        ];
+
+        const firstPackageNode = ConfigUtils.buildPackageNode("key_with_underscores_1", stringify({variables: firstPackageVariableDefinition}));
+        const firstPackageScenarioChild = ConfigUtils.buildChildNode("child-1-scenario", firstPackageNode.key, "SCENARIO");
+        const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstPackageScenarioChild], "1.0.0");
+
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
+
+        const exportedVariables: VariableManifestTransport[] = [
+            {
+                packageKey: "key_with_underscores_1",
+                version: "1.0.0",
+                variables: [
+                    {
+                        key: "key1-var",
+                        type: PackageManagerVariableType.DATA_MODEL,
+                        value: "dm-id" as unknown as object,
+                        metadata: {}
+                    },
+                    {
+                        key: "key-1-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: {
+                            appName: "celonis",
+                            connectionId: "connection-id"
+                        } as unknown as object,
+                        metadata: null
+                    },
+                    {
+                        key: "key-1-another-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: "connection-id",
+                        metadata: {
+                            appName: "nameOfApp"
+                        }
+                    }
+                ]
+            }
+        ];
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key_with_underscores_1&withDependencies=true", exportedPackagesZip.toBuffer());
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", exportedVariables);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
+
+        await new ConfigCommand().batchExportPackages(["key_with_underscores_1"], true);
+
+        const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
+        expect(mockWriteSync).toHaveBeenCalled();
+
+        const fileBuffer = mockWriteSync.mock.calls[0][1];
+        const actualZip = new AdmZip(fileBuffer);
+
+        const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key_with_underscores_1_1.0.0.zip").getData());
+        const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.yml").getData().toString());
+        expect(firstPackageExportedNode).toBeTruthy();
+        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.serializedContent);
+        expect(firstPackageContent.variables).toHaveLength(3);
+        expect(firstPackageContent.variables).toEqual([
+            {
+                ...firstPackageVariableDefinition[0],
+            },
+            {
+                ...firstPackageVariableDefinition[1],
+                metadata: {
+                    appName: "celonis"
+                }
+            }, {
+                ...firstPackageVariableDefinition[2],
+                metadata: {
+                    appName: "nameOfApp"
+                }
+            }
+        ]);
+
+        expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.yml")).toBeNull();
     })
 
     it("Should export by packageKeys without dependencies", async () => {

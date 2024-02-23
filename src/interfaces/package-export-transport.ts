@@ -29,7 +29,7 @@ export interface PackageManifestTransport {
 
 export interface VariableExportTransport {
     key: string;
-    value: object;
+    value: any;
     type: string;
     metadata: object;
 }
