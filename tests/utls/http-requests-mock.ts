@@ -7,7 +7,6 @@ const mockedPostRequestBodyByUrl = new Map<string, any>();
 
 const mockAxiosGet = (url: string, responseData: any) => {
     mockedGetResponseByUrl.set(url, responseData);
-
     (axios.get as jest.Mock).mockImplementation(requestUrl => {
         if (mockedGetResponseByUrl.has(requestUrl)) {
             const response = { data: mockedGetResponseByUrl.get(requestUrl) };
@@ -17,6 +16,7 @@ const mockAxiosGet = (url: string, responseData: any) => {
                 readableStream.push(response.data)
                 readableStream.push(null);
                 return Promise.resolve({
+                    status: 200,
                     data: readableStream,
                 });
             } else {
@@ -64,4 +64,9 @@ afterEach(() => {
     mockedPostRequestBodyByUrl.clear();
 })
 
-export {mockAxiosGet, mockAxiosPost, mockAxiosPut, mockedPostRequestBodyByUrl};
+export {
+    mockAxiosGet,
+    mockAxiosPost,
+    mockAxiosPut,
+    mockedPostRequestBodyByUrl
+};

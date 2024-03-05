@@ -50,6 +50,21 @@ describe("Config listVariables", () => {
         ]
     };
 
+    const thirdManifest: VariableManifestTransport = {
+        packageKey: "key-3",
+        version: "1.0.0",
+        variables: [
+            {
+                key: "key2-var",
+                type: PackageManagerVariableType.CONNECTION,
+                value: "connection-id",
+                metadata: {
+                    appName: "celonis"
+                }
+            }
+        ]
+    }
+
     const fixedVariableManifests: VariableManifestTransport[] = [
         {
             ...firstManifest,
@@ -67,6 +82,9 @@ describe("Config listVariables", () => {
         },
         {
             ...secondManifest
+        },
+        {
+            ...thirdManifest
         }
     ];
 
@@ -78,26 +96,31 @@ describe("Config listVariables", () => {
         {
             packageKey: "key-2",
             version: "1.0.0"
+        },
+        {
+            packageKey: "key-3",
+            version: "1.0.0"
         }
     ];
 
     beforeEach(() => {
-        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", [{...firstManifest}, {...secondManifest}]);
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", [{...firstManifest}, {...secondManifest}, {...thirdManifest}]);
     })
 
     it("Should list fixed variables for non-json response", async () => {
-        await new ConfigCommand().listVariables(false, ["key-1:1.0.0", "key-2:1.0.0"], null);
+        await new ConfigCommand().listVariables(false, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], null);
 
-        expect(testTransport.logMessages.length).toBe(2);
+        expect(testTransport.logMessages.length).toBe(3);
         expect(testTransport.logMessages[0].message).toContain(JSON.stringify(fixedVariableManifests[0]));
         expect(testTransport.logMessages[1].message).toContain(JSON.stringify(fixedVariableManifests[1]));
+        expect(testTransport.logMessages[2].message).toContain(JSON.stringify(fixedVariableManifests[2]));
 
         const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
         expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);
     })
 
     it("Should export fixed variables for json response", async () => {
-        await new ConfigCommand().listVariables(true, ["key-1:1.0.0", "key-2:1.0.0"], null);
+        await new ConfigCommand().listVariables(true, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], null);
 
         expect(testTransport.logMessages.length).toBe(1);
         expect(testTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
@@ -115,9 +138,10 @@ describe("Config listVariables", () => {
 
         await new ConfigCommand().listVariables(false, [], "key_version_mapping.json");
 
-        expect(testTransport.logMessages.length).toBe(2);
+        expect(testTransport.logMessages.length).toBe(3);
         expect(testTransport.logMessages[0].message).toContain(JSON.stringify(fixedVariableManifests[0]));
         expect(testTransport.logMessages[1].message).toContain(JSON.stringify(fixedVariableManifests[1]));
+        expect(testTransport.logMessages[2].message).toContain(JSON.stringify(fixedVariableManifests[2]));
 
         const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
         expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);

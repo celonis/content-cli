@@ -2,12 +2,15 @@ import {
     NodeExportTransport,
     NodeSerializedContent,
     PackageExportTransport,
+    PackageKeyAndVersionPair,
     StudioPackageManifest,
     VariableExportTransport,
     VariableManifestTransport
 } from "../../interfaces/package-export-transport";
+
 import {packageApi} from "../../api/package-api";
 import {
+    ContentNodeTransport,
     PackageManagerVariableType,
     PackageWithVariableAssignments,
     StudioComputeNodeDescriptor
@@ -15,7 +18,6 @@ import {
 import {dataModelService} from "../package-manager/datamodel-service";
 import {IZipEntry} from "adm-zip";
 import {parse, stringify} from "../../util/yaml";
-import AdmZip = require("adm-zip");
 import {nodeApi} from "../../api/node-api";
 import {variablesApi} from "../../api/variables-api";
 import {spaceApi} from "../../api/space-api";
@@ -23,6 +25,8 @@ import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {spaceService} from "../package-manager/space-service";
 import {variableService} from "../package-manager/variable-service";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
+import * as AdmZip from "adm-zip";
+
 
 class StudioService {
 
@@ -42,15 +46,13 @@ class StudioService {
     public fixConnectionVariables(variables: VariableManifestTransport[]): VariableManifestTransport[] {
         return variables.map(variableManifest => ({
             ...variableManifest,
-            variables: variableManifest.variables.map(variable => ({
-                ...variable,
-                metadata: variable.type === PackageManagerVariableType.CONNECTION ? {
-                    ...variable.metadata,
-                    appName: variable.value["appName"] || ""
-                } : {
-                    ...variable.metadata
+            variables: variableManifest.variables.map(variable => {
+                if (variable.type !== PackageManagerVariableType.CONNECTION) {
+                    return variable;
                 }
-            }))
+
+                return this.fixConnectionVariable(variable);
+            })
         }));
     }
 
@@ -58,7 +60,7 @@ class StudioService {
         return Promise.all(studioPackageKeys.map(async packageKey => {
             const node = await nodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
             const nodeSpace: SpaceTransport = await spaceApi.findOne(node.spaceId);
-            const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey);
+            const variableAssignments = await variablesApi.getRuntimeVariableValues(packageKey, BatchExportImportConstants.APP_MODE_VIEWER);
 
             return {
                 packageKey: packageKey,
@@ -73,24 +75,22 @@ class StudioService {
 
     public processPackageForExport(exportedPackage: IZipEntry, exportedVariables: VariableManifestTransport[]): AdmZip {
         const packageZip = new AdmZip(exportedPackage.getData());
-        packageZip.getEntries().forEach(entry => {
-            this.deleteFileIfTypeScenario(packageZip, entry);
-            this.fixConnectionVariablesIfRootNodeFile(packageZip, entry, exportedPackage.name, exportedVariables);
-        });
+        this.deleteScenarioAssets(packageZip);
+        this.fixConnectionVariablesForRootNodeFiles(packageZip, exportedPackage.name, exportedVariables);
 
         return packageZip;
     }
 
-    public async processImportedPackages(configs: AdmZip): Promise<void> {
-        const studioFile = configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME);
-
-        if (studioFile) {
-            const studioManifests: StudioPackageManifest[] = parse(configs.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
-
-            await Promise.all(studioManifests.map(async manifest => {
-                await this.movePackageToSpace(manifest);
-                await this.assignRuntimeVariables(manifest);
-            }));
+    public async processImportedPackages(configs: AdmZip, existingStudioPackages: ContentNodeTransport[], studioManifests: StudioPackageManifest[]): Promise<void> {
+        if(studioManifests == null) {
+            return;
+        }
+        for (const  manifest of studioManifests) {
+            const existingPackage = existingStudioPackages.find(existingPackage => existingPackage.key === manifest.packageKey);
+            if (existingPackage) {
+                await packageApi.movePackageToSpace(existingPackage.id, manifest.space.id);
+            }
+            await this.assignRuntimeVariables(manifest);
         }
     }
 
@@ -125,33 +125,61 @@ class StudioService {
         });
     }
 
-    private deleteFileIfTypeScenario(packageZip: AdmZip, entry: IZipEntry): void {
-        if (entry.entryName.startsWith("nodes/") && entry.entryName.endsWith(".yml")) {
-            const node: NodeExportTransport = parse(entry.getData().toString());
-            if (node.type === "SCENARIO") {
-                packageZip.deleteFile(entry);
+    private fixConnectionVariable(variable: VariableExportTransport): VariableExportTransport {
+        if (!variable.value.appName) {
+            return variable;
+        }
+
+        return {
+            ...variable,
+            metadata: {
+                ...variable.metadata,
+                appName: variable.value.appName
             }
         }
     }
 
-    private fixConnectionVariablesIfRootNodeFile(packageZip: AdmZip, entry: IZipEntry, zipName: string, exportedVariables: VariableManifestTransport[]): void {
-        if (entry.name === "package.yml") {
-            const packageKeyAndVersion = zipName.replace(".zip", "").split("_");
-            const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion[0], packageKeyAndVersion[1], exportedVariables);
+    private deleteScenarioAssets(packageZip: AdmZip): void {
+        packageZip.getEntries().filter(entry => entry.entryName.startsWith(BatchExportImportConstants.NODES_FOLDER_NAME) && entry.entryName.endsWith(BatchExportImportConstants.YAML_EXTENSION))
+            .forEach(entry => {
+                const node: NodeExportTransport = parse(entry.getData().toString());
+                if (node.type === BatchExportImportConstants.SCENARIO_NODE) {
+                    packageZip.deleteFile(entry);
+                }
+            });
+    }
 
-            if (connectionVariablesByKey.size) {
-                const exportedNode: NodeExportTransport = parse(entry.getData().toString());
-                const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+    private fixConnectionVariablesForRootNodeFiles(packageZip: AdmZip, zipName: string, exportedVariables: VariableManifestTransport[]): void {
+        const packageKeyAndVersion = this.getPackageKeyAndVersion(zipName);
+        const connectionVariablesByKey = this.getConnectionVariablesByKeyForPackage(packageKeyAndVersion.packageKey, packageKeyAndVersion.version, exportedVariables);
 
-                nodeContent.variables = nodeContent.variables.map(variable => ({
-                    ...variable,
-                    metadata: variable.type === PackageManagerVariableType.CONNECTION ?
-                        connectionVariablesByKey.get(variable.key).metadata : variable.metadata
-                }));
+        if (connectionVariablesByKey.size === 0) {
+            return;
+        }
 
-                exportedNode.serializedContent = stringify(nodeContent);
-                packageZip.updateFile(entry, Buffer.from(stringify(exportedNode)));
-            }
+        const packageEntry = packageZip.getEntry("package.yml");
+
+        const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
+        const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+
+        nodeContent.variables = nodeContent.variables.map(variable => ({
+            ...variable,
+            metadata: variable.type === PackageManagerVariableType.CONNECTION ?
+                connectionVariablesByKey.get(variable.key).metadata : variable.metadata
+        }));
+
+        exportedNode.serializedContent = stringify(nodeContent);
+        packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
+    }
+
+    private getPackageKeyAndVersion(zipName: string): PackageKeyAndVersionPair {
+        const lastUnderscoreIndex = zipName.lastIndexOf("_");
+        const packageKey = zipName.replace(BatchExportImportConstants.ZIP_EXTENSION, "").substring(0, lastUnderscoreIndex);
+        const packageVersion = zipName.replace(BatchExportImportConstants.ZIP_EXTENSION, "").substring(lastUnderscoreIndex + 1);
+
+        return {
+            packageKey: packageKey,
+            version: packageVersion
         }
     }
 
@@ -167,34 +195,71 @@ class StudioService {
         return variablesByKey;
     }
 
-    private async movePackageToSpace(manifest: StudioPackageManifest): Promise<void> {
-        const nodeInTargetTeam = await nodeApi.findOneByKeyAndRootNodeKey(manifest.packageKey, manifest.packageKey);
+    public async mapSpaces(exportedFiles: AdmZip, studioManifests: StudioPackageManifest[]): Promise<AdmZip> {
+        if (studioManifests == null) {
+            return exportedFiles;
+        }
+        for (const file of exportedFiles.getEntries()) {
+            if(file.name.endsWith(BatchExportImportConstants.ZIP_EXTENSION)) {
+                const packageKey = this.getPackageKeyAndVersion(file.name).packageKey;
 
-        let targetSpace;
-        const allSpaces = await spaceService.refreshAndGetAllSpaces();
+                if (this.isStudioPackage(studioManifests, packageKey)) {
+                    const studioManifest = studioManifests.find(manifest => manifest.packageKey === packageKey);
 
-        if (manifest.space.id) {
-            const customSpace = allSpaces.find(space => space.id === manifest.space.id);
+                    if (studioManifest) {
+                        const spaceId = await this.findDesiredSpaceIdForPackage(studioManifest);
+                        studioManifest.space.id = spaceId;
 
-            if (!customSpace) {
-                throw Error("Provided space id does not exist.");
-            }
-
-            targetSpace = customSpace;
-        } else {
-            targetSpace = allSpaces.find(space => space.name === manifest.space.name);
-            if (!targetSpace) {
-                targetSpace = await spaceService.createSpace(manifest.space.name, manifest.space.iconReference);
+                        const packageZip = new AdmZip(file.getData());
+                        packageZip.getEntries().forEach(nodeFile => {
+                            if (nodeFile.entryName.endsWith(BatchExportImportConstants.YAML_EXTENSION)) {
+                                const updatedNodeFile = this.updateSpaceIdForNode(nodeFile.getData().toString(), spaceId);
+                                packageZip.updateFile(nodeFile, Buffer.from(updatedNodeFile));
+                            }
+                        });
+                        exportedFiles.updateFile(file, packageZip.toBuffer());
+                    }
+                }
             }
         }
+        return exportedFiles;
+    }
 
-        await packageApi.movePackageToSpace(nodeInTargetTeam.id, targetSpace.id);
+    private isStudioPackage(studioManifests: StudioPackageManifest[], packageKey: string): boolean {
+        return studioManifests.some(manifest => manifest.packageKey === packageKey);
+    }
+
+    private async findDesiredSpaceIdForPackage(studioPackageManifest: StudioPackageManifest): Promise<string> {
+        const allSpaces = await spaceService.refreshAndGetAllSpaces();
+
+        if (studioPackageManifest.space.id) {
+            const targetSpace = allSpaces.find(space => space.id === studioPackageManifest.space.id);
+           if (!targetSpace) {
+                throw Error("Provided space ID does not exist.");
+            }
+            return targetSpace.id;
+        }
+
+        const targetSpaceByName = allSpaces.find(space => space.name === studioPackageManifest.space.name);
+        if (targetSpaceByName) {
+            return targetSpaceByName.id;
+        }
+
+        const spaceTransport = await spaceService.createSpace(studioPackageManifest.space.name, studioPackageManifest.space.iconReference);
+        return spaceTransport.id;
     }
 
     private async assignRuntimeVariables(manifest: StudioPackageManifest): Promise<void> {
         if (manifest.runtimeVariableAssignments.length) {
             await variableService.assignVariableValues(manifest.packageKey, manifest.runtimeVariableAssignments);
         }
+    }
+    private updateSpaceIdForNode(nodeContent: string, spaceId: string): string {
+        const exportedNode: NodeExportTransport = parse(nodeContent);
+        const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
+
+        nodeContent = nodeContent.replace(new RegExp(oldSpaceId, "g"), spaceId);
+        return nodeContent;
     }
 }
 

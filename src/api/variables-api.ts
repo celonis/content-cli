@@ -30,8 +30,11 @@ class VariablesApi {
         });
     }
 
-    public getRuntimeVariableValues(packageKey: string): Promise<VariablesAssignments[]> {
-        return httpClientV2.get(`/package-manager/api/nodes/by-package-key/${packageKey}/variables/runtime-values`).catch(e => {
+    public getRuntimeVariableValues(packageKey: string, appMode: string): Promise<VariablesAssignments[]> {
+        const queryParams = new URLSearchParams();
+        queryParams.set("appMode", appMode);
+
+        return httpClientV2.get(`/package-manager/api/nodes/by-package-key/${packageKey}/variables/runtime-values?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting runtime variables of package ${packageKey}: ${e}`);
         });
     }

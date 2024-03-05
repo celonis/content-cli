@@ -5,15 +5,17 @@ import {
     PackageExportTransport,
     PackageKeyAndVersionPair,
     PackageManifestTransport,
+    StudioPackageManifest,
     VariableManifestTransport
 } from "../../interfaces/package-export-transport";
 import {FileService, fileService} from "../file-service";
 import {studioService} from "../studio/studio.service";
 import {parse, stringify} from "../../util/yaml"
-import AdmZip = require("adm-zip");
-import * as fs from "fs";
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
+import {packageApi} from "../../api/package-api";
+import {Readable} from "stream";
+import * as AdmZip from "adm-zip";
 
 class BatchImportExportService {
 
@@ -59,10 +61,14 @@ class BatchImportExportService {
         exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioData), "utf8"));
 
         exportedPackagesZip.getEntries().forEach(entry => {
-            if (entry.name.endsWith(".zip") && studioPackageKeys.includes(entry.name.split("_")[0])) {
-                const updatedPackage = studioService.processPackageForExport(entry, exportedVariables);
+            if (entry.name.endsWith(BatchExportImportConstants.ZIP_EXTENSION)) {
+                const lastUnderscoreIndex = entry.name.lastIndexOf("_");
+                const packageKey = entry.name.substring(0, lastUnderscoreIndex);
 
-                exportedPackagesZip.updateFile(entry, updatedPackage.toBuffer());
+                if (studioPackageKeys.includes(packageKey)) {
+                    const updatedPackage = studioService.processPackageForExport(entry, exportedVariables);
+                    exportedPackagesZip.updateFile(entry, updatedPackage.toBuffer());
+                }
             }
         });
 
@@ -73,12 +79,16 @@ class BatchImportExportService {
     }
 
     public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
-        const configs = new AdmZip(file);
+        let configs = new AdmZip(file);
+        const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
+        const variablesManifests: VariableManifestTransport[] = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as VariableManifestTransport[];
 
-        const formData = this.buildBodyForImport(file, configs);
+        configs = await studioService.mapSpaces(configs, studioManifests);
+        const existingStudioPackages = await packageApi.findAllPackages();
 
+        const formData = this.buildBodyForImport(configs, variablesManifests);
         const postPackageImportData = await batchImportExportApi.importPackages(formData, overwrite);
-        await studioService.processImportedPackages(configs);
+        await studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
@@ -114,19 +124,36 @@ class BatchImportExportService {
         return batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
     }
 
-    private buildBodyForImport(file: string, configs: AdmZip): FormData {
+    private buildBodyForImport(configs: AdmZip, variablesManifests: VariableManifestTransport[]): FormData {
         const formData = new FormData();
+        const readableStream = this.getReadableStream(configs);
 
-        formData.append("file", fs.createReadStream(file));
+        formData.append("file", readableStream, {filename: "configs.zip"});
 
-        const variablesEntry = configs.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME);
-        if (variablesEntry) {
-            formData.append("mappedVariables", JSON.stringify(parse(variablesEntry.getData().toString())), {
+        if (variablesManifests) {
+            formData.append("mappedVariables", JSON.stringify(variablesManifests), {
                 contentType: "application/json"
             });
         }
 
         return formData;
+    }
+
+    private getReadableStream(configs: AdmZip): Readable {
+        return new Readable({
+            read(): void {
+                this.push(configs.toBuffer());
+                this.push(null);
+            },
+        });
+    }
+
+    private parseEntryData(configs: AdmZip, fileName: string): any {
+        const entry = configs.getEntry(fileName);
+        if (entry) {
+            return (parse(entry.getData().toString()));
+        }
+        return null;
     }
 }
 

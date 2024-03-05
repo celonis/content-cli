@@ -29,7 +29,7 @@ export interface PackageManifestTransport {
 
 export interface VariableExportTransport {
     key: string;
-    value: object;
+    value: any;
     type: string;
     metadata: object;
 }
@@ -55,7 +55,7 @@ export interface NodeExportTransport {
     serializedContent: string;
     schemaVersion: number;
 
-    unversionedMetadata: object;
+    unversionedMetadata: any;
     versionedMetdata: object;
 
     invalidContent?: boolean;
