@@ -14,8 +14,7 @@ const mockWriteSync = jest.fn();
 (fs.writeSync as jest.Mock).mockImplementation(mockWriteSync);
 
 afterEach(() => {
-    mockWriteFileSync.mockClear();
-    mockWriteSync.mockClear();
+    jest.clearAllMocks();
 })
 
 beforeAll(() => {
@@ -25,6 +24,7 @@ beforeAll(() => {
 let testTransport;
 
 beforeEach(() => {
+    jest.clearAllMocks();
     testTransport = new TestTransport({})
     logger.add(testTransport);
 })

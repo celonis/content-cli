@@ -25,7 +25,9 @@ export class Config {
 
     public static listVariables(program: CommanderStatic): CommanderStatic {
         program
-            .command("listVariables")
+            .command("variables")
+            .description("Commands related to variable configs")
+            .command("list")
             .description("Command to list versioned variables of packages")
             .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--json", "Return response as json type", "")
@@ -43,7 +45,7 @@ export class Config {
         program
             .command("export")
             .description("Command to export package configs")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
+            .option("-p, --profile <profile>", "Profile which you want to use to export packages")
             .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
             .option("--withDependencies", "Include variables and dependencies", "")
             .action(async cmd => {
@@ -70,10 +72,6 @@ export class Config {
     }
 }
 
-process.on("unhandledRejection", (e, promise) => {
-    logger.error(e.toString());
-});
-
 const loadAllCommands = () => {
     Config.list(commander);
     Config.listVariables(commander);
@@ -83,7 +81,7 @@ const loadAllCommands = () => {
 };
 
 ContextInitializer.initContext()
-    .then(loadAllCommands)
+    .then(loadAllCommands, loadAllCommands)
     .catch(e => {
         logger.error(e);
     });

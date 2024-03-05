@@ -30,7 +30,7 @@ program.command("get", "Commands to get configuration properties.");
 
 program.command("set", "Commands to set configuration properties.");
 
-program.command("config", "Commands related to config management")
+program.command("config", "Commands related to config management.")
 
 program.version(VersionUtils.getCurrentCliVersion());
 program.parse(process.argv);
