@@ -2,12 +2,26 @@ import AdmZip = require("adm-zip");
 import {
     DependencyTransport,
     NodeExportTransport,
-    PackageManifestTransport
+    PackageManifestTransport, StudioPackageManifest
 } from "../../src/interfaces/package-export-transport";
 import {stringify} from "../../src/util/yaml";
+import {SpaceTransport} from "../../src/interfaces/save-space.interface";
 
 export class ConfigUtils {
 
+    public static buildBatchExportZipWithStudioManifest(manifest: PackageManifestTransport[], studioManifest: StudioPackageManifest[], packageZips: AdmZip[]): AdmZip {
+
+        const zipExport = new AdmZip();
+        zipExport.addFile("manifest.yml", Buffer.from(stringify(manifest)));
+        zipExport.addFile("studio.yml", Buffer.from(stringify(studioManifest)));
+        packageZips.forEach(packageZip => {
+            const fileName = `${packageZip.getZipComment()}.zip`
+            packageZip.addZipComment("")
+            zipExport.addFile(fileName, packageZip.toBuffer());
+        })
+
+        return zipExport;
+    }
     public static buildBatchExportZip(manifest: PackageManifestTransport[], packageZips: AdmZip[]): AdmZip {
 
         const zipExport = new AdmZip();
@@ -76,6 +90,22 @@ export class ConfigUtils {
             versionedMetdata: {},
             invalidContent: false,
             serializedDocument: null
+        };
+    }
+
+    public static buildStudioManifestForKeyWithSpace(key: string, spaceName: string, spaceId: string): StudioPackageManifest {
+        const space: Partial<SpaceTransport> = {
+            name: spaceName
+        };
+
+        if (spaceId) {
+            space.id = spaceId;
+        }
+
+        return {
+            packageKey: key,
+            space: space,
+            runtimeVariableAssignments: []
         };
     }
 }

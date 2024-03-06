@@ -7,7 +7,6 @@ const mockedPostRequestBodyByUrl = new Map<string, any>();
 
 const mockAxiosGet = (url: string, responseData: any) => {
     mockedGetResponseByUrl.set(url, responseData);
-
     (axios.get as jest.Mock).mockImplementation(requestUrl => {
         if (mockedGetResponseByUrl.has(requestUrl)) {
             const response = { data: mockedGetResponseByUrl.get(requestUrl) };
@@ -65,4 +64,9 @@ afterEach(() => {
     mockedPostRequestBodyByUrl.clear();
 })
 
-export {mockAxiosGet, mockAxiosPost, mockAxiosPut, mockedPostRequestBodyByUrl};
+export {
+    mockAxiosGet,
+    mockAxiosPost,
+    mockAxiosPut,
+    mockedPostRequestBodyByUrl
+};

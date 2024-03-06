@@ -24,11 +24,13 @@ class Set {
     }
 }
 
+const loadAllCommands = () => {
+    Set.connection(commander);
+    commander.parse(process.argv);
+};
+
 ContextInitializer.initContext()
-    .then(() => {
-        Set.connection(commander);
-        commander.parse(process.argv);
-    })
+    .then(loadAllCommands, loadAllCommands)
     .catch(e => {
         logger.error(e);
     });
