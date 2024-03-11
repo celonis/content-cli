@@ -1,4 +1,5 @@
 import { CtpManager } from "./ctp.manager";
+import * as FormData from "form-data";
 
 export class CtpDataModelManager extends CtpManager {
     private static BASE_URL = "/cpm-ems-migrator/migration/api/ctp";
@@ -16,15 +17,13 @@ export class CtpDataModelManager extends CtpManager {
     }
 
     protected getBody(): object {
-        return {
-            formData: {
-                file: this.content,
-                transport: JSON.stringify({
-                    password: this.password,
-                    existingPoolId: this.existingPoolId,
-                    globalPoolName: this.globalPoolName,
-                }),
-            },
-        };
+        const formData = new FormData();
+        formData.append("file", this.content);
+        formData.append("transport", JSON.stringify({
+            password: this.password,
+            existingPoolId: this.existingPoolId,
+            globalPoolName: this.globalPoolName,
+        }));
+        return formData;
     }
 }
