@@ -10,7 +10,8 @@ import os = require("os");
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
 const expiryBuffer = 5000;
-const scopes = ["studio", "integration.data-pools", "transformation-center.kpis", "transformation-center.content:export", "action-engine.projects"];
+const deviceCodeScopes = ["studio", "package-manager", "integration.data-pools", "transformation-center.kpis", "transformation-center.content:export", "action-engine.projects"];
+const clientCredentialsScopes = ["studio", "integration.data-pools", "transformation-center.kpis", "transformation-center.content:export", "action-engine.projects"];
 
 export interface Config {
     defaultProfile: string;
@@ -150,7 +151,7 @@ export class ProfileService {
                         token_endpoint_auth_method: "none",
                     });
                     const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
-                        scope: scopes.join(" ")
+                        scope: deviceCodeScopes.join(" ")
                     });
                     logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
                     const deviceCodeTokenSet = await deviceCodeHandle.poll();
@@ -171,9 +172,9 @@ export class ProfileService {
                     });
                     const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
                         grant_type: "client_credentials",
-                        scope: scopes.join(" ")
+                        scope: clientCredentialsScopes.join(" ")
                     });
-                    profile.scopes = [...scopes];
+                    profile.scopes = [...clientCredentialsScopes];
                     profile.apiToken = clientCredentialsTokenSet.access_token;
                     profile.expiresAt = clientCredentialsTokenSet.expires_at;
                 } catch (err) {
