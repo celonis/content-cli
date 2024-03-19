@@ -163,24 +163,43 @@ export class ProfileService {
                 }
                 break;
             case "Client Credentials":
+                const clientCredentialsIssuer = await Issuer.discover(profile.team);
                 try {
-                    const clientCredentialsIssuer = await Issuer.discover(profile.team);
+                    // try with client secret basic
                     const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
                         client_id: profile.clientId,
                         client_secret: profile.clientSecret,
-                        token_endpoint_auth_method: profile.clientAuthenticationMethod,
+                        token_endpoint_auth_method: "client_secret_basic",
                     });
                     const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
                         grant_type: "client_credentials",
                         scope: clientCredentialsScopes.join(" ")
                     });
-                    profile.scopes = [...clientCredentialsScopes];
+                    profile.clientAuthenticationMethod = "client_secret_basic";
                     profile.apiToken = clientCredentialsTokenSet.access_token;
                     profile.expiresAt = clientCredentialsTokenSet.expires_at;
-                } catch (err) {
-                    logger.error(new FatalError("The OAuth client configuration is incorrect. " +
-                        "Check the id, secret and scopes for correctness."));
+                } catch (e) {
+                    try {
+                        // try with client secret post
+                        const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
+                            client_id: profile.clientId,
+                            client_secret: profile.clientSecret,
+                            token_endpoint_auth_method: "client_secret_post",
+                        });
+                        const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
+                            grant_type: "client_credentials",
+                            scope: clientCredentialsScopes.join(" ")
+                        });
+                        profile.clientAuthenticationMethod = "client_secret_post";
+                        profile.apiToken = clientCredentialsTokenSet.access_token;
+                        profile.expiresAt = clientCredentialsTokenSet.expires_at;
+                    } catch (err) {
+                        logger.error(new FatalError("The OAuth client configuration is incorrect. " +
+                            "Check the id, secret and scopes for correctness."));
+                    }
                 }
+                profile.scopes = [...clientCredentialsScopes];
+
                 break;
             default:
                 logger.error(new FatalError("Unsupported profile type"));

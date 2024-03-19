@@ -20,16 +20,6 @@ export class ProfileCommand {
                 profile.type = "Client Credentials";
                 profile.clientId = await QuestionService.ask("Your client id: ");
                 profile.clientSecret = await QuestionService.ask("Your client secret: ");
-                const authenticationMethod = await QuestionService.ask("Client authentication method: Client Secret Basic (1) or Client Secret Post (2): " );
-                if (authenticationMethod === "1") {
-                    profile.clientAuthenticationMethod = "client_secret_basic";
-                }
-                else if (authenticationMethod === "2") {
-                    profile.clientAuthenticationMethod = "client_secret_post";
-                }
-                else {
-                    logger.error(new FatalError("Invalid authentication method"));
-                }
                 break;
             case "3":
                 profile.type = "Key";
