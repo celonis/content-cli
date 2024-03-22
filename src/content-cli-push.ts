@@ -9,7 +9,6 @@ import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { CTPCommand } from "./commands/ctp.command";
-import { WidgetSourcemapsCommand } from "./commands/widget-sourcemaps.command";
 import { AnalysisBookmarksCommand } from "./commands/analysis-bookmarks.command";
 import { execSync } from "child_process";
 import { GracefulError, logger } from "./util/logger";
@@ -134,18 +133,6 @@ class Push {
         return program;
     }
 
-    public static widgetSourcemaps(program: CommanderStatic): CommanderStatic {
-        program
-            .command("widget-sourcemaps")
-            .description("Command to upload sourcemaps to Datadog RUM")
-            .action(async () => {
-                await new WidgetSourcemapsCommand().pushSourceMaps();
-                process.exit();
-            });
-
-        return program;
-    }
-
     public static dataPool(program: CommanderStatic): CommanderStatic {
         program
             .command("data-pool")
@@ -244,7 +231,6 @@ Push.asset(commander);
 Push.assets(commander);
 Push.package(commander);
 Push.packages(commander);
-Push.widgetSourcemaps(commander);
 
 commander.parse(process.argv);
 

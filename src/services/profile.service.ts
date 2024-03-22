@@ -3,9 +3,15 @@ import { ProfileValidator } from "../validators/profile.validator";
 import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../util/logger";
-
+import { Issuer } from "openid-client";
+import axios from "axios";
 import os = require("os");
+
 const homedir = os.homedir();
+// use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
+const expiryBuffer = 5000;
+const deviceCodeScopes = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
+const clientCredentialsScopes = ["studio", "integration.data-pools", "action-engine.projects"];
 
 export interface Config {
     defaultProfile: string;
@@ -25,7 +31,9 @@ export class ProfileService {
                         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                         { encoding: "utf-8" }
                     );
-                    resolve(JSON.parse(file));
+                    const profile : Profile = JSON.parse(file);
+                    this.refreshProfile(profile)
+                        .then(() => resolve(profile));
                 }
             } catch (e) {
                 reject(
@@ -75,6 +83,7 @@ export class ProfileService {
             team: profileVariables.teamUrl,
             apiToken: profileVariables.apiToken,
             authenticationType: AuthenticationType.BEARER,
+            type: "Key"
         };
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
         return profile;
@@ -120,6 +129,124 @@ export class ProfileService {
         return fileNames;
     }
 
+    public async authorizeProfile(profile: Profile) : Promise<void> {
+        switch (profile.type) {
+            case "Key":
+                const url = profile.team.replace(/\/?$/, "/api/cloud/team");
+                this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
+                    profile.authenticationType = AuthenticationType.BEARER;
+                }).catch(() => {
+                    this.tryKeyAuthentication(url, AuthenticationType.APPKEY, profile.apiToken).then(() => {
+                        profile.authenticationType = AuthenticationType.APPKEY;
+                    }).catch(() => {
+                        logger.error(new FatalError("The provided team or api key is wrong."));
+                    })
+                });
+                break;
+            case "Device Code":
+                try {
+                    const deviceCodeIssuer = await Issuer.discover(profile.team);
+                    const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
+                        client_id: "content-cli",
+                        token_endpoint_auth_method: "none",
+                    });
+                    const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
+                        scope: deviceCodeScopes.join(" ")
+                    });
+                    logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
+                    const deviceCodeTokenSet = await deviceCodeHandle.poll();
+                    profile.apiToken = deviceCodeTokenSet.access_token;
+                    profile.refreshToken = deviceCodeTokenSet.refresh_token;
+                    profile.expiresAt = deviceCodeTokenSet.expires_at;
+                } catch (err) {
+                    logger.error(new FatalError("The provided team is wrong."));
+                }
+                break;
+            case "Client Credentials":
+                const clientCredentialsIssuer = await Issuer.discover(profile.team);
+                try {
+                    // try with client secret basic
+                    const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
+                        client_id: profile.clientId,
+                        client_secret: profile.clientSecret,
+                        token_endpoint_auth_method: "client_secret_basic",
+                    });
+                    const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
+                        grant_type: "client_credentials",
+                        scope: clientCredentialsScopes.join(" ")
+                    });
+                    profile.clientAuthenticationMethod = "client_secret_basic";
+                    profile.apiToken = clientCredentialsTokenSet.access_token;
+                    profile.expiresAt = clientCredentialsTokenSet.expires_at;
+                } catch (e) {
+                    try {
+                        // try with client secret post
+                        const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
+                            client_id: profile.clientId,
+                            client_secret: profile.clientSecret,
+                            token_endpoint_auth_method: "client_secret_post",
+                        });
+                        const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
+                            grant_type: "client_credentials",
+                            scope: clientCredentialsScopes.join(" ")
+                        });
+                        profile.clientAuthenticationMethod = "client_secret_post";
+                        profile.apiToken = clientCredentialsTokenSet.access_token;
+                        profile.expiresAt = clientCredentialsTokenSet.expires_at;
+                    } catch (err) {
+                        logger.error(new FatalError("The OAuth client configuration is incorrect. " +
+                            "Check the id, secret and scopes for correctness."));
+                    }
+                }
+                profile.scopes = [...clientCredentialsScopes];
+
+                break;
+            default:
+                logger.error(new FatalError("Unsupported profile type"));
+                break;
+        }
+    }
+
+    public async refreshProfile(profile: Profile) : Promise<void> {
+        if (!this.isProfileExpired(profile, expiryBuffer)) {
+            return;
+        }
+        const issuer = await Issuer.discover(profile.team);
+        if (profile.type === "Device Code") {
+            try {
+                const oauthClient = new issuer.Client({
+                    client_id: "content-cli",
+                    token_endpoint_auth_method: "none",
+                });
+                const tokenSet = await oauthClient.refresh(profile.refreshToken);
+                profile.apiToken = tokenSet.access_token;
+                profile.expiresAt = tokenSet.expires_at;
+                profile.refreshToken = tokenSet.refresh_token;
+            } catch (err) {
+                logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
+            }
+        }
+        else {
+            try {
+                const oauthClient = new issuer.Client({
+                    client_id: profile.clientId,
+                    client_secret: profile.clientSecret,
+                    token_endpoint_auth_method: profile.clientAuthenticationMethod,
+                });
+                const tokenSet = await oauthClient.grant({
+                    grant_type: "client_credentials",
+                    scope: profile.scopes.join(" ")
+                });
+                profile.apiToken = tokenSet.access_token;
+                profile.expiresAt = tokenSet.expires_at;
+            } catch (err) {
+                logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
+            }
+        }
+
+        this.storeProfile(profile);
+    }
+
     private getProfileEnvVariables(): any {
         return {
             teamUrl: this.getBaseTeamUrl(process.env.TEAM_URL),
@@ -134,6 +261,34 @@ export class ProfileService {
 
         const url = new URL(teamUrl);
         return url.origin;
+    }
+
+    private isProfileExpired(profile: Profile, buffer: number = 0): boolean {
+        if (profile.type === "Key") {
+            return false;
+        }
+        const now = new Date();
+        const expirationTime = new Date(profile.expiresAt * 1000 - buffer);
+
+        return now > expirationTime;
+    }
+
+    private tryKeyAuthentication(url: string, authType: AuthenticationType, apiToken: string): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            axios.get(url, {
+                headers: {
+                    Authorization: `${authType} ${apiToken}`
+                }
+            }).then(response => {
+                if (response.status === 200 && response.data.domain) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            }).catch(() => {
+                reject();
+            })
+        })
     }
 }
 

@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as FormData from "form-data";
 
 export class AnalysisBookmarksManager extends BaseManager {
-    private static BASE_URL = "/process-analytics/api/bookmarks/";
+    private static BASE_URL = "/process-analytics/api/bookmarks";
     private static ANALYSIS_BOOKMARKS_FILE_PREFIX = "studio_analysis_bookmarks_";
 
     private _analysisId: string;

@@ -1,6 +1,5 @@
 import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
-import { ObjectiveCommand } from "./commands/objective.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
@@ -49,20 +48,6 @@ class Pull {
             .requiredOption("--skillId <skillId>", "Id of the skill you want to pull")
             .action(async cmd => {
                 await new SkillCommand().pullSkill(cmd.profile, cmd.projectId, cmd.skillId);
-                process.exit();
-            });
-
-        return program;
-    }
-
-    public static objective(program: CommanderStatic): CommanderStatic {
-        program
-            .command("objective")
-            .description("Command to pull an objective")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the objective")
-            .requiredOption("--id <id>", "Id of the objective you want to pull")
-            .action(async cmd => {
-                await new ObjectiveCommand().pullObjective(cmd.profile, cmd.id);
                 process.exit();
             });
 
@@ -118,7 +103,6 @@ class Pull {
 Pull.analysis(commander);
 Pull.analysisBookmarks(commander);
 Pull.skill(commander);
-Pull.objective(commander);
 Pull.dataPool(commander);
 Pull.asset(commander);
 Pull.package(commander);
