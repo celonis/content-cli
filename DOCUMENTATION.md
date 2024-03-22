@@ -90,13 +90,10 @@ With Device Code, creating the profile will trigger an authorization flow
 link where you must authorize the **Content CLI** to be able to access the EMS environment 
 on your behalf. 
 
-With Client Credentials, you need to provide the credentials (Client ID, Client Secret)
-and Client Authentication Method configured for your OAuth client. You can create and configure 
-an OAuth clients in the `Team Settings` section of your EMS account, under `Applications`. 
-The OAuth client needs to have the following scopes configured: studio.spaces, studio.packages, 
-studio.widgets, integration.data-models:read, integration.data-pools, transformation-center.kpis, 
-transformation-center.content:export. After creating an OAuth client, you can assign it different
-permissions based on how much power you want to give to the client owner.
+With Client Credentials, you need to provide the credentials (Client ID, Client Secret) configured for your OAuth client. 
+You can create and configure an OAuth clients in the `Admin & Settings` section of your EMS account, under `Applications`. 
+The OAuth client needs to have the following scopes configured: studio, integration.data-pools, action-engine.projects. 
+After creating an OAuth client, you should assign it the permissions necessary for the respective commands.
 
 ##### API Token
 
