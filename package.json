@@ -21,6 +21,7 @@
     "form-data": "4.0.0",
     "openid-client": "^5.6.1",
     "semver": "^7.3.2",
+    "uuid": "^9.0.1",
     "valid-url": "^1.0.9",
     "winston": "^3.1.0",
     "yaml": "2.2.2"
@@ -29,6 +30,7 @@
     "@types/adm-zip": "^0.4.34",
     "@types/jest": "29.5.11",
     "@types/node": "20.10.4",
+    "@types/uuid": "^9.0.8",
     "jest": "29.7.0",
     "lint-staged": "^9.5.0",
     "prettier": "^1.19.1",
