@@ -15,6 +15,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@datadog/datadog-ci": "^0.17.12",
     "adm-zip": "^0.4.14",
     "axios": "1.6.2",
     "commander": "^6.0.0",

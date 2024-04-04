@@ -1,6 +1,7 @@
 import { AuthenticationType, Profile } from "../interfaces/profile.interface";
 import { contextService } from "./context.service";
 import { FatalError, logger } from "../util/logger";
+import {TracingUtils} from "../util/tracing";
 import {VersionUtils} from "../util/version";
 import axios, {AxiosResponse, RawAxiosRequestHeaders} from "axios";
 import * as FormData from "form-data";
@@ -187,6 +188,7 @@ class HttpClientServiceV2 {
     private buildHeaders(profile: Profile, contentType?: string): RawAxiosRequestHeaders {
         return {
             ...this.buildAuthorizationHeaders(profile, contentType),
+            ...TracingUtils.getTracingHeaders(),
             "User-Agent": "content-cli v" + VersionUtils.getCurrentCliVersion()
         }
     }
