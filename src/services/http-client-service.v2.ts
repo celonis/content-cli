@@ -3,14 +3,17 @@ import { contextService } from "./context.service";
 import { FatalError, logger } from "../util/logger";
 import {TracingUtils} from "../util/tracing";
 import {VersionUtils} from "../util/version";
-import axios, {AxiosResponse, RawAxiosRequestHeaders} from "axios";
+import {AxiosResponse, RawAxiosRequestHeaders} from "axios";
 import * as FormData from "form-data";
+import { AxiosInitializer } from "../util/axios-initializer";
 
 class HttpClientServiceV2 {
+    
+    private axios = AxiosInitializer.initializeAxios();
 
     public async get(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.get(this.resolveUrl(url), {
+            this.axios.get(this.resolveUrl(url), {
                 headers: this.buildHeaders(contextService.getContext().profile)
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
@@ -24,7 +27,7 @@ class HttpClientServiceV2 {
 
     public async getFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.get(this.resolveUrl(url), {
+            this.axios.get(this.resolveUrl(url), {
                 headers: this.buildHeaders(contextService.getContext().profile),
                 responseType: "stream",
                 validateStatus: status => status >= 200
@@ -49,7 +52,7 @@ class HttpClientServiceV2 {
 
     public async postFile(url: string, formData: FormData, parameters?: {}): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.post(
+            this.axios.post(
                 this.resolveUrl(url),
                 formData,
                 {
@@ -71,7 +74,7 @@ class HttpClientServiceV2 {
 
     public async post(url: string, body: any): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.post(
+            this.axios.post(
                 this.resolveUrl(url),
                 typeof body === "string" || body instanceof String ? body : JSON.stringify(body),
                 {
@@ -89,7 +92,7 @@ class HttpClientServiceV2 {
 
     public async put(url: string, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.put(
+            this.axios.put(
                 this.resolveUrl(url),
                 JSON.stringify(body),
                 {
@@ -107,7 +110,7 @@ class HttpClientServiceV2 {
 
     public async delete(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.delete(this.resolveUrl(url), {
+            this.axios.delete(this.resolveUrl(url), {
                 headers: this.buildHeaders(contextService.getContext().profile, "application/json;charset=utf-8")
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
@@ -121,7 +124,7 @@ class HttpClientServiceV2 {
 
     public async downloadFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.post(this.resolveUrl(url), null, {
+            this.axios.post(this.resolveUrl(url), null, {
                 headers: this.buildHeaders(contextService.getContext().profile),
                 responseType: "stream"
             }).then(response => {

@@ -1,9 +1,13 @@
 import { AuthenticationType, Profile } from "../interfaces/profile.interface";
 import {logger} from "../util/logger";
-import axios, {AxiosResponse, RawAxiosRequestHeaders} from "axios";
+import {AxiosResponse, RawAxiosRequestHeaders} from "axios";
 import * as FormData from "form-data";
+import { AxiosInitializer } from "../util/axios-initializer";
 
 export class HttpClientService {
+
+    private axios = AxiosInitializer.initializeAxios();
+
     public async pushData(url: string, profile: Profile, body: any): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             const headers = this.buildAuthorizationHeaders(profile);
@@ -12,7 +16,7 @@ export class HttpClientService {
                 headers["Content-Type"] = "multipart/form-data";
             }
 
-            axios.post(url, body, {
+            this.axios.post(url, body, {
                 headers
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
@@ -24,7 +28,7 @@ export class HttpClientService {
 
     public async pullData(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.get(url, {
+            this.axios.get(url, {
                 headers: this.buildAuthorizationHeaders(profile)
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
@@ -36,7 +40,7 @@ export class HttpClientService {
 
     public async pullFileData(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.post(url, null, {
+            this.axios.post(url, null, {
                 headers: this.buildAuthorizationHeaders(profile),
                 responseType: "stream"
             }).then(response => {
@@ -59,7 +63,7 @@ export class HttpClientService {
 
     public async updateData(url: string, profile: Profile, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.put(url, body, {
+            this.axios.put(url, body, {
                 headers: this.buildAuthorizationHeaders(profile)
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
@@ -71,7 +75,7 @@ export class HttpClientService {
 
     public async findAll(url: string, profile: Profile): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            axios.get(url, {
+            this.axios.get(url, {
                 headers: this.buildAuthorizationHeaders(profile)
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
