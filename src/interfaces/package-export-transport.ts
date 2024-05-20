@@ -48,18 +48,16 @@ export interface PackageKeyAndVersionPair {
 export interface NodeExportTransport {
     key: string;
     parentNodeKey: string;
-    packageNodeKey: string;
     name: string;
     type: string;
     exportSerializationType: string;
     serializedContent: string;
     schemaVersion: number;
 
-    unversionedMetadata: any;
-    versionedMetdata: object;
+    spaceId: string;
 
     invalidContent?: boolean;
-    serializedDocument: Buffer;
+    serializedDocument?: Buffer;
 }
 
 export interface NodeSerializedContent {

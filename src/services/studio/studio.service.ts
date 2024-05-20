@@ -254,9 +254,10 @@ class StudioService {
             await variableService.assignVariableValues(manifest.packageKey, manifest.runtimeVariableAssignments);
         }
     }
+
     private updateSpaceIdForNode(nodeContent: string, spaceId: string): string {
         const exportedNode: NodeExportTransport = parse(nodeContent);
-        const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
+        const oldSpaceId = exportedNode.spaceId;
 
         nodeContent = nodeContent.replace(new RegExp(oldSpaceId, "g"), spaceId);
         return nodeContent;
