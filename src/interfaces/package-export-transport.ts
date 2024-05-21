@@ -51,7 +51,7 @@ export interface NodeExportTransport {
     name: string;
     type: string;
     exportSerializationType: string;
-    serializedContent: string;
+    configuration: string;
     schemaVersion: number;
 
     spaceId: string;

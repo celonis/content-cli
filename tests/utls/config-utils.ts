@@ -59,14 +59,14 @@ export class ConfigUtils {
         };
     }
 
-    public static buildPackageNode(key: string, serializedContent: string): NodeExportTransport {
+    public static buildPackageNode(key: string, configuration: string): NodeExportTransport {
         return {
             key,
             parentNodeKey: key,
             name: "name",
             type: "PACKAGE",
             exportSerializationType: "YAML",
-            serializedContent,
+            configuration: configuration,
             schemaVersion: 1,
             invalidContent: false,
             serializedDocument: null,
@@ -81,7 +81,7 @@ export class ConfigUtils {
             name: "name",
             type: type,
             exportSerializationType: "YAML",
-            serializedContent: "",
+            configuration: "",
             schemaVersion: 1,
             invalidContent: false,
             serializedDocument: null,
