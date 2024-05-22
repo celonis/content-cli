@@ -405,7 +405,7 @@ describe("Config export", () => {
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.0.zip").getData());
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.yml").getData().toString());
         expect(firstPackageExportedNode).toBeTruthy();
-        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.serializedContent);
+        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.configuration);
         expect(firstPackageContent.variables).toHaveLength(2);
         expect(firstPackageContent.variables).toEqual([
             {
@@ -422,7 +422,7 @@ describe("Config export", () => {
         const secondPackageExportedZip = new AdmZip(actualZip.getEntry("key-2_1.0.0.zip").getData());
         const secondPackageExportedNode: NodeExportTransport = parse(secondPackageExportedZip.getEntry("package.yml").getData().toString());
         expect(secondPackageExportedNode).toBeTruthy();
-        const secondPackageContent: NodeSerializedContent = parse(secondPackageExportedNode.serializedContent);
+        const secondPackageContent: NodeSerializedContent = parse(secondPackageExportedNode.configuration);
         expect(secondPackageContent.variables).toHaveLength(2);
         expect(secondPackageContent.variables).toEqual([{
                 ...secondPackageVariableDefinition[0],
@@ -513,7 +513,7 @@ describe("Config export", () => {
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key_with_underscores_1_1.0.0.zip").getData());
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.yml").getData().toString());
         expect(firstPackageExportedNode).toBeTruthy();
-        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.serializedContent);
+        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.configuration);
         expect(firstPackageContent.variables).toHaveLength(3);
         expect(firstPackageContent.variables).toEqual([
             {
