@@ -11,6 +11,13 @@ const config: Config.InitialOptions = {
     setupFilesAfterEnv: [
         "<rootDir>/tests/jest.setup.ts",
     ],
+    globals: {
+        "ts-jest": {
+            tsconfig: {
+                sourceMap: true
+            }
+        }
+    }
 }
 
 export default config
