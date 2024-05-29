@@ -37,7 +37,7 @@ class DiffService {
         if (jsonResponse) {
             this.exportListOfPackageDiffs(returnedHasChangesData);
         } else {
-            logger.info( this.buildStringResponse(returnedHasChangesData));
+            logger.info(this.buildStringResponse(returnedHasChangesData));
         }
     }
 
