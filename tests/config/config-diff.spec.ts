@@ -36,16 +36,13 @@ describe("Config diff", () => {
             nodesWithChanges: []
         }];
 
-        const expectedMessage: string = "    \n" +
-            "\"[{\\\"packageKey\\\":\\\"package-key\\\",\\\"hasChanges\\\":true,\\\"packageChanges\\\":[],\\\"nodesWithChanges\\\":[]}]\"";
-
-        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", JSON.stringify(diffResponse));
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
 
         await new ConfigCommand().diffPackages("./packages.zip", true, false);
 
         expect(testTransport.logMessages.length).toBe(1);
-        expect(testTransport.logMessages[0].message).toBe(
-            expectedMessage
+        expect(testTransport.logMessages[0].message).toContain(
+            JSON.stringify(diffResponse, null, 2)
         );
     });
 
@@ -82,16 +79,13 @@ describe("Config diff", () => {
             }]
         }];
 
-        const expectedMessage: string = "    \n" +
-            "\"[{\\\"packageKey\\\":\\\"package-key\\\",\\\"hasChanges\\\":true,\\\"packageChanges\\\":[{\\\"op\\\":\\\"add\\\",\\\"path\\\":\\\"/test\\\",\\\"from\\\":\\\"bbbb\\\",\\\"value\\\":123}],\\\"nodesWithChanges\\\":[{\\\"nodeKey\\\":\\\"key-1\\\",\\\"changes\\\":[{\\\"op\\\":\\\"add\\\",\\\"path\\\":\\\"/test\\\",\\\"from\\\":\\\"bbb\\\",\\\"value\\\":234}]}]}]\"";
-
-        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration", JSON.stringify(diffResponse));
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration", diffResponse);
 
         await new ConfigCommand().diffPackages("./packages.zip", false, false);
 
         expect(testTransport.logMessages.length).toBe(1);
-        expect(testTransport.logMessages[0].message).toBe(
-            expectedMessage
+        expect(testTransport.logMessages[0].message).toContain(
+            JSON.stringify(diffResponse, null, 2)
         );
     });
 
@@ -127,7 +121,6 @@ describe("Config diff", () => {
                 }]
             }]
         }];
-
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration", diffResponse);
 
