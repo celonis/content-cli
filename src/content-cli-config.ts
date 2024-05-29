@@ -78,7 +78,7 @@ export class Config {
             .option("-p, --profile <profile>", "Profile of the team/realm which you want to use to diff the packages with")
             .option("--hasChanges", "Flag to return only the information if the package has changes without the actual changes")
             .option("--json", "Return the response as a JSON file")
-            .requiredOption("-f --file <file>", "Exported packages file (relative path)")
+            .requiredOption("-f --file <file>", "Exported packages file (relative or absolute path)")
             .action(async cmd => {
                 await new ConfigCommand().diffPackages(cmd.file, cmd.hasChanges, cmd.json);
                 process.exit();
