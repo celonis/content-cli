@@ -1,4 +1,4 @@
-import * as AmdZip from "adm-zip";
+import * as AdmZip from "adm-zip";
 import {Readable} from "stream";
 import * as FormData from "form-data";
 import {diffApi} from "../../api/diff-api";
@@ -18,7 +18,7 @@ class DiffService {
     }
 
     private async hasChanges(file: string, jsonResponse: boolean): Promise<void> {
-        const packages = new AmdZip(file);
+        const packages = new AdmZip(file);
         const formData = this.buildBodyForDiff(packages);
         const returnedHasChangesData = await diffApi.hasChanges(formData);
 
@@ -30,7 +30,7 @@ class DiffService {
     }
 
     private async diffPackagesAndReturnDiff(file: string, jsonResponse: boolean): Promise<void> {
-        const packages = new AmdZip(file);
+        const packages = new AdmZip(file);
         const formData = this.buildBodyForDiff(packages);
         const returnedHasChangesData = await diffApi.diffPackages(formData);
 
@@ -41,7 +41,7 @@ class DiffService {
         }
     }
 
-    private buildBodyForDiff(packages: AmdZip): FormData {
+    private buildBodyForDiff(packages: AdmZip): FormData {
         const formData = new FormData();
         const readableStream = this.getReadableStream(packages);
 
@@ -50,7 +50,7 @@ class DiffService {
         return formData;
     }
 
-    private getReadableStream(packages: AmdZip): Readable {
+    private getReadableStream(packages: AdmZip): Readable {
         return new Readable({
             read(): void {
                 this.push(packages.toBuffer());
