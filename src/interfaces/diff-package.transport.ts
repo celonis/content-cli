@@ -12,7 +12,11 @@ export interface NodeDiffTransport {
 
 export interface PackageDiffTransport {
     packageKey: string;
-    hasChanges: boolean
     packageChanges: ConfigurationChangeTransport[];
     nodesWithChanges: NodeDiffTransport[];
+}
+
+export interface PackageDiffMetadata {
+    packageKey: string;
+    hasChanges: boolean;
 }
