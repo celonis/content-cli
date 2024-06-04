@@ -1,5 +1,6 @@
 import {batchImportExportService} from "../services/package-manager/batch-import-export-service";
 import {variableService} from "../services/package-manager/variable-service";
+import {diffService} from "../services/package-manager/diff-service";
 
 export class ConfigCommand {
 
@@ -25,5 +26,9 @@ export class ConfigCommand {
 
     public batchImportPackages(file: string, overwrite: boolean): Promise<void> {
         return batchImportExportService.batchImportPackages(file, overwrite);
+    }
+
+    public diffPackages(file: string, hasChanges: boolean, jsonResponse: boolean): Promise<void> {
+        return diffService.diffPackages(file, hasChanges, jsonResponse);
     }
 }

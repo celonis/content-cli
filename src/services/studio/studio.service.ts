@@ -160,7 +160,7 @@ class StudioService {
         const packageEntry = packageZip.getEntry("package.yml");
 
         const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
-        const nodeContent: NodeSerializedContent = parse(exportedNode.serializedContent);
+        const nodeContent: NodeSerializedContent = parse(exportedNode.configuration);
 
         nodeContent.variables = nodeContent.variables.map(variable => ({
             ...variable,
@@ -168,7 +168,7 @@ class StudioService {
                 connectionVariablesByKey.get(variable.key).metadata : variable.metadata
         }));
 
-        exportedNode.serializedContent = stringify(nodeContent);
+        exportedNode.configuration = stringify(nodeContent);
         packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
     }
 
@@ -254,9 +254,10 @@ class StudioService {
             await variableService.assignVariableValues(manifest.packageKey, manifest.runtimeVariableAssignments);
         }
     }
+
     private updateSpaceIdForNode(nodeContent: string, spaceId: string): string {
         const exportedNode: NodeExportTransport = parse(nodeContent);
-        const oldSpaceId = exportedNode.unversionedMetadata.spaceId;
+        const oldSpaceId = exportedNode.spaceId;
 
         nodeContent = nodeContent.replace(new RegExp(oldSpaceId, "g"), spaceId);
         return nodeContent;

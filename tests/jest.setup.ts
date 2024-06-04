@@ -2,9 +2,10 @@ import * as fs from 'fs';
 import {setDefaultProfile} from "./utls/context-mock";
 import {TestTransport} from "./utls/test-transport";
 import {logger} from "../src/util/logger";
+import { mockAxios } from "./utls/http-requests-mock";
 
 // Mock the modules using Jest
-jest.mock('axios');
+mockAxios();
 jest.mock('fs');
 
 const mockWriteFileSync = jest.fn();

@@ -1,13 +1,25 @@
-import axios from "axios";
+import { AxiosInstance } from "axios";
 import {Readable} from "stream";
+import { AxiosInitializer } from "../../src/util/axios-initializer";
+
+const mockedAxiosInstance = {} as AxiosInstance;
+
 
 const mockedGetResponseByUrl = new Map<string, any>();
 const mockedPostResponseByUrl = new Map<string, any>();
 const mockedPostRequestBodyByUrl = new Map<string, any>();
 
+const mockAxios = () : void => {
+    AxiosInitializer.initializeAxios = jest.fn().mockReturnValue(mockedAxiosInstance);
+
+    mockedAxiosInstance.get = jest.fn();
+    mockedAxiosInstance.post = jest.fn();
+    mockedAxiosInstance.put = jest.fn();
+}
+
 const mockAxiosGet = (url: string, responseData: any) => {
     mockedGetResponseByUrl.set(url, responseData);
-    (axios.get as jest.Mock).mockImplementation(requestUrl => {
+    (mockedAxiosInstance.get as jest.Mock).mockImplementation(requestUrl => {
         if (mockedGetResponseByUrl.has(requestUrl)) {
             const response = { data: mockedGetResponseByUrl.get(requestUrl) };
 
@@ -31,7 +43,7 @@ const mockAxiosGet = (url: string, responseData: any) => {
 const mockAxiosPost = (url: string, responseData: any) => {
     mockedPostResponseByUrl.set(url, responseData);
 
-    (axios.post as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
+    (mockedAxiosInstance.post as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
         if (mockedPostResponseByUrl.has(requestUrl)) {
             const response = { data: mockedPostResponseByUrl.get(requestUrl) };
             mockedPostRequestBodyByUrl.set(requestUrl, data);
@@ -45,8 +57,7 @@ const mockAxiosPost = (url: string, responseData: any) => {
 
 const mockAxiosPut = (url: string, responseData: any) => {
     mockedPostResponseByUrl.set(url, responseData);
-
-    (axios.put as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
+    (mockedAxiosInstance.put as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
         if (mockedPostResponseByUrl.has(requestUrl)) {
             const response = { data: mockedPostResponseByUrl.get(requestUrl) };
             mockedPostRequestBodyByUrl.set(requestUrl, data);
@@ -65,6 +76,8 @@ afterEach(() => {
 })
 
 export {
+    mockedAxiosInstance,
+    mockAxios,
     mockAxiosGet,
     mockAxiosPost,
     mockAxiosPut,
