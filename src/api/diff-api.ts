@@ -1,4 +1,4 @@
-import {PackageDiffTransport} from "../interfaces/diff-package.transport";
+import { PackageDiffMetadata, PackageDiffTransport } from "../interfaces/diff-package.transport";
 import {httpClientV2} from "../services/http-client-service.v2";
 import * as FormData from "form-data";
 
@@ -12,7 +12,7 @@ class DiffApi {
         );
     }
 
-    public async hasChanges(data: FormData): Promise<PackageDiffTransport[]> {
+    public async hasChanges(data: FormData): Promise<PackageDiffMetadata[]> {
         return httpClientV2.postFile(
             "/package-manager/api/core/packages/diff/configuration/has-changes",
             data
