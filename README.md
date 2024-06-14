@@ -17,8 +17,12 @@ teams and execute commands in a profile's context.
 ## Getting Started
 
 To get started with using Content CLI, you will need to have `node` installed in your local machine. Please download 
-the LTS version that is recommended for most users from the `node` web page [here](https://nodejs.org/en/). After 
-installing `node` you can run the following command in the terminal (cmd for Windows users) to install Content CLI. 
+the LTS version that is recommended for most users from the `node` web page [here](https://nodejs.org/en/). Create (if not already existing) an ~/.npmrc file and copy the following code into the ~/.npmrc file:
+```
+@celonis:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=GITHUB_PERSONAL_ACCESS_TOKEN
+```
+After installing `node` you can run the following command in the terminal (cmd for Windows users) to install Content CLI. 
 Note that the same command is used for updating Content CLI too.
 
 ```
