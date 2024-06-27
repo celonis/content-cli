@@ -4,7 +4,8 @@ import * as path from "path";
 import {stringify} from "../../src/util/yaml";
 import {mockCreateReadStream, mockExistsSync, mockReadFileSync} from "../utls/fs-mock-utils";
 import {
-    PackageDiffTransport
+    PackageDiffMetadata,
+    PackageDiffTransport,
 } from "../../src/interfaces/diff-package.transport";
 import {mockAxiosPost} from "../utls/http-requests-mock";
 import {ConfigCommand} from "../../src/commands/config.command";
@@ -29,11 +30,9 @@ describe("Config diff", () => {
         mockReadFileSync(exportedPackagesZip.toBuffer());
         mockCreateReadStream(exportedPackagesZip.toBuffer());
 
-        const diffResponse: PackageDiffTransport[] = [{
+        const diffResponse: PackageDiffMetadata[] = [{
             packageKey: "package-key",
-            hasChanges: true,
-            packageChanges: [],
-            nodesWithChanges: []
+            hasChanges: true
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
@@ -60,7 +59,6 @@ describe("Config diff", () => {
 
         const diffResponse: PackageDiffTransport[] = [{
             packageKey: "package-key",
-            hasChanges: true,
             packageChanges: [
                 {
                     op: "add",
@@ -103,7 +101,6 @@ describe("Config diff", () => {
 
         const diffResponse: PackageDiffTransport[] = [{
             packageKey: "package-key",
-            hasChanges: true,
             packageChanges: [
                 {
                     op: "add",
@@ -148,11 +145,9 @@ describe("Config diff", () => {
         mockReadFileSync(exportedPackagesZip.toBuffer());
         mockCreateReadStream(exportedPackagesZip.toBuffer());
 
-        const diffResponse: PackageDiffTransport[] = [{
+        const diffResponse: PackageDiffMetadata[] = [{
             packageKey: "package-key",
-            hasChanges: true,
-            packageChanges: [],
-            nodesWithChanges: []
+            hasChanges: true
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
