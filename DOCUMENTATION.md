@@ -93,7 +93,8 @@ on your behalf.
 With Client Credentials, you need to provide the credentials (Client ID, Client Secret) configured for your OAuth client. 
 You can create and configure an OAuth clients in the `Admin & Settings` section of your EMS account, under `Applications`. 
 The OAuth client needs to have the following scopes configured: studio, integration.data-pools, action-engine.projects. 
-After creating an OAuth client, you should assign it the permissions necessary for the respective commands.
+After creating an OAuth client, you should assign it the permissions necessary for the respective commands. More 
+information on registering OAuth clients can be found [here](https://docs.celonis.com/en/registering-oauth-client.html).
 
 ##### API Token
 
