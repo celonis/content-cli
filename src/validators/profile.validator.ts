@@ -1,4 +1,4 @@
-import { Profile } from "../interfaces/profile.interface";
+import {Profile, ProfileType} from "../interfaces/profile.interface";
 import { FatalError, logger } from "../util/logger";
 import validUrl = require("valid-url");
 
@@ -10,10 +10,10 @@ export class ProfileValidator {
         if (profile.team == null) {
             logger.error(new FatalError("The team can not be empty"));
         }
-        if (profile.type === "Key" && profile.apiToken == null) {
+        if (profile.type === ProfileType.KEY && profile.apiToken == null) {
             logger.error(new FatalError("The api token can not be empty for this profile type"));
         }
-        if (profile.type === "Client Credentials" && (profile.clientId == null || profile.clientSecret == null)) {
+        if (profile.type === ProfileType.CLIENT_CREDENTIALS && (profile.clientId == null || profile.clientSecret == null)) {
             logger.error(new FatalError("The client id and secret can not be empty for this profile type"));
         }
         if (!validUrl.isUri(profile.team)) {

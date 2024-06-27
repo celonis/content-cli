@@ -1,4 +1,7 @@
-import { AuthenticationType, Profile } from "../interfaces/profile.interface";
+import {
+    AuthenticationType, ClientAuthenticationMethod,
+    Profile, ProfileType
+} from "../interfaces/profile.interface";
 import { ProfileValidator } from "../validators/profile.validator";
 import * as path from "path";
 import * as fs from "fs";
@@ -83,7 +86,7 @@ export class ProfileService {
             team: profileVariables.teamUrl,
             apiToken: profileVariables.apiToken,
             authenticationType: AuthenticationType.BEARER,
-            type: "Key"
+            type: ProfileType.KEY
         };
         profile.authenticationType = await ProfileValidator.validateProfile(profile);
         return profile;
@@ -131,7 +134,7 @@ export class ProfileService {
 
     public async authorizeProfile(profile: Profile) : Promise<void> {
         switch (profile.type) {
-            case "Key":
+            case ProfileType.KEY:
                 const url = profile.team.replace(/\/?$/, "/api/cloud/team");
                 this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
                     profile.authenticationType = AuthenticationType.BEARER;
@@ -143,7 +146,7 @@ export class ProfileService {
                     })
                 });
                 break;
-            case "Device Code":
+            case ProfileType.DEVICE_CODE:
                 try {
                     const deviceCodeIssuer = await Issuer.discover(profile.team);
                     const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
@@ -162,20 +165,20 @@ export class ProfileService {
                     logger.error(new FatalError("The provided team is wrong."));
                 }
                 break;
-            case "Client Credentials":
+            case ProfileType.CLIENT_CREDENTIALS:
                 const clientCredentialsIssuer = await Issuer.discover(profile.team);
                 try {
                     // try with client secret basic
                     const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
                         client_id: profile.clientId,
                         client_secret: profile.clientSecret,
-                        token_endpoint_auth_method: "client_secret_basic",
+                        token_endpoint_auth_method: ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
                     });
                     const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
                         grant_type: "client_credentials",
                         scope: clientCredentialsScopes.join(" ")
                     });
-                    profile.clientAuthenticationMethod = "client_secret_basic";
+                    profile.clientAuthenticationMethod = ClientAuthenticationMethod.CLIENT_SECRET_BASIC;
                     profile.apiToken = clientCredentialsTokenSet.access_token;
                     profile.expiresAt = clientCredentialsTokenSet.expires_at;
                 } catch (e) {
@@ -184,13 +187,13 @@ export class ProfileService {
                         const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
                             client_id: profile.clientId,
                             client_secret: profile.clientSecret,
-                            token_endpoint_auth_method: "client_secret_post",
+                            token_endpoint_auth_method: ClientAuthenticationMethod.CLIENT_SECRET_POST,
                         });
                         const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
                             grant_type: "client_credentials",
                             scope: clientCredentialsScopes.join(" ")
                         });
-                        profile.clientAuthenticationMethod = "client_secret_post";
+                        profile.clientAuthenticationMethod = ClientAuthenticationMethod.CLIENT_SECRET_POST;
                         profile.apiToken = clientCredentialsTokenSet.access_token;
                         profile.expiresAt = clientCredentialsTokenSet.expires_at;
                     } catch (err) {
@@ -212,7 +215,7 @@ export class ProfileService {
             return;
         }
         const issuer = await Issuer.discover(profile.team);
-        if (profile.type === "Device Code") {
+        if (profile.type === ProfileType.DEVICE_CODE) {
             try {
                 const oauthClient = new issuer.Client({
                     client_id: "content-cli",
@@ -264,7 +267,7 @@ export class ProfileService {
     }
 
     private isProfileExpired(profile: Profile, buffer: number = 0): boolean {
-        if (profile.type === "Key") {
+        if (profile.type === ProfileType.KEY) {
             return false;
         }
         const now = new Date();
