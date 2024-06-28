@@ -4,6 +4,7 @@ import { PackageCommand } from "./commands/package.command";
 import { logger } from "./util/logger";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { ContextInitializer } from "./util/context-initializer";
+import { ActionFlowCommand } from "./commands/action-flow.command";
 
 export class Export {
     public static packages(program: CommanderStatic): CommanderStatic {
@@ -36,6 +37,21 @@ export class Export {
 
         return program;
     }
+
+    public static actionFlows(program: CommanderStatic): CommanderStatic {
+        program
+            .command("action-flows")
+            .description("Command to export all action-flows in a package with their objects and dependencies")
+            .option("-p, --profile <profile>", "Profile which you want to use to export action-flows")
+            .requiredOption("-i, --packageId <packageId>", "ID of the package from which you want to export action-flows")
+            .option("-f, --file <file>", "Action flows metadata file (relative path)")
+            .action(async cmd => {
+                await new ActionFlowCommand().exportActionFlows(cmd.packageId, cmd.file);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 const loadCommands = () => {
@@ -56,6 +72,7 @@ if (!process.argv.slice(2).length) {
 function getAllCommands(): void {
     Export.packages(commander);
     Export.dataPool(commander);
+    Export.actionFlows(commander);
 
     commander.parse(process.argv);
 }

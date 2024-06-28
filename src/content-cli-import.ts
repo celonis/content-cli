@@ -4,6 +4,7 @@ import { PackageCommand } from "./commands/package.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { ContextInitializer } from "./util/context-initializer";
 import { logger } from "./util/logger";
+import { ActionFlowCommand } from "./commands/action-flow.command";
 
 export class Import {
     public static packages(program: CommanderStatic): CommanderStatic {
@@ -41,6 +42,23 @@ export class Import {
 
         return program;
     }
+
+    public static actionFlows(program: CommanderStatic): CommanderStatic {
+        program
+            .command("action-flows")
+            .description("Command to import all action-flows in a package with their objects and dependencies")
+            .option("-p, --profile <profile>", "Profile which you want to use to import action-flows")
+            .requiredOption("-i, --packageId <packageId>", "ID of the package to which you want to export action-flows")
+            .requiredOption("-f, --file <file>", "Exported action-flows file (relative path)")
+            .requiredOption("-d, --dryRun <file>", "Execute the import on dry run mode")
+            .option("-o, --outputToJsonFile <outputToJsonFile>", "Output the import result in a JSON file")
+            .action(async cmd => {
+                await new ActionFlowCommand().importActionFlows(cmd.packageId, cmd.file, cmd.dryRun, cmd.outputToJsonFile);
+                process.exit();
+            });
+
+        return program;
+    }
 }
 
 const loadCommands = () => {
@@ -61,6 +79,7 @@ if (!process.argv.slice(2).length) {
 function getAllCommands(): void {
     Import.packages(commander);
     Import.dataPools(commander);
+    Import.actionFlows(commander);
 
     commander.parse(process.argv);
 }

@@ -18,7 +18,7 @@ program.command("profile", "Commands related to profiles.");
 program.command("pull", "Commands to pull content.");
 
 program.command("export", "Commands to export content.")
-program.command("import", "Commands to export content.")
+program.command("import", "Commands to import content.")
 
 program.command("push", "Commands to push content.");
 
@@ -31,6 +31,8 @@ program.command("get", "Commands to get configuration properties.");
 program.command("set", "Commands to set configuration properties.");
 
 program.command("config", "Commands related to config management.")
+
+program.command("analyze", "Commands to analyze assets dependencies.");
 
 program.version(VersionUtils.getCurrentCliVersion());
 program.parse(process.argv);
