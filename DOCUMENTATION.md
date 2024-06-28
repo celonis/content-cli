@@ -15,6 +15,10 @@
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [List assignments](#list-assignments)
     -   [Asset options for Analysis](#asset-options-for-analysis)
+    -   [Action Flows commands](#action-flows-commands)
+        - [Analyze Action Flows](#analyze-action-flows)
+        - [Export Action Flows](#export-action-flows)
+        - [Import Action Flows](#import-action-flows)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -439,6 +443,59 @@ the same command as with pushing other assets to Studio:
 // Push analysis to Studio
 content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
 ```
+
+### Action Flows commands
+
+#### Analyze Action Flows
+
+The analyze operation returns the metadata of Action Flows for one package together with their dependencies. Dependencies
+could be webhooks, data structures, variables and other.
+
+In order to analyze Action Flows you can execute the following command:
+
+```
+content-cli analyze action-flows -p my-profile-name -i <replace-with-package-id> --outputToJsonFile
+```
+
+The ```--outputToJsonFile``` is optional. If specified, the analyze result is saved in a JSON file (```metadata.json```). The
+command output will give you all the details.
+
+#### Export Action Flows
+
+The export operation allows export of Action Flows of one package together with their dependencies. Dependencies
+could be webhooks, data structures, variables and other.
+
+In order to pull Action Flows you can execute the following command:
+
+```
+content-cli export action-flows -p my-profile-name -i <replace-with-package-id> -f <replace-with-metadata-file-name>
+```
+
+_Note_: The ```-f``` is optional. If specified, it will attach the metadata file to the exported zip.
+This file is expected to be received by the ```action-flows analyze``` command, and manually be populated with the mappings source to target package.
+
+#### Import Action Flows
+
+The import operation allows import of Action Flows of one package together with their dependencies. Dependencies
+could be webhooks, data structures, variables and other.
+
+In order to push Action Flows use the following command:
+
+```
+content-cli import action-flows -p my-profile-name -i <replace-with-package-id> -f <replace-with-exported-zip-file> --dryRun --outputToJsonFile
+```
+
+##### Input
+
+* The zip file is the one that you receive from the ```action-flows export``` command
+* The ```--outputToJsonFile``` is optional. If specified, the import will be executed on dry run mode (nothing will be created)
+  * This is expected to be used to test the import by looking at report that is received on the response
+* The ```--outputToJsonFile``` is optional. If specified, the import result is saved in a JSON file. The
+  command output will give you all the details.
+
+#### Output
+
+The command outputs an import report (event log).
 
 ### Data Pool export / import commands
 
