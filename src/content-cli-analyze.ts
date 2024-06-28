@@ -12,7 +12,7 @@ class Analyze {
             .description("Analyze action-flows dependencies for a certain package")
             .option("-p, --profile <profile>", "Profile which you want to use to analyze action-flows")
             .requiredOption("-i, --packageId <packageId>", "ID of the package from which you want to export action-flows")
-            .option("-o, --outputToJsonFile <outputToJsonFile>", "Output the analyze result in a JSON file")
+            .option("-o, --outputToJsonFile", "Output the analyze result in a JSON file")
             .action(async cmd => {
                 await new ActionFlowCommand().analyzeActionFlows(cmd.packageId, cmd.outputToJsonFile);
                 process.exit();

@@ -50,8 +50,8 @@ export class Import {
             .option("-p, --profile <profile>", "Profile which you want to use to import action-flows")
             .requiredOption("-i, --packageId <packageId>", "ID of the package to which you want to export action-flows")
             .requiredOption("-f, --file <file>", "Exported action-flows file (relative path)")
-            .requiredOption("-d, --dryRun <file>", "Execute the import on dry run mode")
-            .option("-o, --outputToJsonFile <outputToJsonFile>", "Output the import result in a JSON file")
+            .requiredOption("-d, --dryRun", "Execute the import on dry run mode")
+            .option("-o, --outputToJsonFile", "Output the import result in a JSON file")
             .action(async cmd => {
                 await new ActionFlowCommand().importActionFlows(cmd.packageId, cmd.file, cmd.dryRun, cmd.outputToJsonFile);
                 process.exit();
