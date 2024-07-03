@@ -136,15 +136,17 @@ export class ProfileService {
         switch (profile.type) {
             case ProfileType.KEY:
                 const url = profile.team.replace(/\/?$/, "/api/cloud/team");
-                this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken).then(() => {
+                try {
+                    await this.tryKeyAuthentication(url, AuthenticationType.BEARER, profile.apiToken);
                     profile.authenticationType = AuthenticationType.BEARER;
-                }).catch(() => {
-                    this.tryKeyAuthentication(url, AuthenticationType.APPKEY, profile.apiToken).then(() => {
+                } catch (e) {
+                    try {
+                        await this.tryKeyAuthentication(url, AuthenticationType.APPKEY, profile.apiToken);
                         profile.authenticationType = AuthenticationType.APPKEY;
-                    }).catch(() => {
+                    } catch (err) {
                         logger.error(new FatalError("The provided team or api key is wrong."));
-                    })
-                });
+                    }
+                }
                 break;
             case ProfileType.DEVICE_CODE:
                 try {
