@@ -269,7 +269,7 @@ export class ProfileService {
     }
 
     private isProfileExpired(profile: Profile, buffer: number = 0): boolean {
-        if (profile.type === ProfileType.KEY) {
+        if (profile.type === null || profile.type === undefined || profile.type === ProfileType.KEY) {
             return false;
         }
         const now = new Date();
