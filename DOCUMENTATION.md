@@ -77,7 +77,26 @@ your profiles by running the ***content-cli profile list*** command.
 | Note: Please do not use blanks in profile names |
 |-------------------------------------------------|
 
-#### API Token
+#### Profile Types
+You can create profiles of two types: using OAuth (Device Code 
+or Client Credentials) or using API Tokens (Application Key / API Key):
+
+##### OAuth
+
+OAuth supports with two grant types: Device Code & Client Credentials. 
+
+With Device Code, creating the profile will trigger an authorization flow 
+(using the OAuth 2.0 Device code). You will be prompted to follow an authorization 
+link where you must authorize the **Content CLI** to be able to access the EMS environment 
+on your behalf. 
+
+With Client Credentials, you need to provide the credentials (Client ID, Client Secret) configured for your OAuth client. 
+You can create and configure an OAuth clients in the `Admin & Settings` section of your EMS account, under `Applications`. 
+The OAuth client needs to have the following scopes configured: studio, integration.data-pools, action-engine.projects. 
+After creating an OAuth client, you should assign it the permissions necessary for the respective commands. More 
+information on registering OAuth clients can be found [here](https://docs.celonis.com/en/registering-oauth-client.html).
+
+##### API Token
 
 You can choose between two different options when asked for an API token. 
 The first option is to use an API key, which identifies the user that created 
