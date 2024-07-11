@@ -9,14 +9,19 @@ import * as fs from "fs";
 class ActionFlowService {
     public async exportActionFlows(packageId: string, metadataFilePath: string): Promise<void> {
         const exportedActionFlowsData = await actionFlowApi.exportRawAssets(packageId);
-        const exportedActionFlowsZip: AdmZip = new AdmZip(exportedActionFlowsData);
+        const tmpZip: AdmZip = new AdmZip(exportedActionFlowsData);
+
+        const zip = new AdmZip();
+        tmpZip.getEntries().forEach(entry => {
+            zip.addFile(entry.entryName, entry.getData());
+        });
 
         if (metadataFilePath) {
-            this.attachMetadataFile(metadataFilePath, exportedActionFlowsZip);
+            this.attachMetadataFile(metadataFilePath, zip);
         }
 
         const fileName = "export_action-flows_" + uuidv4() + ".zip";
-        exportedActionFlowsZip.writeZip(fileName);
+        zip.writeZip(fileName);
         logger.info(FileService.fileDownloadedMessage + fileName);
     }
 
