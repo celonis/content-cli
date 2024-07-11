@@ -41,9 +41,9 @@ export class Export {
     public static actionFlows(program: CommanderStatic): CommanderStatic {
         program
             .command("action-flows")
-            .description("Command to export all action-flows in a package with their objects and dependencies")
-            .option("-p, --profile <profile>", "Profile which you want to use to export action-flows")
-            .requiredOption("-i, --packageId <packageId>", "ID of the package from which you want to export action-flows")
+            .description("Command to export all Action Flows in a package with their objects and dependencies")
+            .option("-p, --profile <profile>", "Profile which you want to use to export Action Flows")
+            .requiredOption("-i, --packageId <packageId>", "ID of the package from which you want to export Action Flows")
             .option("-f, --file <file>", "Action flows metadata file (relative path)")
             .action(async cmd => {
                 await new ActionFlowCommand().exportActionFlows(cmd.packageId, cmd.file);

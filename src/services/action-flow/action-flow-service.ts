@@ -20,7 +20,7 @@ class ActionFlowService {
             this.attachMetadataFile(metadataFilePath, zip);
         }
 
-        const fileName = "export_action-flows_" + uuidv4() + ".zip";
+        const fileName = "action-flows_export_" + uuidv4() + ".zip";
         zip.writeZip(fileName);
         logger.info(FileService.fileDownloadedMessage + fileName);
     }

@@ -9,9 +9,9 @@ class Analyze {
     public static actionFlows(program: CommanderStatic): CommanderStatic {
         program
             .command("action-flows")
-            .description("Analyze action-flows dependencies for a certain package")
-            .option("-p, --profile <profile>", "Profile which you want to use to analyze action-flows")
-            .requiredOption("-i, --packageId <packageId>", "ID of the package from which you want to export action-flows")
+            .description("Analyze Action Flows dependencies for a certain package")
+            .option("-p, --profile <profile>", "Profile which you want to use to analyze Action Flows")
+            .requiredOption("-i, --packageId <packageId>", "ID of the package from which you want to export Action Flows")
             .option("-o, --outputToJsonFile", "Output the analyze result in a JSON file")
             .action(async cmd => {
                 await new ActionFlowCommand().analyzeActionFlows(cmd.packageId, cmd.outputToJsonFile);
