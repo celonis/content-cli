@@ -65,7 +65,7 @@ class ActionFlowService {
         fileName = fileName + (fileName.endsWith(".json") ? "" : ".json");
         const metadata = fileService.readFile(fileName);
 
-        zip.addFile("./metadata.json", Buffer.from(metadata));
+        zip.addFile("metadata.json", Buffer.from(metadata));
     }
 }
 
