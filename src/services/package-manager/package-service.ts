@@ -21,7 +21,7 @@ import {SpaceTransport} from "../../interfaces/save-space.interface";
 import {ManifestDependency, ManifestNodeTransport} from "../../interfaces/manifest-transport";
 import {DataPoolInstallVersionReport} from "../../interfaces/data-pool-manager.interfaces";
 import {SemanticVersioning} from "../../util/semantic-versioning"
-import {stringify} from "../../util/yaml";
+import {stringify} from "../../util/json";
 import * as FormData from "form-data";
 
 class PackageService {

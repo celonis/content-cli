@@ -3,7 +3,7 @@ import * as path from "path";
 import { FatalError, logger } from "../../util/logger";
 import { WidgetManager } from "../manager/widget.manager";
 import * as AdmZip from "adm-zip";
-import {parse} from "../../util/yaml";
+import {parse} from "../../util/json";
 
 interface Manifest {
     key: string;

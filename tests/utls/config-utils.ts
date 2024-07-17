@@ -1,10 +1,10 @@
 import AdmZip = require("adm-zip");
 import {
-    DependencyTransport,
+    DependencyTransport, NodeConfiguration,
     NodeExportTransport,
-    PackageManifestTransport, StudioPackageManifest
+    PackageManifestTransport, StudioPackageManifest,
 } from "../../src/interfaces/package-export-transport";
-import {stringify} from "../../src/util/yaml";
+import {stringify} from "../../src/util/json";
 import {SpaceTransport} from "../../src/interfaces/save-space.interface";
 
 export class ConfigUtils {
@@ -12,8 +12,8 @@ export class ConfigUtils {
     public static buildBatchExportZipWithStudioManifest(manifest: PackageManifestTransport[], studioManifest: StudioPackageManifest[], packageZips: AdmZip[]): AdmZip {
 
         const zipExport = new AdmZip();
-        zipExport.addFile("manifest.yml", Buffer.from(stringify(manifest)));
-        zipExport.addFile("studio.yml", Buffer.from(stringify(studioManifest)));
+        zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)));
+        zipExport.addFile("studio.json", Buffer.from(stringify(studioManifest)));
         packageZips.forEach(packageZip => {
             const fileName = `${packageZip.getZipComment()}.zip`
             packageZip.addZipComment("")
@@ -25,7 +25,8 @@ export class ConfigUtils {
     public static buildBatchExportZip(manifest: PackageManifestTransport[], packageZips: AdmZip[]): AdmZip {
 
         const zipExport = new AdmZip();
-        zipExport.addFile("manifest.yml", Buffer.from(stringify(manifest)));
+        const str = stringify(manifest);
+        zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)));
         packageZips.forEach(packageZip => {
             const fileName = `${packageZip.getZipComment()}.zip`
             packageZip.addZipComment("")
@@ -38,11 +39,11 @@ export class ConfigUtils {
     public static buildExportPackageZip(packageNode: NodeExportTransport, childNodes: NodeExportTransport[], version: string): AdmZip {
         const zipExport = new AdmZip();
 
-        zipExport.addFile("package.yml", Buffer.from(stringify(packageNode)));
+        zipExport.addFile("package.json", Buffer.from(stringify(packageNode)));
         zipExport.addFile("nodes/", Buffer.alloc(0));
 
         childNodes.forEach(child => {
-            zipExport.addFile(`nodes/${child.key}.yml`, Buffer.from(stringify(child)));
+            zipExport.addFile(`nodes/${child.key}.json`, Buffer.from(stringify(child)));
         });
 
        zipExport.addZipComment(`${packageNode.key}_${version}`);
@@ -59,7 +60,7 @@ export class ConfigUtils {
         };
     }
 
-    public static buildPackageNode(key: string, configuration: string): NodeExportTransport {
+    public static buildPackageNode(key: string, configuration: NodeConfiguration): NodeExportTransport {
         return {
             key,
             parentNodeKey: key,
@@ -81,7 +82,7 @@ export class ConfigUtils {
             name: "name",
             type: type,
             exportSerializationType: "YAML",
-            configuration: "",
+            configuration: {},
             schemaVersion: 1,
             invalidContent: false,
             serializedDocument: null,

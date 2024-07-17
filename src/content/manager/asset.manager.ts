@@ -1,7 +1,7 @@
 import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { SaveContentNode } from "../../interfaces/save-content-node.interface";
-import { parse, stringify } from "../../util/yaml";
+import { parse, stringify } from "../../util/json";
 
 export class AssetManager extends BaseManager {
     public static ASSET_FILE_PREFIX = "asset_";

@@ -5,7 +5,7 @@ import * as path from "path";
 import {PackageKeyAndVersionPair, VariableManifestTransport} from "../../src/interfaces/package-export-transport";
 import {PackageManagerVariableType} from "../../src/interfaces/package-manager.interfaces";
 import {mockAxiosPost, mockedPostRequestBodyByUrl} from "../utls/http-requests-mock";
-import {parse} from "../../src/util/yaml";
+import {parse} from "../../src/util/json";
 import * as fs from "fs";
 
 describe("Config listVariables", () => {

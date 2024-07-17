@@ -12,7 +12,7 @@ import {
 import {ConfigUtils} from "../utls/config-utils";
 import {mockWriteFileSync, testTransport} from "../jest.setup";
 import * as path from "path";
-import {stringify} from "../../src/util/yaml";
+import {stringify} from "../../src/util/json";
 import {SpaceTransport} from "../../src/interfaces/save-space.interface";
 import {packageApi} from "../../src/api/package-api";
 import {
@@ -68,7 +68,7 @@ describe("Config import", () => {
         const studioManifest: StudioPackageManifest[] = [];
         studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "spaceName", "space-id"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
 
@@ -112,7 +112,7 @@ describe("Config import", () => {
         const studioManifest: StudioPackageManifest[] = [];
         studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "spaceName", "space"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
 
@@ -139,7 +139,7 @@ describe("Config import", () => {
         const studioManifest: StudioPackageManifest[] = [];
         studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "space", "spaceId"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
 
@@ -186,7 +186,7 @@ describe("Config import", () => {
         const studioManifest: StudioPackageManifest[] = [];
         studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "spaceName", null));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
 
@@ -225,7 +225,7 @@ describe("Config import", () => {
         const studioManifest: StudioPackageManifest[] = [];
         studioManifest.push(ConfigUtils.buildStudioManifestForKeyWithSpace("key-2", "otherName", null));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
 

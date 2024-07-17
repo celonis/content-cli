@@ -2,7 +2,7 @@ import { BaseManager } from "./base.manager";
 import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import { AssetManager } from "./asset.manager";
 import * as fs from "fs";
-import {stringify} from "../../util/yaml";
+import {stringify} from "../../util/json";
 import * as FormData from "form-data";
 
 export class AnalysisManager extends BaseManager {
