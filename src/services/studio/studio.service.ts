@@ -168,7 +168,6 @@ class StudioService {
                 connectionVariablesByKey.get(variable.key).metadata : variable.metadata
         }));
 
-        exportedNode.configuration = nodeContent;
         packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
     }
 
