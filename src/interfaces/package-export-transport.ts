@@ -61,6 +61,7 @@ export interface NodeExportTransport {
 }
 
 export interface NodeConfiguration {
+    variables?: VariableDefinition[];
     [key: string]: any;
 }
 
