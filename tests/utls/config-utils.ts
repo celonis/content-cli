@@ -25,7 +25,6 @@ export class ConfigUtils {
     public static buildBatchExportZip(manifest: PackageManifestTransport[], packageZips: AdmZip[]): AdmZip {
 
         const zipExport = new AdmZip();
-        const str = stringify(manifest);
         zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)));
         packageZips.forEach(packageZip => {
             const fileName = `${packageZip.getZipComment()}.zip`
