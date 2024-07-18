@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { ManifestNodeTransport } from "../interfaces/manifest-transport";
 import { FatalError, logger } from "../util/logger";
-import {parse} from "../util/json";
+import {parse} from "../util/yaml";
 
 export class FileService {
     public static readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
