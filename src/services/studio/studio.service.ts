@@ -1,11 +1,11 @@
 import {
+    NodeConfiguration,
     NodeExportTransport,
-    NodeSerializedContent,
     PackageExportTransport,
     PackageKeyAndVersionPair,
     StudioPackageManifest,
     VariableExportTransport,
-    VariableManifestTransport
+    VariableManifestTransport,
 } from "../../interfaces/package-export-transport";
 
 import {packageApi} from "../../api/package-api";
@@ -17,7 +17,7 @@ import {
 } from "../../interfaces/package-manager.interfaces";
 import {dataModelService} from "../package-manager/datamodel-service";
 import {IZipEntry} from "adm-zip";
-import {parse, stringify} from "../../util/yaml";
+import {parse, stringify} from "../../util/json";
 import {nodeApi} from "../../api/node-api";
 import {variablesApi} from "../../api/variables-api";
 import {spaceApi} from "../../api/space-api";
@@ -140,7 +140,7 @@ class StudioService {
     }
 
     private deleteScenarioAssets(packageZip: AdmZip): void {
-        packageZip.getEntries().filter(entry => entry.entryName.startsWith(BatchExportImportConstants.NODES_FOLDER_NAME) && entry.entryName.endsWith(BatchExportImportConstants.YAML_EXTENSION))
+        packageZip.getEntries().filter(entry => entry.entryName.startsWith(BatchExportImportConstants.NODES_FOLDER_NAME) && entry.entryName.endsWith(BatchExportImportConstants.JSON_EXTENSION))
             .forEach(entry => {
                 const node: NodeExportTransport = parse(entry.getData().toString());
                 if (node.type === BatchExportImportConstants.SCENARIO_NODE) {
@@ -157,10 +157,10 @@ class StudioService {
             return;
         }
 
-        const packageEntry = packageZip.getEntry("package.yml");
+        const packageEntry = packageZip.getEntry("package.json");
 
         const exportedNode: NodeExportTransport = parse(packageEntry.getData().toString());
-        const nodeContent: NodeSerializedContent = parse(exportedNode.configuration);
+        const nodeContent: NodeConfiguration = exportedNode.configuration;
 
         nodeContent.variables = nodeContent.variables.map(variable => ({
             ...variable,
@@ -168,7 +168,6 @@ class StudioService {
                 connectionVariablesByKey.get(variable.key).metadata : variable.metadata
         }));
 
-        exportedNode.configuration = stringify(nodeContent);
         packageZip.updateFile(packageEntry, Buffer.from(stringify(exportedNode)));
     }
 
@@ -212,7 +211,7 @@ class StudioService {
 
                         const packageZip = new AdmZip(file.getData());
                         packageZip.getEntries().forEach(nodeFile => {
-                            if (nodeFile.entryName.endsWith(BatchExportImportConstants.YAML_EXTENSION)) {
+                            if (nodeFile.entryName.endsWith(BatchExportImportConstants.JSON_EXTENSION)) {
                                 const updatedNodeFile = this.updateSpaceIdForNode(nodeFile.getData().toString(), spaceId);
                                 packageZip.updateFile(nodeFile, Buffer.from(updatedNodeFile));
                             }

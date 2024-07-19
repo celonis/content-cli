@@ -1,7 +1,6 @@
 import {PackageManifestTransport} from "../../src/interfaces/package-export-transport";
 import {ConfigUtils} from "../utls/config-utils";
 import * as path from "path";
-import {stringify} from "../../src/util/yaml";
 import {mockCreateReadStream, mockExistsSync, mockReadFileSync} from "../utls/fs-mock-utils";
 import {
     PackageDiffMetadata,
@@ -22,7 +21,7 @@ describe("Config diff", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", stringify({metadata: {description: "test"}, variables: [], dependencies: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", {metadata: {description: "test"}, variables: [], dependencies: []});
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
@@ -49,7 +48,7 @@ describe("Config diff", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", stringify({metadata: {description: "test"}, variables: [], dependencies: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", {metadata: {description: "test"}, variables: [], dependencies: []});
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
@@ -91,7 +90,7 @@ describe("Config diff", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", stringify({metadata: {description: "test"}, variables: [], dependencies: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", {metadata: {description: "test"}, variables: [], dependencies: []});
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
@@ -137,7 +136,7 @@ describe("Config diff", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", stringify({metadata: {description: "test"}, variables: [], dependencies: []}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", {metadata: {description: "test"}, variables: [], dependencies: []});
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);

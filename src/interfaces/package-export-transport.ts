@@ -51,7 +51,7 @@ export interface NodeExportTransport {
     name: string;
     type: string;
     exportSerializationType: string;
-    configuration: string;
+    configuration: NodeConfiguration;
     schemaVersion: number;
 
     spaceId: string;
@@ -60,8 +60,9 @@ export interface NodeExportTransport {
     serializedDocument?: Buffer;
 }
 
-export interface NodeSerializedContent {
-    variables: VariableDefinition[]
+export interface NodeConfiguration {
+    variables?: VariableDefinition[];
+    [key: string]: any;
 }
 
 export interface StudioPackageManifest {
