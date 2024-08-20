@@ -8,7 +8,7 @@ export interface ConfigurationChangeTransport {
 export interface NodeDiffTransport {
     nodeKey: string;
     changes: ConfigurationChangeTransport[];
-    baseConfiguration: NodeConfiguration
+    baseConfiguration: NodeConfiguration;
 }
 
 export interface NodeConfiguration {
@@ -17,26 +17,26 @@ export interface NodeConfiguration {
 
 export interface PackageDiffTransport {
     packageKey: string;
-    basePackageConfiguration: PackageConfiguration,
+    basePackageConfiguration: PackageConfiguration;
     packageChanges: ConfigurationChangeTransport[];
     nodesWithChanges: NodeDiffTransport[];
 }
 
 export interface PackageConfiguration {
-    variables?: VariableDefinition[],
-    dependencies?: PackageDependency[],
+    variables?: VariableDefinition[];
+    dependencies?: PackageDependency[];
     [key: string]: any;
 }
 
 export interface PackageDependency {
-    key: string,
-    version: string,
+    key: string;
+    version: string;
     [key: string]: any;
 }
 
 export interface VariableDefinition {
-    key: string,
-    type: string,
+    key: string;
+    type: string;
     [key: string]: any;
 }
 
