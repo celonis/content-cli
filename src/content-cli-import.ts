@@ -48,7 +48,7 @@ export class Import {
             .command("action-flows")
             .description("Command to import all Action Flows in a package with their objects and dependencies")
             .option("-p, --profile <profile>", "Profile which you want to use to import Action Flows")
-            .requiredOption("-i, --packageId <packageId>", "ID of the package to which you want to export Action Flows")
+            .requiredOption("--packageId <packageId>", "ID of the package to which you want to export Action Flows")
             .requiredOption("-f, --file <file>", "Exported Action Flows file (relative path)")
             .requiredOption("-d, --dryRun <dryRun>", "Execute the import on dry run mode")
             .option("-o, --outputToJsonFile", "Output the import result in a JSON file")

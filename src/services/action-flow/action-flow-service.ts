@@ -7,6 +7,8 @@ import * as FormData from "form-data";
 import * as fs from "fs";
 
 class ActionFlowService {
+    private static readonly METADATA_FILE_NAME = "metadata.json";
+
     public async exportActionFlows(packageId: string, metadataFilePath: string): Promise<void> {
         const exportedActionFlowsData = await actionFlowApi.exportRawAssets(packageId);
         const tmpZip: AdmZip = new AdmZip(exportedActionFlowsData);
@@ -65,7 +67,7 @@ class ActionFlowService {
         fileName = fileName + (fileName.endsWith(".json") ? "" : ".json");
         const metadata = fileService.readFile(fileName);
 
-        zip.addFile("metadata.json", Buffer.from(metadata));
+        zip.addFile(ActionFlowService.METADATA_FILE_NAME, Buffer.from(metadata));
     }
 }
 
