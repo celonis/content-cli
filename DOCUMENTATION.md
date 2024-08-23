@@ -454,7 +454,7 @@ could be webhooks, data structures, variables and other.
 In order to analyze Action Flows you can execute the following command:
 
 ```
-content-cli analyze action-flows -p my-profile-name -i <replace-with-package-id> --outputToJsonFile
+content-cli analyze action-flows -p my-profile-name --packageId <replace-with-package-id> --outputToJsonFile
 ```
 
 The ```--outputToJsonFile``` is optional. If specified, the analyze result is saved in a JSON file (```metadata.json```). The
@@ -468,7 +468,7 @@ could be webhooks, data structures, variables and other.
 In order to pull Action Flows you can execute the following command:
 
 ```
-content-cli export action-flows -p my-profile-name -i <replace-with-package-id> -f <replace-with-metadata-file-name>
+content-cli export action-flows -p my-profile-name --packageId <replace-with-package-id> -f <replace-with-metadata-file-name>
 ```
 
 _Note_: The ```-f``` is optional. If specified, it will attach the metadata file to the exported zip.
@@ -482,7 +482,7 @@ could be webhooks, data structures, variables and other.
 In order to push Action Flows use the following command:
 
 ```
-content-cli import action-flows -p my-profile-name -i <replace-with-package-id> -f <replace-with-exported-zip-file> --dryRun --outputToJsonFile
+content-cli import action-flows -p my-profile-name --packageId <replace-with-package-id> -f <replace-with-exported-zip-file> --dryRun --outputToJsonFile
 ```
 
 ##### Input
