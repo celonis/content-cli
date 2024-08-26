@@ -1,9 +1,9 @@
 import {ConfigUtils} from "../utls/config-utils";
 import {
-    DependencyTransport, NodeExportTransport, NodeSerializedContent,
+    DependencyTransport, NodeConfiguration, NodeExportTransport,
     PackageManifestTransport,
     StudioPackageManifest,
-    VariableManifestTransport
+    VariableManifestTransport,
 } from "../../src/interfaces/package-export-transport";
 import {mockAxiosGet, mockAxiosPost, mockedPostRequestBodyByUrl} from "../utls/http-requests-mock";
 import {ConfigCommand} from "../../src/commands/config.command";
@@ -13,7 +13,7 @@ import {FileService} from "../../src/services/file-service";
 import * as fs from "fs";
 import AdmZip = require("adm-zip");
 
-import { parse, stringify } from "../../src/util/yaml";
+import { parse, stringify } from "../../src/util/json";
 import {
     PackageManagerVariableType,
     VariableDefinition,
@@ -109,7 +109,7 @@ describe("Config export", () => {
             }
         ];
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", stringify({variables: firstPackageVariableDefinition}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", {variables: firstPackageVariableDefinition});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
 
         const secondPackageVariableDefinition: VariableDefinition[] = [
@@ -125,7 +125,7 @@ describe("Config export", () => {
             }
         ];
 
-        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: secondPackageVariableDefinition}));
+        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: secondPackageVariableDefinition});
         const secondPackageZip = ConfigUtils.buildExportPackageZip(secondPackageNode, [], "1.0.0");
 
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip, secondPackageZip]);
@@ -258,12 +258,12 @@ describe("Config export", () => {
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO));
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO));
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", "");
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", {});
         const firstPackageScenarioChild = ConfigUtils.buildChildNode("child-1-scenario", firstPackageNode.key, "SCENARIO");
         const firstPackageTestChild = ConfigUtils.buildChildNode("child-2", firstPackageNode.key, "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstPackageScenarioChild, firstPackageTestChild], "1.0.0");
 
-        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", "");
+        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", {});
         const secondPackageScenarioChild = ConfigUtils.buildChildNode("child-3-scenario", secondPackageNode.key, "SCENARIO");
         const secondPackageTestChild = ConfigUtils.buildChildNode("child-4", secondPackageNode.key, "TEST");
         const secondPackageZip = ConfigUtils.buildExportPackageZip(secondPackageNode, [secondPackageScenarioChild, secondPackageTestChild], "1.0.0");
@@ -287,15 +287,15 @@ describe("Config export", () => {
         const actualZip = new AdmZip(fileBuffer);
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.0.zip").getData());
-        expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.yml")).toBeNull();
-        expect(firstPackageExportedZip.getEntry("nodes/child-2.yml").getData().toString()).toEqual(stringify(firstPackageTestChild));
+        expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.json")).toBeNull();
+        expect(firstPackageExportedZip.getEntry("nodes/child-2.json").getData().toString()).toEqual(stringify(firstPackageTestChild));
 
         const secondPackageExportedZip = new AdmZip(actualZip.getEntry("key-2_1.0.0.zip").getData());
-        expect(secondPackageExportedZip.getEntry("nodes/child-3-scenario.yml")).toBeNull();
-        expect(secondPackageExportedZip.getEntry("nodes/child-4.yml").getData().toString()).toEqual(stringify(secondPackageTestChild));
+        expect(secondPackageExportedZip.getEntry("nodes/child-3-scenario.json")).toBeNull();
+        expect(secondPackageExportedZip.getEntry("nodes/child-4.json").getData().toString()).toEqual(stringify(secondPackageTestChild));
     })
 
-    it("Should add appName to metadata for CONNECTION variables of package.yml files", async () => {
+    it("Should add appName to metadata for CONNECTION variables of package.json files", async () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO));
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO));
@@ -313,7 +313,7 @@ describe("Config export", () => {
             }
         ];
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", stringify({variables: firstPackageVariableDefinition}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", {variables: firstPackageVariableDefinition});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
 
         const secondPackageVariableDefinition: VariableDefinition[] = [
@@ -332,7 +332,7 @@ describe("Config export", () => {
             }
         ];
 
-        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", stringify({variables: secondPackageVariableDefinition}));
+        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: secondPackageVariableDefinition});
         const secondPackageZip = ConfigUtils.buildExportPackageZip(secondPackageNode, [], "1.0.0");
 
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip, secondPackageZip]);
@@ -403,9 +403,9 @@ describe("Config export", () => {
         const actualZip = new AdmZip(fileBuffer);
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.0.zip").getData());
-        const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.yml").getData().toString());
+        const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.json").getData().toString());
         expect(firstPackageExportedNode).toBeTruthy();
-        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.configuration);
+        const firstPackageContent: NodeConfiguration = firstPackageExportedNode.configuration;
         expect(firstPackageContent.variables).toHaveLength(2);
         expect(firstPackageContent.variables).toEqual([
             {
@@ -420,9 +420,9 @@ describe("Config export", () => {
         ]);
 
         const secondPackageExportedZip = new AdmZip(actualZip.getEntry("key-2_1.0.0.zip").getData());
-        const secondPackageExportedNode: NodeExportTransport = parse(secondPackageExportedZip.getEntry("package.yml").getData().toString());
+        const secondPackageExportedNode: NodeExportTransport = parse(secondPackageExportedZip.getEntry("package.json").getData().toString());
         expect(secondPackageExportedNode).toBeTruthy();
-        const secondPackageContent: NodeSerializedContent = parse(secondPackageExportedNode.configuration);
+        const secondPackageContent: NodeConfiguration = secondPackageExportedNode.configuration;
         expect(secondPackageContent.variables).toHaveLength(2);
         expect(secondPackageContent.variables).toEqual([{
                 ...secondPackageVariableDefinition[0],
@@ -458,7 +458,7 @@ describe("Config export", () => {
             }
         ];
 
-        const firstPackageNode = ConfigUtils.buildPackageNode("key_with_underscores_1", stringify({variables: firstPackageVariableDefinition}));
+        const firstPackageNode = ConfigUtils.buildPackageNode("key_with_underscores_1", {variables: firstPackageVariableDefinition});
         const firstPackageScenarioChild = ConfigUtils.buildChildNode("child-1-scenario", firstPackageNode.key, "SCENARIO");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstPackageScenarioChild], "1.0.0");
 
@@ -511,9 +511,9 @@ describe("Config export", () => {
         const actualZip = new AdmZip(fileBuffer);
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key_with_underscores_1_1.0.0.zip").getData());
-        const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.yml").getData().toString());
+        const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.json").getData().toString());
         expect(firstPackageExportedNode).toBeTruthy();
-        const firstPackageContent: NodeSerializedContent = parse(firstPackageExportedNode.configuration);
+        const firstPackageContent: NodeConfiguration = firstPackageExportedNode.configuration;
         expect(firstPackageContent.variables).toHaveLength(3);
         expect(firstPackageContent.variables).toEqual([
             {
@@ -532,7 +532,7 @@ describe("Config export", () => {
             }
         ]);
 
-        expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.yml")).toBeNull();
+        expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.json")).toBeNull();
     })
 
     it("Should export by packageKeys without dependencies", async () => {

@@ -10,7 +10,7 @@ import {
 } from "../../interfaces/package-export-transport";
 import {FileService, fileService} from "../file-service";
 import {studioService} from "../studio/studio.service";
-import {parse, stringify} from "../../util/yaml"
+import {parse, stringify} from "../../util/json"
 import * as FormData from "form-data";
 import {BatchExportImportConstants} from "../../interfaces/batch-export-import-constants";
 import {packageApi} from "../../api/package-api";

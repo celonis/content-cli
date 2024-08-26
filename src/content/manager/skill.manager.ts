@@ -3,7 +3,7 @@ import { ManagerConfig } from "../../interfaces/manager-config.interface";
 import * as FormData from "form-data";
 
 export class SkillManager extends BaseManager {
-    private static BASE_URL = "/action-engine/api/projects/";
+    private static BASE_URL = "/action-engine/api/projects";
     private _skillId: string;
     private _projectId: string;
     private _content: any;
