@@ -7,7 +7,7 @@ import * as FormData from "form-data";
 import * as fs from "fs";
 
 class ActionFlowService {
-    private static readonly METADATA_FILE_NAME = "metadata.json";
+    public static readonly METADATA_FILE_NAME = "metadata.json";
 
     public async exportActionFlows(packageId: string, metadataFilePath: string): Promise<void> {
         const exportedActionFlowsData = await actionFlowApi.exportRawAssets(packageId);
@@ -72,3 +72,4 @@ class ActionFlowService {
 }
 
 export const actionFlowService = new ActionFlowService();
+export const metadataFileName = ActionFlowService.METADATA_FILE_NAME;
