@@ -18,7 +18,6 @@
     -   [Action Flows commands](#action-flows-commands)
         - [Analyze Action Flows](#analyze-action-flows)
         - [Export Action Flows](#export-action-flows)
-        - [Import Action Flows](#import-action-flows)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -473,29 +472,6 @@ content-cli export action-flows -p my-profile-name --packageId <replace-with-pac
 
 _Note_: The ```-f``` is optional. If specified, it will attach the metadata file to the exported zip.
 This file is expected to be received by the ```action-flows analyze``` command, and manually be populated with the mappings source to target package.
-
-#### Import Action Flows
-
-The import operation allows import of Action Flows of one package together with their dependencies. Dependencies
-could be webhooks, data structures, variables and other.
-
-In order to push Action Flows use the following command:
-
-```
-content-cli import action-flows -p my-profile-name --packageId <replace-with-package-id> -f <replace-with-exported-zip-file> --dryRun --outputToJsonFile
-```
-
-##### Input
-
-* The zip file is the one that you receive from the ```action-flows export``` command
-* The ```--outputToJsonFile``` is optional. If specified, the import will be executed on dry run mode (nothing will be created)
-  * This is expected to be used to test the import by looking at report that is received on the response
-* The ```--outputToJsonFile``` is optional. If specified, the import result is saved in a JSON file. The
-  command output will give you all the details.
-
-#### Output
-
-The command outputs an import report (event log).
 
 ### Data Pool export / import commands
 
