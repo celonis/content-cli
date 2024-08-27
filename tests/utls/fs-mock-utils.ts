@@ -15,3 +15,7 @@ export function mockCreateReadStream(data: any): void {
 export function mockExistsSync(): void {
     (fs.existsSync as jest.Mock).mockReturnValue(true);
 }
+
+export function mockExistsSyncOnce(): void {
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+}
