@@ -2,7 +2,6 @@ import * as commander from "commander";
 import * as fs from "fs";
 import * as path from "path";
 
-import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { WidgetCommand } from "./commands/widget.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
@@ -16,20 +15,6 @@ import { GracefulError, logger } from "./util/logger";
 type CommanderStatic = commander.CommanderStatic;
 
 class Push {
-    public static analysis(program: CommanderStatic): CommanderStatic {
-        program
-            .command("analysis")
-            .description("Command to push an analysis to a workspace")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
-            .requiredOption("--workspaceId <workspaceId>", "Id of the workspace to which you want to push the analysis")
-            .requiredOption("-f, --file <file>", "The file you want to push")
-            .action(async cmd => {
-                await new AnalysisCommand().pushAnalysis(cmd.profile, cmd.workspaceId, cmd.file);
-                process.exit();
-            });
-
-        return program;
-    }
 
     public static analysisBookmarks(program: CommanderStatic): CommanderStatic {
         program
@@ -220,7 +205,6 @@ class Push {
     }
 }
 
-Push.analysis(commander);
 Push.analysisBookmarks(commander);
 Push.ctp(commander);
 Push.skill(commander);

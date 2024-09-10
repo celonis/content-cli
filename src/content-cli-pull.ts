@@ -1,4 +1,3 @@
-import { AnalysisCommand } from "./commands/analysis.command";
 import { SkillCommand } from "./commands/skill.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
@@ -9,21 +8,6 @@ import commander = require("commander");
 type CommanderStatic = commander.CommanderStatic;
 
 class Pull {
-    public static analysis(program: CommanderStatic): CommanderStatic {
-        program
-            .command("analysis")
-            .description("Command to pull an analysis")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the analysis")
-            .requiredOption("--id <id>", "Id of the analysis you want to pull")
-            .option("--asset", "Pull workflow as an asset")
-            .action(async cmd => {
-                await new AnalysisCommand().pullAnalysis(cmd.profile, cmd.id, !!cmd.asset);
-                process.exit();
-            });
-
-        return program;
-    }
-
     public static analysisBookmarks(program: CommanderStatic): CommanderStatic {
         program
             .command("bookmarks")
@@ -100,7 +84,6 @@ class Pull {
     }
 }
 
-Pull.analysis(commander);
 Pull.analysisBookmarks(commander);
 Pull.skill(commander);
 Pull.dataPool(commander);
