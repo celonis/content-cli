@@ -420,29 +420,6 @@ only the potential assignment values for connections with the appName 'Celonis' 
 content-cli list assignments -p <your-chosen-profile> --variableType CONNECTION --params appName=Celonis
 ```
 
-### Asset options for Analysis
-
-For migration use cases, when pulling analysis from Process Analytics
-you can use the --asset option to pull the content in a generic format
-that Studio accepts. As an example command for pulling an analysis with
-the  --asset option would be: 
-
-```
-// Pull analysis as an asset
-content-cli pull analysis -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --asset
-```
-
-After you have pulled your workflows/analysis with the --asset option,
-it's time to push them inside Studio. You can do accomplish this using
-the same command as with pushing other assets to Studio:
-
-```
-// Push analysis to Studio
-content-cli push asset -p my-profile-name -f asset_73d39112-73ae-4bbe-8051-3c0f14e065ec.yaml --package my-package-key
-```
-
-| Note: Pushing analysis from Process Analytics to Studio will only work if you have used the ***--asset*** option when pulling. |
-
 ### Pull and Push Analysis Bookmarks in Studio
 
 Enable users to pull and push bookmarks using content-cli. For pulling analysis bookmarks
