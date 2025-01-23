@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node with Github Registry
         uses: actions/setup-node@v1
         with:
-          node-version: '16'
+          node-version: '20'
           registry-url: https://npm.pkg.github.com/celonis
           scope: '@celonis'
 
@@ -56,8 +56,3 @@ jobs:
         name: Checkout Master
         with:
           fetch-depth: '0'
-
-      - uses: tool3/bump@v1
-        name: Bump patch version
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}

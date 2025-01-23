@@ -2,7 +2,7 @@
 
 import { logger } from "./util/logger";
 import semverSatisfies = require("semver/functions/satisfies");
-import program = require("commander");
+import { program } from "./util/program";
 import {VersionUtils} from "./util/version";
 
 const requiredVersion = ">=10.10.0";

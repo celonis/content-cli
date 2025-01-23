@@ -1,13 +1,14 @@
 import * as commander from "commander";
-import { CommanderStatic } from "commander";
+import { Command } from "commander";
 import { PackageCommand } from "./commands/package.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { ContextInitializer } from "./util/context-initializer";
 import { logger } from "./util/logger";
 import { ActionFlowCommand } from "./commands/action-flow.command";
+import { program } from "./util/program";
 
 export class Import {
-    public static packages(program: CommanderStatic): CommanderStatic {
+    public static packages(program: Command): Command {
         program
             .command("packages")
             .description("Command to import all given packages")
@@ -28,7 +29,7 @@ export class Import {
         return program;
     }
 
-    public static dataPools(program: CommanderStatic): CommanderStatic {
+    public static dataPools(program: Command): Command {
         program
             .command("data-pools")
             .description("Command to batch import multiple data pools with their objects and dependencies")
@@ -43,7 +44,7 @@ export class Import {
         return program;
     }
 
-    public static actionFlows(program: CommanderStatic): CommanderStatic {
+    public static actionFlows(program: Command): Command {
         program
             .command("action-flows")
             .description("Command to import all Action Flows in a package with their objects and dependencies")
@@ -72,14 +73,14 @@ ContextInitializer.initContext()
     });
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }
 
 function getAllCommands(): void {
-    Import.packages(commander);
-    Import.dataPools(commander);
-    Import.actionFlows(commander);
+    Import.packages(program);
+    Import.dataPools(program);
+    Import.actionFlows(program);
 
-    commander.parse(process.argv);
+    program.parse(process.argv);
 }

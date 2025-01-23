@@ -1,4 +1,3 @@
-import * as commander from "commander";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -11,12 +10,12 @@ import { CTPCommand } from "./commands/ctp.command";
 import { AnalysisBookmarksCommand } from "./commands/analysis-bookmarks.command";
 import { execSync } from "child_process";
 import { GracefulError, logger } from "./util/logger";
-
-type CommanderStatic = commander.CommanderStatic;
+import { Command } from "commander";
+import { program } from "./util/program";
 
 class Push {
 
-    public static analysisBookmarks(program: CommanderStatic): CommanderStatic {
+    public static analysisBookmarks(program: Command): Command {
         program
             .command("bookmarks")
             .description("Command to push an analysis to a workspace")
@@ -31,7 +30,7 @@ class Push {
         return program;
     }
 
-    public static ctp(program: CommanderStatic): CommanderStatic {
+    public static ctp(program: Command): Command {
         program
             .command("ctp")
             .description("Command to push a .ctp (Celonis 4 transport file) to create a package")
@@ -72,7 +71,7 @@ class Push {
         return program;
     }
 
-    public static skill(program: CommanderStatic): CommanderStatic {
+    public static skill(program: Command): Command {
         program
             .command("skill")
             .description("Command to push a skill to a project")
@@ -87,7 +86,7 @@ class Push {
         return program;
     }
 
-    public static widget(program: CommanderStatic): CommanderStatic {
+    public static widget(program: Command): Command {
         program
             .command("widget")
             .description("Command to push a widget")
@@ -118,7 +117,7 @@ class Push {
         return program;
     }
 
-    public static dataPool(program: CommanderStatic): CommanderStatic {
+    public static dataPool(program: Command): Command {
         program
             .command("data-pool")
             .description("Command to push a data pool")
@@ -131,7 +130,7 @@ class Push {
         return program;
     }
 
-    public static dataPools(program: CommanderStatic): CommanderStatic {
+    public static dataPools(program: Command): Command {
         program
             .command("data-pools")
             .description("Command to push data pools")
@@ -144,7 +143,7 @@ class Push {
         return program;
     }
 
-    public static asset(program: CommanderStatic): CommanderStatic {
+    public static asset(program: Command): Command {
         program
             .command("asset")
             .description("Command to push an asset to Studio")
@@ -159,7 +158,7 @@ class Push {
         return program;
     }
 
-    public static assets(program: CommanderStatic): CommanderStatic {
+    public static assets(program: Command): Command {
         program
             .command("assets")
             .description("Command to push assets to Studio")
@@ -173,7 +172,7 @@ class Push {
         return program;
     }
 
-    public static package(program: CommanderStatic): CommanderStatic {
+    public static package(program: Command): Command {
         program
             .command("package")
             .description("Command to push a package to Studio")
@@ -190,7 +189,7 @@ class Push {
         return program;
     }
 
-    public static packages(program: CommanderStatic): CommanderStatic {
+    public static packages(program: Command): Command {
         program
             .command("packages")
             .description("Command to push packages to Studio")
@@ -205,20 +204,20 @@ class Push {
     }
 }
 
-Push.analysisBookmarks(commander);
-Push.ctp(commander);
-Push.skill(commander);
-Push.widget(commander);
-Push.dataPool(commander);
-Push.dataPools(commander);
-Push.asset(commander);
-Push.assets(commander);
-Push.package(commander);
-Push.packages(commander);
+Push.analysisBookmarks(program);
+Push.ctp(program);
+Push.skill(program);
+Push.widget(program);
+Push.dataPool(program);
+Push.dataPools(program);
+Push.asset(program);
+Push.assets(program);
+Push.package(program);
+Push.packages(program);
 
-commander.parse(process.argv);
+program.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }

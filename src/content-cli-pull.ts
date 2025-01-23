@@ -3,12 +3,11 @@ import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { PackageCommand } from "./commands/package.command";
 import { AnalysisBookmarksCommand } from "./commands/analysis-bookmarks.command";
-
-import commander = require("commander");
-type CommanderStatic = commander.CommanderStatic;
+import { Command } from "commander";
+import { program } from "./util/program";
 
 class Pull {
-    public static analysisBookmarks(program: CommanderStatic): CommanderStatic {
+    public static analysisBookmarks(program: Command): Command {
         program
             .command("bookmarks")
             .description("Command to pull an analysis bookmarks")
@@ -23,7 +22,7 @@ class Pull {
         return program;
     }
 
-    public static skill(program: CommanderStatic): CommanderStatic {
+    public static skill(program: Command): Command {
         program
             .command("skill")
             .description("Command to pull a skill")
@@ -38,7 +37,7 @@ class Pull {
         return program;
     }
 
-    public static dataPool(program: CommanderStatic): CommanderStatic {
+    public static dataPool(program: Command): Command {
         program
             .command("data-pool")
             .description("Command to pull a data pool")
@@ -52,7 +51,7 @@ class Pull {
         return program;
     }
 
-    public static asset(program: CommanderStatic): CommanderStatic {
+    public static asset(program: Command): Command {
         program
             .command("asset")
             .description("Command to pull an asset from Studio")
@@ -66,7 +65,7 @@ class Pull {
         return program;
     }
 
-    public static package(program: CommanderStatic): CommanderStatic {
+    public static package(program: Command): Command {
         program
             .command("package")
             .description("Command to pull a package")
@@ -84,15 +83,15 @@ class Pull {
     }
 }
 
-Pull.analysisBookmarks(commander);
-Pull.skill(commander);
-Pull.dataPool(commander);
-Pull.asset(commander);
-Pull.package(commander);
+Pull.analysisBookmarks(program);
+Pull.skill(program);
+Pull.dataPool(program);
+Pull.asset(program);
+Pull.package(program);
 
-commander.parse(process.argv);
+program.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }

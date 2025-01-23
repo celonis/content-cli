@@ -3,15 +3,14 @@ import { SpaceCommand } from "./commands/space.command";
 import { DataPoolCommand } from "./commands/data-pool.command";
 import { AssetCommand } from "./commands/asset.command";
 import { logger } from "./util/logger";
-import commander = require("commander");
 import { ContextInitializer } from "./util/context-initializer";
 import { ConnectionCommand } from "./commands/connection.command";
 import { VariableCommand } from "./commands/variable.command";
-
-type CommanderStatic = commander.CommanderStatic;
+import { Command } from "commander";
+import { program } from "./util/program";
 
 export class List {
-    public static packages(program: CommanderStatic): CommanderStatic {
+    public static packages(program: Command): Command {
         program
             .command("packages")
             .description("Command to list all packages")
@@ -27,7 +26,7 @@ export class List {
         return program;
     }
 
-    public static spaces(program: CommanderStatic): CommanderStatic {
+    public static spaces(program: Command): Command {
         program
             .command("spaces")
             .description("Command to list all spaces")
@@ -41,7 +40,7 @@ export class List {
         return program;
     }
 
-    public static dataPools(program: CommanderStatic): CommanderStatic {
+    public static dataPools(program: Command): Command {
         program
             .command("data-pools")
             .description("Command to list all Data Pools")
@@ -55,7 +54,7 @@ export class List {
         return program;
     }
 
-    public static connections(program: CommanderStatic):CommanderStatic {
+    public static connections(program: Command):Command {
         program
             .command("connection")
             .description("Command to list all connections in a Data Pool")
@@ -68,7 +67,7 @@ export class List {
         return program;
     }
 
-    public static assets(program: CommanderStatic): CommanderStatic {
+    public static assets(program: Command): Command {
         program
             .command("assets")
             .description("Command to list all assets")
@@ -83,7 +82,7 @@ export class List {
         return program;
     }
 
-    public static assignments(program: CommanderStatic): CommanderStatic {
+    public static assignments(program: Command): Command {
         program
             .command("assignments")
             .description("Command to list possible variable assignments for a type")
@@ -101,13 +100,13 @@ export class List {
 }
 
 const loadAllCommands = () => {
-    List.packages(commander);
-    List.spaces(commander);
-    List.dataPools(commander);
-    List.assets(commander);
-    List.connections(commander);
-    List.assignments(commander);
-    commander.parse(process.argv);
+    List.packages(program);
+    List.spaces(program);
+    List.dataPools(program);
+    List.assets(program);
+    List.connections(program);
+    List.assignments(program);
+    program.parse(process.argv);
 };
 
 ContextInitializer.initContext()
@@ -117,6 +116,6 @@ ContextInitializer.initContext()
     });
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }

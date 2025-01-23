@@ -1,12 +1,11 @@
 import {ConfigCommand} from "./commands/config.command";
-import commander = require("commander");
+import { program } from "./util/program";
 import {logger} from "./util/logger";
 import {ContextInitializer} from "./util/context-initializer";
-
-type CommanderStatic = commander.CommanderStatic;
+import { Command } from "commander";
 
 export class Config {
-    public static list(program: CommanderStatic): CommanderStatic {
+    public static list(program: Command): Command {
         program
             .command("list")
             .description("Command to list active packages that can be exported")
@@ -23,7 +22,7 @@ export class Config {
         return program;
     }
 
-    public static listVariables(program: CommanderStatic): CommanderStatic {
+    public static listVariables(program: Command): Command {
         program
             .command("variables")
             .description("Commands related to variable configs")
@@ -41,7 +40,7 @@ export class Config {
         return program;
     }
 
-    public static export(program: CommanderStatic): CommanderStatic {
+    public static export(program: Command): Command {
         program
             .command("export")
             .description("Command to export package configs")
@@ -56,7 +55,7 @@ export class Config {
         return program;
     }
 
-    public static import(program: CommanderStatic): CommanderStatic {
+    public static import(program: Command): Command {
         program
             .command("import")
             .description("Command to import package configs")
@@ -71,7 +70,7 @@ export class Config {
         return program;
     }
 
-    public static diff(program: CommanderStatic): CommanderStatic {
+    public static diff(program: Command): Command {
         program
             .command("diff")
             .description("Command to diff configs of packages")
@@ -89,12 +88,12 @@ export class Config {
 }
 
 const loadAllCommands = () => {
-    Config.list(commander);
-    Config.listVariables(commander);
-    Config.export(commander);
-    Config.import(commander);
-    Config.diff(commander)
-    commander.parse(process.argv);
+    Config.list(program);
+    Config.listVariables(program);
+    Config.export(program);
+    Config.import(program);
+    Config.diff(program)
+    program.parse(process.argv);
 };
 
 ContextInitializer.initContext()
@@ -104,6 +103,6 @@ ContextInitializer.initContext()
     });
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }
