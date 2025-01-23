@@ -1,6 +1,6 @@
 {
   "name": "@celonis/content-cli",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "CLI Tool to help manage content in Celonis EMS",
   "main": "content-cli.js",
   "bin": {
@@ -43,6 +43,9 @@
     "tslint-config-prettier": "1.18.0",
     "tslint-consistent-codestyle": "1.16.0",
     "typescript": "5.3.3"
+  },
+  "resolutions": {
+    "glob": "10.0.0"
   },
   "lint-staged": {
     "src/**/*.ts": [
