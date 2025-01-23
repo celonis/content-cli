@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node with Github Registry
         uses: actions/setup-node@v1
         with:
-          node-version: '16'
+          node-version: '20'
           registry-url: https://npm.pkg.github.com/celonis
           scope: '@celonis'
 
