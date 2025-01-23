@@ -56,8 +56,3 @@ jobs:
         name: Checkout Master
         with:
           fetch-depth: '0'
-
-      - uses: tool3/bump@v1
-        name: Bump patch version
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
