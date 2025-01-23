@@ -1,12 +1,11 @@
 import { ContextInitializer } from "./util/context-initializer";
 import { logger } from "./util/logger";
 import { ActionFlowCommand } from "./commands/action-flow.command";
-import commander = require("commander");
-
-type CommanderStatic = commander.CommanderStatic;
+import { program } from "./util/program";
+import { Command } from "commander";
 
 class Analyze {
-    public static actionFlows(program: CommanderStatic): CommanderStatic {
+    public static actionFlows(program: Command): Command {
         program
             .command("action-flows")
             .description("Analyze Action Flows dependencies for a certain package")
@@ -32,12 +31,12 @@ ContextInitializer.initContext()
     });
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }
 
 function getAllCommands(): void {
-    Analyze.actionFlows(commander);
+    Analyze.actionFlows(program);
 
-    commander.parse(process.argv);
+    program.parse(process.argv);
 }

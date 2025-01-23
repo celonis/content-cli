@@ -145,6 +145,7 @@ export class ProfileService {
                         profile.authenticationType = AuthenticationType.APPKEY;
                     } catch (err) {
                         logger.error(new FatalError("The provided team or api key is wrong."));
+                        logger.error(err);
                     }
                 }
                 break;
@@ -165,6 +166,7 @@ export class ProfileService {
                     profile.expiresAt = deviceCodeTokenSet.expires_at;
                 } catch (err) {
                     logger.error(new FatalError("The provided team is wrong."));
+                    logger.error(err);
                 }
                 break;
             case ProfileType.CLIENT_CREDENTIALS:

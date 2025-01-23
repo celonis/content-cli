@@ -1,10 +1,9 @@
 import { DataPoolCommand } from "./commands/data-pool.command";
-
-import commander = require("commander");
-type CommanderStatic = commander.CommanderStatic;
+import { Command } from "commander";
+import { program } from "./util/program";
 
 class Update {
-    public static dataPool(program: CommanderStatic): CommanderStatic {
+    public static dataPool(program: Command): Command {
         program
             .command("data-pool")
             .description("Command to update a data pool using a data pool configuration file")
@@ -20,10 +19,10 @@ class Update {
     }
 }
 
-Update.dataPool(commander);
-commander.parse(process.argv);
+Update.dataPool(program);
+program.parse(process.argv);
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }

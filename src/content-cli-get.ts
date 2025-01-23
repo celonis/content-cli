@@ -1,12 +1,12 @@
 import { ConnectionCommand } from "./commands/connection.command";
 
-import commander = require("commander");
 import { ContextInitializer } from "./util/context-initializer";
 import { logger } from "./util/logger";
-type CommanderStatic = commander.CommanderStatic;
+import { program } from "./util/program";
+import { Command } from "commander";
 
 class Get {
-    public static connection(program: CommanderStatic): CommanderStatic {
+    public static connection(program: Command): Command {
         program
             .command("connection")
             .description("Programmatically read properties of your connections")
@@ -23,14 +23,14 @@ class Get {
 
 ContextInitializer.initContext()
     .then(() => {
-        Get.connection(commander);
-        commander.parse(process.argv);
+        Get.connection(program);
+        program.parse(process.argv);
     })
     .catch(e => {
         logger.error(e);
     });
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }

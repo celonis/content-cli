@@ -1,12 +1,11 @@
 import { ConnectionCommand } from "./commands/connection.command";
-import commander = require("commander");
 import { ContextInitializer } from "./util/context-initializer";
 import { logger } from "./util/logger";
-
-type CommanderStatic = commander.CommanderStatic;
+import { Command } from "commander";
+import { program } from "./util/program";
 
 class Set {
-    public static connection(program: CommanderStatic): CommanderStatic {
+    public static connection(program: Command): Command {
         program
             .command("connection")
             .description("Programmatically update properties of your connections")
@@ -25,8 +24,8 @@ class Set {
 }
 
 const loadAllCommands = () => {
-    Set.connection(commander);
-    commander.parse(process.argv);
+    Set.connection(program);
+    program.parse(process.argv);
 };
 
 ContextInitializer.initContext()
@@ -36,6 +35,6 @@ ContextInitializer.initContext()
     });
 
 if (!process.argv.slice(2).length) {
-    commander.outputHelp();
+    program.outputHelp();
     process.exit(1);
 }
