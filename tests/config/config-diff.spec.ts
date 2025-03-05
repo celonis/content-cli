@@ -58,7 +58,6 @@ describe("Config diff", () => {
 
         const diffResponse: PackageDiffTransport[] = [{
             packageKey: "package-key",
-            basePackageConfiguration: {metadata: {description: "test"}},
             packageChanges: [
                 {
                     op: "add",
@@ -73,8 +72,7 @@ describe("Config diff", () => {
                     path: "/test",
                     from: "bbb",
                     value: JSON.parse("234")
-                }],
-                baseConfiguration: {}
+                }]
             }]
         }];
 
@@ -102,7 +100,6 @@ describe("Config diff", () => {
 
         const diffResponse: PackageDiffTransport[] = [{
             packageKey: "package-key",
-            basePackageConfiguration: {metadata: {description: "test"}},
             packageChanges: [
                 {
                     op: "add",
@@ -117,8 +114,7 @@ describe("Config diff", () => {
                     path: "/test",
                     from: "bbb",
                     value: JSON.parse("234")
-                }],
-                baseConfiguration: {}
+                }]
             }]
         }];
 
