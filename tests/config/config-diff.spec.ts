@@ -63,7 +63,8 @@ describe("Config diff", () => {
                     op: "add",
                     path: "/test",
                     from: "bbbb",
-                    value: JSON.parse("123")
+                    value: JSON.parse("123"),
+                    fromValue: null
                 }],
             nodesWithChanges: [{
                 nodeKey: "key-1",
@@ -71,7 +72,8 @@ describe("Config diff", () => {
                     op: "add",
                     path: "/test",
                     from: "bbb",
-                    value: JSON.parse("234")
+                    value: JSON.parse("234"),
+                    fromValue: null
                 }]
             }]
         }];
@@ -105,7 +107,8 @@ describe("Config diff", () => {
                     op: "add",
                     path: "/test",
                     from: "bbbb",
-                    value: JSON.parse("123")
+                    value: JSON.parse("123"),
+                    fromValue: null
                 }],
             nodesWithChanges: [{
                 nodeKey: "key-1",
@@ -113,7 +116,8 @@ describe("Config diff", () => {
                     op: "add",
                     path: "/test",
                     from: "bbb",
-                    value: JSON.parse("234")
+                    value: JSON.parse("234"),
+                    fromValue: null
                 }]
             }]
         }];
