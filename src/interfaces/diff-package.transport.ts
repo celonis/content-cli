@@ -3,6 +3,7 @@ export interface ConfigurationChangeTransport {
     path: string;
     from: string;
     value: object;
+    fromValue: object;
 }
 
 export interface NodeDiffTransport {
