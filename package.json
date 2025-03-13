@@ -1,6 +1,6 @@
 {
   "name": "@celonis/content-cli",
-  "version": "0.13.2",
+  "version": "0.13.3",
   "description": "CLI Tool to help manage content in Celonis EMS",
   "main": "content-cli.js",
   "bin": {
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@datadog/datadog-ci": "2.48.0",
-    "adm-zip": "0.5.16",
+    "adm-zip": "0.5.14",
     "axios": "1.7.9",
     "commander": "13.1.0",
     "form-data": "4.0.1",
