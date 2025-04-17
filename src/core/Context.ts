@@ -1,3 +1,4 @@
+import { ProfileService } from "../services/profile.service";
 import { Profile } from "../interfaces/profile.interface";
 import { logger } from "../util/logger";
 
@@ -11,4 +12,40 @@ export class Context {
     log = logger;
     api = null; // TODO - provide access to an initialized API (http api etc.)
     profile: Profile;
+    profileName: string | undefined;
+
+    private profileService = new ProfileService();
+
+    constructor(options: any) {
+        this.profileName = options.profile;
+    }
+
+    async init() {
+        await this.loadProfile(this.profileName);
+    }
+
+    async loadProfile(profileName: string | undefined) {
+        if (!profileName) {
+            this.log.debug(`Profile name not specified, using default profile name`);
+            profileName = this.profileService.getDefaultProfile();
+            if (!profileName) {
+                this.log.debug(`A default profile is not configured.`);
+            }
+        } 
+        if (profileName) {
+            try {
+                this.profile = await this.profileService.findProfile(profileName);
+                this.profileName = profileName;
+                this.log.info(`Using profile ${profileName}`);
+            } catch (err) {
+                // TODO - The error message is incorrect, overriding it here for the time being. 
+                // change it though after the ProfileService is completely migrated/fixed.
+                //this.log.error(err);
+                this.log.error(`The profile ${profileName} cannot be loaded.`);
+                this.profile = undefined;
+                this.profileName = undefined;
+            }
+        }
+    }
+
 }

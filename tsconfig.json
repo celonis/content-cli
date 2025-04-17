@@ -2,10 +2,6 @@
   "compilerOptions": {
     "lib": ["es2015", "es6", "dom", "esnext"],
     "outDir": "./dist/",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
     "declarationDir": "./dist/lib",
     "noImplicitAny": false,
     "target": "es2015",

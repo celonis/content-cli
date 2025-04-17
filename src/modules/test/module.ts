@@ -26,7 +26,7 @@ class TestModule implements IModule {
 
     invoke(context: Context, command: Command) {
         let options = command.opts();
-        logger.info(`invoking me, key is ${options.key}`);
+        logger.info(`Test invocation, key is ${options.key}. Profile is ${context.profileName}`);
     }
 }
 

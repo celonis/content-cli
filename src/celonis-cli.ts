@@ -3,10 +3,6 @@
 import semverSatisfies = require("semver/functions/satisfies");
 import {VersionUtils} from "./util/version";
 import { logger } from "./util/logger";
-
-import { fileURLToPath } from 'url'; // Needed for ES Modules __dirname equivalent
-import path = require("path");
-import * as fs from "fs";
 import { ModuleHandler } from "./core/ModuleHandler";
 import { Command } from "commander";
 import { Context } from "./core/Context";
@@ -24,6 +20,7 @@ if (!semverSatisfies(process.version, requiredVersion)) {
 const program: Command = new Command();
 program.version(VersionUtils.getCurrentCliVersion());
 program.option("-q, --quitemode", "Reduce output to a minimum", false);
+program.option("-p, --profile [profile]");
 program.option("--debug", "Print debug messages", false);
 program.parseOptions(process.argv);
 
@@ -41,21 +38,22 @@ if (program.opts().debug) {
     logger.level = 'debug';
 }
 
-let context = new Context();
-
-let moduleHandler = new ModuleHandler(program, context);
-
-moduleHandler.discoverAndRegisterModules(__dirname);
-
-
-if (!process.argv.slice(2).length) {
-    program.outputHelp();
-    process.exit(1);
-}
-
 async function run() {
-    await program.parse(process.argv);
-    // safe to exit now
+
+    let context = new Context(program.opts());
+    await context.init();
+
+    let moduleHandler = new ModuleHandler(program, context);
+    
+    moduleHandler.discoverAndRegisterModules(__dirname);
+    
+    if (!process.argv.slice(2).length) {
+        program.outputHelp();
+        process.exit(1);
+    }
+    
+    program.parse(process.argv);
+    
     /* -- Uncomment the below to find out why the process does not exit...
     setTimeout(() => {
         console.error("Node is still running. Active Handles:");

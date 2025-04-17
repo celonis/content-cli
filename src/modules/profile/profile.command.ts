@@ -1,4 +1,4 @@
-import { QuestionService } from "./services/question.service";
+import { QuestionService } from "./question.service";
 import {Profile, ProfileType} from "../../interfaces/profile.interface";
 import { ProfileService } from "../../services/profile.service";
 import { ProfileValidator } from "../../validators/profile.validator";
