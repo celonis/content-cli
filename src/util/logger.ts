@@ -21,6 +21,7 @@ class CustomTransport extends Transport {
 
 export const logger: Logger = winston.createLogger({
     format: winston.format.combine(winston.format.cli()),
+    level: 'info',
     transports: [new winston.transports.Console(), new CustomTransport({})],
     exceptionHandlers: [new winston.transports.Console(), new CustomTransport({})],
     exitOnError: true,

@@ -1,4 +1,4 @@
-import { ProfileCommand } from "./commands/profile.command";
+import { ProfileCommand } from "./modules/profile/profile.command";
 import { Command } from "commander";
 import { program } from "./util/program";
 
