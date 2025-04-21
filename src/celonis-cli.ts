@@ -35,7 +35,9 @@ if (!program.opts().quitemode) {
 }
 
 if (program.opts().debug) {
-    logger.level = 'debug';
+    logger.transports.forEach(t => {
+        t.level = 'debug';
+    });
 }
 
 async function run() {

@@ -43,8 +43,6 @@ try {
     console.error(`Error creating log directory: ${logDir}`, error);
 }
 
-console.log(`Logging to ${logFilePath}`);
-
 export const logger: Logger = winston.createLogger({
     format: winston.format.combine(winston.format.cli()),
     level: 'debug',
@@ -57,7 +55,7 @@ export const logger: Logger = winston.createLogger({
             ),
         }),
         new winston.transports.File({
-            level: 'debug', // Log everything from debug up to the file
+            level: 'info', // Log everything from debug up to the file
             filename: logFilePath,
             format: winston.format.combine(
                 winston.format.timestamp(), // Add timestamp to file logs
