@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url'; // Needed for ES Modules __dirname equivale
 import path = require("path");
 import * as fs from "fs";
 import { Command, CommandOptions, ExecutableCommandOptions } from "commander";
-import { Context } from "./Context";
+import { Context } from "./cli-context";
 
 export interface IModule {
     register(context: Context, commandConfig: CommandConfig);

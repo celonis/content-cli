@@ -3,9 +3,9 @@
 import semverSatisfies = require("semver/functions/satisfies");
 import {VersionUtils} from "./util/version";
 import { logger } from "./util/logger";
-import { ModuleHandler } from "./core/ModuleHandler";
+import { ModuleHandler } from "./core/module-handler";
 import { Command } from "commander";
-import { Context } from "./core/Context";
+import { Context } from "./core/cli-context";
 
 
 // Check if the Node.js version satisfies the minimum requirements
@@ -49,11 +49,10 @@ async function run() {
     
     if (!process.argv.slice(2).length) {
         program.outputHelp();
-        process.exit(1);
     }
     
     program.parse(process.argv);
-    
+    logger.end();
     /* -- Uncomment the below to find out why the process does not exit...
     setTimeout(() => {
         console.error("Node is still running. Active Handles:");

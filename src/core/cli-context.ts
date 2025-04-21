@@ -1,6 +1,7 @@
 import { ProfileService } from "../services/profile.service";
 import { Profile } from "../interfaces/profile.interface";
 import { logger } from "../util/logger";
+import { HttpClient } from "./http-client";
 
 /**
  * The execution context object is passed to the modules to access
@@ -10,7 +11,7 @@ import { logger } from "../util/logger";
 
 export class Context {
     log = logger;
-    api = null; // TODO - provide access to an initialized API (http api etc.)
+    httpClient: HttpClient; // TODO - provide access to an initialized API (http api etc.)
     profile: Profile;
     profileName: string | undefined;
 
@@ -22,6 +23,12 @@ export class Context {
 
     async init() {
         await this.loadProfile(this.profileName);
+
+        if (this.profile) {
+            // only if a profile is available, it makes sense to provide an initialized
+            // HttpClient API. 
+            this.httpClient = new HttpClient(this);
+        }
     }
 
     async loadProfile(profileName: string | undefined) {

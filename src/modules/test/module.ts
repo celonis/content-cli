@@ -3,9 +3,9 @@
  */
 
 import { Command } from "commander";
-import { CommandConfig, IModule } from "../../core/ModuleHandler";
+import { CommandConfig, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
-import { Context } from "../../core/Context";
+import { Context } from "../../core/cli-context";
 
 class TestModule implements IModule {
     register(context: Context, command: CommandConfig) {
