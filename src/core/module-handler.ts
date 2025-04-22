@@ -140,9 +140,11 @@ export class CommandConfig {
     action(handler: CommandHandler) {
         let ctx = this.ctx;
         this.cmd.action(async function () {
-            await handler(ctx, this);
-            // TODO - avoid exiting directly here, so the app can complete.
-            //process.exit();
+            try {
+                await handler(ctx, this);
+            } catch (error) {
+                logger.error(`An unexpected error occured executing a command: ${error}`);
+            }
         })
     }
 

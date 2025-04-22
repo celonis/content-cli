@@ -27,6 +27,9 @@ class TestModule implements IModule {
     invoke(context: Context, command: Command) {
         let options = command.opts();
         logger.info(`Test invocation, key is ${options.key}. Profile is ${context.profileName}`);
+        if (context.httpClient) {
+            logger.info(`HttpClient is present`);
+        }
     }
 }
 

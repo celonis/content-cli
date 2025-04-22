@@ -19,7 +19,7 @@ if (!semverSatisfies(process.version, requiredVersion)) {
 
 const program: Command = new Command();
 program.version(VersionUtils.getCurrentCliVersion());
-program.option("-q, --quitemode", "Reduce output to a minimum", false);
+program.option("-q, --quietmode", "Reduce output to a minimum", false);
 program.option("-p, --profile [profile]");
 program.option("--debug", "Print debug messages", false);
 program.parseOptions(process.argv);
@@ -29,7 +29,7 @@ program.parseOptions(process.argv);
  * 
  * This is the main entry point for the CLI.
  */
-if (!program.opts().quitemode) {
+if (!program.opts().quietmode) {
     console.log(`Celonis CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
     console.log();
 }
@@ -53,8 +53,12 @@ async function run() {
         program.outputHelp();
     }
     
-    program.parse(process.argv);
-    logger.end();
+    try {
+        program.parse(process.argv);
+    } catch (error) {
+        logger.error(`An unexpected error occured: ${error}`);
+    }
+
     /* -- Uncomment the below to find out why the process does not exit...
     setTimeout(() => {
         console.error("Node is still running. Active Handles:");
@@ -63,3 +67,11 @@ async function run() {
    */
 }
 run();
+
+// catch uncaught exceptions
+process.on('uncaughtException', (error: Error, origin: NodeJS.UncaughtExceptionOrigin) => {
+    console.error(`\n💥 UNCAUGHT EXCEPTION!\n`);
+    console.error('Error:', error);
+    console.error('Origin:', origin);
+    process.exit(1);
+});

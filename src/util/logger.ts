@@ -88,7 +88,7 @@ export const logger: Logger = winston.createLogger({
         }),
         new CustomTransport({})
     ],
-    exitOnError: true,
+    exitOnError: false,
 });
 
 // tslint:disable-next-line: max-classes-per-file

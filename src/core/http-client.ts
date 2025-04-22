@@ -18,15 +18,20 @@ export class HttpClient {
     constructor(private context: Context) {}
 
     public async get(url: string): Promise<any> {
+        const fullUrl = this.resolveUrl(url);
+        logger.debug(`HttpClient - GET ${fullUrl}`);
         return new Promise<any>((resolve, reject) => {
-            this.axios.get(this.resolveUrl(url), {
+            this.axios.get(fullUrl, {
                 headers: this.buildHeaders()
             }).then(response => {
+                logger.debug(`Response ${response.status}`);
                 this.handleResponse(response, resolve, reject);
             }).catch(err => {
+                logger.error(err);
                 this.handleError(err, resolve, reject);
             })
         }).catch(e => {
+            logger.error(e);
             throw new FatalError(e);
         })
     }

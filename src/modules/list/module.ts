@@ -7,7 +7,7 @@ import { CommandConfig, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
 import { SpaceCommand } from "../../commands/space.command";
-import { PackageCommand } from "../../commands/package.command";
+import { ListCommand } from "./list-commands";
 
 class ListModule implements IModule {
 
@@ -33,7 +33,7 @@ class ListModule implements IModule {
 
     async listPackages(context: Context, command: Command) {
         let options = command.opts();
-        await new PackageCommand().listPackages(options.json, options.includeDependencies, options.packageKeys);
+        await new ListCommand(context).listPackages(options.json, options.includeDependencies, options.packageKeys);
     }
 
     async listSpaces(context: Context, command: Command) {
