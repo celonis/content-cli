@@ -3,15 +3,17 @@
  */
 
 import { Command } from "commander";
-import { CommandConfig, IModule } from "../../core/module-handler";
+import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
 import { ProfileCommand } from "./profile.command";
 
 class ProfileModule implements IModule {
 
-    register(context: Context, command: CommandConfig) {
+    register(context: Context, configurator: Configurator) {
         
+        let command = configurator.command('profile');
+
         // action if no command is provided
         command.action(this.showHelp);
 

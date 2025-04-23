@@ -3,13 +3,14 @@
  */
 
 import { Command } from "commander";
-import { CommandConfig, IModule } from "../../core/module-handler";
+import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
 
 class TestModule implements IModule {
-    register(context: Context, command: CommandConfig) {
+    register(context: Context, configurator: Configurator) {
         
+        let command = configurator.command('test');
         command.option('-k, --key [string]', 'The key');
         command.action(this.invoke);
 
@@ -18,6 +19,21 @@ class TestModule implements IModule {
             .description('Blink a few times')
             .option('-c, --count [number]')
             .action(this.blink);
+
+
+        // lets add 'test' sub-command under the list command
+        let listCommand = configurator.command('list');
+        listCommand.command('test')
+            .description('Test List')
+            .option('-c, --count [number]')
+            .action(this.testList);
+
+
+    }
+
+    testList(context: Context, command: Command) {
+        
+        logger.info(`Test List`);
     }
 
     blink(context: Context, command: Command) {

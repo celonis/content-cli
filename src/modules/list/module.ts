@@ -3,7 +3,7 @@
  */
 
 import { Command } from "commander";
-import { CommandConfig, IModule } from "../../core/module-handler";
+import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
 import { SpaceCommand } from "../../commands/space.command";
@@ -11,8 +11,9 @@ import { ListCommand } from "./list-commands";
 
 class ListModule implements IModule {
 
-    register(context: Context, command: CommandConfig) {
+    register(context: Context, configurator: Configurator) {
         
+        let command = configurator.command('list');
         // action if no command is provided
         command.action(this.showHelp);
 

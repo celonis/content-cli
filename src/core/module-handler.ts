@@ -6,7 +6,7 @@ import { Command, CommandOptions, ExecutableCommandOptions } from "commander";
 import { Context } from "./cli-context";
 
 export interface IModule {
-    register(context: Context, commandConfig: CommandConfig);
+    register(context: Context, commandConfig: Configurator);
 }
 
 export interface IModuleConstructor {
@@ -15,8 +15,10 @@ export interface IModuleConstructor {
 
 export class ModuleHandler {
 
-    constructor(public program: Command, public context: Context) {
+    configurator: Configurator;
 
+    constructor(public program: Command, public context: Context) {
+        this.configurator = new Configurator(this.program, this.context);
     }
 
     // Store registered module instances if needed later
@@ -65,9 +67,7 @@ export class ModuleHandler {
                                 logger.debug(`Registering module: ${moduleFolderName}`);
                                 // Call register - can still be async even if require() is sync
                                 let ctx = this.context;
-                                let commandName = moduleFolderName; // may let the module change this
-                                let command = this.program.command(commandName)
-                                moduleInstance.register(ctx, new CommandConfig(command, this.context));
+                                moduleInstance.register(ctx, this.configurator);
                                 this.registeredModules.push(moduleInstance);
                             } else {
                                 logger.warn(`Module ${moduleFolderName} export does not have a 'register' method.`);
@@ -103,6 +103,35 @@ export class ModuleHandler {
 }
 
 type CommandHandler =  (context: Context, command: Command) => void; 
+
+/**
+ * Allows the creation of root level commands.
+ */
+export class Configurator {
+
+    rootCommandMap = new Map<string, CommandConfig>();
+
+    constructor(private program: Command, private ctx: Context) {
+
+    }
+
+    /**
+     * Get or create a root level command.
+     * @param nameAndArgs 
+     * @param opts 
+     * @returns 
+     */
+    command(name: string) : CommandConfig {
+        if (this.rootCommandMap.has(name)) {
+            return this.rootCommandMap.get(name);
+        }
+        let cmd = this.program.command(name);
+        let cmdConfig = new CommandConfig(cmd, this.ctx);
+        this.rootCommandMap.set(name, cmdConfig);
+        return cmdConfig;
+    }
+
+}
 
 /**
  * Delegate wrapper around the Command object, to simply change the way the program is

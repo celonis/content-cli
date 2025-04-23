@@ -1,7 +1,7 @@
 //const logProc = require('why-is-node-running')
 
 import semverSatisfies = require("semver/functions/satisfies");
-import {VersionUtils} from "./util/version";
+import { VersionUtils } from "./util/version";
 import { logger } from "./util/logger";
 import { ModuleHandler } from "./core/module-handler";
 import { Command } from "commander";
