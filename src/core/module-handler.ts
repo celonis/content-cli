@@ -1,8 +1,7 @@
 import { logger } from "../util/logger";
-import { fileURLToPath } from 'url'; // Needed for ES Modules __dirname equivalent
 import path = require("path");
 import * as fs from "fs";
-import { Command, CommandOptions, ExecutableCommandOptions } from "commander";
+import { Command, CommandOptions } from "commander";
 import { Context } from "./cli-context";
 
 export interface IModule {
@@ -24,7 +23,7 @@ export class ModuleHandler {
     // Store registered module instances if needed later
     registeredModules: IModule[] = [];
 
-        /**
+    /**
      * Discovers modules in the specified directory, imports them,
      * instantiates the default exported class, and calls its register method.
      *
@@ -41,51 +40,72 @@ export class ModuleHandler {
                 if (dirent.isDirectory()) {
                     const moduleFolderName = dirent.name;
 
+                    // the specification allows different variants, so we test for each.
+                    const fileVariants = [
+                        `${moduleFolderName}-module.js`,
+                        'module.js',
+                        'index.js'
+                    ];
+
                     // Calculate path relative to *this file's location in dist*
-                    const potentialModuleJsPath = path.resolve(
-                        rootPath, 'modules', moduleFolderName,
-                        'module.js' // Look for the compiled JS file
-                    );
+                    let potentialModuleJsPath;
+                    for (let name of fileVariants) {
+                        potentialModuleJsPath = path.resolve(
+                            rootPath, 'modules', moduleFolderName,
+                           name // Look for the compiled JS file
+                        );
+                        try {
+                            fs.accessSync(potentialModuleJsPath);
+                            break; // use this variant
+                        } catch (err) {
+                            // apparently the file does not exist of is not accessible
+                            potentialModuleJsPath = null;
+                        }
+                    }
 
-                    // Check if the compiled JS file exists
-                    try {
-                        fs.accessSync(potentialModuleJsPath); // Check existence
-                        logger.debug(`Found potential module definition: ${potentialModuleJsPath}`);
+                    if (!potentialModuleJsPath) {
+                        logger.debug(`Module folder ${moduleFolderName} does not contain a valid entry point and is skipped.`);
+                    } else {
 
-                        // Dynamically require the module
-                        const requiredModule = require(potentialModuleJsPath);
+                        // Check if the compiled JS file exists
+                        try {
+                            logger.debug(`Found potential module definition: ${potentialModuleJsPath}`);
 
-                        // With 'export =' or 'module.exports =', the required value *is* the class
-                        const ModuleClass = requiredModule as IModuleConstructor; // Cast for TS check
+                            // Dynamically require the module
+                            const requiredModule = require(potentialModuleJsPath);
 
-                        // Basic check: Is it a class (function)?
-                        if (typeof ModuleClass === 'function' && ModuleClass.prototype) {
-                            const moduleInstance: IModule = new ModuleClass(); // Instantiate
+                            // With 'export =' or 'module.exports =', the required value *is* the class
+                            const ModuleClass = requiredModule as IModuleConstructor; // Cast for TS check
 
-                            // Check if the instance has the register method
-                            if (typeof moduleInstance.register === 'function') {
-                                logger.debug(`Registering module: ${moduleFolderName}`);
-                                // Call register - can still be async even if require() is sync
-                                let ctx = this.context;
-                                moduleInstance.register(ctx, this.configurator);
-                                this.registeredModules.push(moduleInstance);
+                            // Basic check: Is it a class (function)?
+                            if (typeof ModuleClass === 'function' && ModuleClass.prototype) {
+                                const moduleInstance: IModule = new ModuleClass(); // Instantiate
+
+                                // Check if the instance has the register method
+                                if (typeof moduleInstance.register === 'function') {
+                                    logger.debug(`Registering module: ${moduleFolderName}`);
+                                    // Call register - can still be async even if require() is sync
+                                    let ctx = this.context;
+                                    moduleInstance.register(ctx, this.configurator);
+                                    this.registeredModules.push(moduleInstance);
+                                } else {
+                                    logger.warn(`Module ${moduleFolderName} export does not have a 'register' method.`);
+                                }
                             } else {
-                                logger.warn(`Module ${moduleFolderName} export does not have a 'register' method.`);
+                                logger.warn(`Module ${moduleFolderName} export is not a class/constructor function.`);
                             }
-                        } else {
-                            logger.warn(`Module ${moduleFolderName} export is not a class/constructor function.`);
-                        }
 
-                    } catch (error: any) {
-                        if (error.code === 'ENOENT') {
-                            // Compiled module.js not found, maybe folder doesn't contain a valid module
-                            logger.warn(`Directory ${moduleFolderName} does not contain a compiled module.js file.`);
-                        } else if (error.code === 'MODULE_NOT_FOUND') {
-                            logger.debug(`Error details`, error);
-                            logger.warn(`Could not require module ${moduleFolderName}. Check dependencies or compilation. Path: ${potentialModuleJsPath}`);
-                        }
-                        else {
-                            logger.error(`Error processing module in ${moduleFolderName}:`, error);
+                        } catch (error: any) {
+                            if (error.code === 'ENOENT') {
+                                // Compiled module.js not found, maybe folder doesn't contain a valid module
+                                logger.warn(`Directory ${moduleFolderName} does not contain a compiled module.js file.`);
+                            } else if (error.code === 'MODULE_NOT_FOUND') {
+                                logger.debug(`Error details`, error);
+                                logger.warn(`Could not require module ${moduleFolderName}. Check dependencies or compilation. Path: ${potentialModuleJsPath}`);
+                            }
+                            else {
+                                logger.error(`Error processing module in ${moduleFolderName}:`, error);
+                            }
                         }
                     }
                 }
