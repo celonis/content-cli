@@ -6,8 +6,19 @@ export interface ConfigurationChangeTransport {
     fromValue: object;
 }
 
+export enum NodeConfigurationChangeType {
+    ADDED = "ADDED",
+    DELETED = "DELETED",
+    CHANGED = "CHANGED",
+    UNCHANGED = "UNCHANGED",
+    INVALID = "INVALID"
+}
+
 export interface NodeDiffTransport {
     nodeKey: string;
+    name: string;
+    type: string;
+    changeType: NodeConfigurationChangeType;
     changes: ConfigurationChangeTransport[];
 }
 
