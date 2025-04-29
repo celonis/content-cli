@@ -1,7 +1,7 @@
 import { logger } from "../util/logger";
 import path = require("path");
 import * as fs from "fs";
-import { Command, CommandOptions } from "commander";
+import { Command, CommandOptions, OptionValues } from "commander";
 import { Context } from "./cli-context";
 
 export interface IModule {
@@ -14,7 +14,7 @@ export interface IModuleConstructor {
 
 export class ModuleHandler {
 
-    configurator: Configurator;
+    public configurator: Configurator;
 
     constructor(public program: Command, public context: Context) {
         this.configurator = new Configurator(this.program, this.context);
@@ -122,7 +122,7 @@ export class ModuleHandler {
 
 }
 
-type CommandHandler =  (context: Context, command: Command) => void; 
+type CommandHandler =  (context: Context, command: Command, options: OptionValues) => void; 
 
 /**
  * Allows the creation of root level commands.
@@ -166,6 +166,11 @@ export class CommandConfig {
         return new CommandConfig(this.cmd.command(nameAndArgs, opts), this.ctx);
     }
 
+    alias(alias: string) {
+        this.cmd.alias(alias);
+        return this;
+    }
+
     description(description: string) {
         this.cmd.description(description);
         return this;
@@ -190,7 +195,9 @@ export class CommandConfig {
         let ctx = this.ctx;
         this.cmd.action(async function () {
             try {
-                await handler(ctx, this);
+                let cmd = this; // in the context of the execution, this refers to the Command object
+                let cmdOptions = cmd.opts();
+                await handler(ctx, this, cmdOptions);
             } catch (error) {
                 logger.error(`An unexpected error occured executing a command: ${error}`);
             }

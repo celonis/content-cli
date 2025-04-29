@@ -1,11 +1,19 @@
+#!/usr/bin/env node
+
 //const logProc = require('why-is-node-running')
 
 import semverSatisfies = require("semver/functions/satisfies");
 import { VersionUtils } from "./util/version";
 import { logger } from "./util/logger";
-import { ModuleHandler } from "./core/module-handler";
+import { Configurator, ModuleHandler } from "./core/module-handler";
 import { Command } from "commander";
 import { Context } from "./core/cli-context";
+
+/**
+ * Celonis Content CLI.
+ * 
+ * This is the main entry point for the CLI.
+ */
 
 
 // Check if the Node.js version satisfies the minimum requirements
@@ -17,6 +25,7 @@ if (!semverSatisfies(process.version, requiredVersion)) {
     process.exit(1);
 }
 
+// Global configuration options
 const program: Command = new Command();
 program.version(VersionUtils.getCurrentCliVersion());
 program.option("-q, --quietmode", "Reduce output to a minimum", false);
@@ -24,11 +33,7 @@ program.option("-p, --profile [profile]");
 program.option("--debug", "Print debug messages", false);
 program.parseOptions(process.argv);
 
-/**
- * Celonis Content CLI.
- * 
- * This is the main entry point for the CLI.
- */
+// go for it...
 if (!program.opts().quietmode) {
     console.log(`Celonis CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
     console.log();
@@ -40,6 +45,16 @@ if (program.opts().debug) {
     });
 }
 
+/** 
+ * To support the legacy command structure, we have to configure some root commands
+ * that the individual modules will extend.
+ */ 
+function configureRootCommands(configurator: Configurator) {
+    configurator.command("list")
+        .description("Commands to list content.")
+        .alias("ls");
+}
+
 async function run() {
 
     let context = new Context(program.opts());
@@ -47,6 +62,8 @@ async function run() {
 
     let moduleHandler = new ModuleHandler(program, context);
     
+    configureRootCommands(moduleHandler.configurator);
+
     moduleHandler.discoverAndRegisterModules(__dirname);
     
     if (!process.argv.slice(2).length) {

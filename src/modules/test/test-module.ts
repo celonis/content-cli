@@ -2,7 +2,7 @@
  * Configures the module commands, options, etc.
  */
 
-import { Command } from "commander";
+import { Command, CommandOptions, OptionValues } from "commander";
 import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
@@ -40,8 +40,7 @@ class TestModule implements IModule {
         logger.info(`I will blink`);
     }
 
-    invoke(context: Context, command: Command) {
-        let options = command.opts();
+    invoke(context: Context, command: Command, options: OptionValues) {
         logger.info(`Test invocation, key is ${options.key}. Profile is ${context.profileName}`);
         if (context.httpClient) {
             logger.info(`HttpClient is present`);

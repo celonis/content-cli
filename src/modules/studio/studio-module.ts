@@ -2,7 +2,7 @@
  * Commands to create and list access profiles.
  */
 
-import { Command } from "commander";
+import { Command, OptionValues } from "commander";
 import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
@@ -13,32 +13,29 @@ class ListModule implements IModule {
 
     register(context: Context, configurator: Configurator) {
         
-        let command = configurator.command('list');
-        // action if no command is provided
-        command.action(this.showHelp);
+        // Extend the "list" command with some studio specific options
+        let listCmd = configurator.command('list');
 
         // let's add a subcommand
-        command.command("packages")
+        listCmd.command("packages")
                 .description("Command to list all packages")
                 .option("--json", "Return response as json type", "")
                 .option("--includeDependencies", "Include variables and dependencies", "")
                 .option("--packageKeys <packageKeys...>", "Lists only given package keys")
                 .action(this.listPackages);
 
-        command.command("spaces")
+        listCmd.command("spaces")
                 .description("Command to list all spaces")
                 .option("--json", "Return response as json type", "")
                 .action(this.listSpaces);
                 
     }
 
-    async listPackages(context: Context, command: Command) {
-        let options = command.opts();
+    async listPackages(context: Context, command: Command, options: OptionValues) {
         await new ListCommand(context).listPackages(options.json, options.includeDependencies, options.packageKeys);
     }
 
-    async listSpaces(context: Context, command: Command) {
-        let options = command.opts();
+    async listSpaces(context: Context, command: Command, options: OptionValues) {
         await new SpaceCommand().listSpaces(undefined, options.json);
     }
 

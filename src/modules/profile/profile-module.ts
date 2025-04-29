@@ -13,7 +13,8 @@ class ProfileModule implements IModule {
     register(context: Context, configurator: Configurator) {
         
         let command = configurator.command('profile');
-
+        command.description('Manage profiles required to access a system.');
+        
         // action if no command is provided
         command.action(this.showHelp);
 
