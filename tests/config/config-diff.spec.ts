@@ -3,6 +3,7 @@ import {ConfigUtils} from "../utls/config-utils";
 import * as path from "path";
 import {mockCreateReadStream, mockExistsSync, mockReadFileSync} from "../utls/fs-mock-utils";
 import {
+    NodeConfigurationChangeType,
     PackageDiffMetadata,
     PackageDiffTransport,
 } from "../../src/interfaces/diff-package.transport";
@@ -67,7 +68,10 @@ describe("Config diff", () => {
                     fromValue: null
                 }],
             nodesWithChanges: [{
-                nodeKey: "key-1",
+                nodeKey: firstChildNode.key,
+                name: firstChildNode.name,
+                type: firstChildNode.type,
+                changeType: NodeConfigurationChangeType.ADDED,
                 changes: [{
                     op: "add",
                     path: "/test",
@@ -111,7 +115,10 @@ describe("Config diff", () => {
                     fromValue: null
                 }],
             nodesWithChanges: [{
-                nodeKey: "key-1",
+                nodeKey: firstChildNode.key,
+                name: firstChildNode.name,
+                type: firstChildNode.type,
+                changeType: NodeConfigurationChangeType.ADDED,
                 changes: [{
                     op: "add",
                     path: "/test",
