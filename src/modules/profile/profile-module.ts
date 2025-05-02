@@ -2,7 +2,7 @@
  * Commands to create and list access profiles.
  */
 
-import { Command } from "commander";
+import { Command, OptionValues } from "commander";
 import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
 import { logger } from "../../util/logger";
 import { Context } from "../../core/cli-context";
@@ -13,10 +13,8 @@ class ProfileModule implements IModule {
     register(context: Context, configurator: Configurator) {
         
         let command = configurator.command('profile');
-        command.description('Manage profiles required to access a system.');
-        
-        // action if no command is provided
-        command.action(this.showHelp);
+        command.description('Manage profiles required to access a system.')
+               .action(this.showHelp); // action if no command is provided
 
         // let's add a subcommand
         command.command("list")
@@ -39,8 +37,7 @@ class ProfileModule implements IModule {
         await new ProfileCommand().makeDefaultProfile(profile);
     }
 
-    async createProfile(context: Context, command: Command) {
-        let options = command.opts();
+    async createProfile(context: Context, command: Command, options: OptionValues) {
         await new ProfileCommand().createProfile(options.setAsDefault);
     }
 

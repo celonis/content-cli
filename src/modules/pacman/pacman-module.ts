@@ -72,16 +72,8 @@ class PacManModule implements IModule {
         //new ConfigCommand().listVariables(cmd.json, cmd.keysByVersion, cmd.keysByVersionFile);
     }
 
-    async listCommand(context: Context, command: Command, options: OptionValues) {
-        try {
-            await new ConfigListCommand(context).execute(options.json, options.flavors, options.withDependencies, options.packageKeys);
-        } catch (error) {
-            if (error instanceof ForbiddenError) {
-                logger.error(`You do not have the rights to perform this operation. Notice that you need a personal API key for 'config' operations.`);
-            } else {
-                throw error;
-            }
-        }
+    listCommand(context: Context, command: Command, options: OptionValues) {
+        new ConfigListCommand(context).execute(options.json, options.flavors, options.withDependencies, options.packageKeys);
     }
 
     showHelp(context: Context, command: Command) {
