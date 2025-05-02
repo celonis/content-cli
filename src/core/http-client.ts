@@ -27,12 +27,12 @@ export class HttpClient {
                 logger.debug(`Response ${response.status}`);
                 this.handleResponse(response, resolve, reject);
             }).catch(err => {
-                logger.error(err);
+                logger.debug(`HTTP GET resulted in error`, err);
                 this.handleError(err, resolve, reject);
             })
         }).catch(e => {
             logger.error(e);
-            throw new FatalError(e);
+            throw e;
         })
     }
 
@@ -179,11 +179,15 @@ export class HttpClient {
     }
 
     private handleError(err: any, resolve, reject): void {
+        reject(err);
+        /*
+        console.log(err);
         if (err.response) {
             this.handleResponse(err.response, resolve, reject);
         } else {
             reject(err.message);
         }
+        */
     }
 
     private checkBadRequest(statusCode: number): boolean {
