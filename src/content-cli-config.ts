@@ -14,8 +14,10 @@ export class Config {
             .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only given package keys")
+            .option("--variableValue <variableValue>", "Variable value for filtering packages by.")
+            .option("--variableType <variableValue>", "Variable type for filtering packages by.")
             .action(async cmd => {
-                await new ConfigCommand().listActivePackages(cmd.json, cmd.flavors, cmd.withDependencies, cmd.packageKeys);
+                await new ConfigCommand().listActivePackages(cmd.json, cmd.flavors, cmd.withDependencies, cmd.packageKeys, cmd.variableValue, cmd.variableType);
                 process.exit();
             });
 

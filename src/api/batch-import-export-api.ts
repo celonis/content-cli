@@ -21,6 +21,20 @@ class BatchImportExportApi {
         });
     }
 
+    public findActivePackagesByVariableValue(flavors: string[], variableValue:string, variableType:string): Promise<PackageExportTransport[]> {
+        const queryParams = new URLSearchParams();
+
+        queryParams.set("variableValue", variableValue);
+        if(variableType)   {
+            queryParams.set("variableType", variableType);
+        }
+        flavors.forEach(flavor => queryParams.append("flavors", flavor))
+
+        return httpClientV2.get(`/package-manager/api/core/packages/export/list-by-variable-value?${queryParams.toString()}`).catch(e => {
+            throw new FatalError(`Problem getting active packages by variable value: ${e}`);
+        });
+    }
+
     public findActivePackagesByKeys(packageKeys: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
