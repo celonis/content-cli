@@ -5,7 +5,7 @@ import {diffService} from "../services/package-manager/diff-service";
 export class ConfigCommand {
 
     public async listActivePackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys:string[], variableValue:string, variableType:string): Promise<void> {
-        if(variableValue) {
+        if (variableValue) {
             await this.listPackagesByVariableValue(jsonResponse, flavors, variableValue, variableType);
             return;
         }
@@ -37,7 +37,7 @@ export class ConfigCommand {
         return diffService.diffPackages(file, hasChanges, jsonResponse);
     }
 
-    public async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue:string, variableType:string): Promise<void> {
+    private async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue:string, variableType:string): Promise<void> {
         if (jsonResponse) {
             await batchImportExportService.findAndExportListOfActivePackagesByVariableValue(flavors ?? [], variableValue, variableType )
         } else {

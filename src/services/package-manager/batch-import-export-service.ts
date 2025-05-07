@@ -167,7 +167,7 @@ class BatchImportExportService {
     public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string) : Promise<void> {
         const packagesByVariableValue = await batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
         packagesByVariableValue.forEach(pkg => {
-            logger.info(`${pkg.name} - Active Key: "${pkg.key}"`)
+            logger.info(`${pkg.name} - Key: "${pkg.key}"`)
         });
     }
 }

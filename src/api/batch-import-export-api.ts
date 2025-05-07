@@ -25,7 +25,7 @@ class BatchImportExportApi {
         const queryParams = new URLSearchParams();
 
         queryParams.set("variableValue", variableValue);
-        if(variableType)   {
+        if (variableType) {
             queryParams.set("variableType", variableType);
         }
         flavors.forEach(flavor => queryParams.append("flavors", flavor))
