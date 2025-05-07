@@ -179,4 +179,43 @@ describe("Config list", () => {
         expect(exportedSecondPackage).toEqual(secondPackage);
         expect(exportedFirstPackage).toEqual({...firstPackage, datamodels: [{...dataModelDetailResponse}]});
     })
+
+    it("Should list all packages filtered by variable value", async () => {
+        const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const studioPackage: ContentNodeTransport = PackageManagerApiUtils.buildContentNodeTransport("key-1", "spaceId-1");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-variable-value?variableValue=1", [{...firstPackage}, {...secondPackage}]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
+
+        await new ConfigCommand().listActivePackages(true, [], false, [],  "1", null);
+
+        const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+
+        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        expect(exportedTransports.length).toBe(2);
+    })
+
+    it("Should export all packages for json response filtered by variable value", async () => {
+        const firstPackage = PackageManagerApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PackageManagerApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const studioPackage: ContentNodeTransport = PackageManagerApiUtils.buildContentNodeTransport("key-1", "spaceId-1");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-variable-value?variableValue=1", [{...firstPackage}, {...secondPackage}]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
+
+        await new ConfigCommand().listActivePackages(true, [], false, [],  "1", null);
+
+        const expectedFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+
+        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        expect(exportedTransports.length).toBe(2);
+    })
+
 })
