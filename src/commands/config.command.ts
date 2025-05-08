@@ -4,7 +4,7 @@ import {diffService} from "../services/package-manager/diff-service";
 
 export class ConfigCommand {
 
-    public async listActivePackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys:string[], variableValue:string, variableType:string): Promise<void> {
+    public async listActivePackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys: string[], variableValue: string, variableType: string): Promise<void> {
         if (variableValue) {
             await this.listPackagesByVariableValue(jsonResponse, flavors, variableValue, variableType);
             return;
