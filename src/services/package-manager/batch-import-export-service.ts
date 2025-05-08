@@ -95,6 +95,21 @@ class BatchImportExportService {
         logger.info("Config import report file: " + reportFileName);
     }
 
+    public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<void>  {
+        let packagesToExport = await batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
+
+        packagesToExport = await studioService.getExportPackagesWithStudioData(packagesToExport, false);
+
+        this.exportListOfPackages(packagesToExport);
+    }
+
+    public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string) : Promise<void> {
+        const packagesByVariableValue = await batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
+        packagesByVariableValue.forEach(pkg => {
+            logger.info(`${pkg.name} - Key: "${pkg.key}"`)
+        });
+    }
+
     private exportListOfPackages(packages: PackageExportTransport[]): void {
         const filename = uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(packages), filename);
@@ -154,21 +169,6 @@ class BatchImportExportService {
             return (parse(entry.getData().toString()));
         }
         return null;
-    }
-
-    public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<void>  {
-        let packagesToExport = await batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
-
-        packagesToExport = await studioService.getExportPackagesWithStudioData(packagesToExport, false);
-
-        this.exportListOfPackages(packagesToExport);
-    }
-
-    public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string) : Promise<void> {
-        const packagesByVariableValue = await batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
-        packagesByVariableValue.forEach(pkg => {
-            logger.info(`${pkg.name} - Key: "${pkg.key}"`)
-        });
     }
 }
 
