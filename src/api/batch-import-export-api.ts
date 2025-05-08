@@ -21,7 +21,7 @@ class BatchImportExportApi {
         });
     }
 
-    public findActivePackagesByVariableValue(flavors: string[], variableValue:string, variableType:string): Promise<PackageExportTransport[]> {
+    public findActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         queryParams.set("variableValue", variableValue);
