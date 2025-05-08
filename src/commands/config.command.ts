@@ -37,7 +37,7 @@ export class ConfigCommand {
         return diffService.diffPackages(file, hasChanges, jsonResponse);
     }
 
-    private async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue:string, variableType:string): Promise<void> {
+    private async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue: string, variableType: string): Promise<void> {
         if (jsonResponse) {
             await batchImportExportService.findAndExportListOfActivePackagesByVariableValue(flavors ?? [], variableValue, variableType )
         } else {
