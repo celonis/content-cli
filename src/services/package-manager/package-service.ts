@@ -32,7 +32,6 @@ class PackageService {
         nodes.forEach(node => {
             logger.info(`${node.name} - Key: "${node.key}"`);
         });
-        logger.info(`Found ${nodes.length} packages`);
     }
 
     public async findAndExportListOfAllPackages(includeDependencies: boolean, packageKeys: string[]): Promise<void> {
