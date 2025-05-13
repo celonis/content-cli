@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 
-//const logProc = require('why-is-node-running')
-
 import semverSatisfies = require("semver/functions/satisfies");
-import { VersionUtils } from "./util/version";
-import { logger } from "./util/logger";
-import { Configurator, ModuleHandler } from "./core/module-handler";
+import { VersionUtils } from "../util/version";
+import { logger } from "../util/logger";
 import { Command } from "commander";
-import { Context } from "./core/cli-context";
+import { Configurator, ModuleHandler } from "./core/command/module-handler";
+import { Context } from "./core/command/cli-context";
 
 /**
- * Celonis Content CLI.
+ * In-progress version of Content CLI.
  * 
  * This is the main entry point for the CLI.
  */
-
 
 // Check if the Node.js version satisfies the minimum requirements
 const requiredVersion = ">=10.10.0";
@@ -33,9 +30,8 @@ program.option("-p, --profile [profile]");
 program.option("--debug", "Print debug messages", false);
 program.parseOptions(process.argv);
 
-// go for it...
 if (!program.opts().quietmode) {
-    console.log(`Celonis CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
+    console.log(`Content CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
     console.log();
 }
 
@@ -56,7 +52,6 @@ function configureRootCommands(configurator: Configurator) {
 }
 
 async function run() {
-
     let context = new Context(program.opts());
     await context.init();
 
@@ -75,14 +70,8 @@ async function run() {
     } catch (error) {
         logger.error(`An unexpected error occured: ${error}`);
     }
-
-    /* -- Uncomment the below to find out why the process does not exit...
-    setTimeout(() => {
-        console.error("Node is still running. Active Handles:");
-        logProc(); // Log details about active handles.
-   }, 5000); // Wait 5 seconds before logging, adjust as needed
-   */
 }
+
 run();
 
 // catch uncaught exceptions

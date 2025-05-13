@@ -1,7 +1,7 @@
-import { ProfileService } from "../services/profile.service";
-import { Profile } from "../interfaces/profile.interface";
-import { logger } from "../util/logger";
-import { HttpClient } from "./http-client";
+import { HttpClient } from "../http/http-client";
+import {ProfileService} from "../profile/profile.service";
+import {logger} from "../utils/logger";
+import {Profile} from "../profile/profile.interface";
 
 /**
  * The execution context object is passed to the modules to access

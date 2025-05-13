@@ -3,20 +3,18 @@
  */
 
 import { Command, OptionValues } from "commander";
-import { CommandConfig, Configurator, IModule } from "../../core/module-handler";
-import { logger } from "../../util/logger";
-import { Context } from "../../core/cli-context";
-import { ProfileCommand } from "./profile.command";
+import { Configurator, IModule } from "../../core/command/module-handler";
+import { logger } from "../../core/utils/logger";
+import { Context } from "../../core/command/cli-context";
+import { ProfileCommandService } from "./profile-command.service";
 
-class ProfileModule implements IModule {
+class ProfileModule extends IModule {
 
     register(context: Context, configurator: Configurator) {
         
-        let command = configurator.command('profile');
-        command.description('Manage profiles required to access a system.')
-               .action(this.showHelp); // action if no command is provided
+        let command = configurator.command("profile");
+        command.description("Manage profiles required to access a system.");
 
-        // let's add a subcommand
         command.command("list")
                 .description("Command to list all stored profiles")
                 .action(this.listProfiles);
@@ -29,25 +27,20 @@ class ProfileModule implements IModule {
         command.command("default <profile>")
                 .description("Command to set a profile as default")
                 .action(this.defaultProfile);
-                
     }
 
     async defaultProfile(context: Context, command: Command) {
         let profile = command.args[0];
-        await new ProfileCommand().makeDefaultProfile(profile);
+        await new ProfileCommandService().makeDefaultProfile(profile);
     }
 
     async createProfile(context: Context, command: Command, options: OptionValues) {
-        await new ProfileCommand().createProfile(options.setAsDefault);
+        await new ProfileCommandService().createProfile(options.setAsDefault);
     }
 
     async listProfiles(context: Context, command: Command) {
         logger.debug(`List profiles`);
-        await new ProfileCommand().listProfiles();
-    }
-
-    showHelp(context: Context, command: Command) {
-        command.outputHelp();
+        await new ProfileCommandService().listProfiles();
     }
 }
 

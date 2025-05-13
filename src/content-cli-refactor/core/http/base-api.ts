@@ -2,9 +2,8 @@
  * Base API implementation, which provides basic error handling for common problems.
  */
 
-import { logger } from "../util/logger";
+import { logger } from "../utils/logger";
 import { HttpClient } from "./http-client";
-
 
 export class ForbiddenError extends Error {
     constructor(message = 'Access Forbidden') {

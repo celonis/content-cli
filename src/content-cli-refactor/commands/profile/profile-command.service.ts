@@ -1,10 +1,10 @@
 import { QuestionService } from "./question.service";
-import {Profile, ProfileType} from "../../interfaces/profile.interface";
-import { ProfileService } from "../../services/profile.service";
-import { ProfileValidator } from "../../validators/profile.validator";
-import { FatalError, logger } from "../../util/logger";
+import { ProfileService } from "../../core/profile/profile.service";
+import { FatalError, logger } from "../../core/utils/logger";
+import {Profile, ProfileType} from "../../core/profile/profile.interface";
+import {ProfileValidator} from "../../core/profile/profile.validator";
 
-export class ProfileCommand {
+export class ProfileCommandService {
     private profileService = new ProfileService();
 
     public async createProfile(setAsDefault: boolean): Promise<void> {

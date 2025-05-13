@@ -1,11 +1,15 @@
-import { logger } from "../util/logger";
+import { logger } from "../../../util/logger";
 import path = require("path");
 import * as fs from "fs";
 import { Command, CommandOptions, OptionValues } from "commander";
 import { Context } from "./cli-context";
 
-export interface IModule {
-    register(context: Context, commandConfig: Configurator);
+export abstract class IModule {
+    abstract register(context: Context, commandConfig: Configurator);
+
+    showHelp(context: Context, command: Command) {
+        command.outputHelp();
+    }
 }
 
 export interface IModuleConstructor {
@@ -30,8 +34,7 @@ export class ModuleHandler {
      * @param {any} rootPath - __dirname when invoked from the main entry file
      */
     discoverAndRegisterModules(rootPath) {
-        let modulesDirPath = path.resolve(rootPath, 'modules');
-        logger.debug(`Scanning for modules in: ${modulesDirPath}`);
+        let modulesDirPath = path.resolve(rootPath, "commands");
 
         try {
             const moduleFolders = fs.readdirSync(modulesDirPath, { withFileTypes: true });
@@ -43,15 +46,14 @@ export class ModuleHandler {
                     // the specification allows different variants, so we test for each.
                     const fileVariants = [
                         `${moduleFolderName}-module.js`,
-                        'module.js',
-                        'index.js'
+                        'module.js'
                     ];
 
                     // Calculate path relative to *this file's location in dist*
                     let potentialModuleJsPath;
                     for (let name of fileVariants) {
                         potentialModuleJsPath = path.resolve(
-                            rootPath, 'modules', moduleFolderName,
+                            rootPath, 'commands', moduleFolderName,
                            name // Look for the compiled JS file
                         );
                         try {
@@ -112,7 +114,7 @@ export class ModuleHandler {
             }
         } catch (error: any) {
             if (error.code === 'ENOENT') {
-                logger.error(`Modules directory not found relative to JS output: ${path.resolve(path.dirname(__filename), 'modules')}`);
+                logger.error(`Modules directory not found relative to JS output: ${path.resolve(path.dirname(__filename), "content-cli-refactor/commands")}`);
             } else {
             logger.error('Failed to read modules directory:', error);
             }
@@ -137,8 +139,7 @@ export class Configurator {
 
     /**
      * Get or create a root level command.
-     * @param nameAndArgs 
-     * @param opts 
+     * @param name
      * @returns 
      */
     command(name: string) : CommandConfig {

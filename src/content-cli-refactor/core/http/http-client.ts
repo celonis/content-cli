@@ -1,11 +1,11 @@
-import { AuthenticationType, Profile } from "../interfaces/profile.interface";
-import { FatalError, logger } from "../util/logger";
-import {TracingUtils} from "../util/tracing";
-import {VersionUtils} from "../util/version";
 import {AxiosResponse, RawAxiosRequestHeaders} from "axios";
 import * as FormData from "form-data";
-import { AxiosInitializer } from "../util/axios-initializer";
-import { Context } from "./cli-context";
+import { Context } from "../command/cli-context";
+import {AxiosInitializer} from "./axios-initializer";
+import {FatalError, logger} from "../utils/logger";
+import {TracingUtils} from "./tracing";
+import {AuthenticationType, Profile} from "../profile/profile.interface";
+import {VersionUtils} from "../utils/version";
 
 /**
  * Http client configured based upon the CLI context. It will authenticate
