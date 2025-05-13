@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./content-cli"
+    },
+    {
+      "path": "./shared"
+    },
+    {
+      "path": "./commands/pacman"
+    }
+  ]
+}

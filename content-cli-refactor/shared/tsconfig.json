@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
+    },
+  ],
+  "compilerOptions": {
+    "paths": {
+      "@content-cli-refactor/shared/*": ["shared/*"]
+    },
+  }
+}
