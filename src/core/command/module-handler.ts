@@ -43,15 +43,13 @@ export class ModuleHandler {
                 if (dirent.isDirectory()) {
                     const moduleFolderName = dirent.name;
 
-                    // the specification allows different variants, so we test for each.
-                    const fileVariants = [
-                        `${moduleFolderName}-module.js`,
-                        'module.js'
+                    const moduleFileNames = [
+                        "module.js"
                     ];
 
                     // Calculate path relative to *this file's location in dist*
                     let potentialModuleJsPath;
-                    for (let name of fileVariants) {
+                    for (let name of moduleFileNames) {
                         potentialModuleJsPath = path.resolve(
                             rootPath, 'commands', moduleFolderName,
                            name // Look for the compiled JS file

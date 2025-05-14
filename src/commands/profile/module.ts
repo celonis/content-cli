@@ -8,10 +8,10 @@ import { logger } from "../../core/utils/logger";
 import { Context } from "../../core/command/cli-context";
 import { ProfileCommandService } from "./profile-command.service";
 
-class ProfileModule extends IModule {
+class Module extends IModule {
 
     register(context: Context, configurator: Configurator) {
-        
+
         let command = configurator.command("profile");
         command.description("Manage profiles required to access a system.");
 
@@ -44,4 +44,4 @@ class ProfileModule extends IModule {
     }
 }
 
-export = ProfileModule;
+export = Module;
