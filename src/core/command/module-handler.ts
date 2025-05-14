@@ -1,8 +1,8 @@
-import { logger } from "../../../util/logger";
 import path = require("path");
 import * as fs from "fs";
 import { Command, CommandOptions, OptionValues } from "commander";
 import { Context } from "./cli-context";
+import { logger } from "../utils/logger";
 
 export abstract class IModule {
     abstract register(context: Context, commandConfig: Configurator);

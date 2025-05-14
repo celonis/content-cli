@@ -1,10 +1,19 @@
 #!/usr/bin/env node
 
-import { logger } from "./util/logger";
 import semverSatisfies = require("semver/functions/satisfies");
-import { program } from "./util/program";
-import {VersionUtils} from "./util/version";
+import { Command } from "commander";
+import { Configurator, ModuleHandler } from "./core/command/module-handler";
+import { Context } from "./core/command/cli-context";
+import { VersionUtils } from "./core/utils/version";
+import { logger } from "./core/utils/logger";
 
+/**
+ * Celonis Content CLI.
+ * 
+ * This is the main entry point for the CLI.
+ */
+
+// Check if the Node.js version satisfies the minimum requirements
 const requiredVersion = ">=10.10.0";
 if (!semverSatisfies(process.version, requiredVersion)) {
     logger.error(
@@ -13,32 +22,62 @@ if (!semverSatisfies(process.version, requiredVersion)) {
     process.exit(1);
 }
 
-program.command("profile", "Commands related to profiles.");
-
-program.command("pull", "Commands to pull content.");
-
-program.command("export", "Commands to export content.")
-program.command("import", "Commands to import content.")
-
-program.command("push", "Commands to push content.");
-
-program.command("update", "Commands to update content.");
-
-program.command("list", "Commands to list content.").alias("ls");
-
-program.command("get", "Commands to get configuration properties.");
-
-program.command("set", "Commands to set configuration properties.");
-
-program.command("config", "Commands related to config management.")
-
-program.command("analyze", "Commands to analyze assets dependencies.");
-
+// Global configuration options
+const program: Command = new Command();
 program.version(VersionUtils.getCurrentCliVersion());
-program.parse(process.argv);
+program.option("-q, --quietmode", "Reduce output to a minimum", false);
+program.option("-p, --profile [profile]");
+program.option("--debug", "Print debug messages", false);
+program.parseOptions(process.argv);
 
-if (!process.argv.slice(2).length) {
-    program.outputHelp();
-    process.exit(1);
+if (!program.opts().quietmode) {
+    console.log(`Content CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
+    console.log();
 }
 
+if (program.opts().debug) {
+    logger.transports.forEach(t => {
+        t.level = 'debug';
+    });
+}
+
+/** 
+ * To support the legacy command structure, we have to configure some root commands
+ * that the individual modules will extend.
+ */ 
+function configureRootCommands(configurator: Configurator) {
+    configurator.command("list")
+        .description("Commands to list content.")
+        .alias("ls");
+}
+
+async function run() {
+    let context = new Context(program.opts());
+    await context.init();
+
+    let moduleHandler = new ModuleHandler(program, context);
+    
+    configureRootCommands(moduleHandler.configurator);
+
+    moduleHandler.discoverAndRegisterModules(__dirname);
+    
+    if (!process.argv.slice(2).length) {
+        program.outputHelp();
+    }
+    
+    try {
+        program.parse(process.argv);
+    } catch (error) {
+        logger.error(`An unexpected error occured: ${error}`);
+    }
+}
+
+run();
+
+// catch uncaught exceptions
+process.on('uncaughtException', (error: Error, origin: NodeJS.UncaughtExceptionOrigin) => {
+    console.error(`\n💥 UNCAUGHT EXCEPTION!\n`);
+    console.error('Error:', error);
+    console.error('Origin:', origin);
+    process.exit(1);
+});
