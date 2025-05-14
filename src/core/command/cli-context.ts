@@ -38,20 +38,19 @@ export class Context {
             if (!profileName) {
                 this.log.debug(`A default profile is not configured.`);
             }
-        } 
-        if (profileName) {
-            try {
-                this.profile = await this.profileService.findProfile(profileName);
-                this.profileName = profileName;
-                this.log.info(`Using profile ${profileName}`);
-            } catch (err) {
-                // TODO - The error message is incorrect, overriding it here for the time being. 
-                // change it though after the ProfileService is completely migrated/fixed.
-                //this.log.error(err);
-                this.log.error(`The profile ${profileName} cannot be loaded.`);
-                this.profile = undefined;
-                this.profileName = undefined;
-            }
+            return;
+        }
+        try {
+            this.profile = await this.profileService.findProfile(profileName);
+            this.profileName = profileName;
+            this.log.info(`Using profile ${profileName}`);
+        } catch (err) {
+            // TODO - The error message is incorrect, overriding it here for the time being.
+            // change it though after the ProfileService is completely migrated/fixed.
+            //this.log.error(err);
+            this.log.error(`The profile ${profileName} cannot be loaded.`);
+            this.profile = undefined;
+            this.profileName = undefined;
         }
     }
 
