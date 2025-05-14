@@ -9,7 +9,8 @@ const config: Config.InitialOptions = {
         "^\\./../package.json$": "<rootDir>/tests/mocks/package.json",
     },
     setupFilesAfterEnv: [
-        "<rootDir>/tests/jest.setup.ts",
+        // "<rootDir>/tests/jest.setup.ts",
+        // Uncomment after setting up tests
     ],
     globals: {
         "ts-jest": {
