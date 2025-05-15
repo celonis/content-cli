@@ -43,24 +43,19 @@ export class ModuleHandler {
                 if (dirent.isDirectory()) {
                     const moduleFolderName = dirent.name;
 
-                    const moduleFileNames = [
-                        "module.js"
-                    ];
+                    const moduleFileName = "module.js";
 
                     // Calculate path relative to *this file's location in dist*
                     let potentialModuleJsPath;
-                    for (let name of moduleFileNames) {
-                        potentialModuleJsPath = path.resolve(
-                            rootPath, 'commands', moduleFolderName,
-                           name // Look for the compiled JS file
-                        );
-                        try {
-                            fs.accessSync(potentialModuleJsPath);
-                            break; // use this variant
-                        } catch (err) {
-                            // apparently the file does not exist of is not accessible
-                            potentialModuleJsPath = null;
-                        }
+                    potentialModuleJsPath = path.resolve(
+                        rootPath, 'commands', moduleFolderName,
+                        moduleFileName // Look for the compiled JS file
+                    );
+                    try {
+                        fs.accessSync(potentialModuleJsPath);
+                    } catch (err) {
+                        // apparently the file does not exist of is not accessible
+                        potentialModuleJsPath = null;
                     }
 
                     if (!potentialModuleJsPath) {
@@ -112,7 +107,7 @@ export class ModuleHandler {
             }
         } catch (error: any) {
             if (error.code === 'ENOENT') {
-                logger.error(`Modules directory not found relative to JS output: ${path.resolve(path.dirname(__filename), "content-cli-refactor/commands")}`);
+                logger.error(`Modules directory not found relative to JS output: ${path.resolve(path.dirname(__filename), "commands")}`);
             } else {
             logger.error('Failed to read modules directory:', error);
             }
