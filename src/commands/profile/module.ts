@@ -11,9 +11,8 @@ import { ProfileCommandService } from "./profile-command.service";
 class Module extends IModule {
 
     register(context: Context, configurator: Configurator) {
-
-        let command = configurator.command("profile");
-        command.description("Manage profiles required to access a system.");
+        const command = configurator.command("profile")
+                .description("Manage profiles required to access a system.");
 
         command.command("list")
                 .description("Command to list all stored profiles")
