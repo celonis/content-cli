@@ -1,5 +1,5 @@
 /**
- * Commands related to the Pacman area.
+ * Commands related to Celonis configuration management.
  */
 
 import { Configurator, IModule } from "../../core/command/module-handler";
