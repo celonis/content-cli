@@ -179,15 +179,11 @@ export class HttpClient {
     }
 
     private handleError(err: any, resolve, reject): void {
-        reject(err);
-        /*
-        console.log(err);
         if (err.response) {
             this.handleResponse(err.response, resolve, reject);
         } else {
-            reject(err.message);
+            reject(err);
         }
-        */
     }
 
     private checkBadRequest(statusCode: number): boolean {

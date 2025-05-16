@@ -1,4 +1,4 @@
-import { QuestionService } from "./question.service";
+import { QuestionService } from "../../core/utils/question.service";
 import { ProfileService } from "../../core/profile/profile.service";
 import { FatalError, logger } from "../../core/utils/logger";
 import {Profile, ProfileType} from "../../core/profile/profile.interface";
