@@ -1,12 +1,12 @@
-*                               @celonis/astro
+*                                                 @celonis/astro
 
-#/*                              @celonis/astro
-#/src                            @celonis/astro
-#/src/core                       @celonis/astro
-#/src/commands/pacman/           @celonis/astro
-#/src/commands/profile/          @celonis/astro
-#/src/commands/action-flows/     action-flow team
-#/src/commands/analysis/         filter and foundation team
-#/src/commands/cpm4/             cpm4 team
-#/src/commands/data-pipeline/    data-management team
-#/src/commands/studio/           @celonis/navi
+#/*                                                @celonis/astro
+#/src                                              @celonis/astro
+#/src/core                                         @celonis/astro
+#/src/commands/configuration-management/           @celonis/astro
+#/src/commands/profile/                            @celonis/astro
+#/src/commands/action-flows/                       action-flow team
+#/src/commands/analysis/                           filter and foundation team
+#/src/commands/cpm4/                               cpm4 team
+#/src/commands/data-pipeline/                      data-management team
+#/src/commands/studio/                             @celonis/navi
