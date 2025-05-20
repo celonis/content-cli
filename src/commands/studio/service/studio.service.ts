@@ -6,7 +6,7 @@ import {
     PackageExportTransport, PackageKeyAndVersionPair,
     StudioPackageManifest, VariableExportTransport,
     VariableManifestTransport,
-} from "../interfaces/package-export.interfaces";
+} from "../../configuration-management/interfaces/package-export.interfaces";
 import { Context } from "../../../core/command/cli-context";
 import { PackageApi } from "../api/package-api";
 import {
@@ -17,10 +17,10 @@ import {
 import { NodeApi } from "../api/node-api";
 import { DataModelService } from "./data-model.service";
 import { SpaceTransport } from "../interfaces/space.interface";
-import { VariableService } from "./variable.service";
+import { StudioVariableService } from "./studio-variable.service";
 import { SpaceApi } from "../api/space-api";
-import { VariablesApi } from "../api/variables-api";
-import { BatchExportImportConstants } from "../interfaces/batch-export-import.constants";
+import { StudioVariablesApi } from "../api/studio-variables-api";
+import { BatchExportImportConstants } from "../../configuration-management/interfaces/batch-export-import.constants";
 import { SpaceService } from "./space.service";
 import { parse, stringify } from "../../../core/utils/json";
 
@@ -29,21 +29,21 @@ export class StudioService {
     private packageApi: PackageApi;
     private nodeApi: NodeApi;
     private spaceApi: SpaceApi;
-    private variablesApi: VariablesApi;
+    private variablesApi: StudioVariablesApi;
 
     private spaceService: SpaceService;
     private dataModelService: DataModelService;
-    private variableService: VariableService;
+    private variableService: StudioVariableService;
 
     constructor(context: Context) {
         this.packageApi = new PackageApi(context);
         this.nodeApi = new NodeApi(context);
         this.spaceApi = new SpaceApi(context);
-        this.variablesApi = new VariablesApi(context);
+        this.variablesApi = new StudioVariablesApi(context);
 
         this.spaceService = new SpaceService(context);
         this.dataModelService = new DataModelService(context);
-        this.variableService = new VariableService(context);
+        this.variableService = new StudioVariableService(context);
     }
 
     public async getExportPackagesWithStudioData(packagesToExport: PackageExportTransport[], withDependencies: boolean): Promise<PackageExportTransport[]> {

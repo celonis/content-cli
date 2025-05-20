@@ -1,5 +1,9 @@
-import {StudioComputeNodeDescriptor, VariableDefinition, VariablesAssignments} from "./package-manager.interfaces";
-import { SpaceTransport } from "./space.interface";
+import { SpaceTransport } from "../../studio/interfaces/space.interface";
+import {
+    StudioComputeNodeDescriptor,
+    VariableDefinition,
+    VariablesAssignments,
+} from "../../studio/interfaces/package-manager.interfaces";
 
 export interface DependencyTransport {
     key: string;
