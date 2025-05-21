@@ -6,6 +6,7 @@
 #/src/commands/configuration-management/           @celonis/astro
 #/src/commands/profile/                            @celonis/astro
 /src/commands/action-flows/                       @celonis/process-automation
+/tests/commands/action-flows/                     @celonis/process-automation
 /src/commands/analysis/                           @celonis/process-analytics
 /src/commands/cpm4/                               @celonis/cpm4
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
