@@ -7,6 +7,6 @@
 #/src/commands/profile/                            @celonis/astro
 #/src/commands/action-flows/                       action-flow team
 #/src/commands/analysis/                           filter and foundation team
-#/src/commands/cpm4/                               cpm4 team
+/src/commands/cpm4/                               @celonis/cpm4
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
 /src/commands/studio/                             @celonis/navi
