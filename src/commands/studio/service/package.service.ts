@@ -23,7 +23,7 @@ import { SpaceTransport } from "../interfaces/space.interface";
 import { NodeApi } from "../api/node-api";
 import { PackageDependenciesApi } from "../api/package-dependencies-api";
 import { DataModelService } from "./data-model.service";
-import { VariableService } from "./variable.service";
+import { StudioVariableService } from "./studio-variable.service";
 import { SpaceService } from "./space.service";
 
 export class PackageService {
@@ -34,7 +34,7 @@ export class PackageService {
     private packageDependenciesApi: PackageDependenciesApi;
 
     private dataModelService: DataModelService;
-    private variableService: VariableService;
+    private variableService: StudioVariableService;
     private spaceService: SpaceService;
 
     constructor(context: Context) {
@@ -42,7 +42,7 @@ export class PackageService {
         this.nodeApi = new NodeApi(context);
         this.packageDependenciesApi = new PackageDependenciesApi(context);
         this.dataModelService = new DataModelService(context);
-        this.variableService = new VariableService(context);
+        this.variableService = new StudioVariableService(context);
         this.spaceService = new SpaceService(context);
     }
 

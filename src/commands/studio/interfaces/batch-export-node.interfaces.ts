@@ -16,13 +16,3 @@ export interface BatchExportNodeTransport extends ContentNodeTransport {
     variables?: VariablesAssignments[];
     space?: SpaceTransport;
 }
-
-export interface PackageAndAssetTransport {
-    rootNode: ContentNodeTransport,
-    nodes: ContentNodeTransport[]
-}
-
-export interface SpaceMappingTransport {
-    packageKey: string,
-    spaceId: string
-}
