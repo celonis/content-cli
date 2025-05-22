@@ -1,7 +1,7 @@
 // Mock the modules using Jest
 import * as fs from "fs";
 import { mockAxios } from "./utls/http-requests-mock";
-import { TestTransport } from "./utls/test-transport";
+import { LoggingTestTransport } from "./utls/logging-test-transport";
 import { logger } from "../src/core/utils/logger";
 
 mockAxios();
@@ -17,11 +17,11 @@ afterEach(() => {
     jest.clearAllMocks();
 });
 
-let testTransport: TestTransport;
+let testTransport: LoggingTestTransport;
 
 beforeEach(() => {
     jest.clearAllMocks();
-    testTransport = new TestTransport({});
+    testTransport = new LoggingTestTransport({});
     logger.add(testTransport);
 });
 

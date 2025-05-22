@@ -1,7 +1,7 @@
 import * as Transport from "winston-transport";
 import {LogEntry} from "winston";
 
-export class TestTransport extends Transport {
+export class LoggingTestTransport extends Transport {
     public logMessages: LogEntry[] = [];
 
     constructor(options: any) {
