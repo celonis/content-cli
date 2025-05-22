@@ -3,11 +3,11 @@ import * as fs from "fs";
 import { parse, stringify } from "yaml";
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { ActionFlowCommandService } from "../../../src/commands/action-flows/action-flow/action-flow-command.service";
-import { mockWriteSync, testTransport } from "../../jest.setup";
+import { loggingTestTransport, mockWriteSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { mockExistsSyncOnce, mockReadFileSync } from "../../utls/fs-mock-utils";
-import { mockContext } from "../../utls/context-mock";
 import { ActionFlowService } from "../../../src/commands/action-flows/action-flow/action-flow.service";
+import { testContext } from "../../utls/test-context";
 
 describe("Export action-flows", () => {
 
@@ -79,10 +79,10 @@ describe("Export action-flows", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/export/assets`, zipExport.toBuffer());
 
-        await new ActionFlowCommandService(mockContext).exportActionFlows(packageId, null);
+        await new ActionFlowCommandService(testContext).exportActionFlows(packageId, null);
 
-        expect(testTransport.logMessages.length).toBe(1);
-        const expectedZipFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        const expectedZipFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedZipFileName, expect.anything(), expect.anything());
         expect(mockWriteSync).toHaveBeenCalled();
 
@@ -137,10 +137,10 @@ describe("Export action-flows", () => {
         zipExport.addFile(actionFlowFileName, Buffer.from(stringify(actionFlowConfig)));
 
         mockAxiosGet(`https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/export/assets`, zipExport.toBuffer());
-        await new ActionFlowCommandService(mockContext).exportActionFlows(packageId, ActionFlowService.METADATA_FILE_NAME);
+        await new ActionFlowCommandService(testContext).exportActionFlows(packageId, ActionFlowService.METADATA_FILE_NAME);
 
-        expect(testTransport.logMessages.length).toBe(1);
-        const expectedZipFileName = testTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        const expectedZipFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedZipFileName, expect.anything(), expect.anything());
         expect(mockWriteSync).toHaveBeenCalled();
 
@@ -172,7 +172,7 @@ describe("Export action-flows", () => {
         });
 
         try {
-            await new ActionFlowCommandService(mockContext).exportActionFlows(packageId, ActionFlowService.METADATA_FILE_NAME);
+            await new ActionFlowCommandService(testContext).exportActionFlows(packageId, ActionFlowService.METADATA_FILE_NAME);
         } catch (e) {
             expect(e).toBe(error);
             expect(process.exit).toHaveBeenCalledWith(1);
