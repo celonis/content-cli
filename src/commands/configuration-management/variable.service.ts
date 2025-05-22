@@ -16,6 +16,7 @@ export class VariableService {
 
     constructor(context: Context) {
         this.batchImportExportApi = new BatchImportExportApi(context);
+        this.variableAssignmentCandidatesApi = new VariableAssignmentCandidatesApi(context);
         this.studioService = new StudioService(context);
     }
 
