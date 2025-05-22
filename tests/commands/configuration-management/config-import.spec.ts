@@ -316,5 +316,6 @@ describe("Config import", () => {
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
 
-        expect(mockedPostRequestBodyByUrl.get(assignVariablesUrl)).toEqual(JSON.stringify([variableAssignment]));    })
+        expect(mockedPostRequestBodyByUrl.get(assignVariablesUrl)).toEqual(JSON.stringify([variableAssignment]));
+    })
 })
