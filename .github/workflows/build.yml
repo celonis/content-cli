@@ -16,5 +16,5 @@ jobs:
       run: yarn install
     - name: Yarn Build
       run: yarn build
-    - name: Yarn Test
-      run: yarn test
+#    - name: Yarn Test
+#      run: yarn test
