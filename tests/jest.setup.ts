@@ -17,12 +17,12 @@ afterEach(() => {
     jest.clearAllMocks();
 });
 
-let testTransport: LoggingTestTransport;
+let loggingTestTransport: LoggingTestTransport;
 
 beforeEach(() => {
     jest.clearAllMocks();
-    testTransport = new LoggingTestTransport({});
-    logger.add(testTransport);
+    loggingTestTransport = new LoggingTestTransport({});
+    logger.add(loggingTestTransport);
 });
 
-export {testTransport, mockWriteFileSync, mockWriteSync};
+export {loggingTestTransport, mockWriteFileSync, mockWriteSync};
