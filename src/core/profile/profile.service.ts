@@ -26,6 +26,7 @@ export class ProfileService {
 
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
+            this.checkIfMissingProfile(profileName, reject);
             try {
                 if (process.env.TEAM_URL && process.env.API_TOKEN) {
                     resolve(this.buildProfileFromEnvVariables());
@@ -39,9 +40,7 @@ export class ProfileService {
                         .then(() => resolve(profile));
                 }
             } catch (e) {
-                reject(
-                    "No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables"
-                );
+                reject(`The profile ${profileName} couldn't be resolved.`);
             }
         });
     }
@@ -296,6 +295,12 @@ export class ProfileService {
                 reject();
             })
         })
+    }
+
+    private checkIfMissingProfile(profileName: string, reject: any): void {
+        if (!profileName && (!process.env.TEAM_URL || !process.env.API_TOKEN)) {
+            reject("No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables");
+        }
     }
 }
 
