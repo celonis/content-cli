@@ -3,7 +3,13 @@ import { mockCreateReadStream, mockExistsSync, mockReadFileSync } from "../../ut
 import {
     PackageManifestTransport, PostPackageImportData, StudioPackageManifest,
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
-import { mockAxiosGet, mockAxiosPost, mockAxiosPut, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
+import {
+    mockAxiosGet,
+    mockAxiosPost,
+    mockAxiosPut,
+    mockedAxiosInstance,
+    mockedPostRequestBodyByUrl,
+} from "../../utls/http-requests-mock";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
@@ -17,7 +23,6 @@ import {
 } from "../../../src/commands/configuration-management/interfaces/batch-export-import.constants";
 import { ConfigUtils } from "../../utls/config-utils";
 import { stringify } from "../../../src/core/utils/json";
-import { PackageApi } from "../../../src/commands/studio/api/package-api";
 
 describe("Config import", () => {
 
@@ -164,13 +169,11 @@ describe("Config import", () => {
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
-        const movePackageToSpaceSpy = jest.spyOn(PackageApi, "movePackageToSpace");
 
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
-        expect(movePackageToSpaceSpy).toBeCalledTimes(1)
-        expect(movePackageToSpaceSpy).toHaveBeenCalledWith("node-id", "spaceId");
+        expect(mockedAxiosInstance.put).toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/spaceId", expect.anything(), expect.anything());
     })
 
     it("Should batch import configs & map space ID by finding space with name as specified in manifest file", async () => {
@@ -203,13 +206,12 @@ describe("Config import", () => {
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
-        const createSpaceSpy = jest.spyOn(spaceApi, "createSpace");
 
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
-        expect(createSpaceSpy).toBeCalledTimes(0)
+        expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
     })
 
     it("Should batch import configs & create new space", async () => {
@@ -251,13 +253,12 @@ describe("Config import", () => {
         }];
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
-        const createSpaceSpy = jest.spyOn(spaceApi, "createSpace");
 
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
-        expect(createSpaceSpy).toBeCalledTimes(1)
+        expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
     })
 
     it("Should assign studio runtime variable values after import", async () => {
