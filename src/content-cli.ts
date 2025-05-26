@@ -28,6 +28,7 @@ program.version(VersionUtils.getCurrentCliVersion());
 program.option("-q, --quietmode", "Reduce output to a minimum", false);
 program.option("-p, --profile [profile]");
 program.option("--debug", "Print debug messages", false);
+program.option("--dev", "Development Mode", false);
 program.parseOptions(process.argv);
 
 if (!program.opts().quietmode) {
@@ -60,11 +61,7 @@ async function run() {
     
     configureRootCommands(moduleHandler.configurator);
 
-    moduleHandler.discoverAndRegisterModules(__dirname);
-    
-    if (!process.argv.slice(2).length) {
-        program.outputHelp();
-    }
+    moduleHandler.discoverAndRegisterModules(__dirname, program.opts().dev);
     
     try {
         program.parse(process.argv);

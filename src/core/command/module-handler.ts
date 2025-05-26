@@ -32,8 +32,9 @@ export class ModuleHandler {
      * instantiates the default exported class, and calls its register method.
      *
      * @param {any} rootPath - __dirname when invoked from the main entry file
+     * @param devMode        - Use uncompiled modules for development debug mode
      */
-    discoverAndRegisterModules(rootPath) {
+    discoverAndRegisterModules(rootPath, devMode = false) {
         let modulesDirPath = path.resolve(rootPath, "commands");
 
         try {
@@ -43,7 +44,7 @@ export class ModuleHandler {
                 if (dirent.isDirectory()) {
                     const moduleFolderName = dirent.name;
 
-                    const moduleFileName = "module.js";
+                    const moduleFileName = devMode ? "module.ts" : "module.js";
 
                     // Calculate path relative to *this file's location in dist*
                     let potentialModuleJsPath;
