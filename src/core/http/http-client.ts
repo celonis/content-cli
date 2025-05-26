@@ -84,12 +84,18 @@ export class HttpClient {
     }
 
     public async post(url: string, body: any): Promise<any> {
+        const contentType = body instanceof FormData
+            ? "multipart/form-data"
+            : "application/json;charset=utf-8";
+        const requestBody = typeof body === "string" || body instanceof String || body instanceof FormData
+            ? body
+            : JSON.stringify(body)
         return new Promise<any>((resolve, reject) => {
             this.axios.post(
                 this.resolveUrl(url),
-                typeof body === "string" || body instanceof String ? body : JSON.stringify(body),
+                requestBody,
                 {
-                    headers: this.buildHeaders("application/json;charset=utf-8")
+                    headers: this.buildHeaders(contentType)
                 }
             ).then(response => {
                 this.handleResponse(response, resolve, reject);
