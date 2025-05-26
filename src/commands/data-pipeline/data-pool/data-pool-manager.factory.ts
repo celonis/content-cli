@@ -1,7 +1,7 @@
 import * as path from "path";
 import { DataPoolManager } from "./data-pool.manager";
 import { FatalError, logger } from "../../../core/utils/logger";
-import * as fs from "node:fs";
+import * as fs from "fs";
 import { Context } from "../../../core/command/cli-context";
 
 export class DataPoolManagerFactory {

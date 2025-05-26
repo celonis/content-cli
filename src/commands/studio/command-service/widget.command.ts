@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { GracefulError, logger } from "../../../core/utils/logger";
-import * as fs from "node:fs";
+import * as fs from "fs";
 import * as path from "path";
 import { ContentService } from "../../../core/http/http-shared/content.service";
 import { Context } from "../../../core/command/cli-context";
