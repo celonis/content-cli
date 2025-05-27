@@ -37,7 +37,7 @@ export abstract class BaseManager {
     public async pullFile(): Promise<any> {
         return new Promise<void>((resolve, reject) => {
             this.httpClient
-                .getFile(this.getConfig().pullUrl)
+                .downloadFile(this.getConfig().pullUrl)
                 .then(data => {
                     const filename = this.writeStreamToFile(data);
                     logger.info(this.fileDownloadedMessage + filename);
