@@ -49,8 +49,7 @@ if (program.opts().debug) {
 function configureRootCommands(configurator: Configurator) {
     configurator.command("list")
         .description("Commands to list content.")
-        .alias("ls")
-        .action(() => program.outputHelp());
+        .alias("ls");
 }
 
 async function run() {
