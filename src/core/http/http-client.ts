@@ -31,8 +31,7 @@ export class HttpClient {
                 this.handleError(err, resolve, reject);
             })
         }).catch(e => {
-            logger.error(e);
-            throw e;
+            throw new FatalError(e);
         })
     }
 
