@@ -50,8 +50,7 @@ export const logger: Logger = winston.createLogger({
         new winston.transports.Console({
             level: 'info', 
             format: winston.format.combine(
-                winston.format.colorize(), 
-                winston.format.cli()
+                winston.format.colorize(),
             ),
         }),
         new winston.transports.File({
@@ -72,7 +71,6 @@ export const logger: Logger = winston.createLogger({
         new winston.transports.Console({
             format: winston.format.combine(
                winston.format.colorize(),
-               winston.format.cli()
            ),
         }), 
         new winston.transports.File({

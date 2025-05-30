@@ -39,7 +39,6 @@ export class DataPoolCommandService {
     }
 
     public async listDataPools(jsonResponse: boolean): Promise<any> {
-        logger.info(jsonResponse);
         if (jsonResponse) {
             await this.dataPoolService.findAndExportAllPools();
         } else {
