@@ -1,10 +1,10 @@
-import { ContentService } from "../../../core/http/http-shared/content.service";
 import { Context } from "../../../core/command/cli-context";
 import { PackageManagerFactory } from "../manager/package.manager-factory";
 import { PackageService } from "../service/package.service";
+import { BaseManagerHelper } from "../../../core/http/http-shared/base.manager.helper";
 
 export class PackageCommandService {
-    private contentService = new ContentService();
+    private baseManagerHelper = new BaseManagerHelper();
     private packageManagerFactory: PackageManagerFactory;
 
     private packageService: PackageService;
@@ -20,9 +20,7 @@ export class PackageCommandService {
         newKey: string,
         draft: boolean
     ): Promise<void> {
-        await this.contentService.pullFile(
-            this.packageManagerFactory.createPullManager(key, store, newKey, draft)
-        );
+        await this.packageManagerFactory.createPullManager(key, store, newKey, draft).pullFile();
     }
 
     public async pushPackage(
@@ -31,13 +29,12 @@ export class PackageCommandService {
         newKey: string,
         overwrite: boolean
     ): Promise<void> {
-        await this.contentService.push(
-            this.packageManagerFactory.createPushManager(spaceKey, fileName, newKey, overwrite)
-        );
+        await this.packageManagerFactory.createPushManager(spaceKey, fileName, newKey, overwrite).push();
     }
 
     public async pushPackages(spaceKey: string): Promise<void> {
-        await this.contentService.batchPush(this.packageManagerFactory.createPushManagers(spaceKey));
+        const packageManagers = this.packageManagerFactory.createPushManagers(spaceKey);
+        await this.baseManagerHelper.batchPush(packageManagers);
     }
 
     public async listPackages(jsonResponse: boolean, includeDependencies: boolean, packageKeys: string[]): Promise<void> {
