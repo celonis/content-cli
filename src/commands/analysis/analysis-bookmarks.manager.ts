@@ -45,7 +45,7 @@ export class AnalysisBookmarksManager extends BaseManager {
         return {
             pushUrl: `${AnalysisBookmarksManager.BASE_URL}/import?analysisId=${this.analysisId}`,
             pullUrl: pullUrl,
-            exportFileName: `${AnalysisBookmarksManager.ANALYSIS_BOOKMARKS_FILE_PREFIX}${this.analysisId}${".json"}`,
+            exportFileName: `${AnalysisBookmarksManager.ANALYSIS_BOOKMARKS_FILE_PREFIX}${this.analysisId}.json`,
             onPushSuccessMessage: (): string => {
                 return "Analysis Bookmarks was pushed successfully.";
             },

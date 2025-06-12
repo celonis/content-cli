@@ -20,7 +20,7 @@ export class StudioVariablesApi {
         });
     }
 
-    public getRuntimeVariableValues(packageKey: string, appMode: string): Promise<VariablesAssignments[]> {
+    public async getRuntimeVariableValues(packageKey: string, appMode: string): Promise<VariablesAssignments[]> {
         const queryParams = new URLSearchParams();
         queryParams.set("appMode", appMode);
 

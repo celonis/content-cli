@@ -8,7 +8,7 @@ import { DataPoolCommandService } from "./data-pool-command.service";
 
 export class DataPoolCommands {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const exportCommand = configurator.command("export");
         exportCommand.command("data-pool")
             .description("Command to export a data pool")
@@ -53,31 +53,31 @@ export class DataPoolCommands {
             .action(this.updateDataPool);
     }
 
-    async exportDataPool(context: Context, command: Command, options: OptionValues) {
+    private async exportDataPool(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).exportDataPool(options.id, options.outputToJsonFile);
     }
 
-    async batchImportDataPools(context: Context, command: Command, options: OptionValues) {
+    private async batchImportDataPools(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).batchImportDataPools(options.jsonFile, options.outputToJsonFile);
     }
 
-    async listDataPools(context: Context, command: Command, options: OptionValues) {
+    private async listDataPools(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).listDataPools(options.json);
     }
 
-    async pullDataPool(context: Context, command: Command, options: OptionValues) {
+    private async pullDataPool(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).pullDataPool(options.id);
     }
 
-    async pushDataPool(context: Context, command: Command, options: OptionValues) {
+    private async pushDataPool(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).pushDataPool(options.file);
     }
 
-    async pushDataPools(context: Context, command: Command, options: OptionValues) {
+    private async pushDataPools(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).pushDataPools();
     }
 
-    async updateDataPool(context: Context, command: Command, options: OptionValues) {
+    private async updateDataPool(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new DataPoolCommandService(context).updateDataPool(options.id, options.file);
     }
 }

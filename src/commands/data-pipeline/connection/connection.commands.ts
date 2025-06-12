@@ -9,7 +9,7 @@ import { Context } from "../../../core/command/cli-context";
 
 export class ConnectionCommands {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const listCommand = configurator.command("list");
         listCommand.command("connection")
             .description("Command to list all connections in a Data Pool")
@@ -33,15 +33,15 @@ export class ConnectionCommands {
             .action(this.updateConnectionProperty);
     }
 
-    async getCommandProperties(context: Context, command: Command, options: OptionValues) {
+    private async getCommandProperties(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConnectionCommandService(context).getProperties(options.dataPoolId, options.connectionId);
     }
 
-    async listConnections(context: Context, command: Command, options: OptionValues) {
+    private async listConnections(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConnectionCommandService(context).listConnections(options.dataPoolId);
     }
 
-    async updateConnectionProperty(context: Context, command: Command, options: OptionValues) {
+    private async updateConnectionProperty(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConnectionCommandService(context).updateProperty(options.dataPoolId, options.connectionId, options.property, options.value);
     }
 }

@@ -10,7 +10,7 @@ import { SkillCommandService } from "./skill/skill-command.service";
 
 class Module extends IModule {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const analyzeCommand = configurator.command("analyze");
         analyzeCommand.command("action-flows")
             .description("Analyze Action Flows dependencies for a certain package")

@@ -9,7 +9,7 @@ import { CTPCommandService } from "./ctp-command.service";
 
 class Module extends IModule {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const pushCommand = configurator.command("push")
         pushCommand.command("ctp")
             .description("Command to push a .ctp (Celonis 4 transport file) to create a package")

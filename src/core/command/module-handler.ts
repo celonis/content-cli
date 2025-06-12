@@ -5,27 +5,23 @@ import { Context } from "./cli-context";
 import { logger } from "../utils/logger";
 
 export abstract class IModule {
-    abstract register(context: Context, commandConfig: Configurator);
-
-    showHelp(context: Context, command: Command) {
-        command.outputHelp();
-    }
+    public abstract register(context: Context, commandConfig: Configurator): void;
 }
 
-export interface IModuleConstructor {
-    new(): IModule;
-}
+export type IModuleConstructor = new () => IModule;
 
 export class ModuleHandler {
-
     public configurator: Configurator;
 
-    constructor(public program: Command, public context: Context) {
+    constructor(
+        public program: Command,
+        public context: Context
+    ) {
         this.configurator = new Configurator(this.program, this.context);
     }
 
     // Store registered module instances if needed later
-    registeredModules: IModule[] = [];
+    public registeredModules: IModule[] = [];
 
     /**
      * Discovers modules in the specified directory, imports them,
@@ -34,8 +30,8 @@ export class ModuleHandler {
      * @param {any} rootPath - __dirname when invoked from the main entry file
      * @param devMode        - Use uncompiled modules for development debug mode
      */
-    discoverAndRegisterModules(rootPath, devMode = false) {
-        let modulesDirPath = path.resolve(rootPath, "commands");
+    public discoverAndRegisterModules(rootPath: string, devMode: boolean = false): void {
+        const modulesDirPath = path.resolve(rootPath, "commands");
 
         try {
             const moduleFolders = fs.readdirSync(modulesDirPath, { withFileTypes: true });
@@ -47,9 +43,11 @@ export class ModuleHandler {
                     const moduleFileName = devMode ? "module.ts" : "module.js";
 
                     // Calculate path relative to *this file's location in dist*
-                    let potentialModuleJsPath;
+                    let potentialModuleJsPath: any;
                     potentialModuleJsPath = path.resolve(
-                        rootPath, 'commands', moduleFolderName,
+                        rootPath,
+                        "commands",
+                        moduleFolderName,
                         moduleFileName // Look for the compiled JS file
                     );
                     try {
@@ -60,9 +58,10 @@ export class ModuleHandler {
                     }
 
                     if (!potentialModuleJsPath) {
-                        logger.debug(`Module folder ${moduleFolderName} does not contain a valid entry point and is skipped.`);
+                        logger.debug(
+                            `Module folder ${moduleFolderName} does not contain a valid entry point and is skipped.`
+                        );
                     } else {
-
                         // Check if the compiled JS file exists
                         try {
                             logger.debug(`Found potential module definition: ${potentialModuleJsPath}`);
@@ -74,15 +73,14 @@ export class ModuleHandler {
                             const ModuleClass = requiredModule as IModuleConstructor; // Cast for TS check
 
                             // Basic check: Is it a class (function)?
-                            if (typeof ModuleClass === 'function' && ModuleClass.prototype) {
+                            if (typeof ModuleClass === "function" && ModuleClass.prototype) {
                                 const moduleInstance: IModule = new ModuleClass(); // Instantiate
 
                                 // Check if the instance has the register method
-                                if (typeof moduleInstance.register === 'function') {
+                                if (typeof moduleInstance.register === "function") {
                                     logger.debug(`Registering module: ${moduleFolderName}`);
                                     // Call register - can still be async even if require() is sync
-                                    let ctx = this.context;
-                                    moduleInstance.register(ctx, this.configurator);
+                                    moduleInstance.register(this.context, this.configurator);
                                     this.registeredModules.push(moduleInstance);
                                 } else {
                                     logger.warn(`Module ${moduleFolderName} export does not have a 'register' method.`);
@@ -90,16 +88,18 @@ export class ModuleHandler {
                             } else {
                                 logger.warn(`Module ${moduleFolderName} export is not a class/constructor function.`);
                             }
-
                         } catch (error: any) {
-                            if (error.code === 'ENOENT') {
+                            if (error.code === "ENOENT") {
                                 // Compiled module.js not found, maybe folder doesn't contain a valid module
-                                logger.warn(`Directory ${moduleFolderName} does not contain a compiled module.js file.`);
-                            } else if (error.code === 'MODULE_NOT_FOUND') {
-                                logger.debug(`Error details`, error);
-                                logger.warn(`Could not require module ${moduleFolderName}. Check dependencies or compilation. Path: ${potentialModuleJsPath}`);
-                            }
-                            else {
+                                logger.warn(
+                                    `Directory ${moduleFolderName} does not contain a compiled module.js file.`
+                                );
+                            } else if (error.code === "MODULE_NOT_FOUND") {
+                                logger.debug("Error details", error);
+                                logger.warn(
+                                    `Could not require module ${moduleFolderName}. Check dependencies or compilation. Path: ${potentialModuleJsPath}`
+                                );
+                            } else {
                                 logger.error(`Error processing module in ${moduleFolderName}:`, error);
                             }
                         }
@@ -107,45 +107,45 @@ export class ModuleHandler {
                 }
             }
         } catch (error: any) {
-            if (error.code === 'ENOENT') {
-                logger.error(`Modules directory not found relative to JS output: ${path.resolve(path.dirname(__filename), "commands")}`);
+            if (error.code === "ENOENT") {
+                logger.error(
+                    `Modules directory not found relative to JS output: ${path.resolve(path.dirname(__filename), "commands")}`
+                );
             } else {
-            logger.error('Failed to read modules directory:', error);
+                logger.error("Failed to read modules directory:", error);
             }
         }
         logger.debug(`Module discovery complete. ${this.registeredModules.length} modules registered.`);
     }
-
 }
 
-type CommandHandler =  (context: Context, command: Command, options: OptionValues) => void; 
+type CommandHandler = (context: Context, command: Command, options: OptionValues) => void;
 
 /**
  * Allows the creation of root level commands.
  */
 export class Configurator {
+    public rootCommandMap = new Map<string, CommandConfig>();
 
-    rootCommandMap = new Map<string, CommandConfig>();
-
-    constructor(private program: Command, private ctx: Context) {
-
-    }
+    constructor(
+        private program: Command,
+        private ctx: Context
+    ) {}
 
     /**
      * Get or create a root level command.
      * @param name
-     * @returns 
+     * @returns
      */
-    command(name: string) : CommandConfig {
+    public command(name: string): CommandConfig {
         if (this.rootCommandMap.has(name)) {
             return this.rootCommandMap.get(name);
         }
-        let cmd = this.program.command(name);
-        let cmdConfig = new CommandConfig(cmd, this.ctx);
+        const cmd = this.program.command(name);
+        const cmdConfig = new CommandConfig(cmd, this.ctx);
         this.rootCommandMap.set(name, cmdConfig);
         return cmdConfig;
     }
-
 }
 
 /**
@@ -153,50 +153,51 @@ export class Configurator {
  * executed.
  */
 export class CommandConfig {
-    constructor(private cmd: Command, private ctx: Context) {
+    constructor(
+        private cmd: Command,
+        private ctx: Context
+    ) {}
 
     public command(nameAndArgs: string, opts?: CommandOptions): CommandConfig {
         return new CommandConfig(this.cmd.command(nameAndArgs, opts), this.ctx)
             .option("-p, --profile <profile>", "Profile which you want to use");
     }
 
-    alias(alias: string) {
+    public alias(alias: string): CommandConfig {
         this.cmd.alias(alias);
         return this;
     }
 
-    description(description: string) {
+    public description(description: string): CommandConfig {
         this.cmd.description(description);
         return this;
     }
 
-    argument(name: string, description?: string, defaultValue?: unknown): this {
+    public argument(name: string, description?: string, defaultValue?: unknown): CommandConfig {
         this.cmd.argument(name, description, defaultValue);
         return this;
     }
 
-    option(flags: string, description?: string, defaultValue?: string | boolean | string[]): this {
+    public option(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
         this.cmd.option(flags, description, defaultValue);
         return this;
     }
 
-    requiredOption(flags: string, description?: string, defaultValue?: string | boolean | string[]): this {
+    public requiredOption(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
         this.cmd.requiredOption(flags, description, defaultValue);
         return this;
     }
 
-    action(handler: CommandHandler) {
-        let ctx = this.ctx;
+    public action(handler: CommandHandler): void {
+        const ctx = this.ctx;
         this.cmd.action(async function () {
             try {
-                let cmd = this; // in the context of the execution, this refers to the Command object
-                let cmdOptions = cmd.opts();
-                await handler(ctx, this, cmdOptions);
+                const cmd = this; // in the context of the execution, this refers to the Command object
+                const cmdOptions = cmd.opts();
+                handler(ctx, this, cmdOptions);
             } catch (error) {
                 logger.error(`An unexpected error occured executing a command: ${error}`);
             }
-        })
+        });
     }
-
 }
-
