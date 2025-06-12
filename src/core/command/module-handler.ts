@@ -154,6 +154,7 @@ export class Configurator {
  */
 export class CommandConfig {
     constructor(private cmd: Command, private ctx: Context) {
+    }
 
     public command(nameAndArgs: string, opts?: CommandOptions): CommandConfig {
         return new CommandConfig(this.cmd.command(nameAndArgs, opts), this.ctx)
