@@ -155,10 +155,9 @@ export class Configurator {
 export class CommandConfig {
     constructor(private cmd: Command, private ctx: Context) {
 
-    }
-
-    command(nameAndArgs: string, opts?: CommandOptions) : CommandConfig {
-        return new CommandConfig(this.cmd.command(nameAndArgs, opts), this.ctx);
+    public command(nameAndArgs: string, opts?: CommandOptions): CommandConfig {
+        return new CommandConfig(this.cmd.command(nameAndArgs, opts), this.ctx)
+            .option("-p, --profile <profile>", "Profile which you want to use");
     }
 
     alias(alias: string) {
