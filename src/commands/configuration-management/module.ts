@@ -14,7 +14,6 @@ class Module extends IModule {
         const configCommand = configurator.command("config");
         configCommand.command("list")
             .description("Command to list active packages that can be exported")
-            .option("-p, --profile <profile>", "Profile which you want to use to list possible variable assignments")
             .option("--json", "Return response as json type", "")
             .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
@@ -25,21 +24,18 @@ class Module extends IModule {
 
         configCommand.command("export")
             .description("Command to export package configs")
-            .option("-p, --profile <profile>", "Profile which you want to use to export packages")
             .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
             .option("--withDependencies", "Include variables and dependencies", "")
             .action(this.batchExportPackages);
 
         configCommand.command("import")
             .description("Command to import package configs")
-            .option("-p, --profile <profile>", "Profile which you want to use to import packages")
             .option("--overwrite", "Flag to allow overwriting of packages")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(this.batchImportPackages);
 
         configCommand.command("diff")
             .description("Command to diff configs of packages")
-            .option("-p, --profile <profile>", "Profile of the team/realm which you want to use to diff the packages with")
             .option("--hasChanges", "Flag to return only the information if the package has changes without the actual changes")
             .option("--json", "Return the response as a JSON file")
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
@@ -50,7 +46,6 @@ class Module extends IModule {
 
         variablesCommand.command("list")
             .description("Command to list versioned variables of packages")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--json", "Return response as json type", "")
             .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", "")
             .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
@@ -59,7 +54,6 @@ class Module extends IModule {
         const listCommand = configurator.command("list");
         listCommand.command("assignments")
             .description("Command to list possible variable assignments for a type")
-            .option("-p, --profile <profile>", "Profile which you want to use to list possible variable assignments")
             .option("--json", "Return response as json type", "")
             .requiredOption("--type <type>", "Type of variable")
             .option("--params <params>", "Variable query params")

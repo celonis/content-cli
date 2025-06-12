@@ -13,7 +13,6 @@ class Module extends IModule {
         const pullCommand = configurator.command("pull");
         pullCommand.command("bookmarks")
             .description("Command to pull an analysis bookmarks")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the analysis bookmarks")
             .option("--type <type>", "Pull shared/all Analysis Bookmarks, else by default get user bookmarks")
             .requiredOption("--id <id>", "Id of the analysis you want to pull")
             .action(this.pullAnalysisBookmarks);
@@ -21,7 +20,6 @@ class Module extends IModule {
         const pushCommand = configurator.command("push");
         pushCommand.command("bookmarks")
             .description("Command to push an analysis to a workspace")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the analysis")
             .requiredOption("--id <id>", "Id of the Analysis to which you want to push the analysis bookmarks")
             .requiredOption("-f, --file <file>", "The file you want to push")
             .action(this.pushAnalysisBookmarks);

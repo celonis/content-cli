@@ -14,7 +14,6 @@ class Module extends IModule {
         const analyzeCommand = configurator.command("analyze");
         analyzeCommand.command("action-flows")
             .description("Analyze Action Flows dependencies for a certain package")
-            .option("-p, --profile <profile>", "Profile which you want to use to analyze Action Flows")
             .requiredOption("--packageId <packageId>", "ID of the package from which you want to export Action Flows")
             .option("-o, --outputToJsonFile", "Output the analyze result in a JSON file")
             .action(this.analyzeActionFlows);
@@ -22,7 +21,6 @@ class Module extends IModule {
         const exportCommand = configurator.command("export");
         exportCommand.command("action-flows")
             .description("Command to export all Action Flows in a package with their objects and dependencies")
-            .option("-p, --profile <profile>", "Profile which you want to use to export Action Flows")
             .requiredOption("--packageId <packageId>", "ID of the package from which you want to export Action Flows")
             .option("-f, --file <file>", "Action flows metadata file (relative path)")
             .action(this.exportActionFlows);
@@ -30,7 +28,6 @@ class Module extends IModule {
         const importCommand = configurator.command("import");
         importCommand.command("action-flows")
             .description("Command to import all Action Flows in a package with their objects and dependencies")
-            .option("-p, --profile <profile>", "Profile which you want to use to import Action Flows")
             .requiredOption("--packageId <packageId>", "ID of the package to which you want to export Action Flows")
             .requiredOption("-f, --file <file>", "Exported Action Flows file (relative path)")
             .requiredOption("-d, --dryRun <dryRun>", "Execute the import on dry run mode")
@@ -40,7 +37,6 @@ class Module extends IModule {
         const pullCommand = configurator.command("pull");
         pullCommand.command("skill")
             .description("Command to pull a skill")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the skill")
             .requiredOption("--projectId <projectId>", "Id of the project you want to pull")
             .requiredOption("--skillId <skillId>", "Id of the skill you want to pull")
             .action(this.pullSkill);
@@ -48,7 +44,6 @@ class Module extends IModule {
         const pushCommand = configurator.command("push");
         pushCommand.command("skill")
             .description("Command to push a skill to a project")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the skill")
             .requiredOption("--projectId <projectId>", "Id of the project you want to push")
             .requiredOption("-f, --file <file>", "The file you want to push")
             .action(this.pushSkill);
