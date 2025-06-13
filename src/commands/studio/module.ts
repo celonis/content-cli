@@ -16,7 +16,6 @@ class Module extends IModule {
         const exportCommand = configurator.command("export");
         exportCommand.command("packages")
             .description("Command to export all given packages")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .requiredOption("--packageKeys <packageKeys...>", "Exports only given package keys")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .option("--excludeActionFlows", "Don't export action flows")
@@ -25,7 +24,6 @@ class Module extends IModule {
         const importCommand = configurator.command("import");
         importCommand.command("packages")
             .description("Command to import all given packages")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option(
                 "--spaceMappings <spaceMappings...>",
                 "List of mappings for importing packages to different target spaces. Mappings should follow format 'packageKey:targetSpaceKey'"
@@ -39,7 +37,6 @@ class Module extends IModule {
         const listCommand = configurator.command("list");
         listCommand.command("packages")
             .description("Command to list all packages")
-            .option("-p, --profile <profile>", "Profile which you want to use to list packages")
             .option("--json", "Return response as json type", "")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only given package keys")
@@ -47,13 +44,11 @@ class Module extends IModule {
 
         listCommand.command("spaces")
             .description("Command to list all spaces")
-            .option("-p, --profile <profile>", "Profile which you want to use to list spaces")
             .option("--json", "Return response as json type", "")
             .action(this.listSpaces);
 
         listCommand.command("assets")
             .description("Command to list all assets")
-            .option("-p, --profile <profile>", "Profile which you want to use to list assets")
             .option("--json", "Return response as json type", "")
             .option("--assetType <assetType>", "type of assets")
             .action(this.listAssets);
@@ -61,13 +56,11 @@ class Module extends IModule {
         const pullCommand = configurator.command("pull");
         pullCommand.command("asset")
             .description("Command to pull an asset from Studio")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the asset")
             .requiredOption("--key <key>", "Key of asset you want to pull")
             .action(this.pullAsset);
 
         pullCommand.command("package")
             .description("Command to pull a package")
-            .option("-p, --profile <profile>", "Profile which you want to use to pull the package")
             .requiredOption("--key <key>", "Key of the package you want to pull")
             .option("--store", "Pull package with store deployment metadata")
             .option("--newKey <newKey>", "Define a new key for your package")
@@ -77,20 +70,17 @@ class Module extends IModule {
         const pushCommand = configurator.command("push");
         pushCommand.command("asset")
             .description("Command to push an asset to Studio")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the asset")
             .requiredOption("-f, --file <file>", "The file you want to push")
             .requiredOption("--package <packageKey>", "Key of the package you want to push asset to")
             .action(this.pushAsset);
 
         pushCommand.command("assets")
             .description("Command to push assets to Studio")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the assets")
             .requiredOption("--package <packageKey>", "Key of the package you want to push assets to")
             .action(this.pushAssets);
 
         pushCommand.command("package")
             .description("Command to push a package to Studio")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the package")
             .option("--newKey <newKey>", "Define a new key for your package")
             .option("--overwrite", "Overwrite package and its assets")
             .requiredOption("-f, --file <file>", "The file you want to push")
@@ -99,13 +89,11 @@ class Module extends IModule {
 
         pushCommand.command("packages")
             .description("Command to push packages to Studio")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the packages")
             .requiredOption("--spaceKey <spaceKey>", "The key of the destination space")
             .action(this.pushPackages);
 
         pushCommand.command("widget")
             .description("Command to push a widget")
-            .option("-p, --profile <profile>", "Profile which you want to use to push the widget")
             .option("--tenantIndependent", "Upload widget tenant independently")
             .option("--userSpecific", "Upload widget only for the user in the provided api token")
             .option("--packageManager", "Upload widget to package manager (deprecated)") // Deprecated
