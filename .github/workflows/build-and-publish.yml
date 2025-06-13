@@ -56,3 +56,23 @@ jobs:
         name: Checkout Master
         with:
           fetch-depth: '0'
+
+      - name: Bump minor version
+        run: |
+          CURRENT_VERSION=$(jq -r .version package.json)
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          NEW_MINOR=$((MINOR + 1))
+          NEW_VERSION="$MAJOR.$NEW_MINOR.0"
+          echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION"
+          jq ".version = \"$NEW_VERSION\"" package.json > temp.json && mv temp.json package.json
+
+      - name: Push version bump
+        shell: bash
+        run: |
+          git config user.name 'celobot'
+          git config user.email 'github-celobot@celonis.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          
+          git add package.json
+          git commit -m "Version bump to $NEW_VERSION"
+          git push -u origin master
