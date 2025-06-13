@@ -189,12 +189,9 @@ export class CommandConfig {
     }
 
     public action(handler: CommandHandler): void {
-        const ctx = this.ctx;
-        this.cmd.action(async function (): Promise<void> {
+        this.cmd.action(async (): Promise<void> => {
             try {
-                const cmd = this; // in the context of the execution, this refers to the Command object
-                const cmdOptions = cmd.opts();
-                await handler(ctx, this, cmdOptions);
+                await handler(this.ctx, this.cmd, this.cmd.opts());
             } catch (error) {
                 logger.error(`An unexpected error occured executing a command: ${error}`);
             }
