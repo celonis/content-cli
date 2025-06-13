@@ -1,10 +1,8 @@
 import { Context } from "../../core/command/cli-context";
-import { ContentService } from "../../core/http/http-shared/content.service";
 import { FatalError, logger } from "../../core/utils/logger";
 import { CTPManagerFactory } from "./ctp.manager-factory";
 
 export class CTPCommandService {
-    private contentService = new ContentService();
     private ctpManagerFactory: CTPManagerFactory;
 
     constructor(context: Context) {
@@ -21,12 +19,12 @@ export class CTPCommandService {
         spaceKey: string
     ): Promise<void> {
         if (pushAnalysis) {
-            await this.contentService.push(this.ctpManagerFactory.createCtpAnalysisManager(filename, password, spaceKey));
+            await this.ctpManagerFactory.createCtpAnalysisManager(filename, password, spaceKey).push();
         }
 
         if (pushDataModels) {
             this.validateParamsForDataModelPush(existingPoolId, globalPoolName);
-            await this.contentService.push(this.ctpManagerFactory.createCtpDataModelManager(filename, password, existingPoolId, globalPoolName));
+            await this.ctpManagerFactory.createCtpDataModelManager(filename, password, existingPoolId, globalPoolName).push();
         }
     }
 

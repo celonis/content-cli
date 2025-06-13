@@ -1,10 +1,10 @@
-import { ContentService } from "../../../core/http/http-shared/content.service";
 import { Context } from "../../../core/command/cli-context";
 import { AssetManagerFactory } from "../manager/asset.manager-factory";
 import { AssetService } from "../service/asset-service";
+import { BaseManagerHelper } from "../../../core/http/http-shared/base.manager.helper";
 
 export class AssetCommandService {
-    private contentService = new ContentService();
+    private baseManagerHelper = new BaseManagerHelper();
     private assetManagerFactory: AssetManagerFactory;
 
     private assetService: AssetService;
@@ -15,15 +15,16 @@ export class AssetCommandService {
     }
 
     public async pullAsset(key: string): Promise<void> {
-        await this.contentService.pull(this.assetManagerFactory.createManager(key));
+        await this.assetManagerFactory.createManager(key).pull();
     }
 
     public async pushAsset(fileName: string, packageKey: string): Promise<void> {
-        await this.contentService.push(this.assetManagerFactory.createManager(null, fileName, packageKey));
+        await this.assetManagerFactory.createManager(null, fileName, packageKey).push();
     }
 
     public async pushAssets(packageKey: string): Promise<void> {
-        await this.contentService.batchPush(this.assetManagerFactory.createManagers(packageKey));
+        const assetManagers = this.assetManagerFactory.createManagers(packageKey);
+        await this.baseManagerHelper.batchPush(assetManagers);
     }
 
     public async listAssets(jsonResponse: boolean, assetType: string): Promise<void> {

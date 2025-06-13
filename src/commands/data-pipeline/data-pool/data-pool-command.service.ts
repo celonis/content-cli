@@ -1,10 +1,10 @@
-import { ContentService } from "../../../core/http/http-shared/content.service";
 import { DataPoolManagerFactory } from "./data-pool-manager.factory";
 import { Context } from "../../../core/command/cli-context";
 import { DataPoolService } from "./data-pool-service";
+import { BaseManagerHelper } from "../../../core/http/http-shared/base.manager.helper";
 
 export class DataPoolCommandService {
-    private contentService = new ContentService();
+    private baseManagerHelper = new BaseManagerHelper();
     private dataPoolManagerFactory: DataPoolManagerFactory;
     private dataPoolService: DataPoolService;
 
@@ -14,11 +14,11 @@ export class DataPoolCommandService {
     }
 
     public async pullDataPool(id: string): Promise<void> {
-        await this.contentService.pull(this.dataPoolManagerFactory.createManager(id, null));
+        await this.dataPoolManagerFactory.createManager(id, null).pull();
     }
 
     public async pushDataPool(filename: string): Promise<void> {
-        await this.contentService.push(this.dataPoolManagerFactory.createManager(null, filename));
+        await this.dataPoolManagerFactory.createManager(null, filename).push();
     }
 
     public async exportDataPool(poolId: string, outputToJsonFile: boolean): Promise<void> {
@@ -26,7 +26,8 @@ export class DataPoolCommandService {
     }
 
     public async pushDataPools(): Promise<void> {
-        await this.contentService.batchPush(this.dataPoolManagerFactory.createManagers());
+        const dataPoolManagers = this.dataPoolManagerFactory.createManagers();
+        await this.baseManagerHelper.batchPush(dataPoolManagers);
     }
 
     public async batchImportDataPools(requestFile: string, outputToJsonFile: boolean): Promise<void> {
@@ -34,7 +35,7 @@ export class DataPoolCommandService {
     }
 
     public async updateDataPool(id: string, filename: string): Promise<any> {
-        await this.contentService.update(this.dataPoolManagerFactory.createManager(id, filename));
+        await this.dataPoolManagerFactory.createManager(id, filename).update();
     }
 
     public async listDataPools(jsonResponse: boolean): Promise<any> {
