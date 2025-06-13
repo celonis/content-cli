@@ -9,7 +9,7 @@ import { AnalysisBookmarksCommandService } from "./analysis-bookmarks-command.se
 
 class Module extends IModule {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const pullCommand = configurator.command("pull");
         pullCommand.command("bookmarks")
             .description("Command to pull an analysis bookmarks")

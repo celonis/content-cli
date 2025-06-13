@@ -2,7 +2,6 @@ import { ContentService } from "../../../core/http/http-shared/content.service";
 import { DataPoolManagerFactory } from "./data-pool-manager.factory";
 import { Context } from "../../../core/command/cli-context";
 import { DataPoolService } from "./data-pool-service";
-import { logger } from "../../../core/utils/logger";
 
 export class DataPoolCommandService {
     private contentService = new ContentService();

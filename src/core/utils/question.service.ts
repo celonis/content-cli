@@ -7,7 +7,7 @@ import { ReadLine } from "readline";
  */
 export class QuestionService {
 
-    readLine: ReadLine;
+    private readLine: ReadLine;
 
     constructor() {
         this.readLine = readline.createInterface({
@@ -17,13 +17,13 @@ export class QuestionService {
         });
     }
 
-    async ask(question: string): Promise<string> {
-        return new Promise<string>((resolve) => {
+    public async ask(question: string): Promise<string> {
+        return new Promise<string>(resolve => {
             this.readLine.question(question, input => resolve(input));
         });   
     }
 
-    close() {
+    public async close(): Promise<void> {
         this.readLine.close();
     }
 }

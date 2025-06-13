@@ -278,7 +278,7 @@ export class PackageService {
                 continue;
             }
 
-            const dependentPackage = manifestNodes.find((node) => node.packageKey === dependency.key);
+            const dependentPackage = manifestNodes.find(node => node.packageKey === dependency.key);
             await this.importPackage(dependentPackage, manifestNodes, sourceToTargetVersionsByNodeKey, spaceMappings, dmTargetIdsBySourceIds, importedVersionsByNodeKey, draftIdsByPackageKeyAndVersion, importedFilePath, excludeActionFlows);
         }
     }
@@ -298,7 +298,7 @@ export class PackageService {
     }
 
     private async getTargetSpaceForExportedPackage(packageToImport: ManifestNodeTransport, spaceMappings: Map<string, string>): Promise<SpaceTransport> {
-        let targetSpace;
+        let targetSpace: SpaceTransport;
         const allSpaces = await this.spaceService.refreshAndGetAllSpaces();
         if (spaceMappings.has(packageToImport.packageKey)) {
             const customSpaceId = spaceMappings.get(packageToImport.packageKey);
@@ -408,8 +408,7 @@ export class PackageService {
     }
 
     public async getPackagesWithDependencies(draftIdByNodeId: Map<string, string>): Promise<Map<string, PackageDependencyTransport[]>> {
-        const allPackageDependencies: Map<string, PackageDependencyTransport[]> = await this.packageDependenciesApi.findPackageDependenciesByIds(draftIdByNodeId);
-        return allPackageDependencies;
+        return await this.packageDependenciesApi.findPackageDependenciesByIds(draftIdByNodeId);
     }
 
     private async getDependencyPackages(nodesToResolve: BatchExportNodeTransport[], dependencyPackages: BatchExportNodeTransport[], allPackages: ContentNodeTransport[], resolvedDependencies: string[], versionsByNodeKey: Map<string, string[]>): Promise<BatchExportNodeTransport[]> {
@@ -499,7 +498,7 @@ export class PackageService {
     private exportManifestOfPackages(nodes: BatchExportNodeTransport[], dependencyVersionsByNodeKey: Map<string, string[]>): ManifestNodeTransport[] {
         const manifestNodesByPackageKey = new Map<string, ManifestNodeTransport>();
 
-        nodes.forEach((node) => {
+        nodes.forEach(node => {
             const manifestNode = manifestNodesByPackageKey.get(node.key) ?? {} as ManifestNodeTransport;
             manifestNode.packageKey = node.key;
             manifestNode.packageId = node.id;
@@ -507,7 +506,7 @@ export class PackageService {
                 spaceName: node.space.name,
                 spaceIcon: node.space.iconReference
             }
-            manifestNode.variables = node.variables?.map((variable) => {
+            manifestNode.variables = node.variables?.map(variable => {
                 if (variable.type === PackageManagerVariableType.DATA_MODEL) {
                     // @ts-ignore
                     const dataModel = node.datamodels?.find(dataModel => dataModel.dataModelId === variable.value);

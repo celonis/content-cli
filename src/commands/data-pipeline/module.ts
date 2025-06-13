@@ -9,7 +9,7 @@ import { DataPoolCommands } from "./data-pool/data-pool.commands";
 
 class Module extends IModule {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
        new DataPoolCommands().register(context, configurator);
        new ConnectionCommands().register(context, configurator);
     }

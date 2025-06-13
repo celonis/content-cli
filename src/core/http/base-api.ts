@@ -6,9 +6,9 @@ import { logger } from "../utils/logger";
 import { HttpClient } from "./http-client";
 
 export class ForbiddenError extends Error {
-    constructor(message = 'Access Forbidden') {
+    constructor(message: string = "Access Forbidden") {
         super(message);
-        this.name = 'ForbiddenError';
+        this.name = "ForbiddenError";
         // Maintains proper stack trace in V8 environments (Node, Chrome)
         if (Error.captureStackTrace) {
             Error.captureStackTrace(this, ForbiddenError);
@@ -18,9 +18,9 @@ export class ForbiddenError extends Error {
 
 // Custom error for Server (5xx) responses.
 export class ServerError extends Error {
-    constructor(message = 'Internal Server Error') {
+    constructor(message: string = "Internal Server Error") {
         super(message);
-        this.name = 'ServerError';
+        this.name = "ServerError";
         if (Error.captureStackTrace) {
             Error.captureStackTrace(this, ServerError);
         }
@@ -29,9 +29,9 @@ export class ServerError extends Error {
 
 // Custom error for Not Found (404) responses.
 export class NotFoundError extends Error {
-    constructor(message = 'Resource Not Found') {
+    constructor(message: string = "Resource Not Found") {
         super(message);
-        this.name = 'NotFoundError';
+        this.name = "NotFoundError";
         if (Error.captureStackTrace) {
             Error.captureStackTrace(this, NotFoundError);
         }
@@ -40,9 +40,9 @@ export class NotFoundError extends Error {
 
 // Custom error for general network or unexpected issues.
 export class NetworkError extends Error {
-    constructor(message = 'Network or unexpected error occurred') {
+    constructor(message: string = "Network or unexpected error occurred") {
         super(message);
-        this.name = 'NetworkError';
+        this.name = "NetworkError";
         if (Error.captureStackTrace) {
             Error.captureStackTrace(this, NetworkError);
         }
@@ -75,39 +75,39 @@ export abstract class BaseApi {
      * @returns Never, as this method always throws an error.
      */
     protected handleError(error: any): never {
-        logger.debug('API Error:', error); // Basic logging
+        logger.debug("API Error:", error); // Basic logging
 
         // Check if it looks like an HTTP error with a status code
-        if (error && typeof error.status === 'number') {
+        if (error && typeof error.status === "number") {
             const httpError = error as HttpError;
             switch (httpError.status) {
                 case 401:
                     // Handle Unauthorized (e.g., redirect to login)
                     // Depending on the app, might not throw, but trigger auth flow
                     // Example: throw new AuthenticationError('Authentication required');
-                    throw new Error(`Unauthorized (401): ${httpError.message || 'Authentication required'}`); // Placeholder
+                    throw new Error(`Unauthorized (401): ${httpError.message || "Authentication required"}`); // Placeholder
                 case 403:
-                    throw new ForbiddenError(`Forbidden (403): ${httpError.message || 'Access denied'}`);
+                    throw new ForbiddenError(`Forbidden (403): ${httpError.message || "Access denied"}`);
                 case 404:
-                    throw new NotFoundError(`Not Found (404): ${httpError.message || 'Resource not found'}`);
+                    throw new NotFoundError(`Not Found (404): ${httpError.message || "Resource not found"}`);
                 case 500:
                 case 501:
                 case 502:
                 case 503:
                 case 504:
-                    throw new ServerError(`Server Error (${httpError.status}): ${httpError.message || 'Server issue'}`);
+                    throw new ServerError(`Server Error (${httpError.status}): ${httpError.message || "Server issue"}`);
                 default:
                     // Handle other HTTP errors (e.g., 400 Bad Request)
-                    throw new Error(`HTTP Error (${httpError.status}): ${httpError.message || 'An HTTP error occurred'}`);
+                    throw new Error(`HTTP Error (${httpError.status}): ${httpError.message || "An HTTP error occurred"}`);
             }
         } else if (error instanceof Error) {
             // Handle non-HTTP errors (e.g., network issues, client-side errors)
-            console.debug('Non-HTTP Error:', error.message);
+            console.debug("Non-HTTP Error:", error.message);
             throw new NetworkError(`Network or client-side error: ${error.message}`);
         } else {
             // Handle cases where the caught object is not an Error instance
-            console.debug('Unknown error structure:', error);
-            throw new Error('An unknown error occurred');
+            console.debug("Unknown error structure:", error);
+            throw new Error("An unknown error occurred");
         }
     }
 }

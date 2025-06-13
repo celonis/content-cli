@@ -2,10 +2,10 @@ export declare type DataPoolStatus = "CANCEL" | "FAIL" | "QUEUED" | "RUNNING" | 
 export type Tag = {};
 
 export declare class DataSourceSlimTransport {
-    id: string;
-    name: string;
-    imported: boolean;
-    importedPoolId: string;
+    public id: string;
+    public name: string;
+    public imported: boolean;
+    public importedPoolId: string;
 }
 
 export interface DataPoolSlimTransport {
@@ -19,12 +19,12 @@ export interface DataPoolSlimTransport {
     dataSources: DataSourceSlimTransport[];
 }
 export declare class DataPoolPageTransport {
-    content: DataPoolSlimTransport[];
-    pageSize: number;
-    pageNumber: number;
-    totalCount: number;
+    public content: DataPoolSlimTransport[];
+    public pageSize: number;
+    public pageNumber: number;
+    public totalCount: number;
 }
 
 export declare class DataPoolInstallVersionReport {
-    dataModelIdMappings: Map<string, string>;
+    public dataModelIdMappings: Map<string, string>;
 }

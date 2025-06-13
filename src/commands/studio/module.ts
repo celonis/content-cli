@@ -12,7 +12,7 @@ import { SpaceCommandService } from "./command-service/space-command.service";
 
 class Module extends IModule {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const exportCommand = configurator.command("export");
         exportCommand.command("packages")
             .description("Command to export all given packages")

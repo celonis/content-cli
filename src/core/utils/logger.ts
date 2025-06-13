@@ -26,8 +26,8 @@ class CustomTransport extends Transport {
 // directories for now. Consider changing this to a general 'home' directory such 
 // as .celonis-cli or alike.
 const logDirName = ".celonis-content-cli-profiles";
-const logFileName = 'celonis-cli.log';
-const exceptionLogFileName = 'exceptions.log';
+const logFileName = "celonis-cli.log";
+const exceptionLogFileName = "exceptions.log";
 const maxLogSizeMB = 3;
 const logDir = path.join(os.homedir(), logDirName);
 const logFilePath = path.join(logDir, logFileName);
@@ -45,16 +45,16 @@ try {
 
 export const logger: Logger = winston.createLogger({
     format: winston.format.combine(winston.format.cli()),
-    level: 'debug',
+    level: "debug",
     transports: [
         new winston.transports.Console({
-            level: 'info', 
+            level: "info",
             format: winston.format.combine(
                 winston.format.colorize(),
             ),
         }),
         new winston.transports.File({
-            level: 'info', // Log everything from debug up to the file
+            level: "info", // Log everything from debug up to the file
             filename: logFilePath,
             format: winston.format.combine(
                 winston.format.timestamp(), // Add timestamp to file logs
@@ -94,7 +94,7 @@ export class FatalError extends Error {
     public error = "FatalError";
 }
 
-// By default the logger will process.exit(1) when logging an uncaught fatal error
+// By default, the logger will process.exit(1) when logging an uncaught fatal error
 // This interface allows us to throw errors that do not force the process to exit and can be handled gracefully
 // tslint:disable-next-line: max-classes-per-file
 export class GracefulError extends Error {

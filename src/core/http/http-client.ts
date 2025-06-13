@@ -12,7 +12,7 @@ import {VersionUtils} from "../utils/version";
  * based on the profile in the context and also use the base URL accordingly.
  */
 export class HttpClient {
-    
+
     private axios = AxiosInitializer.initializeAxios();
 
     constructor(private context: Context) {}
@@ -27,7 +27,7 @@ export class HttpClient {
                 logger.debug(`Response ${response.status}`);
                 this.handleResponse(response, resolve, reject);
             }).catch(err => {
-                logger.debug(`HTTP GET resulted in error`, err);
+                logger.debug("HTTP GET resulted in error", err);
                 this.handleError(err, resolve, reject);
             })
         }).catch(e => {
@@ -161,7 +161,7 @@ export class HttpClient {
         });
     }
 
-    private handleResponseStreamData(data, resolve, reject): void {
+    private handleResponseStreamData(data: any, resolve: any, reject: any): void {
         if (data) {
             resolve(data);
             return;
@@ -175,7 +175,7 @@ export class HttpClient {
         return this.context.profile.team.replace(/\/?$/, url);
     }
 
-    private handleResponse(res: AxiosResponse, resolve, reject): void {
+    private handleResponse(res: AxiosResponse, resolve: any, reject: any): void {
         if (this.checkBadRequest(res.status)) {
             this.handleBadRequest(res.status, res.data, reject);
             return;
@@ -183,7 +183,7 @@ export class HttpClient {
         resolve(res.data);
     }
 
-    private handleError(err: any, resolve, reject): void {
+    private handleError(err: any, resolve: any, reject: any): void {
         if (err.response) {
             this.handleResponse(err.response, resolve, reject);
         } else {
@@ -196,7 +196,7 @@ export class HttpClient {
     }
 
     // tslint:disable-next-line:typedef
-    private handleBadRequest(statusCode, data, reject): void {
+    private handleBadRequest(statusCode: number, data: any, reject: any): void {
         if (data) {
             reject(JSON.stringify(data));
         } else {
