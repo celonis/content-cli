@@ -15,9 +15,12 @@ on:
 
 jobs:
   version-bump:
-    uses: ./.github/action/bump-npm-version
-    with:
-      bump: ${{ inputs.bump }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bump NPM version
+        uses: ./.github/action/bump-npm-version
+        with:
+          bump: ${{ inputs.bump }}
 
   build:
     needs: version-bump
