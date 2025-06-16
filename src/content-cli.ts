@@ -38,7 +38,7 @@ if (!program.opts().quietmode) {
 
 if (program.opts().debug) {
     logger.transports.forEach(t => {
-        t.level = 'debug';
+        t.level = "debug";
     });
 }
 
@@ -46,17 +46,17 @@ if (program.opts().debug) {
  * To support the legacy command structure, we have to configure some root commands
  * that the individual modules will extend.
  */ 
-function configureRootCommands(configurator: Configurator) {
+function configureRootCommands(configurator: Configurator): void {
     configurator.command("list")
         .description("Commands to list content.")
         .alias("ls");
 }
 
-async function run() {
-    let context = new Context(program.opts());
+async function run(): Promise<void> {
+    const context = new Context(program.opts());
     await context.init();
 
-    let moduleHandler = new ModuleHandler(program, context);
+    const moduleHandler = new ModuleHandler(program, context);
     
     configureRootCommands(moduleHandler.configurator);
 
@@ -65,16 +65,16 @@ async function run() {
     try {
         program.parse(process.argv);
     } catch (error) {
-        logger.error(`An unexpected error occured: ${error}`);
+        logger.error(`An unexpected error occurred: ${error}`);
     }
 }
 
 run();
 
 // catch uncaught exceptions
-process.on('uncaughtException', (error: Error, origin: NodeJS.UncaughtExceptionOrigin) => {
-    console.error(`\n💥 UNCAUGHT EXCEPTION!\n`);
-    console.error('Error:', error);
-    console.error('Origin:', origin);
+process.on("uncaughtException", (error: Error, origin: NodeJS.UncaughtExceptionOrigin) => {
+    console.error("\n💥 UNCAUGHT EXCEPTION!\n");
+    console.error("Error:", error);
+    console.error("Origin:", origin);
     process.exit(1);
 });

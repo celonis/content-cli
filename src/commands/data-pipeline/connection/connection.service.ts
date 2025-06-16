@@ -23,10 +23,10 @@ export class ConnectionService {
         const type = connection.type;
         const typedConnection = await this.dataPoolApi.getTypedConnection(dataPoolId, connectionId, type);
         logger.info(`Connection ID: ${connection.id} - Name: ${connection.name} - Type: ${connection.type}`);
-        logger.info(`Properties:`)
-        for (let k in typedConnection) {
-            if (typeof typedConnection[k] === 'object') {
-                for (let o in typedConnection[k]) {
+        logger.info("Properties:")
+        for (const k in typedConnection) {
+            if (typeof typedConnection[k] === "object") {
+                for (const o in typedConnection[k]) {
                     logger.info(`  ${k}.${o} : ${typeof typedConnection[k][o]} := ${typedConnection[k][o]}`)
                 }
             } else {
@@ -36,7 +36,7 @@ export class ConnectionService {
         return typedConnection;
     }
 
-    public async updateProperty(dataPoolId: string, connectionId: string, property: string, value: string) {
+    public async updateProperty(dataPoolId: string, connectionId: string, property: string, value: string): Promise<void> {
         const connection =  await this.dataPoolApi.getConnection(dataPoolId, connectionId);
         const type = connection.type;
         const typedConnection = await this.dataPoolApi.getTypedConnection(dataPoolId, connectionId, type);

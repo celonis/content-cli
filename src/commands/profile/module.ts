@@ -10,7 +10,7 @@ import { ProfileCommandService } from "./profile-command.service";
 
 class Module extends IModule {
 
-    register(context: Context, configurator: Configurator) {
+    public register(context: Context, configurator: Configurator): void {
         const command = configurator.command("profile")
                 .description("Manage profiles required to access a system.");
 
@@ -28,17 +28,17 @@ class Module extends IModule {
                 .action(this.defaultProfile);
     }
 
-    async defaultProfile(context: Context, command: Command) {
-        let profile = command.args[0];
+    private async defaultProfile(context: Context, command: Command): Promise<void> {
+        const profile = command.args[0];
         await new ProfileCommandService().makeDefaultProfile(profile);
     }
 
-    async createProfile(context: Context, command: Command, options: OptionValues) {
+    private async createProfile(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ProfileCommandService().createProfile(options.setAsDefault);
     }
 
-    async listProfiles(context: Context, command: Command) {
-        logger.debug(`List profiles`);
+    private async listProfiles(context: Context, command: Command): Promise<void> {
+        logger.debug("List profiles");
         await new ProfileCommandService().listProfiles();
     }
 }
