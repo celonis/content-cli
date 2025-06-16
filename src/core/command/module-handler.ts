@@ -153,6 +153,8 @@ export class Configurator {
  * executed.
  */
 export class CommandConfig {
+    private deprecationMessage: string;
+
     constructor(
         private cmd: Command,
         private ctx: Context
@@ -188,13 +190,25 @@ export class CommandConfig {
         return this;
     }
 
+    public deprecationNotice(deprecationMessage: string): CommandConfig {
+        this.deprecationMessage = deprecationMessage;
+        return this;
+    }
+
     public action(handler: CommandHandler): void {
         this.cmd.action(async (): Promise<void> => {
             try {
+                this.printDeprecationNoticeIfDeprecated();
                 await handler(this.ctx, this.cmd, this.cmd.opts());
             } catch (error) {
                 logger.error(`An unexpected error occured executing a command: ${error}`);
             }
         });
+    }
+
+    private printDeprecationNoticeIfDeprecated(): void {
+        if (this.deprecationMessage) {
+            logger.warn("⚠️  [DEPRECATION NOTICE] \n" + this.deprecationMessage);
+        }
     }
 }
