@@ -1,0 +1,38 @@
+name: Bump NPM Version
+
+
+inputs:
+  bump:
+    description: 'Which version bump (patch, minor, major)'
+    required: true
+    default: 'patch'
+    type: choice
+    options:
+      - patch
+      - minor
+      - major
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git
+        run: |
+          git config user.name 'celobot'
+          git config user.email 'github-celobot@celonis.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+      - name: Run npm version
+        run: |
+          npm install
+          npm version ${{ inputs.bump }} -m "chore: bump version to %s"
+          git push origin HEAD
+          git push origin --tags

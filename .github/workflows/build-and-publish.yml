@@ -1,13 +1,29 @@
-name: Build and publish Workflow
+name: Build and Publish Workflow
 
 on:
-  push:
-    branches: [ master ]
-    paths-ignore:
-      - 'package.json'
-      - '.github/**'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Which version bump (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
 jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bump NPM version
+        uses: ./.github/action/bump-npm-version
+        with:
+          bump: ${{ inputs.bump }}
+
   build:
+    needs: version-bump
     runs-on: ubuntu-latest
     name: Npm install and npm build
 
