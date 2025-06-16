@@ -2,12 +2,10 @@ import { execSync } from "child_process";
 import { GracefulError, logger } from "../../../core/utils/logger";
 import * as fs from "fs";
 import * as path from "path";
-import { ContentService } from "../../../core/http/http-shared/content.service";
 import { Context } from "../../../core/command/cli-context";
 import { WidgetManagerFactory } from "../manager/widget.manager-factory";
 
 export class WidgetCommand {
-    private contentService = new ContentService();
     private widgetManagerFactory: WidgetManagerFactory;
 
     constructor(context: Context) {
@@ -15,7 +13,7 @@ export class WidgetCommand {
     }
 
     public async pushWidget(tenantIndependent: boolean, userSpecific: boolean): Promise<void> {
-        await this.contentService.push(this.widgetManagerFactory.createManager(tenantIndependent, userSpecific));
+        await this.widgetManagerFactory.createManager(tenantIndependent, userSpecific).push();
         await this.pushToAwsIfAuthorized();
     }
 
