@@ -2,7 +2,7 @@ name: Build Workflow
 
 on:
   pull_request:
-    branches: [ master, content-cli-v2-refactoring ]
+    branches: [ master ]
 jobs:
   build:
     runs-on: ubuntu-latest
