@@ -97,9 +97,9 @@ This will create a symbolic link in the global `node_modules` directory, allowin
 
 ## Release Process
 
-We manage releases using Github Actions with the `Build and Publish Workflow`. This action runs after merging to 
-the master branch, which builds the project and publishes the package to the Github registry. You can install 
-a published version of the Content CLI using the following command:
+We manage releases using Github Actions with the `Build and Publish Workflow`. This action gets executed manually by the Codeowners when there are changes that need to be published.
+This builds the project and publishes the package to the Github registry. You can install 
+the latest published version of the Content CLI using the following command:
 
 ```
 npm i -g @celonis/content-cli
