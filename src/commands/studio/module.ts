@@ -19,6 +19,8 @@ class Module extends IModule {
             .requiredOption("--packageKeys <packageKeys...>", "Exports only given package keys")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .option("--excludeActionFlows", "Don't export action flows")
+            .deprecationNotice("`content-cli export packages` is deprecated and is expected to be removed in subsequent updates around: 01-09-2025.\n" +
+                "Please use `content-cli config export` instead.\n")
             .action(this.batchExportPackages);
 
         const importCommand = configurator.command("import");
@@ -32,6 +34,8 @@ class Module extends IModule {
             .option("--excludeActionFlows", "Skip overwrite of action flows of package")
             .option("--dataModelMappingsFile <dataModelMappingsFile>", "DataModel variable mappings file path. If missing, variables will be mapped from manifest file.")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
+            .deprecationNotice("`content-cli import packages` is deprecated and is expected to be removed in subsequent updates around: 01-09-2025.\n" +
+                "Please use `content-cli config import` instead.\n")
             .action(this.batchImportPackages);
 
         const listCommand = configurator.command("list");
