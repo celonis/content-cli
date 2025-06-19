@@ -1,9 +1,8 @@
 import { AxiosInstance } from "axios";
 import {Readable} from "stream";
-import { AxiosInitializer } from "../../src/util/axios-initializer";
+import { AxiosInitializer } from "../../src/core/http/axios-initializer";
 
 const mockedAxiosInstance = {} as AxiosInstance;
-
 
 const mockedGetResponseByUrl = new Map<string, any>();
 const mockedPostResponseByUrl = new Map<string, any>();

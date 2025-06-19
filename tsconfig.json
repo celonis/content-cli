@@ -14,5 +14,5 @@
     "experimentalDecorators": true,
     "types": ["node", "jest"],
   },
-  "exclude": ["./tests", "./jest.config.ts"]
+  "exclude": ["./tests", "./jest.config.ts", "./dist/"]
 }

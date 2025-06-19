@@ -3,9 +3,9 @@ import {
     DependencyTransport, NodeConfiguration,
     NodeExportTransport,
     PackageManifestTransport, StudioPackageManifest,
-} from "../../src/interfaces/package-export-transport";
-import {stringify} from "../../src/util/json";
-import {SpaceTransport} from "../../src/interfaces/save-space.interface";
+} from "../../src/commands/configuration-management/interfaces/package-export.interfaces";
+import { stringify } from "../../src/core/utils/json";
+import { SpaceTransport } from "../../src/commands/studio/interfaces/space.interface";
 
 export class ConfigUtils {
 

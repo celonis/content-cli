@@ -1,12 +1,11 @@
-import * as fs from 'fs';
-import {setDefaultProfile} from "./utls/context-mock";
-import {TestTransport} from "./utls/test-transport";
-import {logger} from "../src/util/logger";
-import { mockAxios } from "./utls/http-requests-mock";
-
 // Mock the modules using Jest
+import * as fs from "fs";
+import { mockAxios } from "./utls/http-requests-mock";
+import { LoggingTestTransport } from "./utls/logging-test-transport";
+import { logger } from "../src/core/utils/logger";
+
 mockAxios();
-jest.mock('fs');
+jest.mock("fs");
 
 const mockWriteFileSync = jest.fn();
 (fs.writeFileSync as jest.Mock).mockImplementation(mockWriteFileSync);
@@ -16,18 +15,14 @@ const mockWriteSync = jest.fn();
 
 afterEach(() => {
     jest.clearAllMocks();
-})
+});
 
-beforeAll(() => {
-    setDefaultProfile();
-})
-
-let testTransport;
+let loggingTestTransport: LoggingTestTransport;
 
 beforeEach(() => {
     jest.clearAllMocks();
-    testTransport = new TestTransport({})
-    logger.add(testTransport);
-})
+    loggingTestTransport = new LoggingTestTransport({});
+    logger.add(loggingTestTransport);
+});
 
-export {testTransport, mockWriteFileSync, mockWriteSync};
+export {loggingTestTransport, mockWriteFileSync, mockWriteSync};
