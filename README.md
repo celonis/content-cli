@@ -82,7 +82,7 @@ content-cli -h
 content-cli pull package -h
 ```
 
-## Building the Project
+## Building and Using the Project locally 
 
 This tool is tightly connected with the Celonis EMS and all capabilities require to have access to a Celonis EMS Team. 
 After cloning the project, the next step is to install the project dependencies. We use `yarn` as our package manager, 
@@ -90,11 +90,16 @@ so running `yarn install` on the project root folder should install all the nece
 the project dependencies, you can run `yarn build` to build the project artifact. To use the built artifact, you can 
 run `node content-cli.js` in the generated `dist` folder.
 
+If we want to use a specific local build of the tool globally, we can do this by:
+- Move to the root directory of the project.
+- Execute the `npm link` command. 
+This will create a symbolic link in the global `node_modules` directory, allowing you to run the CLI from anywhere on your machine.
+
 ## Release Process
 
-We manage releases using Github Actions with the `Build and Publish Workflow`. This action runs after merging to 
-the master branch, which builds the project and publishes the package to the Github registry. You can install 
-a published version of the Content CLI using the following command:
+We manage releases using Github Actions with the `Build and Publish Workflow`. This action gets executed manually by the Codeowners when there are changes that need to be published.
+This builds the project and publishes the package to the Github registry. You can install 
+the latest published version of the Content CLI using the following command:
 
 ```
 npm i -g @celonis/content-cli
@@ -102,9 +107,11 @@ npm i -g @celonis/content-cli
 
 ## Contributing
 
-We encourage public contributions! Please review 
+We encourage public contributions! Please check 
 [CONTRIBUTING.md](https://github.com/celonis/content-cli/blob/master/CONTRIBUTING.md) for details on our 
-code of conduct and development process.
+code of conduct.
+
+For details on command development, refer to the [How to Add a Command](https://github.com/celonis/content-cli/blob/master/docs/how-to-add-command.md) guide.
 
 ## License
 
