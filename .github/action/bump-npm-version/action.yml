@@ -11,6 +11,14 @@ inputs:
       - patch
       - minor
       - major
+  token:
+    description: 'GitHub token for authentication'
+    required: true
+    type: string
+  repository:
+    description: 'GitHub repository to push changes to'
+    required: true
+    type: string
 
 jobs:
   bump:
@@ -28,7 +36,7 @@ jobs:
         run: |
           git config user.name 'celobot'
           git config user.email 'github-celobot@celonis.com'
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}
 
       - name: Run npm version
         run: |
