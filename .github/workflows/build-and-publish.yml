@@ -17,6 +17,9 @@ jobs:
   version-bump:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Bump NPM version
         uses: ./.github/action/bump-npm-version
         with:
