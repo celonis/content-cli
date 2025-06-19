@@ -40,7 +40,7 @@ Use this type when a command is intended as a top-level command that can be exec
 ```ts
 configurator.command("export")
   .description("Export everything")
-  .option("--keys <realm>", "What to export")
+  .option("--keys <key>", "What to export")
   .action(exportHandlerMethod);
 ```
 
