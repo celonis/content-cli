@@ -4,7 +4,7 @@
   "description": "CLI Tool to help manage content in Celonis EMS",
   "main": "content-cli.js",
   "bin": {
-    "content-cli": "./content-cli.js"
+    "content-cli": "./dist/content-cli.js"
   },
   "author": "Celonis SE",
   "license": "MIT",
