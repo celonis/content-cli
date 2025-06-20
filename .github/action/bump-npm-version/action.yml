@@ -5,20 +5,12 @@ inputs:
   bump:
     description: 'Which version bump (patch, minor, major)'
     required: true
-    default: 'patch'
-    type: choice
-    options:
-      - patch
-      - minor
-      - major
   token:
     description: 'GitHub token for authentication'
     required: true
-    type: string
   repository:
     description: 'GitHub repository to push changes to'
     required: true
-    type: string
 
 jobs:
   bump:
