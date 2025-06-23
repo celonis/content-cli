@@ -27,35 +27,35 @@
 
 Content CLI has three core functionalities:
 
-**Profile:** The CLI connects to the EMS environments through profiles. 
-For each of the commands you can specify which profile you want to use. 
-This makes it powerful in the sense that you can pull something from 
-let's say team1.cluser1 and push it directly to team2.cluster2 easily. 
+**Profile:** The CLI connects to the EMS environments through profiles.
+For each of the commands you can specify which profile you want to use.
+This makes it powerful in the sense that you can pull something from
+let's say team1.cluser1 and push it directly to team2.cluster2 easily.
 You can create a profile using the following command:
 
 ```
 content-cli profile create
 ```
 
-**Pull:** This feature allows you to download content from the EMS to 
-your local machine.Let's take Studio package as an example. These 
-can be exported in the EMS as ZIP files that contain all package assets. 
-By using the following command using the package key and profile you 
+**Pull:** This feature allows you to download content from the EMS to
+your local machine.Let's take Studio package as an example. These
+can be exported in the EMS as ZIP files that contain all package assets.
+By using the following command using the package key and profile you
 have created, you will pull the ZIP file.
 
 ```
 content-cli pull package -p team1.cluster1 --key my-package
 ```
 
-**Push:** This feature allows you to push a content file to a team 
-in the EMS. To continue the last example, you can use the following 
+**Push:** This feature allows you to push a content file to a team
+in the EMS. To continue the last example, you can use the following
 command to push he previously pulled package in another team.
 
 ```
 content-cli push package -p team2.cluster2 --spaceKey my-space -f package_my-package.zip
 ```
 
-You can still explore the full capabilities of Content CLI and the 
+You can still explore the full capabilities of Content CLI and the
 list of options for the different commands by using the `-h` option
 in your command.
 
@@ -74,39 +74,39 @@ a ***--profile*** flag which allows you selecting a profile by its name.
 Creating a profile is done by using the ***content-cli profile create***
 command. The CLI will ask for a name, a URL and an API token. If the
 provided information is correct, it will create a profile with the
-provided data. After successfully creating a profile, you can view 
+provided data. After successfully creating a profile, you can view
 your profiles by running the ***content-cli profile list*** command.
 
 | Note: Please do not use blanks in profile names |
 |-------------------------------------------------|
 
 #### Profile Types
-You can create profiles of two types: using OAuth (Device Code 
+You can create profiles of two types: using OAuth (Device Code
 or Client Credentials) or using API Tokens (Application Key / API Key):
 
 ##### OAuth
 
-OAuth supports with two grant types: Device Code & Client Credentials. 
+OAuth supports with two grant types: Device Code & Client Credentials.
 
-With Device Code, creating the profile will trigger an authorization flow 
-(using the OAuth 2.0 Device code). You will be prompted to follow an authorization 
-link where you must authorize the **Content CLI** to be able to access the EMS environment 
-on your behalf. 
+With Device Code, creating the profile will trigger an authorization flow
+(using the OAuth 2.0 Device code). You will be prompted to follow an authorization
+link where you must authorize the **Content CLI** to be able to access the EMS environment
+on your behalf.
 
-With Client Credentials, you need to provide the credentials (Client ID, Client Secret) configured for your OAuth client. 
-You can create and configure an OAuth clients in the `Admin & Settings` section of your EMS account, under `Applications`. 
-The OAuth client needs to have the following scopes configured: studio, integration.data-pools, action-engine.projects. 
-After creating an OAuth client, you should assign it the permissions necessary for the respective commands. More 
+With Client Credentials, you need to provide the credentials (Client ID, Client Secret) configured for your OAuth client.
+You can create and configure an OAuth clients in the `Admin & Settings` section of your EMS account, under `Applications`.
+The OAuth client needs to have the following scopes configured: studio, integration.data-pools, action-engine.projects.
+After creating an OAuth client, you should assign it the permissions necessary for the respective commands. More
 information on registering OAuth clients can be found [here](https://docs.celonis.com/en/registering-oauth-client.html).
 
 ##### API Token
 
-You can choose between two different options when asked for an API token. 
-The first option is to use an API key, which identifies the user that created 
-the key. You can generate an API key in the `Edit Profile` section of your EMS 
+You can choose between two different options when asked for an API token.
+The first option is to use an API key, which identifies the user that created
+the key. You can generate an API key in the `Edit Profile` section of your EMS
 user account, under `API-Keys`. The second options is to use an Application Key,
-which is treated as a new user with separate configurable permissions. You can 
-generate an Application key in the `Team Settings` section of your EMS account, 
+which is treated as a new user with separate configurable permissions. You can
+generate an Application key in the `Team Settings` section of your EMS account,
 under `Applications`. After creating an Application, you can assign it different
 permissions based on how much power you want to give to the key owner.
 
@@ -136,13 +136,13 @@ you are able to pull.
 
 ```
 content-cli pull --help
-``` 
+```
 
 If you want to pull an analysis, you use ***content-cli pull
 analysis***. If you again use the ***--help*** flag here, you see all
 the options needed for pulling an entity. for pulling an analysis, it
-looks something like this:  
-  
+looks something like this:
+
 ```
 content-cli pull analysis --help
 ```
@@ -165,7 +165,7 @@ content-cli push --help
 
 #### Push .CTP files to the EMS
 
-_This functionality supports .CTP files generated on a cpm4 instance version 4.6+._ 
+_This functionality supports .CTP files generated on a cpm4 instance version 4.6+._
 
 By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the EMS, like the following examples:
 
@@ -175,7 +175,7 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 ```
 
 ```
-// Push the data models extracted from the .CTP file 
+// Push the data models extracted from the .CTP file
 content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
 ```
 
@@ -211,7 +211,7 @@ content-cli push packages -p my-other-profile --spaceKey my-space
 
 #### Pull draft package
 
-By default, the `pull package` command will pull the last published version 
+By default, the `pull package` command will pull the last published version
 of the package. You can use the ***--draft*** option to pull the draft version
 of your package, like the following example:
 
@@ -253,7 +253,7 @@ package using the following command:
 content-cli push asset -p my-profile-name -f asset_km-test.yml --package new-package
 ```
 
-Additionally, you can use content-cli push assets to push all the 
+Additionally, you can use content-cli push assets to push all the
 assets you have in your current directory to a single package,
 like the following example:
 
@@ -323,8 +323,8 @@ You can also use the `--spaceMappings` flag to provide a mapping of packages to 
 content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
 ```
 
-By default, all imported package variables will be assigned values as defined in the `manifest.yml` file of the exported packages. 
-Alternatively, if you want to update only the dataModel variables, you can do so by using the --dataModelMappingsFile option and 
+By default, all imported package variables will be assigned values as defined in the `manifest.yml` file of the exported packages.
+Alternatively, if you want to update only the dataModel variables, you can do so by using the --dataModelMappingsFile option and
 providing the output file from the data pool import command.
 
 ```
@@ -367,7 +367,7 @@ packages you have access to. 
 
 -   It is also possible to download packages in JSON format by adding '--json' option.
 -   When the JSON format option is used, also possible to include package dependencies by adding '--includeDependencies' flag
--   When the JSON format option is used, also possible to filter packages by adding '--packageKeys' parameter 
+-   When the JSON format option is used, also possible to filter packages by adding '--packageKeys' parameter
 
 ```
 content-cli list packages -p <your-chosen-profile>
@@ -401,7 +401,7 @@ content-cli list assets -p <your-chosen-profile> --assetType SCENARIO
 ### List assignments
 
 With this command you can retrieve a list of possible variable assignment values for a variable type.
-The command takes your permissions into consideration and only lists the values you have access to.  
+The command takes your permissions into consideration and only lists the values you have access to.
 
 -   It is also possible to download packages in JSON format by adding '--json' option.
 
@@ -409,11 +409,11 @@ The command takes your permissions into consideration and only lists the values 
 content-cli list assignments -p <your-chosen-profile> --variableType <your-chosen-variable-type>
 ```
 
-Currently, only variables of type DATA_MODEL and CONNECTION are supported.  
+Currently, only variables of type DATA_MODEL and CONNECTION are supported.
 
-The command includes an optional --params option for additional value filtering. 
-Parameters should be provided in CSV format. 
-For instance, when dealing with variables of type CONNECTION, you can use the --params option to retrieve 
+The command includes an optional --params option for additional value filtering.
+Parameters should be provided in CSV format.
+For instance, when dealing with variables of type CONNECTION, you can use the --params option to retrieve
 only the potential assignment values for connections with the appName 'Celonis' using the following command:
 
 ```
@@ -436,7 +436,7 @@ the same command as with pushing other assets to Studio:
 
 ```
 // Push analysis to Studio
-content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
+content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json
 ```
 
 ### Action Flows commands
@@ -471,19 +471,88 @@ This file is expected to be received by the ```action-flows analyze``` command, 
 
 ### Data Pool export / import commands
 
-#### Export Data Pool
+#### Export a Data Pool
 
 The export operation allows export of a Data Pool together with its dependencies. Dependencies
 could be imported data sources and related objects, data source exports, scheduling triggers and other.
 
 In order to pull a Data Pool you can execute the following command:
 
-```content-cli export data-pool --id <replace-with-pool-id> --profile local --outputToJsonFile```
+```bash
+content-cli export data-pool --id "<DATA_POOL_ID>" --profile '<PROFILE_NAME>' --outputToJsonFile
+```
 
-_Note_: The ```--outputToJsonFile``` is optional. If specified, the exported data pool is saved in a JSON file. The 
+_Note_: The ```--outputToJsonFile``` is optional. If specified, the exported data pool is saved in a JSON file. The
 command output will give you all the details.
 
-#### Batch Import multiple Data Pools
+#### Prepare the Import
+
+1. Copy the exported data pool file into the `import-request.json` file under the `dataPool` key. And make modifications if needed for example to the transformation SQL statements.
+2. Replace `<TARGET_TEAM_NAME>` with the target team domain. Which would be for example `myteam` for `https://myteam.eu-3.celonis.cloud`.
+3. Replace `<TARGET_DATA_POOL_ID>` with the target data pool ID.
+4. Optionally, replace `<SOURCE_ID>` and `<TARGET_ID>` with the source and target IDs for data source mappings. If you do not have any mappings, you can leave the `dataSourceMappings` value as `[]`.
+
+```json "import-request.json"
+{
+  "targetTeamDomain": "<TARGET_TEAM_NAME>",
+  "dataPoolImportRequests": [
+    {
+      "targetPoolId": "<TARGET_DATA_POOL_ID>",
+      "dataSourceMappings": {
+        "<SOURCE_ID>": "<TARGET_ID>"
+      },
+      "dataPool": {
+        "schemaVersion": "5.0.0",
+        "jobs": [],
+        "jobSchedulings": [],
+        "schedulings": [],
+        "schedulingTriggers": [],
+        "tableExtractions": [],
+        "tableExtractionCalculatedColumns": [],
+        "tableExtractionColumns": [],
+        "tableExtractionJoins": [],
+        "tableExtractionPartitionFilters": [],
+        "tableExtractionPartitionFilterConfigs": [],
+        "dataModelExecutions": [],
+        "dataModelExecutionTables": [],
+        "tasks": [],
+        "taskInstances": [],
+        "variables": [],
+        "variableDefaultSettings": [],
+        "variableDefaultValues": [],
+        "variableSettings": [],
+        "variableValues": [],
+        "dataModels": [],
+        "dataModelConfigurations": [],
+        "dataModelCustomCalendarEntries": [],
+        "dataModelFactoryCalendars": [],
+        "dataModelForeignKeys": [],
+        "dataModelForeignKeyColumns": [],
+        "dataModelSignalLinks": [],
+        "dataModelSignalLinkColumns": [],
+        "dataModelSignalLinkColumnNames": [],
+        "dataModelSignalLinkMappings": [],
+        "dataModelSignalLinkMappingColumns": [],
+        "dataModelTables": [],
+        "dataModelTableColumns": [],
+        "replicationCockpitData": {},
+        "dataPool": {},
+        "dataSources": [],
+        "dataTransferImports": [],
+        "dataTransferExports": [],
+        "dataTransferExportTables": [],
+        "dataTransferExportPoolConfigurations": [],
+        "dataTransferExportPoolMappings": [],
+        "ingestionDataSourceConfigurations": [],
+        "ingestionDataSourceConfigurationColumns": [],
+        "ingestionDataSourceConfigurationSamples": []
+      }
+    }
+  ]
+}
+```
+
+#### Import Data Pool(s)
 
 The import operation allows the import of multiple Data Pools, along with their dependencies. Dependencies
 could include imported data sources and related objects, data source exports, scheduling triggers, and other relevant items.
@@ -491,12 +560,12 @@ could include imported data sources and related objects, data source exports, sc
 To batch push a list of Data Pools, use the following command:
 
 ```bash
-content-cli import data-pools --profile dev1 --jsonFile ./request.json --outputToJsonFile
+content-cli import data-pools --profile '<PROFILE_NAME>' --jsonFile 'import-request.json' --outputToJsonFile
 ```
 
 #### Input
 
-* The ```request.json``` file contains the batch import JSON request.
+* The `import-request.json` file contains the batch import JSON request.
 * The JSON request looks the following way:
 
 ```
@@ -525,7 +594,6 @@ content-cli import data-pools --profile dev1 --jsonFile ./request.json --outputT
 
 In the above JSON:
 1. ```targetTeamDomain```: the destination team domain, into which the data pools data is pushed.
-2. ```sourcePoolId```: the source Data Pool ID.
 2. ```targetPoolId```: the target Data Pool ID to which the source Data Pool ID should be mapped to.
 3. ```dataSourceMappings```: the source Data Source ID to destination Data Source ID mappings.
 4. ```dataPool```: the Data Pool data exported via the `export data-pool` command
@@ -539,12 +607,12 @@ The command output will give you all the details.
 
 ### Updating connection properties programmatically
 
-In some cases, it might be required to update connection properties in data pools programmatically. 
+In some cases, it might be required to update connection properties in data pools programmatically.
 Examples include governance and compliance reasons or mechanisms which are rotating credentials automatically.
 
 With the `get` and `set` commands, users can update properties from connections in an automated fashion.
 
-You can get a list of all connections in a data pool using the `list` command: 
+You can get a list of all connections in a data pool using the `list` command:
 
 ```content-cli list connection --profile <profile> --dataPoolId <dataPoolId>```
 
