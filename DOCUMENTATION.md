@@ -485,12 +485,14 @@ command output will give you all the details.
 
 #### Batch Import multiple Data Pools
 
-The import operation allows import of multiple Data Pools together with their dependencies. Dependencies
-could be imported data sources and related objects, data source exports, scheduling triggers and other.
+The import operation allows the import of multiple Data Pools, along with their dependencies. Dependencies
+could include imported data sources and related objects, data source exports, scheduling triggers, and other relevant items.
 
-In order to batch push a list of data pools use the following command:
+To batch push a list of Data Pools, use the following command:
 
-```content-cli import data-pools --jsonFile ./request.json --profile dev1 --outputToJsonFile```
+```bash
+content-cli import data-pools --profile dev1 --jsonFile ./request.json --outputToJsonFile
+```
 
 #### Input
 
