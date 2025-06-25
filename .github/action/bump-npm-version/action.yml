@@ -12,27 +12,28 @@ inputs:
     description: 'GitHub repository to push changes to'
     required: true
 
-jobs:
-  bump:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+runs:
+  using: composite
+  steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
 
-      - name: Configure Git
-        run: |
-          git config user.name 'celobot'
-          git config user.email 'github-celobot@celonis.com'
-          git remote set-url origin https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name 'celobot'
+        git config user.email 'github-celobot@celonis.com'
+        git remote set-url origin https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}
 
-      - name: Run npm version
-        run: |
-          npm install
-          npm version ${{ inputs.bump }} -m "chore: bump version to %s"
-          git push origin HEAD
-          git push origin --tags
+    - name: Run npm version
+      shell: bash
+      run: |
+        npm install
+        npm version ${{ inputs.bump }} -m "chore: bump version to %s"
+        git push origin HEAD
+        git push origin --tags
