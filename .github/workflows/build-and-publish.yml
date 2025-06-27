@@ -24,7 +24,7 @@ jobs:
         uses: ./.github/action/bump-npm-version
         with:
           bump: ${{ inputs.bump }}
-          token: ${{ secrets.GIT_TOKEN_ADMIN }}
+          token: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
           repository: ${{ github.repository }}
 
   build:
