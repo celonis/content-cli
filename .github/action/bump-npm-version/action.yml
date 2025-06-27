@@ -33,6 +33,7 @@ runs:
     - name: Run npm version
       shell: bash
       run: |
+        git reset --hard origin/master
         npm install
         npm version ${{ inputs.bump }} -m "chore: bump version to %s"
         git push origin HEAD
