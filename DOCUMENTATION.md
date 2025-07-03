@@ -6,7 +6,7 @@
     -   [Push command](#push-command)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
-        -   [Pull package for Celonis Platform Store](#pull-package-for-celonis-platform-store)
+        -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
     -   [Pull/Push individual assets from/to Studio](#pullpush-individual-assets-fromto-studio)
     -   [Overwrite Package In Studio](#overwrite-package-in-studio)
     -   [Batch Export packages from Studio](#export-multiple-packages-at-once-from-studio)
@@ -222,10 +222,10 @@ of your package, like the following example:
 content-cli pull package -p my-profile-name --key ap-operational-app --draft
 ```
 
-#### Pull package for Celonis Platform Store
+#### Pull package for Celonis Marketplace
 
 You can use the ***--store*** option to pull the package including the
-store metadata you need to upload the package to the Celonis Platform Store, like the
+store metadata you need to upload the package to the Celonis Marketplace, like the
 following example:
 
 ```
