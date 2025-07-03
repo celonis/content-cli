@@ -2,7 +2,7 @@
 
 ## **Overview**
 
-The Content CLI is a TypeScript based CLI that allows interaction with the Celonis EMS. Its core functionality includes extracting, pushing, and managing EMS content.
+The Content CLI is a TypeScript based CLI that allows interaction with the Celonis Platform. Its core functionality includes extracting, pushing, and managing Celonis Platform content.
 
 **Key Dependencies**
 
@@ -36,7 +36,7 @@ The context object is passed to all commands and services. It includes:
 
 - **Profile**: The profile which is used for each command execution as authentication.
 - **Logger**: The global logger, with optional debug logging.
-- **HttpClient**: Authenticated EMS API client.
+- **HttpClient**: Authenticated Celonis Platform API client.
 
 This object is passed into command callbacks, ensuring that state and services are shared cleanly:
 ```
@@ -63,7 +63,7 @@ To manage profiles, use the content-cli profile command group. This allows you t
 
 ## **API communication**
 
-The **HttpClient** class is a centralized client for interacting with the EMS API. It handles:
+The **HttpClient** class is a centralized client for interacting with the Celonis Platform API. It handles:
 
 - **Auth**: Authenticates by sending the token in the provided profile.
 - **URL building**: Prefixing all API paths with the correct base (e.g. realm), inferred from the profile
