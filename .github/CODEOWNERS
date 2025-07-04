@@ -1,1 +1,13 @@
-*   @celonis/navi @gencblakqorip9 @celonis/astro
+*                                                 @celonis/astro
+
+/*                                                @celonis/astro
+/src                                              @celonis/astro
+/src/core                                         @celonis/astro
+/src/commands/configuration-management/           @celonis/astro
+/src/commands/profile/                            @celonis/astro
+/src/commands/action-flows/                       @celonis/process-automation
+/tests/commands/action-flows/                     @celonis/process-automation
+/src/commands/analysis/                           @celonis/process-analytics
+/src/commands/cpm4/                               @celonis/cpm4
+/src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
+/src/commands/studio/                             @celonis/navi
