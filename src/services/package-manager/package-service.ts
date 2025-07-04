@@ -43,7 +43,7 @@ class PackageService {
         }
 
         if (includeDependencies) {
-            fieldsToInclude.push("type", "value", "dependencies", "id", "updateAvailable", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels");
+            fieldsToInclude.push("type", "value", "dependencies", "updateAvailable", "version", "poolId", "node", "dataModelId", "dataPool", "datamodels");
             const unPublishedNodes = nodesListToExport.filter(node => !node.activatedDraftId);
             let publishedNodes = nodesListToExport.filter(node => node.activatedDraftId);
             publishedNodes = await this.getNodesWithActiveVersion(publishedNodes);
