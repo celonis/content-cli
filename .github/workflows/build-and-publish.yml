@@ -2,7 +2,7 @@ name: Build and publish Workflow
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, tmp-13.0.5 ]
     paths-ignore:
       - 'package.json'
       - '.github/**'
