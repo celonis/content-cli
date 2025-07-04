@@ -1,7 +1,7 @@
 # Content CLI
 
-Content CLI is a tool to help manage content in Celonis EMS. It provides various commands to help extract 
-content like analyses, packages, assets and others from your Celonis EMS team to your local machine, which 
+Content CLI is a tool to help manage content in Celonis Platform. It provides various commands to help extract 
+content like analyses, packages, assets and others from your Celonis Platform team to your local machine, which 
 you can then push to other teams. This process can be easily achieved by creating profiles for your different 
 teams and execute commands in a profile's context.
 
@@ -39,7 +39,7 @@ as part of our pycelonis examples library [here](https://github.com/celonis/pyce
 
 Content CLI has three core functionalities:
 
-**Profile:** The CLI connects to the EMS environments through profiles. For each of the commands you can specify 
+**Profile:** The CLI connects to the Celonis Platform environments through profiles. For each of the commands you can specify 
 which profile you want to use. This makes it powerful in the sense that you can pull something from let's say 
 team1.cluser1 and push it directly to team2.cluster2 easily. You can create a profile using the following command:
 
@@ -47,8 +47,8 @@ team1.cluser1 and push it directly to team2.cluster2 easily. You can create a pr
 content-cli profile create
 ```
 
-**Pull:** This feature allows you to download content from the EMS to your local machine. Let's take Studio package 
-as an example. These can be exported in the EMS as ZIP files that contain all package assets. By using the following 
+**Pull:** This feature allows you to download content from the Celonis Platform to your local machine. Let's take Studio package 
+as an example. These can be exported in the Celonis Platform as ZIP files that contain all package assets. By using the following 
 command using the package key and profile you have created, you will pull the ZIP file.
 
 ```
@@ -59,7 +59,7 @@ Example, if you want to pull a package with key "interesting-package" from your 
 content-cli pull package -p my-dev-profile --key interesting-package
 ```
 
-**Push:** This feature allows you to push a content file to a team in the EMS. To continue the last example, 
+**Push:** This feature allows you to push a content file to a team in the Celonis Platform. To continue the last example, 
 you can use the following command to push he previously pulled package in another team.
 
 ```
@@ -84,7 +84,7 @@ content-cli pull package -h
 
 ## Building and Using the Project locally 
 
-This tool is tightly connected with the Celonis EMS and all capabilities require to have access to a Celonis EMS Team. 
+This tool is tightly connected with the Celonis Platform and all capabilities require to have access to a Celonis Platform Team. 
 After cloning the project, the next step is to install the project dependencies. We use `yarn` as our package manager, 
 so running `yarn install` on the project root folder should install all the necessary dependencies. After installing 
 the project dependencies, you can run `yarn build` to build the project artifact. To use the built artifact, you can 
