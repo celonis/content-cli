@@ -1,4 +1,4 @@
-# Content CLI as a tool for managing content in the EMS
+# Content CLI as a tool for managing content in the Celonis Platform
 
 -   [Content CLI Core Features](#content-cli-core-features)
     -   [Using profiles](#using-profiles)
@@ -6,7 +6,7 @@
     -   [Push command](#push-command)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
-        -   [Pull package for EMS Store](#pull-package-for-ems-store)
+        -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
     -   [Pull/Push individual assets from/to Studio](#pullpush-individual-assets-fromto-studio)
     -   [Overwrite Package In Studio](#overwrite-package-in-studio)
     -   [Batch Export packages from Studio](#export-multiple-packages-at-once-from-studio)
@@ -27,19 +27,19 @@
 
 Content CLI has three core functionalities:
 
-**Profile:** The CLI connects to the EMS environments through profiles. 
+**Profile:** The CLI connects to the Celonis Platform through profiles. 
 For each of the commands you can specify which profile you want to use. 
 This makes it powerful in the sense that you can pull something from 
-let's say team1.cluser1 and push it directly to team2.cluster2 easily. 
+let's say team1.cluster1 and push it directly to team2.cluster2 easily. 
 You can create a profile using the following command:
 
 ```
 content-cli profile create
 ```
 
-**Pull:** This feature allows you to download content from the EMS to 
-your local machine.Let's take Studio package as an example. These 
-can be exported in the EMS as ZIP files that contain all package assets. 
+**Pull:** This feature allows you to download content from the Celonis Platform to 
+your local machine.Let's take a Studio package as an example. These 
+can be exported in the Celonis Platform as ZIP files that contain all package assets. 
 By using the following command using the package key and profile you 
 have created, you will pull the ZIP file.
 
@@ -48,7 +48,7 @@ content-cli pull package -p team1.cluster1 --key my-package
 ```
 
 **Push:** This feature allows you to push a content file to a team 
-in the EMS. To continue the last example, you can use the following 
+in the Celonis Platform. To continue the last example, you can use the following 
 command to push he previously pulled package in another team.
 
 ```
@@ -67,7 +67,7 @@ content-cli pull package -h
 ### Using profiles
 
 As mentioned above, **Content CLI** allows creating profiles for
-different environments. A profile consists of a name, URL to your EMS
+different environments. A profile consists of a name, URL to your Celonis Platform
 team and an API token. Each of the above mentioned commands include
 a ***--profile*** flag which allows you selecting a profile by its name.
 
@@ -90,12 +90,14 @@ OAuth supports with two grant types: Device Code & Client Credentials.
 
 With Device Code, creating the profile will trigger an authorization flow 
 (using the OAuth 2.0 Device code). You will be prompted to follow an authorization 
-link where you must authorize the **Content CLI** to be able to access the EMS environment 
+link where you must authorize the **Content CLI** to be able to access the Celonis Platform environment 
 on your behalf. 
 
 With Client Credentials, you need to provide the credentials (Client ID, Client Secret) configured for your OAuth client. 
-You can create and configure an OAuth clients in the `Admin & Settings` section of your EMS account, under `Applications`. 
-The OAuth client needs to have the following scopes configured: studio, integration.data-pools, action-engine.projects. 
+You can create and configure an OAuth clients in the `Admin & Settings` section of your Celonis account, under `Applications`. 
+The OAuth client needs to have scopes configured based on the area of commands they're using, e.g.: 
+- For Studio commands: studio, 
+- Data Pipeline/Data Pool commands: integration.data-pools,
 After creating an OAuth client, you should assign it the permissions necessary for the respective commands. More 
 information on registering OAuth clients can be found [here](https://docs.celonis.com/en/registering-oauth-client.html).
 
@@ -103,10 +105,10 @@ information on registering OAuth clients can be found [here](https://docs.celoni
 
 You can choose between two different options when asked for an API token. 
 The first option is to use an API key, which identifies the user that created 
-the key. You can generate an API key in the `Edit Profile` section of your EMS 
+the key. You can generate an API key in the `Edit Profile` section of your Celonis 
 user account, under `API-Keys`. The second options is to use an Application Key,
 which is treated as a new user with separate configurable permissions. You can 
-generate an Application key in the `Team Settings` section of your EMS account, 
+generate an Application key in the `Team Settings` section of your Celonis account, 
 under `Applications`. After creating an Application, you can assign it different
 permissions based on how much power you want to give to the key owner.
 
@@ -126,7 +128,7 @@ which of your commands is set to default.
 
 ### Pull command
 
-By using ***content-cli pull***, you can pull content from an EMS team.
+By using ***content-cli pull***, you can pull content from a Celonis Platform team.
 The CLI pulls that content to the current directory from where you are
 using the CLI.
 
@@ -155,7 +157,7 @@ to specify to which workspace it should be pushed and so on.
 ### Push command
 
 In the opposite to the pull command, with ***content-cli push*** you can
-push content to the EMS. Similarly to the pull command, with the
+push content to the Celonis Platform. Similarly to the pull command, with the
 ***--help*** functionality you can see all the possible entities which
 you can push.
 
@@ -163,11 +165,11 @@ you can push.
 content-cli push --help
 ```
 
-#### Push .CTP files to the EMS
+#### Push .CTP files to the Celonis Platform
 
 _This functionality supports .CTP files generated on a cpm4 instance version 4.6+._ 
 
-By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the EMS, like the following examples:
+By using ***content-cli push ctp***, you can push **.CTP** files from your local machine to the Celonis Platform, like the following examples:
 
 ```
 // Push the analysis extracted from the .CTP file
@@ -220,10 +222,10 @@ of your package, like the following example:
 content-cli pull package -p my-profile-name --key ap-operational-app --draft
 ```
 
-#### Pull package for EMS Store
+#### Pull package for Celonis Marketplace
 
 You can use the ***--store*** option to pull the package including the
-store metadata you need to upload the package to the EMS Store, like the
+store metadata you need to upload the package to the Celonis Marketplace, like the
 following example:
 
 ```
@@ -237,7 +239,7 @@ content-cli pull package -p my-profile-name --key ap-operational-app --store
 ### Pull/Push individual assets from/to Studio
 
 The pull/push asset commands work the same way as for other content in
-the EMS. By using content-cli pull asset, you can pull individual assets
+the Celonis Platform. By using content-cli pull asset, you can pull individual assets
 from Studio to your local machine, and an example of it would be:
 
 ```
