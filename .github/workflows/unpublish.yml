@@ -1,4 +1,4 @@
-name: Build and Publish Workflow
+name: Unpublish
 
 on:
   push:
@@ -26,10 +26,10 @@ jobs:
           registry-url: https://registry.npmjs.org/
           scope: '@celonis'
 
-      - name: Publish to Npm Registry
+      - name: Unpublish to Npm Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: cd dist/ && npm unpublish @celonis/content-cli@1.0.1
+        run: npm unpublish @celonis/content-cli@1.0.1
 
       - uses: actions/checkout@master
         name: Checkout Master
