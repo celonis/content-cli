@@ -92,6 +92,7 @@ run `node content-cli.js` in the generated `dist` folder.
 
 If we want to use a specific local build of the tool globally, we can do this by:
 - Move to the root directory of the project.
+- Execute `cd dist`, to move to the `dist` directory.
 - Execute the `npm link` command. 
 This will create a symbolic link in the global `node_modules` directory, allowing you to run the CLI from anywhere on your machine.
 
