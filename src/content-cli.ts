@@ -22,24 +22,27 @@ if (!semverSatisfies(process.version, requiredVersion)) {
     process.exit(1);
 }
 
-// Global configuration options
-const program: Command = new Command();
-program.version(VersionUtils.getCurrentCliVersion());
-program.option("-q, --quietmode", "Reduce output to a minimum", false);
-program.option("-p, --profile [profile]");
-program.option("--debug", "Print debug messages", false);
-program.option("--dev", "Development Mode", false);
-program.parseOptions(process.argv);
+async function configureGlobalConfigurationOptions(): Promise<Command> {
+    const program: Command = new Command();
+    const currentCliVersion = await VersionUtils.getCurrentCliVersion();
+    program.version(currentCliVersion);
+    program.option("-q, --quietmode", "Reduce output to a minimum", false);
+    program.option("-p, --profile [profile]");
+    program.option("--debug", "Print debug messages", false);
+    program.option("--dev", "Development Mode", false);
+    program.parseOptions(process.argv);
 
-if (!program.opts().quietmode) {
-    console.log(`Content CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
-    console.log();
-}
+    if (!program.opts().quietmode) {
+        console.log(`Content CLI - (C) Copyright 2025 - Celonis SE - Version ${currentCliVersion}`);
+        console.log();
+    }
 
-if (program.opts().debug) {
-    logger.transports.forEach(t => {
-        t.level = "debug";
-    });
+    if (program.opts().debug) {
+        logger.transports.forEach(t => {
+            t.level = "debug";
+        });
+    }
+    return program;
 }
 
 /** 
@@ -53,6 +56,7 @@ function configureRootCommands(configurator: Configurator): void {
 }
 
 async function run(): Promise<void> {
+    const program = await configureGlobalConfigurationOptions();
     const context = new Context(program.opts());
     await context.init();
 
