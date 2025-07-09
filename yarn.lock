@@ -4459,6 +4459,13 @@ pac-resolver@^7.0.1:
     degenerator "^5.0.0"
     netmask "^2.0.2"
 
+package-up@5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/package-up/-/package-up-5.0.0.tgz#3facda2aa9248c0b68b3dddfa4c58d22aa3faea2"
+  integrity sha512-MQEgDUvXCa3sGvqHg3pzHO8e9gqTCMPVrWUko3vPQGntwegmFo52mZb2abIVTjFnUcW0BcPz0D93jV5Cas1DWA==
+  dependencies:
+    find-up-simple "^1.0.0"
+
 packageurl-js@^2.0.1:
   version "2.0.1"
   resolved "https://registry.npmjs.org/packageurl-js/-/packageurl-js-2.0.1.tgz"
