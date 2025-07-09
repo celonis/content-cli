@@ -1,0 +1,36 @@
+name: Unpublish from Registries
+
+on:
+  workflow_dispatch:
+
+jobs:
+  unpublish:
+    runs-on: ubuntu-latest
+    name: Unpublish from GitHub and npm
+
+    steps:
+      - name: Setup Node for GitHub Registry
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          registry-url: https://npm.pkg.github.com
+          scope: '@celonis'
+
+      - name: Unpublish from GitHub Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Must be a PAT with delete:packages
+        run: |
+          npm unpublish @celonis/content-cli@1.0.2 --registry=https://npm.pkg.github.com
+
+      - name: Setup Node for npm Registry
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+          scope: '@celonis'
+
+      - name: Unpublish from npm Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm unpublish @celonis/content-cli@1.0.2 --registry=https://registry.npmjs.org
