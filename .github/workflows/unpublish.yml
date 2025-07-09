@@ -16,10 +16,10 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '20'
-          registry-url: https://npm.pkg.github.com/celonis
+          registry-url: https://npm.pkg.github.com
           scope: '@celonis'
 
       - name: Unpublish from Github Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm unpublish @celonis/content-cli@1.0.1 --registry=https://npm.pkg.github.com/celonis
+        run: npm unpublish @celonis/content-cli@1.0.1 --registry=https://npm.pkg.github.com
