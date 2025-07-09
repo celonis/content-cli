@@ -3,6 +3,8 @@ name: Build and Publish Workflow
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - '.github/**'
 
 jobs:
   build:
@@ -32,6 +34,11 @@ jobs:
         run: |
           cp README.md dist/README.md
           cp LICENSE dist/LICENSE
+
+      - name: Publish to Github Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cd dist/ && npm publish
 
       - name: Setup publish to Npm Registry
         uses: actions/setup-node@v1
