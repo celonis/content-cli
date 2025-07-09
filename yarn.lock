@@ -3075,11 +3075,6 @@ fill-range@^7.1.1:
   dependencies:
     to-regex-range "^5.0.1"
 
-find-up-simple@^1.0.0:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/find-up-simple/-/find-up-simple-1.0.1.tgz#18fb90ad49e45252c4d7fca56baade04fa3fca1e"
-  integrity sha512-afd4O7zpqHeRyg4PfDQsXmlDe2PfdHtJt6Akt8jOWaApLOZk5JXs6VMR29lz03pRe9mpykrRCYIYxaJYcfpncQ==
-
 find-up@^4.0.0, find-up@^4.1.0:
   version "4.1.0"
   resolved "https://registry.npmjs.org/find-up/-/find-up-4.1.0.tgz"
@@ -4463,13 +4458,6 @@ pac-resolver@^7.0.1:
   dependencies:
     degenerator "^5.0.0"
     netmask "^2.0.2"
-
-package-up@5.0.0:
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/package-up/-/package-up-5.0.0.tgz#3facda2aa9248c0b68b3dddfa4c58d22aa3faea2"
-  integrity sha512-MQEgDUvXCa3sGvqHg3pzHO8e9gqTCMPVrWUko3vPQGntwegmFo52mZb2abIVTjFnUcW0BcPz0D93jV5Cas1DWA==
-  dependencies:
-    find-up-simple "^1.0.0"
 
 packageurl-js@^2.0.1:
   version "2.0.1"
