@@ -1,0 +1,25 @@
+name: Unpublish
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Npm install and npm build
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node with Github Registry
+        uses: actions/setup-node@v1
+        with:
+          node-version: '20'
+          registry-url: https://npm.pkg.github.com/celonis
+          scope: '@celonis'
+
+      - name: Unpublish from Github Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm unpublish @your-org/package-name@version --registry=https://npm.pkg.github.com
