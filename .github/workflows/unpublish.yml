@@ -22,4 +22,4 @@ jobs:
       - name: Unpublish from Github Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm unpublish @celonis/content-cli@1.0.1 --registry=https://npm.pkg.github.com
+        run: npm unpublish @celonis/content-cli@1.0.1 --registry=https://npm.pkg.github.com/celonis
