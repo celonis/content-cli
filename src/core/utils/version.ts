@@ -1,8 +1,8 @@
 import * as fs from "fs";
-import { packageUp } from "package-up";
 
 export class VersionUtils {
     public static async getCurrentCliVersion(): Promise<string> {
+        const { packageUp } = await import("package-up");
         const packageJsonPath = await packageUp();
         if (!packageJsonPath) {
             throw new Error("Could not find package.json");
