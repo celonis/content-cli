@@ -3,8 +3,6 @@ name: Build and Publish Workflow
 on:
   push:
     branches: [ master ]
-    paths-ignore:
-      - '.github/**'
 
 jobs:
   build:
