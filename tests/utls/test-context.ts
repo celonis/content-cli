@@ -9,5 +9,5 @@ testContext.profile = {
     apiToken: "test-token",
     authenticationType: "Bearer"
 }
-testContext.httpClient = new HttpClient(testContext);
+testContext._httpClient = new HttpClient(testContext);
 export { testContext };
