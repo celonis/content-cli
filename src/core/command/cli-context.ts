@@ -25,7 +25,7 @@ export class Context {
 
     public get httpClient(): HttpClient {
         if (!this._httpClient) {
-            throw new FatalError("No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables");
+            throw new FatalError("No profile provided. Please provide a profile or a TEAM_URL and API_TOKEN through env variables");
         }
         return this._httpClient;
     }
