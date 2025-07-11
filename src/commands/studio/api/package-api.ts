@@ -9,14 +9,14 @@ import { FatalError } from "../../../core/utils/logger";
 
 export class PackageApi {
 
-    private httpClient: HttpClient;
+    private httpClient: () => HttpClient;
 
     constructor(context: Context) {
-        this.httpClient = context.httpClient;
+        this.httpClient = () => context.httpClient;
     }
 
     public async findAllPackages(): Promise<ContentNodeTransport[]> {
-        return this.httpClient.get("/package-manager/api/packages").catch(e => {
+        return this.httpClient().get("/package-manager/api/packages").catch(e => {
             throw new FatalError(`Problem getting packages: ${e}`);
         });
     }
@@ -27,7 +27,7 @@ export class PackageApi {
         queryParams.set("version", version ?? "");
         queryParams.set("excludeActionFlows", excludeActionFlows ? "true" : "false");
 
-        return await this.httpClient.downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`).catch(e => {
+        return await this.httpClient().downloadFile(`/package-manager/api/packages/${rootPackageKey}/export?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Package ${rootPackageKey}_${version} failed to export.`)
         });
     }
@@ -38,37 +38,37 @@ export class PackageApi {
             queryParams.set("type", type);
         }
 
-        return this.httpClient.get(`/package-manager/api/packages/with-variable-assignments?${queryParams.toString()}`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/packages/with-variable-assignments?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting variables of packages: : ${e}`);
         });
     }
 
     public async findLatestVersionById(nodeId: string): Promise<PackageHistoryTransport> {
-        return this.httpClient.get(`/package-manager/api/packages/${nodeId}/latest-version`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/packages/${nodeId}/latest-version`).catch(e => {
             throw new FatalError(`Problem getting latest version of package: ${e}`);
         });
     }
 
     public async findActiveVersionById(nodeId: string): Promise<PackageHistoryTransport> {
-        return this.httpClient.get(`/package-manager/api/packages/${nodeId}/active`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/packages/${nodeId}/active`).catch(e => {
             throw new FatalError(`Problem getting latest version of package: ${e}`);
         });
     }
 
     public async findActiveVersionByIds(nodeIds: string[]): Promise<PackageHistoryTransport[]> {
-        return this.httpClient.post("/package-manager/api/packages/active/by-ids", nodeIds).catch(e => {
+        return this.httpClient().post("/package-manager/api/packages/active/by-ids", nodeIds).catch(e => {
             throw new FatalError(`Problem getting latest version of packages: ${e}`);
         });
     }
 
     public async findNextVersion(nodeId: string): Promise<PackageHistoryTransport> {
-        return this.httpClient.get(`/package-manager/api/packages/${nodeId}/next-version`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/packages/${nodeId}/next-version`).catch(e => {
             throw new FatalError(`Problem getting latest version of package: ${e}`);
         });
     }
 
     public async importPackage(nodeContent: any, spaceId: string, overwrite: boolean, excludeActionFlows?: boolean): Promise<any> {
-        await this.httpClient.postFile("/package-manager/api/packages/import", nodeContent, {
+        await this.httpClient().postFile("/package-manager/api/packages/import", nodeContent, {
             spaceId: spaceId,
             overwrite: overwrite,
             excludeActionFlows: excludeActionFlows
@@ -78,13 +78,13 @@ export class PackageApi {
     }
 
     public async movePackageToSpace(nodeId: string, spaceId: string): Promise<void> {
-        await this.httpClient.put(`/package-manager/api/packages/${nodeId}/move/${spaceId}`, {}).catch(e => {
+        await this.httpClient().put(`/package-manager/api/packages/${nodeId}/move/${spaceId}`, {}).catch(e => {
             throw new FatalError(`Problem moving package: ${e}`);
         });
     }
 
     public async publishPackage(activatePackage: ActivatePackageTransport): Promise<void> {
-        await this.httpClient.post(`/package-manager/api/packages/${activatePackage.packageKey}/activate`, activatePackage).catch(e => {
+        await this.httpClient().post(`/package-manager/api/packages/${activatePackage.packageKey}/activate`, activatePackage).catch(e => {
             throw new FatalError(`Problem activating package with key ${activatePackage.packageKey}: ${e}`);
         });
     }

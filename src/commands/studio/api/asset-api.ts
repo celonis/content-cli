@@ -5,14 +5,14 @@ import { FatalError } from "../../../core/utils/logger";
 
 export class AssetApi {
 
-    private httpClient: HttpClient;
+    private httpClient: () => HttpClient;
 
     constructor(context: Context) {
-        this.httpClient = context.httpClient;
+        this.httpClient = () => context.httpClient;
     }
 
     public async findAllAssets(assetType: string): Promise<SaveContentNode[]> {
-        return this.httpClient.get(this.getFindAllAssetsUrl(assetType)).catch(e => {
+        return this.httpClient().get(this.getFindAllAssetsUrl(assetType)).catch(e => {
             throw new FatalError(`Problem getting assets: ${e}`);
         });
     }

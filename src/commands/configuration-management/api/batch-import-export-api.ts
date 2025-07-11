@@ -10,10 +10,10 @@ import { Context } from "../../../core/command/cli-context";
 
 export class BatchImportExportApi {
 
-    private httpClient: HttpClient;
+    private httpClient: () => HttpClient;
 
     constructor(context: Context) {
-        this.httpClient = context.httpClient;
+        this.httpClient = () => context.httpClient;
     }
 
     public async findAllActivePackages(flavors: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
@@ -22,7 +22,7 @@ export class BatchImportExportApi {
         queryParams.set("withDependencies", withDependencies.toString());
         flavors.forEach(flavor => queryParams.append("flavors", flavor))
 
-        return this.httpClient.get(`/package-manager/api/core/packages/export/list?${queryParams.toString()}`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/core/packages/export/list?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting active packages: ${e}`);
         });
     }
@@ -36,7 +36,7 @@ export class BatchImportExportApi {
         }
         flavors.forEach(flavor => queryParams.append("flavors", flavor))
 
-        return this.httpClient.get(`/package-manager/api/core/packages/export/list-by-variable-value?${queryParams.toString()}`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/core/packages/export/list-by-variable-value?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting active packages by variable value: ${e}`);
         });
     }
@@ -47,7 +47,7 @@ export class BatchImportExportApi {
         packageKeys.forEach(key => queryParams.append("packageKeys", key))
         queryParams.set("withDependencies", withDependencies.toString());
 
-        return this.httpClient.get(`/package-manager/api/core/packages/export/list-by-keys?${queryParams.toString()}`).catch(e => {
+        return this.httpClient().get(`/package-manager/api/core/packages/export/list-by-keys?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting active packages by keys: ${e}`);
         });
     }
@@ -57,13 +57,13 @@ export class BatchImportExportApi {
         packageKeys.forEach(packageKey => queryParams.append("packageKeys", packageKey));
         queryParams.set("withDependencies", withDependencies.toString());
 
-        return this.httpClient.getFile(`/package-manager/api/core/packages/export/batch?${queryParams.toString()}`).catch(e => {
+        return this.httpClient().getFile(`/package-manager/api/core/packages/export/batch?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem exporting packages: ${e}`);
         });
     }
 
     public async importPackages(data: FormData, overwrite: boolean): Promise<PostPackageImportData[]> {
-        return this.httpClient.postFile(
+        return this.httpClient().postFile(
             "/package-manager/api/core/packages/import/batch",
             data,
             {overwrite}
@@ -71,7 +71,7 @@ export class BatchImportExportApi {
     }
 
     public async findVariablesWithValuesByPackageKeysAndVersion(packagesByKeyAndVersion: PackageKeyAndVersionPair[]): Promise<VariableManifestTransport[]> {
-        return this.httpClient.post("/package-manager/api/core/packages/export/batch/variables-with-assignments", packagesByKeyAndVersion).catch(e => {
+        return this.httpClient().post("/package-manager/api/core/packages/export/batch/variables-with-assignments", packagesByKeyAndVersion).catch(e => {
             throw new FatalError(`Problem exporting package variables: ${e}`);
         })
     }
