@@ -299,7 +299,7 @@ export class ProfileService {
 
     private checkIfMissingProfile(profileName: string, reject: any): void {
         if (!profileName && (!process.env.TEAM_URL || !process.env.API_TOKEN)) {
-            reject("No profile provided. Please provide a profile or an TEAM_URL and API_TOKEN through env variables");
+            reject("Profile not found");
         }
     }
 }
