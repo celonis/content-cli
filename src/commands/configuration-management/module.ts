@@ -26,11 +26,15 @@ class Module extends IModule {
             .description("Command to export package configs")
             .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
             .option("--withDependencies", "Include variables and dependencies", "")
+            .option("--git-profile", "Git profile which you want to use for the git operations")
+            .option("--git-branch", "Git branch in which you want to push the exported file")
             .action(this.batchExportPackages);
 
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
+            .option("--git-profile", "Git profile which you want to use for the git operations")
+            .option("--git-branch", "Git branch from which you want to pull the exported file and import")
             .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
             .action(this.batchImportPackages);
 
