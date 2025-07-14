@@ -6,16 +6,16 @@ import { HttpClient } from "../http-client";
 import { Context } from "../../command/cli-context";
 
 export abstract class BaseManager {
-    private httpClient: HttpClient;
+    private httpClient: () => HttpClient;
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     protected constructor(context: Context) {
-        this.httpClient = context.httpClient;
+        this.httpClient = () => context.httpClient;
     }
 
     public async pull(): Promise<any> {
         return new Promise<void>((resolve, reject) => {
-            this.httpClient
+            this.httpClient()
                 .get(this.getConfig().pullUrl)
                 .then(data => {
                     try {
@@ -36,7 +36,7 @@ export abstract class BaseManager {
 
     public async pullFile(): Promise<any> {
         return new Promise<void>((resolve, reject) => {
-            this.httpClient
+            this.httpClient()
                 .downloadFile(this.getConfig().pullUrl)
                 .then(data => {
                     const filename = this.writeStreamToFile(data);
@@ -52,7 +52,7 @@ export abstract class BaseManager {
 
     public async push(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            this.httpClient
+            this.httpClient()
                 .post(this.getConfig().pushUrl, this.getBody())
                 .then(data => {
                     logger.info(this.getConfig().onPushSuccessMessage(data));
@@ -67,7 +67,7 @@ export abstract class BaseManager {
 
     public async update(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            this.httpClient
+            this.httpClient()
                 .put(this.getConfig().updateUrl, this.getBody())
                 .then(data => {
                     logger.info(this.getConfig().onUpdateSuccessMessage());
@@ -82,7 +82,7 @@ export abstract class BaseManager {
 
     public async findAll(): Promise<any> {
         return new Promise<any>((resolve, reject) => {
-            this.httpClient
+            this.httpClient()
                 .get(this.getConfig().findAllUrl)
                 .then(data => {
                     this.getConfig().onFindAll(data);

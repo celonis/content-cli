@@ -5,21 +5,21 @@ import { PackageDiffMetadata, PackageDiffTransport } from "../interfaces/diff-pa
 
 export class DiffApi {
 
-    private httpClient: HttpClient;
+    private httpClient: () => HttpClient;
 
     constructor(context: Context) {
-        this.httpClient = context.httpClient;
+        this.httpClient = () => context.httpClient;
     }
 
     public async diffPackages(data: FormData): Promise<PackageDiffTransport[]> {
-        return this.httpClient.postFile(
+        return this.httpClient().postFile(
             "/package-manager/api/core/packages/diff/configuration",
             data
         );
     }
 
     public async hasChanges(data: FormData): Promise<PackageDiffMetadata[]> {
-        return this.httpClient.postFile(
+        return this.httpClient().postFile(
             "/package-manager/api/core/packages/diff/configuration/has-changes",
             data
         );

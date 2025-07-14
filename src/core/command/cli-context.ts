@@ -1,6 +1,6 @@
 import { HttpClient } from "../http/http-client";
 import {ProfileService} from "../profile/profile.service";
-import {logger} from "../utils/logger";
+import {FatalError, logger} from "../utils/logger";
 import {Profile} from "../profile/profile.interface";
 import { GitProfile } from "../git-profile/git-profile.interface";
 import { GitProfileService } from "../git-profile/git-profile.service";
@@ -13,7 +13,7 @@ import { GitProfileService } from "../git-profile/git-profile.service";
 
 export class Context {
 
-    public httpClient: HttpClient;
+    public _httpClient: HttpClient;
     public profile: Profile;
     public gitProfile: GitProfile;
 
@@ -29,6 +29,13 @@ export class Context {
         this.gitProfileName = options.gitProfile;
     }
 
+    public get httpClient(): HttpClient {
+        if (!this._httpClient) {
+            throw new FatalError("No profile provided. Please provide a profile or a TEAM_URL and API_TOKEN through env variables");
+        }
+        return this._httpClient;
+    }
+
     public async init(): Promise<void> {
         await this.loadProfile(this.profileName);
         await this.loadGitProfile(this.gitProfileName);
@@ -36,7 +43,7 @@ export class Context {
         if (this.profile) {
             // only if a profile is available, it makes sense to provide an initialized
             // HttpClient API.
-            this.httpClient = new HttpClient(this);
+            this._httpClient = new HttpClient(this);
         }
     }
 
@@ -53,7 +60,7 @@ export class Context {
             this.profileName = profileName;
             this.log.debug(`Using profile ${profileName}`);
         } catch (err) {
-            this.log.error(err);
+            this.log.debug(err);
             this.profile = undefined;
             this.profileName = undefined;
         }
