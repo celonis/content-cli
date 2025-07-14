@@ -6,6 +6,7 @@ import * as path from "path";
 import * as os from "node:os";
 import { Context } from "../command/cli-context";
 import { v4 as uuid } from "uuid";
+import { SimpleGit } from "simple-git/dist/typings/simple-git";
 
 export class GitService {
 
@@ -35,18 +36,18 @@ export class GitService {
     public async pushToBranch(sourceDir: string, branch: string): Promise<void> {
         this.validateGitProfileExistence();
         const repoUrl = this.getRepoUrl();
-
         const git = simpleGit({ baseDir: sourceDir });
 
         try {
             if (!fs.existsSync(path.join(sourceDir, ".git"))) {
                 await git.init();
+                await git.addRemote("origin", repoUrl);
             }
 
             await git.addConfig("user.name", this.gitProfile.username ?? "content-cli");
             await git.addConfig("user.email", `${this.gitProfile.username ?? "cli"}@users.noreply.github.com`);
 
-            await git.checkout(branch);
+            await this.checkoutOrCreateLocalBranch(git, branch);
             await git.add("./*");
             const status = await git.status();
             if (status.files.length === 0) {
@@ -56,9 +57,19 @@ export class GitService {
 
             const commitMessage = "Update from content-cli";
             await git.commit(commitMessage);
-            await git.push(["-u", repoUrl, branch]);
+            await git.push(["-u", "--force", "origin", branch]);
         } catch (err) {
             throw new Error(`Failed to push to ${branch}: ${err}`);
+        }
+    }
+
+    private async checkoutOrCreateLocalBranch(git: SimpleGit, branch: string): Promise<void> {
+        const branches = await git.branch();
+
+        if (!branches.all.includes(branch)) {
+            await git.checkoutLocalBranch(branch);
+        } else {
+            await git.checkout(branch);
         }
     }
 
