@@ -1,7 +1,8 @@
 export interface GitProfile {
     name: string;
+    username?: string;
     repository: string; // in the format "owner/repository"
-    token: string;
+    token?: string;
     authenticationType: AuthenticationType;
 }
 

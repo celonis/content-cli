@@ -16,19 +16,19 @@ export class GitProfileService {
 
     public async findProfile(profileName: string): Promise<GitProfile> {
         return new Promise<GitProfile>((resolve, reject) => {
-            try {
-                if (process.env.USERNAME && process.env.GIT_TOKEN && process.env.REPOSITORY) {
-                    resolve(this.buildProfileFromEnvVariables());
-                } else {
-                    const file = fs.readFileSync(
-                        path.resolve(this.gitProfileContainerPath, this.constructProfileFileName(profileName)),
-                        { encoding: "utf-8" }
-                    );
-                    const profile : GitProfile = JSON.parse(file);
-                    resolve(profile)
+            if (process.env.USERNAME && process.env.GIT_TOKEN && process.env.REPOSITORY) {
+                resolve(this.buildProfileFromEnvVariables());
+            } else {
+                if (!profileName) {
+                    reject(new Error("No profile was found"));
                 }
-            } catch (e) {
-                reject(`The Git profile "${profileName}" couldn't be resolved.`);
+                this.createProfileContainerIfNotExists();
+                const file = fs.readFileSync(
+                    path.resolve(this.gitProfileContainerPath, this.constructProfileFileName(profileName)),
+                    { encoding: "utf-8" }
+                );
+                const profile : GitProfile = JSON.parse(file);
+                resolve(profile)
             }
         });
     }
@@ -104,7 +104,7 @@ export class GitProfileService {
             if (fs.existsSync(this.gitProfileContainerPath)) {
                 fileNames = fs
                     // @ts-ignore
-                    .readdirSync(this.profileContainerPath, { withFileTypes: true })
+                    .readdirSync(this.gitProfileContainerPath, { withFileTypes: true })
                     .filter(
                         dirent =>
                             !dirent.isDirectory() && dirent.name.endsWith(".json") && dirent.name !== "config.json"

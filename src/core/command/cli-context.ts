@@ -72,7 +72,6 @@ export class Context {
             this.gitProfileName = gitProfileName;
             this.log.debug(`Using git profile ${gitProfileName}`);
         } catch (err) {
-            this.log.error(err);
             this.gitProfile = undefined;
             this.gitProfileName = undefined;
         }
