@@ -26,12 +26,16 @@ class Module extends IModule {
             .description("Command to export package configs")
             .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
             .option("--withDependencies", "Include variables and dependencies", "")
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the git operations")
+            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported file")
             .action(this.batchExportPackages);
 
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
-            .requiredOption("-f, --file <file>", "Exported packages file (relative path)")
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the git operations")
+            .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
+            .option("-f, --file <file>", "Exported packages file (relative path)")
             .action(this.batchImportPackages);
 
         configCommand.command("diff")
@@ -65,11 +69,11 @@ class Module extends IModule {
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.withDependencies);
+        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.withDependencies, options.gitBranch);
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchImportPackages(options.file, options.overwrite);
+        await new ConfigCommandService(context).batchImportPackages(options.file, options.overwrite, options.gitBranch);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

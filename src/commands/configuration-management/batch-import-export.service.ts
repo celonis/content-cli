@@ -15,6 +15,10 @@ import { parse, stringify } from "../../core/utils/json";
 import { PackageApi } from "../studio/api/package-api";
 import { BatchImportExportApi } from "./api/batch-import-export-api";
 import { StudioService } from "./studio.service";
+import { GitService } from "../../core/git-profile/git.service";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
 
 export class BatchImportExportService {
 
@@ -22,12 +26,14 @@ export class BatchImportExportService {
 
     private studioPackageApi: PackageApi;
     private studioService: StudioService;
+    private gitService: GitService;
 
     constructor(context: Context) {
         this.batchImportExportApi = new BatchImportExportApi(context);
 
         this.studioPackageApi = new PackageApi(context);
         this.studioService = new StudioService(context);
+        this.gitService = new GitService(context);
     }
 
     public async listActivePackages(flavors: string[]): Promise<void> {
@@ -51,7 +57,7 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], withDependencies: boolean = false, gitBranch: string): Promise<void> {
         const exportedPackagesData: Buffer = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
         const exportedPackagesZip: AdmZip = new AdmZip(exportedPackagesData);
 
@@ -86,11 +92,28 @@ export class BatchImportExportService {
         const fileDownloadedMessage = "File downloaded successfully. New filename: ";
         const filename = `export_${uuidv4()}.zip`;
         exportedPackagesZip.writeZip(filename);
+
+        if (gitBranch) {
+            const tempDir = path.join(os.tmpdir(), `export-${uuidv4()}`);
+            fs.mkdirSync(tempDir, { recursive: true });
+            exportedPackagesZip.extractAllTo(tempDir, true);
+
+            await this.gitService.pushToBranch(tempDir, gitBranch);
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+
         logger.info(fileDownloadedMessage + filename);
     }
 
-    public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
-        let configs = new AdmZip(file);
+    public async batchImportPackages(file: string, overwrite: boolean, gitBranch: string): Promise<void> {
+        let fileToBeImported: string;
+        if (gitBranch) {
+            fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
+        } else {
+            fileToBeImported = file;
+        }
+
+        let configs = new AdmZip(fileToBeImported);
         const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
         const variablesManifests: VariableManifestTransport[] = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as VariableManifestTransport[];
 
@@ -100,6 +123,10 @@ export class BatchImportExportService {
         const formData = this.buildBodyForImport(configs, variablesManifests);
         const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite);
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
+
+        if (gitBranch) {
+            fs.rmSync(fileToBeImported);
+        }
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
