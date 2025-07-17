@@ -34,7 +34,7 @@ class Module extends IModule {
         metadataCommand
             .command("export")
             .description("Command to show whether packages have unpublished changes")
-            .option("--packageKeys <packageKeys...>", "Keys of packages to find the metadata of")
+            .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to find the metadata of")
             .option("--json", "Return response as json type", "")
             .action(this.batchExportPackagesMetadata);
 
