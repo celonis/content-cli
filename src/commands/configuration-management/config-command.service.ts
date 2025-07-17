@@ -40,6 +40,10 @@ export class ConfigCommandService {
         return this.batchImportExportService.batchExportPackages(packageKeys, withDependencies);
     }
 
+    public batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
+        return this.batchImportExportService.batchExportPackagesMetadata(packageKeys, jsonResponse);
+    }
+
     public batchImportPackages(file: string, overwrite: boolean): Promise<void> {
         return this.batchImportExportService.batchImportPackages(file, overwrite);
     }
