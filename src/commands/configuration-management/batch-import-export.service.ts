@@ -5,7 +5,7 @@ import * as AdmZip from "adm-zip";
 import { Context } from "../../core/command/cli-context";
 import {
     PackageExportTransport, PackageKeyAndVersionPair,
-    PackageManifestTransport,
+    PackageManifestTransport, PackageMetadataExportTransport,
     StudioPackageManifest, VariableManifestTransport,
 } from "./interfaces/package-export.interfaces";
 import { BatchExportImportConstants } from "./interfaces/batch-export-import.constants";
@@ -89,6 +89,18 @@ export class BatchImportExportService {
         logger.info(fileDownloadedMessage + filename);
     }
 
+    public async batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
+        const exportedPackagesMetadata: PackageMetadataExportTransport[] = await this.batchImportExportApi.batchExportPackagesMetadata(packageKeys);
+
+        if (jsonResponse) {
+            this.exportListOfPackagesMetadata(exportedPackagesMetadata);
+        } else {
+            exportedPackagesMetadata.forEach(pkg => {
+                logger.info(`${pkg.key} - Has Unpublished Changes: ${pkg.hasUnpublishedChanges}`);
+            });
+        }
+    }
+
     public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
         let configs = new AdmZip(file);
         const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
@@ -148,6 +160,12 @@ export class BatchImportExportService {
         });
 
         return this.batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
+    }
+
+    private exportListOfPackagesMetadata(packagesMetadata: PackageMetadataExportTransport[]): void {
+        const filename = uuidv4() + ".json";
+        fileService.writeToFileWithGivenName(JSON.stringify(packagesMetadata), filename);
+        logger.info(FileService.fileDownloadedMessage + filename);
     }
 
     private buildBodyForImport(configs: AdmZip, variablesManifests: VariableManifestTransport[]): FormData {

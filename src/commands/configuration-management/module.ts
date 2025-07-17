@@ -28,6 +28,16 @@ class Module extends IModule {
             .option("--withDependencies", "Include variables and dependencies", "")
             .action(this.batchExportPackages);
 
+        const metadataCommand = configCommand.command("metadata")
+            .description("Commands related to package metadata")
+
+        metadataCommand
+            .command("export")
+            .description("Command to show whether packages have unpublished changes")
+            .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to find the metadata of")
+            .option("--json", "Return response as json type", "")
+            .action(this.batchExportPackagesMetadata);
+
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
@@ -66,6 +76,10 @@ class Module extends IModule {
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.withDependencies);
+    }
+
+    private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new ConfigCommandService(context).batchExportPackagesMetadata(options.packageKeys, options.json);
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
