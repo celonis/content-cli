@@ -1,9 +1,30 @@
-# CLI – How to Add a New Command in Content CLI
+# How to Add a New Command in Content CLI
 
 ## Overview
 
 This guide explains how to add a new command in Content CLI. It covers both adding commands to existing groups and creating entirely new command groups. It also lays down expectations for documentation, folder structure, and ownership.
 
+---
+
+## Command Structure
+
+Structure commands so the top-level command identifies the target, and the subcommand specifies the operation that's being performed. The recommended structure is:
+
+```
+content-cli <resource> <action>
+```
+This structure promotes keeping commands organized into the ownership areas they belong to. 
+- The **resource** here will be the actual entity type or concept with which we're working (e.g., `profile`, `package`).
+- The **action** indicates what's being performed on the selected resource type  (e.g., `export`, `list`, `set`).
+
+Example of this usage: `content-cli profile create`
+
+### Existing commands
+The existing CLI commands may not always follow this structure because of legacy design. When extending these commands, pay attention to existing patterns and structure.
+
+For example:
+- `list packages`
+- `push asset`
 ---
 
 ## Adding a New Command to an Existing Group
@@ -125,5 +146,4 @@ You are free to adapt the structure based on complexity.
 
 ## Useful Examples
 
-Example group: `configuration-management`  
-(*Link to be added after merging changes into the main branch*)
+Example group: [configuration-management](https://github.com/celonis/content-cli/tree/master/src/commands/configuration-management)
