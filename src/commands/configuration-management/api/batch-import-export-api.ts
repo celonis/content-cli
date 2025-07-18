@@ -62,6 +62,16 @@ export class BatchImportExportApi {
         });
     }
 
+    public async exportPackagesByVersions(packageKeysByVersion: string[], withDependencies: boolean = false): Promise<Buffer> {
+        const queryParams = new URLSearchParams();
+        packageKeysByVersion.forEach(packageKeyByVersion => queryParams.append("packageKeysWithVersion", packageKeyByVersion));
+        queryParams.set("withDependencies", withDependencies.toString());
+
+        return this.httpClient().getFile(`/package-manager/api/core/packages/versions/export/batch?${queryParams.toString()}`).catch(e => {
+            throw new FatalError(`Problem exporting packages by versions: ${e}`);
+        });
+    }
+
     public async batchExportPackagesMetadata(packageKeys: string[]): Promise<PackageMetadataExportTransport[]> {
         const queryParams = new URLSearchParams();
         packageKeys.forEach(packageKey => queryParams.append("packageKeys", packageKey));
