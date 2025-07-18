@@ -94,12 +94,8 @@ export class BatchImportExportService {
         exportedPackagesZip.writeZip(filename);
 
         if (gitBranch) {
-            const tempDir = path.join(os.tmpdir(), `export-${uuidv4()}`);
-            fs.mkdirSync(tempDir, { recursive: true });
-            exportedPackagesZip.extractAllTo(tempDir, true);
-
-            await this.gitService.pushToBranch(tempDir, gitBranch);
-            fs.rmSync(tempDir, { recursive: true, force: true });
+            const extractedDirectory = fileService.extractExportedZipWithNestedZips(exportedPackagesZip);
+            await this.gitService.pushToBranch(extractedDirectory, gitBranch);
         }
 
         logger.info(fileDownloadedMessage + filename);
@@ -109,6 +105,7 @@ export class BatchImportExportService {
         let fileToBeImported: string;
         if (gitBranch) {
             fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
+            fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
         } else {
             fileToBeImported = file;
         }

@@ -7,6 +7,7 @@ import * as os from "node:os";
 import { Context } from "../command/cli-context";
 import { v4 as uuid } from "uuid";
 import { SimpleGit } from "simple-git/dist/typings/simple-git";
+import AdmZip = require("adm-zip");
 
 export class GitService {
 
@@ -35,11 +36,16 @@ export class GitService {
 
     public async pushToBranch(sourceDir: string, branch: string): Promise<void> {
         this.validateGitProfileExistence();
+
+        const workingDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
+        fs.mkdirSync(workingDir, { recursive: true });
+        fs.cpSync(sourceDir, workingDir, { recursive: true });
+
         const repoUrl = this.getRepoUrl();
-        const git = simpleGit({ baseDir: sourceDir });
+        const git: SimpleGit = simpleGit({ baseDir: workingDir });
 
         try {
-            if (!fs.existsSync(path.join(sourceDir, ".git"))) {
+            if (!fs.existsSync(path.join(workingDir, ".git"))) {
                 await git.init();
                 await git.addRemote("origin", repoUrl);
             }
@@ -57,9 +63,11 @@ export class GitService {
 
             const commitMessage = "Update from content-cli";
             await git.commit(commitMessage);
-            await git.push(["-u", "--force", "origin", branch]);
+            await git.push(["-u", "origin", branch]);
         } catch (err) {
             throw new Error(`Failed to push to ${branch}: ${err}`);
+        } finally {
+            fs.rmSync(workingDir, { recursive: true, force: true });
         }
     }
 

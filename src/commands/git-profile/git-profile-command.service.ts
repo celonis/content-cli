@@ -2,7 +2,6 @@ import { QuestionService } from "../../core/utils/question.service";
 import { FatalError, logger } from "../../core/utils/logger";
 import { AuthenticationType, GitProfile } from "../../core/git-profile/git-profile.interface";
 import { GitProfileService } from "../../core/git-profile/git-profile.service";
-import { profile } from "winston";
 
 export class GitProfileCommandService {
     private gitProfileService = new GitProfileService();
@@ -11,8 +10,8 @@ export class GitProfileCommandService {
         const profile: GitProfile = {} as GitProfile;
         const questions = new QuestionService();
         try {
-            profile.name = await questions.ask("Name you want to set to this Git profile: ");
-            profile.username = await questions.ask("You Git username: ");
+            profile.name = await questions.ask("Name of the Git profile to create: ");
+            profile.username = await questions.ask("Your Git username: ");
             profile.repository = await questions.ask("Your Github repository (format: repoOwner/repoName): ");
             const type = await questions.ask("Authentication type: PAT (1), SSH token (2): " );
             switch (type) {
