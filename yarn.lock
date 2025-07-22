@@ -4833,9 +4833,9 @@ simple-git@3.16.0:
     "@kwsites/promise-deferred" "^1.1.1"
     debug "^4.3.4"
 
-simple-git@^3.28.0:
+simple-git@3.28.0:
   version "3.28.0"
-  resolved "https://registry.npmjs.org/simple-git/-/simple-git-3.28.0.tgz"
+  resolved "https://registry.yarnpkg.com/simple-git/-/simple-git-3.28.0.tgz#c6345b2e387880f8450788a1e388573366ae48ac"
   integrity sha512-Rs/vQRwsn1ILH1oBUy8NucJlXmnnLeLCfcvbSehkPzbv3wwoFWIdtfd6Ndo6ZPhlPsCZ60CPI4rxurnwAa+a2w==
   dependencies:
     "@kwsites/file-exists" "^1.1.1"
