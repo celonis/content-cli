@@ -1,20 +1,19 @@
-import { GitProfile } from "./git-profile.interface";
 import simpleGit from "simple-git";
-import { logger } from "../utils/logger";
+import { logger } from "../../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "node:os";
-import { Context } from "../command/cli-context";
+import { Context } from "../../command/cli-context";
 import { v4 as uuid } from "uuid";
 import { SimpleGit } from "simple-git/dist/typings/simple-git";
-import AdmZip = require("adm-zip");
+import { VcsProfile } from "../vcs-profile.interface";
 
 export class GitService {
 
-    private readonly gitProfile: GitProfile;
+    private readonly gitProfile: VcsProfile;
 
     constructor(context: Context) {
-        this.gitProfile = context.gitProfile;
+        this.gitProfile = context.vcsProfile;
     }
 
     public async pullFromBranch(branch: string): Promise<string> {

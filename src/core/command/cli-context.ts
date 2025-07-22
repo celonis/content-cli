@@ -2,8 +2,8 @@ import { HttpClient } from "../http/http-client";
 import {ProfileService} from "../profile/profile.service";
 import {FatalError, logger} from "../utils/logger";
 import {Profile} from "../profile/profile.interface";
-import { GitProfile } from "../git-profile/git-profile.interface";
-import { GitProfileService } from "../git-profile/git-profile.service";
+import { VcsProfileService } from "../vcs-profile/vcs-profile.service";
+import { VcsProfile } from "../vcs-profile/vcs-profile.interface";
 
 /**
  * The execution context object is passed to the modules to access
@@ -15,18 +15,18 @@ export class Context {
 
     public _httpClient: HttpClient;
     public profile: Profile;
-    public gitProfile: GitProfile;
+    public vcsProfile: VcsProfile;
 
     private log = logger;
     private profileName: string | undefined;
-    private gitProfileName: string | undefined;
+    private vcsProfileName: string | undefined;
 
     private profileService = new ProfileService();
-    private gitProfileService = new GitProfileService();
+    private vcsProfileService = new VcsProfileService();
 
     constructor(options: any) {
         this.profileName = options.profile;
-        this.gitProfileName = options.gitProfile;
+        this.vcsProfileName = options.vcsProfile;
     }
 
     public get httpClient(): HttpClient {
@@ -38,7 +38,7 @@ export class Context {
 
     public async init(): Promise<void> {
         await this.loadProfile(this.profileName);
-        await this.loadGitProfile(this.gitProfileName);
+        await this.loadVcsProfile(this.vcsProfileName);
 
         if (this.profile) {
             // only if a profile is available, it makes sense to provide an initialized
@@ -66,21 +66,21 @@ export class Context {
         }
     }
 
-    private async loadGitProfile(gitProfileName: string | undefined): Promise<void> {
+    private async loadVcsProfile(gitProfileName: string | undefined): Promise<void> {
         if (!gitProfileName) {
-            this.log.debug("Git Profile name not specified, using default profile");
-            gitProfileName = this.gitProfileService.getDefaultProfile();
+            this.log.debug("VCS Profile name not specified, using default profile");
+            gitProfileName = this.vcsProfileService.getDefaultProfile();
             if (!gitProfileName) {
-                this.log.debug("A default Git profile is not configured.");
+                this.log.debug("A default VCS profile is not configured.");
             }
         }
         try {
-            this.gitProfile = await this.gitProfileService.findProfile(gitProfileName);
-            this.gitProfileName = gitProfileName;
-            this.log.debug(`Using git profile ${gitProfileName}`);
+            this.vcsProfile = await this.vcsProfileService.findProfile(gitProfileName);
+            this.vcsProfileName = gitProfileName;
+            this.log.debug(`Using VCS profile ${gitProfileName}`);
         } catch (err) {
-            this.gitProfile = undefined;
-            this.gitProfileName = undefined;
+            this.vcsProfile = undefined;
+            this.vcsProfileName = undefined;
         }
     }
 

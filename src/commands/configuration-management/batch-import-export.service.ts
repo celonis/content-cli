@@ -15,10 +15,8 @@ import { parse, stringify } from "../../core/utils/json";
 import { PackageApi } from "../studio/api/package-api";
 import { BatchImportExportApi } from "./api/batch-import-export-api";
 import { StudioService } from "./studio.service";
-import { GitService } from "../../core/git-profile/git.service";
+import { GitService } from "../../core/vcs-profile/git/git.service";
 import * as fs from "node:fs";
-import * as path from "node:path";
-import * as os from "node:os";
 
 export class BatchImportExportService {
 
@@ -26,14 +24,14 @@ export class BatchImportExportService {
 
     private studioPackageApi: PackageApi;
     private studioService: StudioService;
-    private gitService: GitService;
+    private vcsService: GitService;
 
     constructor(context: Context) {
         this.batchImportExportApi = new BatchImportExportApi(context);
 
         this.studioPackageApi = new PackageApi(context);
         this.studioService = new StudioService(context);
-        this.gitService = new GitService(context);
+        this.vcsService = new GitService(context);
     }
 
     public async listActivePackages(flavors: string[]): Promise<void> {
@@ -57,7 +55,7 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], withDependencies: boolean = false, gitBranch: string): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], withDependencies: boolean = false, vcsBranch: string): Promise<void> {
         const exportedPackagesData: Buffer = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
         const exportedPackagesZip: AdmZip = new AdmZip(exportedPackagesData);
 
@@ -93,18 +91,18 @@ export class BatchImportExportService {
         const filename = `export_${uuidv4()}.zip`;
         exportedPackagesZip.writeZip(filename);
 
-        if (gitBranch) {
+        if (vcsBranch) {
             const extractedDirectory = fileService.extractExportedZipWithNestedZips(exportedPackagesZip);
-            await this.gitService.pushToBranch(extractedDirectory, gitBranch);
+            await this.vcsService.pushToBranch(extractedDirectory, vcsBranch);
         }
 
         logger.info(fileDownloadedMessage + filename);
     }
 
-    public async batchImportPackages(file: string, overwrite: boolean, gitBranch: string): Promise<void> {
+    public async batchImportPackages(file: string, overwrite: boolean, vcsBranch: string): Promise<void> {
         let fileToBeImported: string;
-        if (gitBranch) {
-            fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
+        if (vcsBranch) {
+            fileToBeImported = await this.vcsService.pullFromBranch(vcsBranch);
             fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
         } else {
             fileToBeImported = file;
@@ -121,7 +119,7 @@ export class BatchImportExportService {
         const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite);
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
-        if (gitBranch) {
+        if (vcsBranch) {
             fs.rmSync(fileToBeImported);
         }
 

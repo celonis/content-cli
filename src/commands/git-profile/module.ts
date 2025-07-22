@@ -5,7 +5,7 @@
 import { Command, OptionValues } from "commander";
 import { Configurator, IModule } from "../../core/command/module-handler";
 import { Context } from "../../core/command/cli-context";
-import { GitProfileCommandService } from "./git-profile-command.service";
+import { VcsProfileCommandService } from "./vcs-profile-command.service";
 import { logger } from "../../core/utils/logger";
 
 class Module extends IModule {
@@ -30,15 +30,15 @@ class Module extends IModule {
 
     private async defaultProfile(context: Context, command: Command): Promise<void> {
         const profile = command.args[0];
-        await new GitProfileCommandService().makeDefaultProfile(profile);
+        await new VcsProfileCommandService().makeDefaultProfile(profile);
     }
 
     private async createProfile(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new GitProfileCommandService().createProfile(options.setAsDefault);
+        await new VcsProfileCommandService().createProfile(options.setAsDefault);
     }
 
     private async listProfiles(context: Context, command: Command): Promise<void> {
-        await new GitProfileCommandService().listProfiles();
+        await new VcsProfileCommandService().listProfiles();
     }
 }
 
