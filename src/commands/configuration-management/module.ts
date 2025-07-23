@@ -27,12 +27,7 @@ class Module extends IModule {
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
-            .action(async (context: Context, command: Command, options: OptionValues): Promise<void> => {
-                if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
-                    throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
-                }
-                await this.batchExportPackages(context, command, options);
-            });
+            .action(this.batchExportPackages);
 
         const metadataCommand = configCommand.command("metadata")
             .description("Commands related to package metadata")
@@ -81,6 +76,9 @@ class Module extends IModule {
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
+            throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
+        }
         await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies);
     }
 
