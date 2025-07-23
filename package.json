@@ -22,7 +22,7 @@
     "adm-zip": "0.5.14",
     "axios": "1.8.4",
     "commander": "13.1.0",
-    "form-data": "4.0.1",
+    "form-data": "4.0.4",
     "openid-client": "5.6.1",
     "hpagent": "1.2.0",
     "semver": "7.6.3",
