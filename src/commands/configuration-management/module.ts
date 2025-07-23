@@ -24,7 +24,8 @@ class Module extends IModule {
 
         configCommand.command("export")
             .description("Command to export package configs")
-            .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
+            .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
+            .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
             .action(this.batchExportPackages);
 
@@ -75,7 +76,10 @@ class Module extends IModule {
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.withDependencies);
+        if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
+            throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
+        }
+        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies);
     }
 
     private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {

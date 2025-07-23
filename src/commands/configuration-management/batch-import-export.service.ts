@@ -51,8 +51,14 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<void> {
-        const exportedPackagesData: Buffer = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false): Promise<void> {
+        let exportedPackagesData: Buffer;
+        if (packageKeys) {
+            exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
+        } else {
+            exportedPackagesData = await this.batchImportExportApi.exportPackagesByVersions(packageKeysByVersion, withDependencies);
+        }
+
         const exportedPackagesZip: AdmZip = new AdmZip(exportedPackagesData);
 
         const manifest: PackageManifestTransport[] = parse(

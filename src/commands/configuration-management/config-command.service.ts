@@ -36,8 +36,8 @@ export class ConfigCommandService {
         }
     }
 
-    public batchExportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<void> {
-        return this.batchImportExportService.batchExportPackages(packageKeys, withDependencies);
+    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false): Promise<void> {
+        return this.batchImportExportService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies);
     }
 
     public batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {

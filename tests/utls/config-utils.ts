@@ -59,6 +59,15 @@ export class ConfigUtils {
         };
     }
 
+    public static buildManifestForKeyAndFlavorAndVersion(key: string, flavor: string, version: string, dependenciesByVersion?: Map<string, DependencyTransport[]>): PackageManifestTransport {
+        return {
+            packageKey: key,
+            flavor: flavor,
+            activeVersion: version,
+            dependenciesByVersion: dependenciesByVersion ?? {} as Map<string, DependencyTransport[]>
+        };
+    }
+
     public static buildPackageNode(key: string, configuration: NodeConfiguration): NodeExportTransport {
         return {
             key,
