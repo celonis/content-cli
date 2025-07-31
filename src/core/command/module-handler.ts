@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { Command, CommandOptions, Option, OptionValues } from "commander";
 import { Context } from "./cli-context";
 import { logger } from "../utils/logger";
+import * as chalk from "chalk";
 
 export abstract class IModule {
     public abstract register(context: Context, commandConfig: Configurator): void;
@@ -154,6 +155,8 @@ export class Configurator {
  */
 export class CommandConfig {
     private deprecationMessage: string;
+    private isBetaCommand: boolean = false;
+    private betaOptions: string[];
 
     constructor(
         private cmd: Command,
@@ -203,6 +206,7 @@ export class CommandConfig {
     }
 
     public beta(): CommandConfig {
+        this.isBetaCommand = true;
         (this.cmd as any).isBeta = true;
         return this;
     }
@@ -210,6 +214,8 @@ export class CommandConfig {
     public action(handler: CommandHandler): void {
         this.cmd.action(async (): Promise<void> => {
             try {
+                this.printBetaNoticeIfBetaCommand();
+                this.printBetaNoticeIfBetaOptions();
                 this.printDeprecationNoticeIfDeprecated();
                 await handler(this.ctx, this.cmd, this.cmd.opts());
             } catch (error) {
@@ -221,6 +227,20 @@ export class CommandConfig {
     private printDeprecationNoticeIfDeprecated(): void {
         if (this.deprecationMessage) {
             logger.warn("⚠️  [DEPRECATION NOTICE] \n" + this.deprecationMessage);
+        }
+    }
+
+    private printBetaNoticeIfBetaCommand(): void {
+        if (this.isBetaCommand) {
+            logger.info(chalk.yellow("This command is in beta and may change in future releases."));
+        }
+    }
+
+    private printBetaNoticeIfBetaOptions(): void {
+        for (const option of this.cmd.options) {
+            if ((option as any).isBeta) {
+                logger.info(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
+            }
         }
     }
 }
