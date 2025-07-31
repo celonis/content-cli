@@ -237,6 +237,9 @@ export class CommandConfig {
     }
 
     private printBetaNoticeIfBetaOptions(): void {
+        if (this.isBetaCommand) {
+            return;
+        }
         for (const option of this.cmd.options) {
             if ((option as any).isBeta) {
                 logger.info(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
