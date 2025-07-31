@@ -87,16 +87,16 @@ export class BatchImportExportService {
             }
         });
 
-        const fileDownloadedMessage = "File downloaded successfully. New filename: ";
-        const filename = `export_${uuidv4()}.zip`;
-        exportedPackagesZip.writeZip(filename);
-
         if (vcsBranch) {
             const extractedDirectory = fileService.extractExportedZipWithNestedZips(exportedPackagesZip);
             await this.vcsService.pushToBranch(extractedDirectory, vcsBranch);
+            logger.info("Successfully exported packages to branch: " + vcsBranch);
+        } else {
+            const fileDownloadedMessage = "File downloaded successfully. New filename: ";
+            const filename = `export_${uuidv4()}.zip`;
+            exportedPackagesZip.writeZip(filename);
+            logger.info(fileDownloadedMessage + filename);
         }
-
-        logger.info(fileDownloadedMessage + filename);
     }
 
     public async batchImportPackages(file: string, overwrite: boolean, vcsBranch: string): Promise<void> {

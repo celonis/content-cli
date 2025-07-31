@@ -38,31 +38,30 @@ export class GitService {
 
         const workingDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
         fs.mkdirSync(workingDir, { recursive: true });
-        fs.cpSync(sourceDir, workingDir, { recursive: true });
 
         const repoUrl = this.getRepoUrl();
-        const git: SimpleGit = simpleGit({ baseDir: workingDir });
+        const git = simpleGit();
 
         try {
-            if (!fs.existsSync(path.join(workingDir, ".git"))) {
-                await git.init();
-                await git.addRemote("origin", repoUrl);
-            }
+            await git.clone(repoUrl, workingDir, ["--branch", branch, "--single-branch"]);
+            const repoGit = simpleGit({ baseDir: workingDir });
 
-            await git.addConfig("user.name", this.gitProfile.username ?? "content-cli");
-            await git.addConfig("user.email", `${this.gitProfile.username ?? "cli"}@users.noreply.github.com`);
+            await repoGit.addConfig("user.name", this.gitProfile.username ?? "content-cli");
+            await repoGit.addConfig("user.email", `${this.gitProfile.username ?? "cli"}@users.noreply.github.com`);
 
-            await this.checkoutOrCreateLocalBranch(git, branch);
-            await git.add("./*");
-            const status = await git.status();
+            fs.cpSync(sourceDir, workingDir, { recursive: true });
+
+            await repoGit.add("./*");
+            const status = await repoGit.status();
             if (status.files.length === 0) {
                 logger.debug("No changes to commit.");
                 return;
             }
 
             const commitMessage = "Update from content-cli";
-            await git.commit(commitMessage);
-            await git.push(["-u", "origin", branch]);
+            await repoGit.commit(commitMessage);
+
+            await repoGit.push(["--set-upstream", "origin", branch]);
         } catch (err) {
             throw new Error(`Failed to push to ${branch}: ${err}`);
         } finally {

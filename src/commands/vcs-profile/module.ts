@@ -11,7 +11,7 @@ import { logger } from "../../core/utils/logger";
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
-        const command = configurator.command("git-profile")
+        const command = configurator.command("vcs-profile")
                 .description("Manage Git profiles required to use git-related operations.");
 
         command.command("list")
