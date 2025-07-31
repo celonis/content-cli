@@ -1,6 +1,6 @@
 import path = require("path");
 import * as fs from "fs";
-import { Command, CommandOptions, OptionValues } from "commander";
+import { Command, CommandOptions, Option, OptionValues } from "commander";
 import { Context } from "./cli-context";
 import { logger } from "../utils/logger";
 
@@ -185,6 +185,13 @@ export class CommandConfig {
         return this;
     }
 
+    public betaOption(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
+        const option = new Option(flags, description).default(defaultValue);
+        (option as any).isBeta = true;
+        this.cmd.addOption(option);
+        return this;
+    }
+
     public requiredOption(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
         this.cmd.requiredOption(flags, description, defaultValue);
         return this;
@@ -192,6 +199,11 @@ export class CommandConfig {
 
     public deprecationNotice(deprecationMessage: string): CommandConfig {
         this.deprecationMessage = deprecationMessage;
+        return this;
+    }
+
+    public beta(): CommandConfig {
+        (this.cmd as any).isBeta = true;
         return this;
     }
 
