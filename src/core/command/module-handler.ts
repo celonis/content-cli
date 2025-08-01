@@ -155,8 +155,6 @@ export class Configurator {
  */
 export class CommandConfig {
     private deprecationMessage: string;
-    private isBetaCommand: boolean = false;
-    private betaOptions: string[];
 
     constructor(
         private cmd: Command,
@@ -206,7 +204,6 @@ export class CommandConfig {
     }
 
     public beta(): CommandConfig {
-        this.isBetaCommand = true;
         (this.cmd as any).isBeta = true;
         return this;
     }
@@ -231,13 +228,13 @@ export class CommandConfig {
     }
 
     private printBetaNoticeIfBetaCommand(): void {
-        if (this.isBetaCommand) {
+        if ((this.cmd as any).isBeta) {
             logger.info(chalk.yellow("This command is in beta and may change in future releases."));
         }
     }
 
     private printBetaNoticeIfBetaOptions(): void {
-        if (this.isBetaCommand) {
+        if ((this.cmd as any).isBeta) {
             return;
         }
         for (const option of this.cmd.options) {
