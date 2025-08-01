@@ -1,8 +1,9 @@
 import path = require("path");
 import * as fs from "fs";
-import { Command, CommandOptions, OptionValues } from "commander";
+import { Command, CommandOptions, Option, OptionValues } from "commander";
 import { Context } from "./cli-context";
 import { logger } from "../utils/logger";
+import * as chalk from "chalk";
 
 export abstract class IModule {
     public abstract register(context: Context, commandConfig: Configurator): void;
@@ -185,6 +186,13 @@ export class CommandConfig {
         return this;
     }
 
+    public betaOption(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
+        const option = new Option(flags, description).default(defaultValue);
+        (option as any).isBeta = true;
+        this.cmd.addOption(option);
+        return this;
+    }
+
     public requiredOption(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
         this.cmd.requiredOption(flags, description, defaultValue);
         return this;
@@ -195,9 +203,16 @@ export class CommandConfig {
         return this;
     }
 
+    public beta(): CommandConfig {
+        (this.cmd as any).isBeta = true;
+        return this;
+    }
+
     public action(handler: CommandHandler): void {
         this.cmd.action(async (): Promise<void> => {
             try {
+                this.printBetaNoticeIfBetaCommand();
+                this.printBetaNoticeIfBetaOptions();
                 this.printDeprecationNoticeIfDeprecated();
                 await handler(this.ctx, this.cmd, this.cmd.opts());
             } catch (error) {
@@ -209,6 +224,23 @@ export class CommandConfig {
     private printDeprecationNoticeIfDeprecated(): void {
         if (this.deprecationMessage) {
             logger.warn("⚠️  [DEPRECATION NOTICE] \n" + this.deprecationMessage);
+        }
+    }
+
+    private printBetaNoticeIfBetaCommand(): void {
+        if ((this.cmd as any).isBeta) {
+            logger.info(chalk.yellow("This command is in beta and may change in future releases."));
+        }
+    }
+
+    private printBetaNoticeIfBetaOptions(): void {
+        if ((this.cmd as any).isBeta) {
+            return;
+        }
+        for (const option of this.cmd.options) {
+            if ((option as any).isBeta) {
+                logger.info(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
+            }
         }
     }
 }

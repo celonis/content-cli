@@ -6,6 +6,7 @@ import { Configurator, ModuleHandler } from "./core/command/module-handler";
 import { Context } from "./core/command/cli-context";
 import { VersionUtils } from "./core/utils/version";
 import { logger } from "./core/utils/logger";
+import { ContentCLIHelp } from "./core/command/CustomHelp";
 
 /**
  * Celonis Content CLI.
@@ -24,6 +25,11 @@ if (!semverSatisfies(process.version, requiredVersion)) {
 
 // Global configuration options
 const program: Command = new Command();
+program.configureHelp({
+    formatHelp: (cmd, helper) => new ContentCLIHelp().formatHelp(cmd, helper),
+    subcommandTerm:cmd => new ContentCLIHelp().subcommandTerm(cmd),
+    optionTerm: opt => new ContentCLIHelp().optionTerm(opt),
+});
 program.version(VersionUtils.getCurrentCliVersion());
 program.option("-q, --quietmode", "Reduce output to a minimum", false);
 program.option("-p, --profile [profile]");
