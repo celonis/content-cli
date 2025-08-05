@@ -24,11 +24,22 @@ class Module extends IModule {
 
         configCommand.command("export")
             .description("Command to export package configs")
-            .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to export")
+            .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
+            .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
             .option("--vcsProfile <vcsProfile>", "VCS profile which you want to use for the VCS operations")
             .option("--vcsBranch <vcsBranch>", "VCS branch in which you want to push the exported file")
             .action(this.batchExportPackages);
+
+        const metadataCommand = configCommand.command("metadata")
+            .description("Commands related to package metadata")
+
+        metadataCommand
+            .command("export")
+            .description("Command to show whether packages have unpublished changes")
+            .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to find the metadata of")
+            .option("--json", "Return response as json type", "")
+            .action(this.batchExportPackagesMetadata);
 
         configCommand.command("import")
             .description("Command to import package configs")
@@ -69,7 +80,14 @@ class Module extends IModule {
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.withDependencies, options.vcsBranch);
+        if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
+            throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
+        }
+        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.vcsBranch);
+    }
+
+    private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new ConfigCommandService(context).batchExportPackagesMetadata(options.packageKeys, options.json);
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

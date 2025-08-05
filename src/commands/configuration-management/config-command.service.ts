@@ -36,8 +36,12 @@ export class ConfigCommandService {
         }
     }
 
-    public batchExportPackages(packageKeys: string[], withDependencies: boolean = false, vcsBranch: string): Promise<void> {
-        return this.batchImportExportService.batchExportPackages(packageKeys, withDependencies, vcsBranch);
+    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false, vcsBranch: string): Promise<void> {
+        return this.batchImportExportService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies, vcsBranch);
+    }
+
+    public batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
+        return this.batchImportExportService.batchExportPackagesMetadata(packageKeys, jsonResponse);
     }
 
     public batchImportPackages(file: string, overwrite: boolean, vcsBranch: string): Promise<void> {

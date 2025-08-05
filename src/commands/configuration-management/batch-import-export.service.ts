@@ -5,7 +5,7 @@ import * as AdmZip from "adm-zip";
 import { Context } from "../../core/command/cli-context";
 import {
     PackageExportTransport, PackageKeyAndVersionPair,
-    PackageManifestTransport,
+    PackageManifestTransport, PackageMetadataExportTransport,
     StudioPackageManifest, VariableManifestTransport,
 } from "./interfaces/package-export.interfaces";
 import { BatchExportImportConstants } from "./interfaces/batch-export-import.constants";
@@ -55,8 +55,14 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], withDependencies: boolean = false, vcsBranch: string): Promise<void> {
-        const exportedPackagesData: Buffer = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false, vcsBranch: string): Promise<void> {
+        let exportedPackagesData: Buffer;
+        if (packageKeys) {
+            exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
+        } else {
+            exportedPackagesData = await this.batchImportExportApi.exportPackagesByVersions(packageKeysByVersion, withDependencies);
+        }
+
         const exportedPackagesZip: AdmZip = new AdmZip(exportedPackagesData);
 
         const manifest: PackageManifestTransport[] = parse(
@@ -96,6 +102,18 @@ export class BatchImportExportService {
             const filename = `export_${uuidv4()}.zip`;
             exportedPackagesZip.writeZip(filename);
             logger.info(fileDownloadedMessage + filename);
+        }
+    }
+
+    public async batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
+        const exportedPackagesMetadata: PackageMetadataExportTransport[] = await this.batchImportExportApi.batchExportPackagesMetadata(packageKeys);
+
+        if (jsonResponse) {
+            this.exportListOfPackagesMetadata(exportedPackagesMetadata);
+        } else {
+            exportedPackagesMetadata.forEach(pkg => {
+                logger.info(`${pkg.key} - Has Unpublished Changes: ${pkg.hasUnpublishedChanges}`);
+            });
         }
     }
 
@@ -170,6 +188,12 @@ export class BatchImportExportService {
         });
 
         return this.batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
+    }
+
+    private exportListOfPackagesMetadata(packagesMetadata: PackageMetadataExportTransport[]): void {
+        const filename = uuidv4() + ".json";
+        fileService.writeToFileWithGivenName(JSON.stringify(packagesMetadata), filename);
+        logger.info(FileService.fileDownloadedMessage + filename);
     }
 
     private buildBodyForImport(configs: AdmZip, variablesManifests: VariableManifestTransport[]): FormData {

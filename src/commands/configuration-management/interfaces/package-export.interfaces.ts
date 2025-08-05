@@ -24,6 +24,11 @@ export interface PackageExportTransport {
     datamodels?: StudioComputeNodeDescriptor[];
 }
 
+export interface PackageMetadataExportTransport {
+    key: string;
+    hasUnpublishedChanges: boolean;
+}
+
 export interface PackageManifestTransport {
     packageKey: string;
     flavor: string;
