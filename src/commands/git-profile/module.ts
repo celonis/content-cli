@@ -12,22 +12,27 @@ class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
         const gitCommand = configurator.command("git")
+                .beta()
                 .description("Commands related to Git settings");
 
         const gitProfileCommand = gitCommand.command("profile")
+            .beta()
             .description("Manage Git profiles required to use git-related operations.");
 
         gitProfileCommand.command("list")
                 .description("Command to list all stored Git profiles")
+                .beta()
                 .action(this.listProfiles);
 
         gitProfileCommand.command("create")
                 .description("Command to create a new Git profile")
                 .option("--setAsDefault", "Set this Git profile as default")
+                .beta()
                 .action(this.createProfile);
 
         gitProfileCommand.command("default <profile>")
                 .description("Command to set a Git profile as default")
+                .beta()
                 .action(this.defaultProfile);
     }
 

@@ -27,8 +27,8 @@ class Module extends IModule {
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
-            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
-            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported file")
+            .betaOption("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .betaOption("--gitBranch <gitBranch>", "Git branch in which you want to push the exported file")
             .action(this.batchExportPackages);
 
         const metadataCommand = configCommand.command("metadata")
@@ -44,8 +44,8 @@ class Module extends IModule {
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
-            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
-            .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
+            .betaOption("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .betaOption("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
             .option("-f, --file <file>", "Exported packages file (relative path)")
             .action(this.batchImportPackages);
 
