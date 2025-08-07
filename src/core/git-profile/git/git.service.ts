@@ -43,11 +43,14 @@ export class GitService {
         const git = simpleGit();
 
         try {
-            await git.clone(repoUrl, workingDir, ["--branch", branch, "--single-branch"]);
+            await git.clone(repoUrl, workingDir, ["--branch", "main"]);
             const repoGit = simpleGit({ baseDir: workingDir });
 
             await repoGit.addConfig("user.name", this.gitProfile.username ?? "content-cli");
             await repoGit.addConfig("user.email", `${this.gitProfile.username ?? "cli"}@users.noreply.github.com`);
+
+            await this.cleanupNonGitFiles(workingDir);
+            await this.checkoutOrCreateLocalBranch(repoGit, branch);
 
             fs.cpSync(sourceDir, workingDir, { recursive: true });
 
@@ -69,13 +72,21 @@ export class GitService {
         }
     }
 
+    private async cleanupNonGitFiles(workingDir: string): Promise<void> {
+        for (const entry of fs.readdirSync(workingDir)) {
+            if (entry !== ".git") {
+                fs.rmSync(path.join(workingDir, entry), { recursive: true, force: true });
+            }
+        }
+    }
+
     private async checkoutOrCreateLocalBranch(git: SimpleGit, branch: string): Promise<void> {
         const branches = await git.branch();
 
-        if (!branches.all.includes(branch)) {
+        if (!branches.all.includes(`remotes/origin/${branch}`)) {
             await git.checkoutLocalBranch(branch);
         } else {
-            await git.checkout(branch);
+            await git.checkout(["-b", branch, "--track", `origin/${branch}`]);
         }
     }
 
