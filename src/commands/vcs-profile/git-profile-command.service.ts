@@ -1,26 +1,17 @@
 import { QuestionService } from "../../core/utils/question.service";
 import { FatalError, logger } from "../../core/utils/logger";
-import { VcsProfileService } from "../../core/vcs-profile/vcs-profile.service";
-import { AuthenticationType, VcsProfile, VcsType } from "../../core/vcs-profile/vcs-profile.interface";
+import { GitProfileService } from "../../core/git-profile/git-profile.service";
+import { AuthenticationType, GitProfile } from "../../core/git-profile/git-profile.interface";
 
-export class VcsProfileCommandService {
-    private vcsProfileService = new VcsProfileService();
+export class GitProfileCommandService {
+    private gitProfileService = new GitProfileService();
 
     public async createProfile(setAsDefault: boolean): Promise<void> {
-        const profile: VcsProfile = {} as VcsProfile;
+        const profile: GitProfile = {} as GitProfile;
         const questions = new QuestionService();
         try {
-            profile.name = await questions.ask("Name of the VCS profile to create: ");
-            const vcsType = await questions.ask("Used Versioned Control System (options: git): ");
-            switch (vcsType) {
-                case "git":
-                    profile.vcsType = VcsType.GIT;
-                    break;
-                default:
-                    logger.error(new FatalError("Invalid type"));
-                    break;
-            }
-            profile.username = await questions.ask("Your VCS username: ");
+            profile.name = await questions.ask("Name of the Git profile to create: ");
+            profile.username = await questions.ask("Your Git username: ");
             profile.repository = await questions.ask("Your repository (format: repoOwner/repoName): ");
             const type = await questions.ask("Authentication type: PAT (1), SSH token (2): " );
             switch (type) {
@@ -37,19 +28,19 @@ export class VcsProfileCommandService {
             }
             // possibly check if the user has sent a valid token that has access in the repository
 
-            this.vcsProfileService.storeProfile(profile);
+            this.gitProfileService.storeProfile(profile);
             if (setAsDefault) {
                 await this.makeDefaultProfile(profile.name);
             }
         } finally {
             await questions.close();
         }
-        logger.info("VCS Profile created successfully!");
+        logger.info("Git Profile created successfully!");
     }
 
     public async listProfiles(): Promise<void> {
-        this.vcsProfileService.readAllProfiles().then((profiles: string[]) => {
-            const defaultProfile = this.vcsProfileService.getDefaultProfile();
+        this.gitProfileService.readAllProfiles().then((profiles: string[]) => {
+            const defaultProfile = this.gitProfileService.getDefaultProfile();
             if (profiles) {
                 profiles.forEach(profile => {
                     if (defaultProfile && defaultProfile === profile) {
@@ -63,7 +54,7 @@ export class VcsProfileCommandService {
     }
 
     public async makeDefaultProfile(profile: string): Promise<void> {
-        await this.vcsProfileService.makeDefaultProfile(profile);
-        logger.info("Default VCS profile: " + profile);
+        await this.gitProfileService.makeDefaultProfile(profile);
+        logger.info("Default Git profile: " + profile);
     }
 }

@@ -6,14 +6,14 @@ import * as os from "node:os";
 import { Context } from "../../command/cli-context";
 import { v4 as uuid } from "uuid";
 import { SimpleGit } from "simple-git/dist/typings/simple-git";
-import { VcsProfile } from "../vcs-profile.interface";
+import { GitProfile } from "../git-profile.interface";
 
 export class GitService {
 
-    private readonly gitProfile: VcsProfile;
+    private readonly gitProfile: GitProfile;
 
     constructor(context: Context) {
-        this.gitProfile = context.vcsProfile;
+        this.gitProfile = context.gitProfile;
     }
 
     public async pullFromBranch(branch: string): Promise<string> {

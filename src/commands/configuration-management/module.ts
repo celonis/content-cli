@@ -27,8 +27,8 @@ class Module extends IModule {
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
-            .option("--vcsProfile <vcsProfile>", "VCS profile which you want to use for the VCS operations")
-            .option("--vcsBranch <vcsBranch>", "VCS branch in which you want to push the exported file")
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported file")
             .action(this.batchExportPackages);
 
         const metadataCommand = configCommand.command("metadata")
@@ -44,8 +44,8 @@ class Module extends IModule {
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
-            .option("--vcsProfile <vcsProfile>", "VCS profile which you want to use for the VCS operations")
-            .option("--vcsBranch <vcsBranch>", "VCS branch from which you want to pull the exported file and import")
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
             .option("-f, --file <file>", "Exported packages file (relative path)")
             .action(this.batchImportPackages);
 
@@ -83,7 +83,7 @@ class Module extends IModule {
         if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
-        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.vcsBranch);
+        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch);
     }
 
     private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -91,7 +91,7 @@ class Module extends IModule {
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchImportPackages(options.file, options.overwrite, options.vcsBranch);
+        await new ConfigCommandService(context).batchImportPackages(options.file, options.overwrite, options.gitBranch);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

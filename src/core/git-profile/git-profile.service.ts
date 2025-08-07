@@ -2,20 +2,20 @@ import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../utils/logger";
 import os = require("os");
-import { AuthenticationType, VcsProfile, VcsType } from "./vcs-profile.interface";
-import { ProfileValidator } from "./vcs-profile.validator";
+import { AuthenticationType, GitProfile } from "./git-profile.interface";
+import { GitProfileValidator } from "./git-profile.validator";
 
-export interface VcsConfig {
+export interface GitConfig {
     defaultProfile: string;
 }
 
-export class VcsProfileService {
+export class GitProfileService {
     private homedir: string = os.homedir();
-    private vcsProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-vcs-profiles");
-    private configContainer = path.resolve(this.vcsProfileContainerPath, "config.json");
+    private gitProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-git-profiles");
+    private configContainer = path.resolve(this.gitProfileContainerPath, "config.json");
 
-    public async findProfile(profileName: string): Promise<VcsProfile> {
-        return new Promise<VcsProfile>((resolve, reject) => {
+    public async findProfile(profileName: string): Promise<GitProfile> {
+        return new Promise<GitProfile>((resolve, reject) => {
             if (process.env.USERNAME && process.env.GIT_TOKEN && process.env.REPOSITORY) {
                 resolve(this.buildProfileFromEnvVariables());
             } else {
@@ -24,25 +24,25 @@ export class VcsProfileService {
                 }
                 this.createProfileContainerIfNotExists();
                 const file = fs.readFileSync(
-                    path.resolve(this.vcsProfileContainerPath, this.constructProfileFileName(profileName)),
+                    path.resolve(this.gitProfileContainerPath, this.constructProfileFileName(profileName)),
                     { encoding: "utf-8" }
                 );
-                const profile : VcsProfile = JSON.parse(file);
+                const profile : GitProfile = JSON.parse(file);
                 resolve(profile)
             }
         });
     }
 
-    public async makeDefaultProfile(profileName: string): Promise<VcsProfile> {
-        return new Promise<VcsProfile>((resolve, reject) => {
+    public async makeDefaultProfile(profileName: string): Promise<GitProfile> {
+        return new Promise<GitProfile>((resolve, reject) => {
             this.findProfile(profileName)
-                .then((profile: VcsProfile) => {
+                .then((profile: GitProfile) => {
                     this.createProfileContainerIfNotExists();
                     this.storeConfig({ defaultProfile: profileName });
                     resolve(profile);
                 })
                 .catch(err => {
-                    logger.error(new FatalError("VCS Profile does not exit."));
+                    logger.error(new FatalError("Git Profile does not exit."));
                     reject(err);
                 });
         });
@@ -50,41 +50,40 @@ export class VcsProfileService {
 
     public getDefaultProfile(): string {
         if (fs.existsSync(this.configContainer)) {
-            const config = JSON.parse(fs.readFileSync(this.configContainer, { encoding: "utf-8" })) as VcsConfig;
+            const config = JSON.parse(fs.readFileSync(this.configContainer, { encoding: "utf-8" })) as GitConfig;
             return config.defaultProfile;
         } else {
             return null;
         }
     }
 
-    public storeProfile(profile: VcsProfile): void {
+    public storeProfile(profile: GitProfile): void {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
-        fs.writeFileSync(path.resolve(this.vcsProfileContainerPath, newProfileFileName), JSON.stringify(profile), {
+        fs.writeFileSync(path.resolve(this.gitProfileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
         });
     }
 
-    private async buildProfileFromEnvVariables(): Promise<VcsProfile> {
+    private async buildProfileFromEnvVariables(): Promise<GitProfile> {
         const profileVariables = this.getProfileEnvVariables();
-        const profile: VcsProfile = {
+        const profile: GitProfile = {
             name: profileVariables.repository,
             repository: profileVariables.repository,
             token: profileVariables.apiToken,
             authenticationType: AuthenticationType.SSH,
-            vcsType: VcsType.GIT
         };
-        profile.authenticationType = await ProfileValidator.validateProfile(profile);
+        profile.authenticationType = await GitProfileValidator.validateProfile(profile);
         return profile;
     }
 
-    private storeConfig(config: VcsConfig): void {
+    private storeConfig(config: GitConfig): void {
         fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8" });
     }
 
     private createProfileContainerIfNotExists(): void {
-        if (!fs.existsSync(this.vcsProfileContainerPath)) {
-            fs.mkdirSync(this.vcsProfileContainerPath);
+        if (!fs.existsSync(this.gitProfileContainerPath)) {
+            fs.mkdirSync(this.gitProfileContainerPath);
         }
     }
 
@@ -102,10 +101,10 @@ export class VcsProfileService {
     public getAllFilesInDirectory(): string[] {
         let fileNames: string[] = [];
         try {
-            if (fs.existsSync(this.vcsProfileContainerPath)) {
+            if (fs.existsSync(this.gitProfileContainerPath)) {
                 fileNames = fs
                     // @ts-ignore
-                    .readdirSync(this.vcsProfileContainerPath, { withFileTypes: true })
+                    .readdirSync(this.gitProfileContainerPath, { withFileTypes: true })
                     .filter(
                         dirent =>
                             !dirent.isDirectory() && dirent.name.endsWith(".json") && dirent.name !== "config.json"

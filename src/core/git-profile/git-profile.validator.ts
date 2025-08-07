@@ -1,8 +1,8 @@
 import { FatalError, logger } from "../utils/logger";
-import { AuthenticationType, VcsProfile } from "./vcs-profile.interface";
+import { AuthenticationType, GitProfile } from "./git-profile.interface";
 
-export class ProfileValidator {
-    public static async validateProfile(gitProfile: VcsProfile): Promise<any> {
+export class GitProfileValidator {
+    public static async validateProfile(gitProfile: GitProfile): Promise<any> {
         if (gitProfile.name == null) {
             logger.error(new FatalError("The name can not be empty"));
         }
