@@ -15,6 +15,8 @@ import { parse, stringify } from "../../core/utils/json";
 import { PackageApi } from "../studio/api/package-api";
 import { BatchImportExportApi } from "./api/batch-import-export-api";
 import { StudioService } from "./studio.service";
+import { GitService } from "../../core/git-profile/git/git.service";
+import * as fs from "node:fs";
 
 export class BatchImportExportService {
 
@@ -22,12 +24,14 @@ export class BatchImportExportService {
 
     private studioPackageApi: PackageApi;
     private studioService: StudioService;
+    private gitService: GitService;
 
     constructor(context: Context) {
         this.batchImportExportApi = new BatchImportExportApi(context);
 
         this.studioPackageApi = new PackageApi(context);
         this.studioService = new StudioService(context);
+        this.gitService = new GitService(context);
     }
 
     public async listActivePackages(flavors: string[]): Promise<void> {
@@ -51,7 +55,7 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string): Promise<void> {
         let exportedPackagesData: Buffer;
         if (packageKeys) {
             exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
@@ -89,10 +93,16 @@ export class BatchImportExportService {
             }
         });
 
-        const fileDownloadedMessage = "File downloaded successfully. New filename: ";
-        const filename = `export_${uuidv4()}.zip`;
-        exportedPackagesZip.writeZip(filename);
-        logger.info(fileDownloadedMessage + filename);
+        if (gitBranch) {
+            const extractedDirectory = fileService.extractExportedZipWithNestedZips(exportedPackagesZip);
+            await this.gitService.pushToBranch(extractedDirectory, gitBranch);
+            logger.info("Successfully exported packages to branch: " + gitBranch);
+        } else {
+            const fileDownloadedMessage = "File downloaded successfully. New filename: ";
+            const filename = `export_${uuidv4()}.zip`;
+            exportedPackagesZip.writeZip(filename);
+            logger.info(fileDownloadedMessage + filename);
+        }
     }
 
     public async batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
@@ -107,8 +117,16 @@ export class BatchImportExportService {
         }
     }
 
-    public async batchImportPackages(file: string, overwrite: boolean): Promise<void> {
-        let configs = new AdmZip(file);
+    public async batchImportPackages(file: string, overwrite: boolean, gitBranch: string): Promise<void> {
+        let fileToBeImported: string;
+        if (gitBranch) {
+            fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
+            fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
+        } else {
+            fileToBeImported = file;
+        }
+
+        let configs = new AdmZip(fileToBeImported);
         const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
         const variablesManifests: VariableManifestTransport[] = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as VariableManifestTransport[];
 
@@ -118,6 +136,10 @@ export class BatchImportExportService {
         const formData = this.buildBodyForImport(configs, variablesManifests);
         const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite);
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
+
+        if (gitBranch) {
+            fs.rmSync(fileToBeImported);
+        }
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);

@@ -63,11 +63,11 @@ async function run(): Promise<void> {
     await context.init();
 
     const moduleHandler = new ModuleHandler(program, context);
-    
+
     configureRootCommands(moduleHandler.configurator);
 
     moduleHandler.discoverAndRegisterModules(__dirname, program.opts().dev);
-    
+
     try {
         program.parse(process.argv);
     } catch (error) {

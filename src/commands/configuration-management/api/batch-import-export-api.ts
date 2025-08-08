@@ -52,7 +52,7 @@ export class BatchImportExportApi {
         });
     }
 
-    public async exportPackages(packageKeys: string[], withDependencies: boolean = false): Promise<Buffer> {
+    public async exportPackages(packageKeys: string[], withDependencies: boolean): Promise<Buffer> {
         const queryParams = new URLSearchParams();
         packageKeys.forEach(packageKey => queryParams.append("packageKeys", packageKey));
         queryParams.set("withDependencies", withDependencies.toString());
@@ -62,7 +62,7 @@ export class BatchImportExportApi {
         });
     }
 
-    public async exportPackagesByVersions(packageKeysWithVersion: string[], withDependencies: boolean = false): Promise<Buffer> {
+    public async exportPackagesByVersions(packageKeysWithVersion: string[], withDependencies: boolean): Promise<Buffer> {
         const queryParams = new URLSearchParams();
         packageKeysWithVersion.forEach(packageKeyByVersion => queryParams.append("packageKeysWithVersion", packageKeyByVersion));
         queryParams.set("withDependencies", withDependencies.toString());
