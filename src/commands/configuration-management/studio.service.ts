@@ -142,7 +142,7 @@ export class StudioService {
     }
 
     private fixConnectionVariable(variable: VariableExportTransport): VariableExportTransport {
-        if (!variable.value.appName) {
+        if (!variable.value?.appName) {
             return variable;
         }
 
