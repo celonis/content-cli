@@ -10,9 +10,9 @@ export interface GitConfig {
 }
 
 export class GitProfileService {
-    private homedir: string = os.homedir();
-    private gitProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-git-profiles");
-    private configContainer = path.resolve(this.gitProfileContainerPath, "config.json");
+    private readonly homedir: string = os.homedir();
+    private readonly gitProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-git-profiles");
+    private readonly configContainer = path.resolve(this.gitProfileContainerPath, "config.json");
 
     public async findProfile(profileName: string): Promise<GitProfile> {
         return new Promise<GitProfile>((resolve, reject) => {
