@@ -36,7 +36,7 @@ export class ConfigCommandService {
         }
     }
 
-    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false, gitBranch: string): Promise<void> {
+    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string): Promise<void> {
         return this.batchImportExportService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies, gitBranch);
     }
 

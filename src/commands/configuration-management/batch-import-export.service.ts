@@ -55,7 +55,7 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false, gitBranch: string): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string): Promise<void> {
         let exportedPackagesData: Buffer;
         if (packageKeys) {
             exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);

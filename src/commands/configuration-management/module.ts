@@ -83,6 +83,7 @@ class Module extends IModule {
         if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
+        options.withDependencies = options.withDependencies ?? false;
         await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch);
     }
 
