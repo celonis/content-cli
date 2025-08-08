@@ -39,18 +39,17 @@ export class GitProfileCommandService {
     }
 
     public async listProfiles(): Promise<void> {
-        this.gitProfileService.readAllProfiles().then((profiles: string[]) => {
-            const defaultProfile = this.gitProfileService.getDefaultProfile();
-            if (profiles) {
-                profiles.forEach(profile => {
-                    if (defaultProfile && defaultProfile === profile) {
-                        logger.info(profile + " (default)");
-                    } else {
-                        logger.info(profile);
-                    }
-                });
-            }
-        });
+        const profiles: string[] = this.gitProfileService.readAllProfiles();
+        const defaultProfile = this.gitProfileService.getDefaultProfile();
+        if (profiles) {
+            profiles.forEach(profile => {
+                if (defaultProfile && defaultProfile === profile) {
+                    logger.info(profile + " (default)");
+                } else {
+                    logger.info(profile);
+                }
+            });
+        }
     }
 
     public async makeDefaultProfile(profile: string): Promise<void> {

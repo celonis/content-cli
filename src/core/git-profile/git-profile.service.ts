@@ -91,14 +91,7 @@ export class GitProfileService {
         return profileName + ".json";
     }
 
-    public readAllProfiles(): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            const profiles = this.getAllFilesInDirectory();
-            resolve(profiles);
-        });
-    }
-
-    public getAllFilesInDirectory(): string[] {
+    public readAllProfiles(): string[] {
         let fileNames: string[] = [];
         try {
             if (fs.existsSync(this.gitProfileContainerPath)) {
