@@ -36,16 +36,22 @@ export class ConfigCommandService {
         }
     }
 
-    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean = false): Promise<void> {
-        return this.batchImportExportService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies);
+    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string): Promise<void> {
+        return this.batchImportExportService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies, gitBranch);
     }
 
     public batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
         return this.batchImportExportService.batchExportPackagesMetadata(packageKeys, jsonResponse);
     }
 
-    public batchImportPackages(file: string, overwrite: boolean): Promise<void> {
-        return this.batchImportExportService.batchImportPackages(file, overwrite);
+    public batchImportPackages(file: string, overwrite: boolean, gitBranch: string): Promise<void> {
+        if (file && gitBranch) {
+            throw new Error("You cannot use both file and gitBranch options at the same time. Only one import source can be defined.");
+        }
+        if (!file && !gitBranch) {
+            throw new Error("You must provide either a file or a gitBranch option to import packages.");
+        }
+        return this.batchImportExportService.batchImportPackages(file, overwrite, gitBranch);
     }
 
     public diffPackages(file: string, hasChanges: boolean, jsonResponse: boolean): Promise<void> {

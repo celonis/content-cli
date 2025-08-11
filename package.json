@@ -1,6 +1,6 @@
 {
   "name": "@celonis/content-cli",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "CLI Tool to help manage content in Celonis Platform",
   "main": "content-cli.js",
   "bin": {
@@ -26,6 +26,7 @@
     "openid-client": "5.6.1",
     "hpagent": "1.2.0",
     "semver": "7.6.3",
+    "simple-git": "3.28.0",
     "valid-url": "1.0.9",
     "winston": "3.17.0",
     "yaml": "2.7.0"
