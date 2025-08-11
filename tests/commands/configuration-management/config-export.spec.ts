@@ -396,7 +396,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true);
+        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
