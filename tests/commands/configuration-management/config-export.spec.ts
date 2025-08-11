@@ -304,6 +304,163 @@ describe("Config export", () => {
         });
     })
 
+    it("Should export variables file with handled null connection variables", async () => {
+        const firstPackageDependencies = new Map<string, DependencyTransport[]>();
+        firstPackageDependencies.set("1.0.0", []);
+
+        const secondPackageDependencies = new Map<string, DependencyTransport[]>();
+        secondPackageDependencies.set("1.0.0", []);
+        secondPackageDependencies.set("1.1.1", []);
+
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO, firstPackageDependencies));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO, secondPackageDependencies));
+
+        const firstPackageVariableDefinition: VariableDefinition[] = [
+            {
+                key: "key1-var",
+                type: PackageManagerVariableType.DATA_MODEL,
+                runtime: false
+            },
+            {
+                key: "key-1-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
+            }
+        ];
+
+        const firstPackageNode = ConfigUtils.buildPackageNode("key-1", {variables: firstPackageVariableDefinition});
+        const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
+
+        const secondPackageVariableDefinition: VariableDefinition[] = [
+            {
+                key: "key2-var",
+                type: PackageManagerVariableType.DATA_MODEL,
+                runtime: false
+            },
+            {
+                key: "key-2-connection",
+                type: PackageManagerVariableType.CONNECTION,
+                runtime: false
+            }
+        ];
+
+        const secondPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: secondPackageVariableDefinition});
+        const secondPackageZip = ConfigUtils.buildExportPackageZip(secondPackageNode, [], "1.0.0");
+
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip, secondPackageZip]);
+
+        const exportedVariables: VariableManifestTransport[] = [
+            {
+                packageKey: "key-1",
+                version: "1.0.0",
+                variables: [
+                    {
+                        key: "key1-var",
+                        type: PackageManagerVariableType.DATA_MODEL,
+                        value: "dm-id" as unknown as object,
+                        metadata: {}
+                    },
+                    {
+                        key: "key-1-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: null,
+                        metadata: null
+                    }
+                ]
+            },
+            {
+                packageKey: "key-2",
+                version: "1.0.0",
+                variables: [
+                    {
+                        key: "key2-var",
+                        type: PackageManagerVariableType.DATA_MODEL,
+                        value: "dm-id" as unknown as object,
+                        metadata: {}
+                    },
+                    {
+                        key: "key-2-connection",
+                        type: PackageManagerVariableType.CONNECTION,
+                        value: null,
+                        metadata: null,
+                    }
+                ]
+            },
+        ];
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&withDependencies=true", exportedPackagesZip.toBuffer());
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", [...exportedVariables]);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondPackageNode.key}/${secondPackageNode.key}`, {...secondPackageNode, spaceId: "space-2"});
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
+
+        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true);
+
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
+        expect(mockWriteSync).toHaveBeenCalled();
+
+        const fileBuffer = mockWriteSync.mock.calls[0][1];
+        const actualZip = new AdmZip(fileBuffer);
+
+        const exportedVariablesFileContent: VariableManifestTransport[] = parse(actualZip.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString());
+        expect(exportedVariablesFileContent).toHaveLength(2);
+        expect(exportedVariablesFileContent).toContainEqual({
+            packageKey: "key-1",
+            version: "1.0.0",
+            variables: [
+                {
+                    key: "key1-var",
+                    type: PackageManagerVariableType.DATA_MODEL,
+                    value: "dm-id",
+                    metadata: {}
+                },
+                {
+                    key: "key-1-connection",
+                    type: PackageManagerVariableType.CONNECTION,
+                    value:  null,
+                    metadata: null,
+                }
+            ]
+        });
+        expect(exportedVariablesFileContent).toContainEqual({
+            packageKey: "key-2",
+            version: "1.0.0",
+            variables: [
+                {
+                    key: "key2-var",
+                    type: PackageManagerVariableType.DATA_MODEL,
+                    value: "dm-id",
+                    metadata: {}
+                },
+                {
+                    key: "key-2-connection",
+                    type: PackageManagerVariableType.CONNECTION,
+                    value: null,
+                    metadata: null,
+                }
+            ]
+        });
+
+        const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
+        expect(variableExportRequest).toBeTruthy();
+        expect(variableExportRequest).toHaveLength(3);
+        expect(variableExportRequest).toContainEqual({
+            packageKey: "key-1",
+            version: "1.0.0"
+        });
+        expect(variableExportRequest).toContainEqual({
+            packageKey: "key-2",
+            version: "1.0.0"
+        });
+        expect(variableExportRequest).toContainEqual({
+            packageKey: "key-2",
+            version: "1.1.1"
+        });
+    })
+
     it("Should export variables file with connection variables fixed when package keys are sent with versions", async () => {
         const firstPackageDependencies = new Map<string, DependencyTransport[]>();
         firstPackageDependencies.set("1.0.2", []);
