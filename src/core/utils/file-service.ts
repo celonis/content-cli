@@ -58,7 +58,7 @@ export class FileService {
     }
 
     public zipDirectoryInBatchExportFormat(sourceDir: string): string {
-        if (!fs.statSync(sourceDir).isDirectory()) {
+        if (!fs.statSync(sourceDir)?.isDirectory()) {
             return sourceDir;
         }
         const files = fs.readdirSync(sourceDir);
