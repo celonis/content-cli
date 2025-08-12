@@ -55,7 +55,7 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
         let exportedPackagesData: Buffer;
         if (packageKeys) {
             exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
@@ -97,11 +97,9 @@ export class BatchImportExportService {
             const extractedDirectory = fileService.extractExportedZipWithNestedZips(exportedPackagesZip);
             await this.gitService.pushToBranch(extractedDirectory, gitBranch);
             logger.info("Successfully exported packages to branch: " + gitBranch);
+            fs.rmSync(extractedDirectory, { recursive: true });
         } else {
-            const fileDownloadedMessage = "File downloaded successfully. New filename: ";
-            const filename = `export_${uuidv4()}.zip`;
-            exportedPackagesZip.writeZip(filename);
-            logger.info(fileDownloadedMessage + filename);
+            this.downloadZip(exportedPackagesZip, unzip);
         }
     }
 
@@ -121,10 +119,11 @@ export class BatchImportExportService {
         let fileToBeImported: string;
         if (gitBranch) {
             fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
-            fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
         } else {
             fileToBeImported = file;
         }
+
+        fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
 
         let configs = new AdmZip(fileToBeImported);
         const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
@@ -226,5 +225,21 @@ export class BatchImportExportService {
             return (parse(entry.getData().toString()));
         }
         return null;
+    }
+
+    private downloadZip(exportedZip: AdmZip, unzip: boolean): void {
+        if (unzip) {
+            const fileDownloadedMessage = "Successful download. Downloaded directory: ";
+            const targetDirectoryName = `export_${uuidv4()}`;
+            const extractedTempDirectory = fileService.extractExportedZipWithNestedZips(exportedZip);
+            fileService.copyDirectoryToCurrentLocation(extractedTempDirectory, targetDirectoryName);
+            fs.rmSync(extractedTempDirectory, { recursive: true });
+            logger.info(fileDownloadedMessage + targetDirectoryName);
+        } else {
+            const fileDownloadedMessage = "File downloaded successfully. New filename: ";
+            const filename = `export_${uuidv4()}.zip`;
+            exportedZip.writeZip(filename);
+            logger.info(fileDownloadedMessage + filename);
+        }
     }
 }

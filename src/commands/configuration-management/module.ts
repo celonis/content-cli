@@ -27,6 +27,7 @@ class Module extends IModule {
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
+            .option("--unzip", "Unzip the exported file", "")
             .betaOption("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .betaOption("--gitBranch <gitBranch>", "Git branch in which you want to push the exported file")
             .action(this.batchExportPackages);
@@ -84,7 +85,7 @@ class Module extends IModule {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
         options.withDependencies = options.withDependencies ?? false;
-        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch);
+        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch, options.unzip);
     }
 
     private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {

@@ -52,7 +52,15 @@ export class FileService {
         return tempDir;
     }
 
+    public copyDirectoryToCurrentLocation(sourceDir: string, targetName: string): void {
+        fs.mkdirSync(targetName, { recursive: true });
+        fs.cpSync(sourceDir, targetName, { recursive: true });
+    }
+
     public zipDirectoryInBatchExportFormat(sourceDir: string): string {
+        if (!fs.statSync(sourceDir).isDirectory()) {
+            return sourceDir;
+        }
         const files = fs.readdirSync(sourceDir);
         const finalZip = new AdmZip();
 
