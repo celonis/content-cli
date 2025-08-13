@@ -115,17 +115,18 @@ export class BatchImportExportService {
         }
     }
 
-    public async batchImportPackages(file: string, overwrite: boolean, gitBranch: string): Promise<void> {
-        let fileToBeImported: string;
+    public async batchImportPackages(sourcePath: string, overwrite: boolean, gitBranch: string): Promise<void> {
+        let sourceToBeImported: string;
         if (gitBranch) {
-            fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
+            sourceToBeImported = await this.gitService.pullFromBranch(gitBranch);
         } else {
-            fileToBeImported = file;
+            sourceToBeImported = sourcePath;
+            if (fileService.isDirectory(sourcePath)) {
+                sourceToBeImported = fileService.zipDirectoryInBatchExportFormat(sourceToBeImported);
+            }
         }
 
-        fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
-
-        let configs = new AdmZip(fileToBeImported);
+        let configs = new AdmZip(sourceToBeImported);
         const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
         const variablesManifests: VariableManifestTransport[] = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as VariableManifestTransport[];
 
@@ -137,7 +138,7 @@ export class BatchImportExportService {
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         if (gitBranch) {
-            fs.rmSync(fileToBeImported);
+            fs.rmSync(sourceToBeImported);
         }
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
@@ -231,9 +232,7 @@ export class BatchImportExportService {
         if (unzip) {
             const fileDownloadedMessage = "Successful download. Downloaded directory: ";
             const targetDirectoryName = `export_${uuidv4()}`;
-            const extractedTempDirectory = fileService.extractExportedZipWithNestedZips(exportedZip);
-            fileService.copyDirectoryToCurrentLocation(extractedTempDirectory, targetDirectoryName);
-            fs.rmSync(extractedTempDirectory, { recursive: true });
+            fileService.extractExportedZipWithNestedZipsToDir(exportedZip, targetDirectoryName);
             logger.info(fileDownloadedMessage + targetDirectoryName);
         } else {
             const fileDownloadedMessage = "File downloaded successfully. New filename: ";

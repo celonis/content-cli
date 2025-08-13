@@ -48,6 +48,7 @@ class Module extends IModule {
             .betaOption("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .betaOption("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
             .option("-f, --file <file>", "Exported packages file (relative path)")
+            .option("-d, --directory <directory>", "Exported packages directory (relative path)")
             .action(this.batchImportPackages);
 
         configCommand.command("diff")
@@ -93,7 +94,7 @@ class Module extends IModule {
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchImportPackages(options.file, options.overwrite, options.gitBranch);
+        await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

@@ -54,7 +54,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", overwrite, null);
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, overwrite, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
@@ -98,7 +98,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true, null);
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
@@ -127,7 +127,7 @@ describe("Config import", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
 
         await expect(
-            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true, null)
+            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null)
         ).rejects.toThrow("Provided space ID does not exist.");
     })
 
@@ -170,7 +170,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true, null);
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/spaceId", expect.anything(), expect.anything());
@@ -207,7 +207,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true, null);
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
@@ -254,7 +254,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true, null);
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
@@ -312,7 +312,7 @@ describe("Config import", () => {
         mockAxiosPost(assignVariablesUrl, {});
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", [node]);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", true, null);
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
