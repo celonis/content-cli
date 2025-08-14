@@ -55,7 +55,7 @@ export class BatchImportExportService {
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
         let exportedPackagesData: Buffer;
         if (packageKeys) {
             exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
@@ -97,11 +97,9 @@ export class BatchImportExportService {
             const extractedDirectory = fileService.extractExportedZipWithNestedZips(exportedPackagesZip);
             await this.gitService.pushToBranch(extractedDirectory, gitBranch);
             logger.info("Successfully exported packages to branch: " + gitBranch);
+            fs.rmSync(extractedDirectory, { recursive: true });
         } else {
-            const fileDownloadedMessage = "File downloaded successfully. New filename: ";
-            const filename = `export_${uuidv4()}.zip`;
-            exportedPackagesZip.writeZip(filename);
-            logger.info(fileDownloadedMessage + filename);
+            this.downloadZip(exportedPackagesZip, unzip);
         }
     }
 
@@ -117,16 +115,18 @@ export class BatchImportExportService {
         }
     }
 
-    public async batchImportPackages(file: string, overwrite: boolean, gitBranch: string): Promise<void> {
-        let fileToBeImported: string;
+    public async batchImportPackages(sourcePath: string, overwrite: boolean, gitBranch: string): Promise<void> {
+        let sourceToBeImported: string;
         if (gitBranch) {
-            fileToBeImported = await this.gitService.pullFromBranch(gitBranch);
-            fileToBeImported = fileService.zipDirectoryInBatchExportFormat(fileToBeImported);
+            sourceToBeImported = await this.gitService.pullFromBranch(gitBranch);
         } else {
-            fileToBeImported = file;
+            sourceToBeImported = sourcePath;
+            if (fileService.isDirectory(sourcePath)) {
+                sourceToBeImported = fileService.zipDirectoryInBatchExportFormat(sourceToBeImported);
+            }
         }
 
-        let configs = new AdmZip(fileToBeImported);
+        let configs = new AdmZip(sourceToBeImported);
         const studioManifests = this.parseEntryData(configs, BatchExportImportConstants.STUDIO_FILE_NAME) as StudioPackageManifest[];
         const variablesManifests: VariableManifestTransport[] = this.parseEntryData(configs, BatchExportImportConstants.VARIABLES_FILE_NAME) as VariableManifestTransport[];
 
@@ -138,7 +138,7 @@ export class BatchImportExportService {
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         if (gitBranch) {
-            fs.rmSync(fileToBeImported);
+            fs.rmSync(sourceToBeImported);
         }
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
@@ -226,5 +226,19 @@ export class BatchImportExportService {
             return (parse(entry.getData().toString()));
         }
         return null;
+    }
+
+    private downloadZip(exportedZip: AdmZip, unzip: boolean): void {
+        if (unzip) {
+            const fileDownloadedMessage = "Successful download. Downloaded directory: ";
+            const targetDirectoryName = `export_${uuidv4()}`;
+            fileService.extractExportedZipWithNestedZipsToDir(exportedZip, targetDirectoryName);
+            logger.info(fileDownloadedMessage + targetDirectoryName);
+        } else {
+            const fileDownloadedMessage = "File downloaded successfully. New filename: ";
+            const filename = `export_${uuidv4()}.zip`;
+            exportedZip.writeZip(filename);
+            logger.info(fileDownloadedMessage + filename);
+        }
     }
 }
