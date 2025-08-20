@@ -440,6 +440,124 @@ the same command as with pushing other assets to Studio:
 // Push analysis to Studio
 content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
 ```
+### Content Management commands
+Contains the list of commands grouped under "config", and allows you to list, batch export, import packages of different flavors such as Studio and OCDM packages.
+
+#### List packages
+Packages can be listed using the following command:
+```
+content-cli config list -p <sourceProfile>
+```
+The result will be logged (printed) in the console containing only the package name and key:
+```
+info:    Package1 - Key: "package-1"
+```
+By using the –json option, packages can be exported (saved) in an extended form as a json file in the current working directory.
+```
+content-cli config list -p <sourceProfile> --json
+```
+The name of the file will be logged (printed) in the console with the following format:
+```
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+By using the --flavors option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
+
+##### List packages with dependencies
+When using the listing command with the –json option, two additional options are available:
+-  **--withDependencies**: This option will include the dependencies of the packages in the output.
+```
+content-cli config list -p <sourceProfile> --withDependencies
+```
+- **--packageKeys**: This option allows you to filter the packages by their keys. You can specify multiple package keys separated by spaces.
+```
+content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN 
+[optional] –withDependencies
+```
+#### Batch export packages
+Packages can be exported using the following command:
+```
+content-cli config export -p <sourceProfile> --packageKeys key1 ... keyN
+```
+The ```--withDependencies``` option can be used to also export dependencies of the given packages.
+The ```--unzip``` option can be used to unzip the exported packages into the current working directory.
+
+Depending on the ```--unzip``` option used a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
+```
+exported_package_random_uuid/
+├─ manifest.json
+├─ variable.json
+├─ studio.json
+├─ package_key1-version.zip
+├─ ...
+├─ package_keyN-version.zip
+```
+
+- manifest.json - File which contains the metadata of the exported packages.
+- studio.json - File which contains the metadata of the exported packages in a format compatible with Studio.
+- variables.json - File which contains the variables of the exported packages.
+- exported packages directories - Directories containing the exported package files, each directory is named after the package key and the version.
+
+Inside each exported package directory, the following files will be present:
+- package.json - File which contains the configuration of the exported package.
+- nodes/ - Directory containing the nodes of the exported package.
+
+Inside the nodes directory, a file for each node will be present:
+  - node_key.json - File which contains the configuration of the exported node.
+
+#### Batch import packages
+Packages can be imported using the following commands, if importing from a zip file:
+```
+content-cli config import -p <sourceProfile> --f(ile) <relative exported zip file path> 
+```
+If importing from a directory containing the exported packages, the following command can be used:
+```
+content-cli config import -p <sourceProfile> --d(irectory) <relative exported directory file path> 
+```
+When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
+```
+content-cli config list -p <sourceProfile> --f(ile) <file path> --overwrite
+```
+
+Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be logged with the following message format:
+```
+info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+### Listing & Mapping Variables
+
+#### Listing package variables
+
+Package variables (with assignments) can be listed with the following command:
+```
+content-cli config variables list -p <sourceProfile> --keysByVersion key1:version1 ... keyN:versionN
+```
+The --keysByVersion option should specify a list of key :(colon) version pairs. Alternatively, a json file path containing a list of key and version pairs can be used. The PackageKeyAndVersionPair for the file should have the following form:
+```
+export interface PackageKeyAndVersionPair {
+    packageKey: string;
+    version: string;
+}
+```
+Similar to the other listing commands, the –json option can be used for exporting (saving) the result as a json file.
+
+#### Listing assignments
+
+By using the list assignments command, possible assignment values for the target team can be fetched for each variable type. The list assignments command has the following format:
+```
+content-cli list assignments –type variableType –params additionalFilteringParams (e.g. appName for connections)
+```
+The params argument should be passed in a key value format separated by commas with this specified format:
+```
+–params key1=value1,key2=value2,...,keyN=valueN
+```
+
+#### Mapping variables
+
+After getting the variables list (with definitions and assignments in the source team) and the assignments (possible values on the target team), you can change the value of the source team to one of the options provided when listing assignments.
+This mapping should be saved and then used during import.
+Since the format of the variables.json file on import is the same JSON structure as the list variables result, you can either map the values to the variables.json file for each variable, or replace the variables.json file with the result of the listing & mapping altogether.
+If the mapping of variables is skipped, you should delete the variables.json file before importing.
+
 
 ### Action Flows commands
 
