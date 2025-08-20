@@ -523,7 +523,7 @@ content-cli config import -p <sourceProfile> --d(irectory) <relative exported di
 ```
 When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
 ```
-content-cli config list -p <sourceProfile> --f(ile) <file path> --overwrite
+content-cli config import -p <sourceProfile> --f(ile) <file path> --overwrite
 ```
 
 Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be logged with the following message format:
