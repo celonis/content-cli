@@ -18,6 +18,14 @@
     -   [Action Flows commands](#action-flows-commands)
         - [Analyze Action Flows](#analyze-action-flows)
         - [Export Action Flows](#export-action-flows)
+    - [Content Management commands](#content-management-commands)
+        - [List packages](#list-packages)
+        - [Batch export packages](#batch-export-packages)
+        - [Batch import packages](#batch-import-packages)
+        - [Listing & Mapping Variables](#listing--mapping-variables)
+            - [Listing package variables](#listing-package-variables)
+            - [Listing assignments](#listing-assignments)
+            - [Mapping variables](#mapping-variables)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -481,7 +489,7 @@ content-cli config export -p <sourceProfile> --packageKeys key1 ... keyN
 The ```--withDependencies``` option can be used to also export dependencies of the given packages.
 The ```--unzip``` option can be used to unzip the exported packages into the current working directory.
 
-Depending on the ```--unzip``` option used a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
+Depending on the ```--unzip``` option used, a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
 ```
 exported_package_random_uuid/
 ├─ manifest.json
