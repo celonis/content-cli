@@ -556,7 +556,7 @@ content-cli list assignments –type variableType –params additionalFilteringP
 ```
 The params argument should be passed in a key value format separated by commas with this specified format:
 ```
-–params key1=value1,key2=value2,...,keyN=valueN
+--params key1=value1,key2=value2,...,keyN=valueN
 ```
 
 #### Mapping variables
