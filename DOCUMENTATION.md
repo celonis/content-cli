@@ -471,7 +471,7 @@ info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1
 By using the --flavors option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
 
 ##### List packages with dependencies
-When using the listing command with the –json option, two additional options are available:
+When using the listing command with the `--json` option, two additional options are available:
 -  **--withDependencies**: This option will include the dependencies of the packages in the output.
 ```
 content-cli config list -p <sourceProfile> --withDependencies
