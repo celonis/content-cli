@@ -460,7 +460,7 @@ The result will be logged (printed) in the console containing only the package n
 ```
 info:    Package1 - Key: "package-1"
 ```
-By using the –json option, packages can be exported (saved) in an extended form as a json file in the current working directory.
+By using the `--json` option, packages can be exported (saved) in an extended form as a json file in the current working directory.
 ```
 content-cli config list -p <sourceProfile> --json
 ```
