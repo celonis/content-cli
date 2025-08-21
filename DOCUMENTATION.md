@@ -552,7 +552,7 @@ Similar to the other listing commands, the –json option can be used for export
 
 By using the list assignments command, possible assignment values for the target team can be fetched for each variable type. The list assignments command has the following format:
 ```
-content-cli list assignments –type variableType –params additionalFilteringParams (e.g. appName for connections)
+content-cli list assignments --type <type> --params <additionalFilteringParams>
 ```
 The params argument should be passed in a key value format separated by commas with this specified format:
 ```
