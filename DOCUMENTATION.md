@@ -456,7 +456,7 @@ Packages can be listed using the following command:
 ```
 content-cli config list -p <sourceProfile>
 ```
-The result will be logged (printed) in the console containing only the package name and key:
+The result will be printed in the console containing only the package name and key:
 ```
 info:    Package1 - Key: "package-1"
 ```
@@ -464,7 +464,7 @@ By using the `--json` option, packages can be exported (saved) in an extended fo
 ```
 content-cli config list -p <sourceProfile> --json
 ```
-The name of the file will be logged (printed) in the console with the following format:
+The name of the file will be printed in the console with the following format:
 ```
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
@@ -486,6 +486,7 @@ Packages can be exported using the following command:
 ```
 content-cli config export -p <sourceProfile> --packageKeys key1 ... keyN
 ```
+The ```--keysByVersion``` option can be used to export packages by specific version. You can specify multiple packages with version seperated by spaces, in the format of 'packageKey.version'.
 The ```--withDependencies``` option can be used to also export dependencies of the given packages.
 The ```--unzip``` option can be used to unzip the exported packages into the current working directory.
 
@@ -515,18 +516,20 @@ Inside the nodes directory, a file for each node will be present:
 #### Batch import packages
 Packages can be imported using the following commands, if importing from a zip file:
 ```
-content-cli config import -p <sourceProfile> --f(ile) <relative exported zip file path> 
+content-cli config import -p <sourceProfile> -f <relative exported zip file path> 
 ```
+Where ```-f``` is the short hand operation for ```--file```.
 If importing from a directory containing the exported packages, the following command can be used:
 ```
-content-cli config import -p <sourceProfile> --d(irectory) <relative exported directory file path> 
+content-cli config import -p <sourceProfile> -d <relative exported directory file path> 
 ```
+Where ```-d``` is the short hand operation for ```--directory```.
 When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
 ```
-content-cli config import -p <sourceProfile> --f(ile) <file path> --overwrite
+content-cli config import -p <sourceProfile> -f <file path> --overwrite
 ```
 
-Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be logged with the following message format:
+Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be printed with the following message format:
 ```
 info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
