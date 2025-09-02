@@ -71,8 +71,8 @@ describe("Deployment list active", () => {
 
     it("Should list active deployments for package with pagination filters", async () => {
         const packageKey = "package-key";
-        const limit = 99;
-        const offset = 1;
+        const limit = "99";
+        const offset = "1";
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/deployments/packages/${packageKey}/active?limit=${limit}&offset=${offset}`, [deployment]);
 
         await new DeploymentService(testContext).getActiveDeploymentsForPackage(packageKey, false, undefined, limit, offset);

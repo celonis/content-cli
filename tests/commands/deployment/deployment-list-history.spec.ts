@@ -27,7 +27,7 @@ describe("Deployments list history", () => {
     };
 
     it("Should list deployment history", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?", [deploymentTransport]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?limit=100&offset=0", [deploymentTransport]);
 
         await new DeploymentService(testContext).getDeployments(false);
 
@@ -36,7 +36,7 @@ describe("Deployments list history", () => {
     });
 
     it("Should list deployment history with filter params", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?packageKey=package-key&targetId=target-id&deployableType=app-package&status=IN_PROGRESS&createdBy=user-id", [deploymentTransport]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?limit=100&offset=0&packageKey=package-key&targetId=target-id&deployableType=app-package&status=IN_PROGRESS&createdBy=user-id", [deploymentTransport]);
 
         await new DeploymentService(testContext).getDeployments(false, "package-key", "target-id", "app-package", "IN_PROGRESS", "user-id");
 
@@ -44,8 +44,17 @@ describe("Deployments list history", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${deploymentTransport.id}, Package: ${deploymentTransport.packageKey}, Version: ${deploymentTransport.packageVersion}, Status: ${deploymentTransport.status}, Created at: ${new Date(deploymentTransport.createdAt).toISOString()}`);
     });
 
+    it("Should list deployment history with pagination params", async () => {
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?limit=3&offset=3", [deploymentTransport]);
+
+        await new DeploymentService(testContext).getDeployments(false, undefined, undefined, undefined, undefined, undefined, "3", "3");
+
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${deploymentTransport.id}, Package: ${deploymentTransport.packageKey}, Version: ${deploymentTransport.packageVersion}, Status: ${deploymentTransport.status}, Created at: ${new Date(deploymentTransport.createdAt).toISOString()}`);
+    });
+
     it("Should list deployment history as JSON", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?", [deploymentTransport]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/history?limit=100&offset=0", [deploymentTransport]);
 
         await new DeploymentService(testContext).getDeployments(true);
 

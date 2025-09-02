@@ -31,7 +31,14 @@ export class DeploymentService {
         }
     }
 
-    public async getDeployments(jsonResponse: boolean, packageKey?: string, targetId?: string, deployableType?: string, status?: string, createdBy?: string): Promise<void> {
+    public async getDeployments(jsonResponse: boolean
+                                ,packageKey?: string
+                                ,targetId?: string
+                                ,deployableType?: string
+                                ,status?: string
+                                ,createdBy?: string
+                                ,limit?: string
+                                ,offset?: string): Promise<void> {
         const filter: GetDeploymentsRequest = {
             packageKey,
             targetId,
@@ -39,7 +46,7 @@ export class DeploymentService {
             status: fromString(status),
             createdBy
         };
-        const deployments = await this.deploymentApi.getDeployments(filter);
+        const deployments = await this.deploymentApi.getDeployments(filter, limit, offset);
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
@@ -64,7 +71,7 @@ export class DeploymentService {
         }
     }
 
-    public async getActiveDeploymentsForPackage(packageKey: string, jsonResponse: boolean, targetIds?: string[], limit?: number, offset?:number): Promise<void> {
+    public async getActiveDeploymentsForPackage(packageKey: string, jsonResponse: boolean, targetIds?: string[], limit?: string, offset?: string): Promise<void> {
         const deployments = await this.deploymentApi.getActiveDeploymentsForPackage(packageKey, targetIds, limit, offset);
 
         if (jsonResponse) {

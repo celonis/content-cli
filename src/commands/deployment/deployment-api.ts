@@ -18,19 +18,6 @@ export class DeploymentApi {
     }
 
     public async createDeployment(request: CreateDeploymentRequest): Promise<DeploymentTransport> {
-        if (!request.packageKey || request.packageKey.trim() === "") {
-            throw new FatalError("Package key is required to create a deployment.");
-        }
-        if (!request.packageVersion || request.packageVersion.trim() === "") {
-            throw new FatalError("Package version is required to create a deployment.");
-        }
-        if (!request.deployableType || request.deployableType.trim() === "") {
-            throw new FatalError("Deployable type is required to create a deployment.");
-        }
-        if (!request.targetId || request.targetId.trim() === "") {
-            throw new FatalError("Target ID is required to create a deployment.");
-        }
-
         return this.httpClient()
             .post("/pacman/api/deployments", request)
             .catch((e) => {
@@ -38,8 +25,9 @@ export class DeploymentApi {
             });
     }
 
-    public async getDeployments(filter: GetDeploymentsRequest): Promise<DeploymentTransport[]> {
+    public async getDeployments(filter: GetDeploymentsRequest, limit?: string, offset?: string): Promise<DeploymentTransport[]> {
         const queryParams = new URLSearchParams();
+        this.addPaginationParams(queryParams, limit, offset);
 
         if (filter.packageKey) {
             queryParams.set("packageKey", filter.packageKey);
@@ -67,12 +55,11 @@ export class DeploymentApi {
     public async getActiveDeploymentsForPackage(
         packageKey: string,
         targetIds?: string[],
-        limit = 100,
-        offset = 0
+        limit?: string,
+        offset?: string
     ): Promise<DeploymentTransport[]> {
         const queryParams = new URLSearchParams();
-        queryParams.set("limit", limit.toString());
-        queryParams.set("offset", offset.toString());
+        this.addPaginationParams(queryParams, limit, offset);
 
         if (targetIds && targetIds.length > 0) {
             queryParams.set("targetIds", targetIds.join(","));
@@ -119,5 +106,16 @@ export class DeploymentApi {
             .catch((e) => {
                 throw new FatalError(`Problem getting deployables: ${e}`);
             });
+    }
+
+    private addPaginationParams(queryParams: URLSearchParams, limit?: string, offset?: string): void {
+        const defaultLimit = 100;
+        const defaultOffset = 0;
+
+        const parsedLimit = limit !== undefined && !isNaN(Number(limit)) ? Number(limit) : defaultLimit;
+        queryParams.set("limit", parsedLimit.toString());
+
+        const parsedOffset = offset !== undefined && !isNaN(Number(offset)) ? Number(offset) : defaultOffset;
+        queryParams.set("offset", parsedOffset.toString());
     }
 }
