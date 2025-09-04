@@ -542,7 +542,7 @@ exported_package_random_uuid/
 Additionally, the following **Git options** are available (**beta**):
 - ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for exporting directly to a repository. 
 If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
-- ```--gitBranch <branchName>``` – specifies the branch in the Git repository where the export will be pushed. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository where the export will be pushed. ⚠️ *(beta: may change or be removed in future releases)*
 
 Example exporting to Git:
 ```
@@ -571,10 +571,20 @@ If importing from a directory containing the exported packages, the following co
 ```
 content-cli config import -p <sourceProfile> -d <relative exported directory file path> 
 ```
-Where ```-d``` is the short hand operation for ```--directory```.
+Where ```-d``` is the shorthand operation for ```--directory```.  
 When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
 ```
 content-cli config import -p <sourceProfile> -f <file path> --overwrite
+```
+
+Additionally, the following **Git options** are available (**beta**):
+- ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for importing directly from a repository.
+If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository from which to import. ⚠️ *(beta: may change or be removed in future releases)*
+
+Example importing from Git:
+```
+content-cli config import -p <sourceProfile> --gitProfile myGitProfile --gitBranch feature-branch
 ```
 
 Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be printed with the following message format:
