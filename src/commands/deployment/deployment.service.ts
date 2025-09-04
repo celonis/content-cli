@@ -80,7 +80,7 @@ export class DeploymentService {
             logger.info(FileService.fileDownloadedMessage + filename);
         } else {
             deployments.forEach(deployment => {
-                logger.info(`ID: ${deployment.id}, Package: ${deployment.packageKey}, Version: ${deployment.packageVersion}, Status: ${deployment.status}, Deployed at: ${deployment.deployedAt}`);
+                logger.info(`ID: ${deployment.id}, Package: ${deployment.packageKey}, Version: ${deployment.packageVersion}, Status: ${deployment.status}, Deployed at: ${new Date(deployment.deployedAt).toISOString()}`);
             });
         }
     }

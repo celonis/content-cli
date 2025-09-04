@@ -13,9 +13,9 @@ describe("Deployment list active", () => {
         packageVersion: "1.0.0",
         deployableType: "app-package",
         status: DeploymentStatus.SUCCESS,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date() + "",
         createdBy: "user-id",
-        deployedAt: new Date().toISOString(),
+        deployedAt: new Date().getDate() + "",
         statusMessage: "Deployment in progress",
         target: {
             id: "target-id",
