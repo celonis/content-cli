@@ -189,6 +189,43 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
 ```
 
+### Using Git Profiles
+
+In addition to Celonis profiles, you can configure **Git profiles** to interact with GitHub repositories directly from Content CLI.  
+This enables workflows where you export packages to a Git branch, collaborate via Git pull requests, and then import reviewed content back into Celonis.
+
+A Git profile stores connection details for a Github repository and can be reused across commands.
+
+You can create and list Git profiles with the following commands:
+
+```bash
+# Create a new Git profile
+content-cli git profile create
+
+# List all Git profiles
+content-cli git profile list
+
+# Set default Git profile
+content-cli git profile default <git-profile-name>
+```
+
+A Git profile contains:
+
+- **name** – unique identifier for the profile
+- **repository** – the GitHub repository in the format `owner/repo`
+- **authenticationType** – either `SSH` or `PAT` (Personal Access Token)
+- **username** – optional username (only for token authentication)
+- **token** – Personal Access Token (if `PAT` is selected)
+
+#### When to create a Git profile
+A Git profile should be created to represent of Github repository and Github user credentials you want to use for interacting with content.
+
+#### Usage
+Check if the command you're using is integrated with Git by using `--help` and seeing if git options are available.
+If git is compatible with the command:
+- You can use the `--gitProfile` option to specify the profile you want to use. This is optional if you have set a default Git profile.
+- Check different command options like `--gitBranch` which targets the command operations in the selected branch. Note: the different options depend on the command.
+
 ## Using Content CLI inside Studio
 
 ### Pull/Push packages from/to Studio
