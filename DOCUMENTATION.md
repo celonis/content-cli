@@ -4,6 +4,7 @@
     -   [Using profiles](#using-profiles)
     -   [Pull command](#pull-command)
     -   [Push command](#push-command)
+    -   [Using Git Profiles](#using-git-profiles)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
         -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
