@@ -13,7 +13,7 @@ describe("Deployment list active", () => {
         packageVersion: "1.0.0",
         deployableType: "app-package",
         status: DeploymentStatus.SUCCESS,
-        createdAt: new Date() + "",
+        createdAt: new Date().getDate() + "",
         createdBy: "user-id",
         deployedAt: new Date().getDate() + "",
         statusMessage: "Deployment in progress",
