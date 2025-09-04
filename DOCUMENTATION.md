@@ -4,7 +4,7 @@
     -   [Using profiles](#using-profiles)
     -   [Pull command](#pull-command)
     -   [Push command](#push-command)
-    -   [Using Git Profiles](#using-git-profiles)
+    -   [Using Git Profiles (beta)](#using-git-profiles-beta)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
         -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
@@ -190,7 +190,7 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
 ```
 
-### Using Git Profiles
+### Using Git Profiles (beta)
 
 In addition to Celonis profiles, you can configure **Git profiles** to interact with GitHub repositories directly from Content CLI.  
 This enables workflows where you export packages to a Git branch, collaborate via Git pull requests, and then import reviewed content back into Celonis.
@@ -537,6 +537,16 @@ exported_package_random_uuid/
 ├─ package_key1-version.zip
 ├─ ...
 ├─ package_keyN-version.zip
+```
+
+Additionally, the following **Git options** are available (**beta**):
+- ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for exporting directly to a repository. 
+If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Git repository where the export will be pushed. ⚠️ *(beta: may change or be removed in future releases)*
+
+Example exporting to Git:
+```
+content-cli config export -p <sourceProfile> --packageKeys key1 key2 --gitProfile myGitProfile --gitBranch feature-branch
 ```
 
 - manifest.json - File which contains the metadata of the exported packages.
