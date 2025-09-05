@@ -61,6 +61,44 @@ To manage profiles, use the content-cli profile command group. This allows you t
 - Set a profile as the default
 - Delete unused profiles
 
+## Git integration
+
+The Content CLI provides optional integration with Git repositories to support workflows where exported Celonis packages are versioned, reviewed, and merged using Git branching and pull requests.
+
+### Git profiles
+
+A **Git profile** represents the credentials and repository configuration required to connect to a Git repository. Similar to regular profiles, it is stored and managed by the CLI.  
+A git profile includes:
+
+- **Name** – the profile identifier
+- **Repository** – the Github repository in the format `owner/repository`
+- **Authentication** – either:
+    - **Personal Access Token (PAT)** for HTTPS-based authentication
+    - **SSH key** for SSH-based authentication
+- **Username** (optional, used with PATs)
+
+### Implementation
+
+- Credentials are fetched from the active Git profile stored in a local directory 
+and translated into an authenticated Github repository URL.
+- Git operations are executed via [`simple-git`](https://github.com/steveukx/git-js).
+- Temporary working directories are created when pulling/pushing, ensuring isolation and cleanup.
+
+The service used for `git` interactions exposes key methods:
+
+- `pullFromBranch(branch)` – clones the repository branch into a temporary directory and returns its path.
+- `pushToBranch(dir, branch)` – commits and pushes the provided directory contents to the branch.
+
+### Plugging into commands
+
+Git integration is designed to be optional. Any existing CLI command (e.g., `export`, `import`) can declare a `--git-profile` option. When provided:
+
+- The command executes as usual (e.g., exporting a package).
+- The Git profile is resolved automatically and passed to the `GitService`.
+- `GitService` can then be used as fit to the command.
+
+This makes it possible for commands to support Git-based workflows without duplicating logic.
+
 ## **API communication**
 
 The **HttpClient** class is a centralized client for interacting with the Celonis Platform API. It handles:
