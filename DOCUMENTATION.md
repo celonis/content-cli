@@ -4,6 +4,7 @@
     -   [Using profiles](#using-profiles)
     -   [Pull command](#pull-command)
     -   [Push command](#push-command)
+    -   [Using Git Profiles (beta)](#using-git-profiles-beta)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
         -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
@@ -188,6 +189,43 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 // Push the data models extracted from the .CTP file 
 content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
 ```
+
+### Using Git Profiles (beta)
+
+In addition to Celonis profiles, you can configure **Git profiles** to interact with GitHub repositories directly from Content CLI.  
+This enables workflows where you export packages to a Git branch, collaborate via Git pull requests, and then import reviewed content back into Celonis.
+
+A Git profile stores connection details for a Github repository and can be reused across commands.
+
+You can create and list Git profiles with the following commands:
+
+```bash
+# Create a new Git profile
+content-cli git profile create
+
+# List all Git profiles
+content-cli git profile list
+
+# Set default Git profile
+content-cli git profile default <git-profile-name>
+```
+
+A Git profile contains:
+
+- **name** – unique identifier for the profile
+- **repository** – the GitHub repository in the format `owner/repo`
+- **authenticationType** – either `SSH` or `PAT` (Personal Access Token)
+- **username** – optional username (only for token authentication)
+- **token** – Personal Access Token (if `PAT` is selected)
+
+#### When to create a Git profile
+A Git profile should be created to represent of Github repository and Github user credentials you want to use for interacting with content.
+
+#### Usage
+Check if the command you're using is integrated with Git by using `--help` and seeing if git options are available.
+If git is compatible with the command:
+- You can use the `--gitProfile` option to specify the profile you want to use. This is optional if you have set a default Git profile.
+- Check different command options like `--gitBranch` which targets the command operations in the selected branch. Note: the different options depend on the command.
 
 ## Using Content CLI inside Studio
 
@@ -501,6 +539,16 @@ exported_package_random_uuid/
 ├─ package_keyN-version.zip
 ```
 
+Additionally, the following **Git options** are available (**beta**):
+- ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for exporting directly to a repository. 
+If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository where the export will be pushed. ⚠️ *(beta: may change or be removed in future releases)*
+
+Example exporting to Git:
+```
+content-cli config export -p <sourceProfile> --packageKeys key1 key2 --gitProfile myGitProfile --gitBranch feature-branch
+```
+
 - manifest.json - File which contains the metadata of the exported packages.
 - studio.json - File which contains the metadata of the exported packages in a format compatible with Studio.
 - variables.json - File which contains the variables of the exported packages.
@@ -523,10 +571,20 @@ If importing from a directory containing the exported packages, the following co
 ```
 content-cli config import -p <sourceProfile> -d <relative exported directory file path> 
 ```
-Where ```-d``` is the short hand operation for ```--directory```.
+Where ```-d``` is the shorthand operation for ```--directory```.  
 When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
 ```
 content-cli config import -p <sourceProfile> -f <file path> --overwrite
+```
+
+Additionally, the following **Git options** are available (**beta**):
+- ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for importing directly from a repository.
+If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository from which to import. ⚠️ *(beta: may change or be removed in future releases)*
+
+Example importing from Git:
+```
+content-cli config import -p <sourceProfile> --gitProfile myGitProfile --gitBranch feature-branch
 ```
 
 Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be printed with the following message format:
