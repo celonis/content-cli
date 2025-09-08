@@ -237,8 +237,10 @@ export class CommandConfig {
         if ((this.cmd as any).isBeta) {
             return;
         }
+        const providedOptions = this.cmd.opts();
         for (const option of this.cmd.options) {
-            if ((option as any).isBeta) {
+            const optionName = option.attributeName();
+            if ((option as any).isBeta && Object.hasOwn(providedOptions, optionName)) {
                 logger.info(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
             }
         }

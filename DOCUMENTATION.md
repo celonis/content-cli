@@ -4,6 +4,7 @@
     -   [Using profiles](#using-profiles)
     -   [Pull command](#pull-command)
     -   [Push command](#push-command)
+    -   [Using Git Profiles (beta)](#using-git-profiles-beta)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
         -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
@@ -18,6 +19,14 @@
     -   [Action Flows commands](#action-flows-commands)
         - [Analyze Action Flows](#analyze-action-flows)
         - [Export Action Flows](#export-action-flows)
+- [Content Management commands](#content-management-commands)
+    - [List packages](#list-packages)
+    - [Batch export packages](#batch-export-packages)
+    - [Batch import packages](#batch-import-packages)
+    - [Listing & Mapping Variables](#listing--mapping-variables)
+        - [Listing package variables](#listing-package-variables)
+        - [Listing assignments](#listing-assignments)
+        - [Mapping variables](#mapping-variables)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -180,6 +189,43 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 // Push the data models extracted from the .CTP file 
 content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
 ```
+
+### Using Git Profiles (beta)
+
+In addition to Celonis profiles, you can configure **Git profiles** to interact with GitHub repositories directly from Content CLI.  
+This enables workflows where you export packages to a Git branch, collaborate via Git pull requests, and then import reviewed content back into Celonis.
+
+A Git profile stores connection details for a Github repository and can be reused across commands.
+
+You can create and list Git profiles with the following commands:
+
+```bash
+# Create a new Git profile
+content-cli git profile create
+
+# List all Git profiles
+content-cli git profile list
+
+# Set default Git profile
+content-cli git profile default <git-profile-name>
+```
+
+A Git profile contains:
+
+- **name** – unique identifier for the profile
+- **repository** – the GitHub repository in the format `owner/repo`
+- **authenticationType** – either `SSH` or `PAT` (Personal Access Token)
+- **username** – optional username (only for token authentication)
+- **token** – Personal Access Token (if `PAT` is selected)
+
+#### When to create a Git profile
+A Git profile should be created to represent of Github repository and Github user credentials you want to use for interacting with content.
+
+#### Usage
+Check if the command you're using is integrated with Git by using `--help` and seeing if git options are available.
+If git is compatible with the command:
+- You can use the `--gitProfile` option to specify the profile you want to use. This is optional if you have set a default Git profile.
+- Check different command options like `--gitBranch` which targets the command operations in the selected branch. Note: the different options depend on the command.
 
 ## Using Content CLI inside Studio
 
@@ -440,6 +486,217 @@ the same command as with pushing other assets to Studio:
 // Push analysis to Studio
 content-cli push bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_analysis_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json 
 ```
+### Content Management commands
+Contains the list of commands grouped under "config", and allows you to list, batch export, import packages of different flavors such as Studio and OCDM packages.
+
+#### List packages
+Packages can be listed using the following command:
+```
+content-cli config list -p <sourceProfile>
+```
+The result will be printed in the console containing only the package name and key:
+```
+info:    Package1 - Key: "package-1"
+```
+By using the `--json` option, packages can be exported (saved) in an extended form as a json file in the current working directory.
+```
+content-cli config list -p <sourceProfile> --json
+```
+The name of the file will be printed in the console with the following format:
+```
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+By using the --flavors option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
+
+##### List packages with dependencies
+When using the listing command with the `--json` option, two additional options are available:
+-  **--withDependencies**: This option will include the dependencies of the packages in the output.
+```
+content-cli config list -p <sourceProfile> --withDependencies
+```
+- **--packageKeys**: This option allows you to filter the packages by their keys. You can specify multiple package keys separated by spaces.
+```
+content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN 
+[optional] –withDependencies
+```
+#### Batch export packages
+Packages can be exported using the following command:
+```
+content-cli config export -p <sourceProfile> --packageKeys key1 ... keyN
+```
+The ```--keysByVersion``` option can be used to export packages by specific version. You can specify multiple packages with version seperated by spaces, in the format of 'packageKey.version'.
+The ```--withDependencies``` option can be used to also export dependencies of the given packages.
+The ```--unzip``` option can be used to unzip the exported packages into the current working directory.
+
+Depending on the ```--unzip``` option used, a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
+```
+exported_package_random_uuid/
+├─ manifest.json
+├─ variable.json
+├─ studio.json
+├─ package_key1-version.zip
+├─ ...
+├─ package_keyN-version.zip
+```
+
+Additionally, the following **Git options** are available (**beta**):
+- ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for exporting directly to a repository. 
+If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository where the export will be pushed. ⚠️ *(beta: may change or be removed in future releases)*
+
+Example exporting to Git:
+```
+content-cli config export -p <sourceProfile> --packageKeys key1 key2 --gitProfile myGitProfile --gitBranch feature-branch
+```
+
+- manifest.json - File which contains the metadata of the exported packages.
+- studio.json - File which contains the metadata of the exported packages in a format compatible with Studio.
+- variables.json - File which contains the variables of the exported packages.
+- exported packages directories - Directories containing the exported package files, each directory is named after the package key and the version.
+
+Inside each exported package directory, the following files will be present:
+- package.json - File which contains the configuration of the exported package.
+- nodes/ - Directory containing the nodes of the exported package.
+
+Inside the nodes directory, a file for each node will be present:
+  - node_key.json - File which contains the configuration of the exported node.
+
+#### Batch import packages
+Packages can be imported using the following commands, if importing from a zip file:
+```
+content-cli config import -p <sourceProfile> -f <relative exported zip file path> 
+```
+Where ```-f``` is the short hand operation for ```--file```.
+If importing from a directory containing the exported packages, the following command can be used:
+```
+content-cli config import -p <sourceProfile> -d <relative exported directory file path> 
+```
+Where ```-d``` is the shorthand operation for ```--directory```.  
+When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
+```
+content-cli config import -p <sourceProfile> -f <file path> --overwrite
+```
+
+Additionally, the following **Git options** are available (**beta**):
+- ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for importing directly from a repository.
+If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository from which to import. ⚠️ *(beta: may change or be removed in future releases)*
+
+Example importing from Git:
+```
+content-cli config import -p <sourceProfile> --gitProfile myGitProfile --gitBranch feature-branch
+```
+
+Finally, the result of this command will be a list of PostPackageImportData exported as a json file.  The file name will be printed with the following message format:
+```
+info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+### Listing & Mapping Variables
+
+#### Listing package variables
+
+Package variables (with assignments) can be listed with the following command:
+```
+content-cli config variables list -p <sourceProfile> --keysByVersion key1:version1 ... keyN:versionN
+```
+The --keysByVersion option should specify a list of key :(colon) version pairs. Alternatively, a json file path containing a list of key and version pairs can be used. The PackageKeyAndVersionPair for the file should have the following form:
+```
+export interface PackageKeyAndVersionPair {
+    packageKey: string;
+    version: string;
+}
+```
+Similar to the other listing commands, the –json option can be used for exporting (saving) the result as a json file.
+
+#### Listing assignments
+
+By using the list assignments command, possible assignment values for the target team can be fetched for each variable type. The list assignments command has the following format:
+```
+content-cli list assignments --type <type> --params <additionalFilteringParams>
+```
+The params argument should be passed in a key value format separated by commas with this specified format:
+```
+--params key1=value1,key2=value2,...,keyN=valueN
+```
+
+#### Mapping variables
+
+After getting the variables list (with definitions and assignments in the source team) and the assignments (possible values on the target team), you can change the value of the source team to one of the options provided when listing assignments.
+This mapping should be saved and then used during import.
+Since the format of the variables.json file on import is the same JSON structure as the list variables result, you can either map the values to the variables.json file for each variable, or replace the variables.json file with the result of the listing & mapping altogether.
+If the mapping of variables is skipped, you should delete the variables.json file before importing.
+
+### Deployment commands (beta)
+The **deployment** command group allows you to create deployments, list their history, check active deployments, and retrieve deployables and targets.
+
+#### Create Deployment
+Create a new deployment for a given package version in a target, based on the deployable type.
+```
+content-cli deployment create --packageKey myPackage --packageVersion 1.0.0 --deployableType app-package --targetId targetId
+```
+The command will return the created deployment, or an error if the deployment could not be created.   
+It is also possible to use the `--json` option for writing the extended response to a file that gets created in the working directory.
+
+#### List Deployment History
+List the deployment history, optionally filtered by package, target, type, status, or creator.
+```
+content-cli deployment list history
+```
+
+Additional filtering options:
+- `--packageKey <packageKey>` – Filter deployment history by package key
+- `--targetId <targetId>` – Filter deployment history by target ID
+- `--deployableType <deployableType>` – Filter deployment history by deployable type
+- `--status <status>` – Filter deployment history by status
+- `--createdBy <createdBy>` – Filter deployment history by creator
+
+The response is paginated, and the page size can be controlled with the `--limit` and `--offset` options (defaults to 100 and 0 respectively).
+
+It is also possible to use the '--json' option for writing the extended response to a file that gets created in the working directory.
+
+#### List Active Deployments
+Get the active deployment(s) for a given target or package. 
+
+For getting the active deployment for a target the `--targetId` option should be used:
+```
+content-cli deployment list active --targetId targetId
+```
+
+For getting the active deployment for a package the `--packageKey` option should be used:
+```
+content-cli deployment list active --packageKey myPackage
+```
+
+The `--targetIds` option can be used to filter the response by multiple target IDs. The option should be used with a comma-separated list of target IDs.
+
+The response of listing active deployments for a package will return all active deployments for that package across all targets.
+The response is paginated, and the page size can be controlled with the `--limit` and `--offset` options (defaults to 100 and 0 respectively).
+
+For both options, it is also possible to use the `--json` option for writing the extended response to a file that gets created in the working directory.
+
+Note: You must provide either `--packageKey` or `--targetId`, not both.
+
+#### List Deployables
+
+List all available deployables.
+
+```
+content-cli deployment list deployables --flavor STUDIO
+```
+
+The `--flavor` option can be used to filter the deployables by flavor. The available flavors are: **STUDIO** and **OCDM**.  
+It is also possible to use the `--json` option for writing the extended response to a file that gets created in the working directory.
+
+#### List Targets
+List all targets for a given deployable type (and optionally a package key).
+
+```
+content-cli deployment list targets --deployableType app-package
+```
+
+The `--packageKey` option can be used to get targets for a specific package.  
+It is also possible to use the `--json` option for writing the extended response to a file that gets created in the working directory.
 
 ### Action Flows commands
 

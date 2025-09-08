@@ -142,19 +142,35 @@ export class HttpClient {
         return new Promise<any>((resolve, reject) => {
             this.axios.post(this.resolveUrl(url), null, {
                 headers: this.buildHeaders(),
-                responseType: "stream"
+                responseType: "stream",
+                validateStatus: () => true, // Accept all status codes, handle manually
             }).then(response => {
-                const data: Buffer[] = [];
-                response.data.on("data", (chunk: Buffer) => {
-                    data.push(chunk);
-                });
-                response.data.on("end", () => {
-                    if (this.checkBadRequest(response.status)) {
-                        this.handleBadRequest(response.status, data.toString(), reject);
-                    } else {
+                if (this.checkBadRequest(response.status)) {
+                    // For error responses, collect as text for readable error messages
+                    let errorData = '';
+                    response.data.setEncoding('utf8');
+                    response.data.on('data', (chunk: string) => {
+                        errorData += chunk;
+                    });
+                    response.data.on('end', () => {
+                        this.handleBadRequest(response.status, errorData, reject);
+                    });
+                    response.data.on('error', (err: any) => {
+                        reject(`Error reading error response: ${err.message}`);
+                    });
+                } else {
+                    // For successful responses, collect as binary for file download
+                    const data: Buffer[] = [];
+                    response.data.on("data", (chunk: Buffer) => {
+                        data.push(chunk);
+                    });
+                    response.data.on("end", () => {
                         this.handleResponseStreamData(Buffer.concat(data as any), resolve, reject);
-                    }
-                })
+                    });
+                    response.data.on('error', (err: any) => {
+                        reject(`Error reading file data: ${err.message}`);
+                    });
+                }
             }).catch(err => {
                 this.handleError(err, resolve, reject);
             })

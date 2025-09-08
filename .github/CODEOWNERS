@@ -5,6 +5,7 @@
 /src/core                                         @celonis/astro
 /src/commands/configuration-management/           @celonis/astro
 /src/commands/profile/                            @celonis/astro
+/src/commands/deployment/                         @celonis/astro
 /src/commands/action-flows/                       @celonis/process-automation
 /tests/commands/action-flows/                     @celonis/process-automation
 /src/commands/analysis/                           @celonis/process-analytics

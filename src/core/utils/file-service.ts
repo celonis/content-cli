@@ -14,10 +14,6 @@ export class FileService {
         });
     }
 
-    public createDirectoryWithGivenName(dirName: string): void {
-        fs.mkdirSync(path.resolve(process.cwd(), dirName));
-    }
-
     public async readFileToJson<T>(fileName: string): Promise<T> {
         const fileContent = this.readFile(fileName);
 
@@ -35,11 +31,15 @@ export class FileService {
         const tempDir = path.join(os.tmpdir(), `${uuidv4()}`);
         fs.mkdirSync(tempDir, { recursive: true });
 
-        zipFile.extractAllTo(tempDir, true);
+        return this.extractExportedZipWithNestedZipsToDir(zipFile, tempDir);
+    }
 
-        const files = fs.readdirSync(tempDir);
+    public extractExportedZipWithNestedZipsToDir(zipFile: AdmZip, targetDir: string): string {
+        zipFile.extractAllTo(targetDir, true);
+
+        const files = fs.readdirSync(targetDir);
         for (const file of files) {
-            const innerZipPath = path.join(tempDir, file);
+            const innerZipPath = path.join(targetDir, file);
             if (file.endsWith(".zip")) {
                 const nestedZip = new AdmZip(innerZipPath);
                 const nestedDir = innerZipPath.replace(/\.zip$/, "");
@@ -49,7 +49,16 @@ export class FileService {
                 fs.rmSync(innerZipPath); // Optionally remove the inner zip
             }
         }
-        return tempDir;
+        return targetDir;
+    }
+
+    public copyDirectoryToCurrentLocation(sourceDir: string, targetName: string): void {
+        fs.mkdirSync(targetName, { recursive: true });
+        fs.cpSync(sourceDir, targetName, { recursive: true });
+    }
+
+    public isDirectory(sourcePath: string): boolean {
+        return fs.statSync(sourcePath)?.isDirectory()
     }
 
     public zipDirectoryInBatchExportFormat(sourceDir: string): string {
