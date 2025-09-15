@@ -68,9 +68,11 @@ export class GitProfileService {
     private async buildProfileFromEnvVariables(): Promise<GitProfile> {
         const profileVariables = this.getProfileEnvVariables();
         const profile: GitProfile = {
-            name: profileVariables.repository,
+            name: "env-profile",
+            username: profileVariables.username,
             repository: profileVariables.repository,
-            authenticationType: AuthenticationType.SSH,
+            token: profileVariables.token,
+            authenticationType: AuthenticationType.HTTPS,
         };
         profile.authenticationType = await GitProfileValidator.validateProfile(profile);
         return profile;

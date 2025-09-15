@@ -91,12 +91,17 @@ export class GitService {
     }
 
     private getRepoUrl(): string {
-        const { authenticationType, repository } = this.gitProfile;
+        const { authenticationType, repository, token, username } = this.gitProfile;
 
         if (authenticationType === "SSH") {
             return `git@github.com:${repository}.git`;
         }
 
+        if (token) {
+            const safeUsername = encodeURIComponent(username ?? "git");
+            const safeToken = encodeURIComponent(token);
+            return `https://${safeUsername}:${safeToken}@github.com/${repository}.git`;
+        }
         return `https://github.com/${repository}.git`;
     }
 
