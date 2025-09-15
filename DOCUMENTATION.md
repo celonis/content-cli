@@ -214,9 +214,16 @@ A Git profile contains:
 
 - **name** – unique identifier for the profile
 - **repository** – the GitHub repository in the format `owner/repo`
-- **authenticationType** – either `SSH` or `PAT` (Personal Access Token)
-- **username** – optional username (only for token authentication)
-- **token** – Personal Access Token (if `PAT` is selected)
+- **authenticationType** – either `SSH` or `HTTPS`
+- **username** – optional username (used for commit authoring)
+
+#### Authentication
+The authentication is delegated your local Git configuration, based on the selected method (SSH or HTTPS).
+
+Besides profile authentication, the git related commands can also be set up in pipelines via the following environment variables:
+- GIT_REPOSITORY – the GitHub repository in the format `owner/repo`
+- GIT_TOKEN – a GitHub personal access token with `repo` scope (for HTTPS authentication)
+- GIT_USERNAME – username (used for commit authoring)
 
 #### When to create a Git profile
 A Git profile should be created to represent of Github repository and Github user credentials you want to use for interacting with content.
