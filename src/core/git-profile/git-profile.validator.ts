@@ -15,8 +15,5 @@ export class GitProfileValidator {
         if (gitProfile.authenticationType == null) {
             logger.error(new FatalError("The authentication type can not be empty"));
         }
-        if (gitProfile.authenticationType === AuthenticationType.PAT && gitProfile.token == null) {
-            logger.error(new FatalError("The token can not be empty for authentication with PAT"));
-        }
     }
 }

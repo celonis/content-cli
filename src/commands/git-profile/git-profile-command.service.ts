@@ -13,11 +13,10 @@ export class GitProfileCommandService {
             profile.name = await questions.ask("Name of the Git profile to create: ");
             profile.username = await questions.ask("Your Git username: ");
             profile.repository = await questions.ask("Your repository (format: repoOwner/repoName): ");
-            const type = await questions.ask("Authentication type: PAT (1), SSH token (2): " );
+            const type = await questions.ask("Authentication type: HTTPS (1), SSH token (2): " );
             switch (type) {
                 case "1":
-                    profile.authenticationType = AuthenticationType.PAT;
-                    profile.token = await questions.ask("Your Personal Access Token (PAT): " );
+                    profile.authenticationType = AuthenticationType.HTTPS;
                     break;
                 case "2":
                     profile.authenticationType = AuthenticationType.SSH;
