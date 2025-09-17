@@ -121,9 +121,9 @@ export class BatchImportExportService {
             sourceToBeImported = await this.gitService.pullFromBranch(gitBranch);
         } else {
             sourceToBeImported = sourcePath;
-            if (fileService.isDirectory(sourcePath)) {
-                sourceToBeImported = fileService.zipDirectoryInBatchExportFormat(sourceToBeImported);
-            }
+        }
+        if (fileService.isDirectory(sourceToBeImported)) {
+            sourceToBeImported = fileService.zipDirectoryInBatchExportFormat(sourceToBeImported);
         }
 
         let configs = new AdmZip(sourceToBeImported);
