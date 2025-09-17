@@ -73,14 +73,15 @@ A git profile includes:
 - **Name** – the profile identifier
 - **Repository** – the Github repository in the format `owner/repository`
 - **Authentication** – either:
-    - **Personal Access Token (PAT)** for HTTPS-based authentication
-    - **SSH key** for SSH-based authentication
-- **Username** (optional, used with PATs)
+    - **HTTPS** uses HTTPS-based authentication
+    - **SSH** uses SSH-based authentication
+- **Username** (optional, used for commit authoring)
 
 ### Implementation
 
 - Credentials are fetched from the active Git profile stored in a local directory 
-and translated into an authenticated Github repository URL.
+and then based on the authentication method a Git URL is constructed, which delegates authentication
+to the local Git configuration (SSH keys or credential helpers).
 - Git operations are executed via [`simple-git`](https://github.com/steveukx/git-js).
 - Temporary working directories are created when pulling/pushing, ensuring isolation and cleanup.
 

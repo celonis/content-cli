@@ -1,15 +1,15 @@
 export interface GitProfile {
     name: string;
     username?: string;
-    repository: string; // in the format "owner/repository"
     token?: string;
+    repository: string; // in the format "owner/repository"
     authenticationType: AuthenticationType;
 }
 
-export type AuthenticationType = "SSH" | "Personal Access Token";
+export type AuthenticationType = "SSH" | "HTTPS";
 
 // tslint:disable-next-line:variable-name
 export const AuthenticationType: { [key: string]: AuthenticationType } = {
     SSH: "SSH",
-    PAT: "Personal Access Token",
+    HTTPS: "HTTPS",
 };

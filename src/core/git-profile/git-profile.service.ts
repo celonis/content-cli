@@ -16,7 +16,7 @@ export class GitProfileService {
 
     public async findProfile(profileName: string): Promise<GitProfile> {
         return new Promise<GitProfile>((resolve, reject) => {
-            if (process.env.USERNAME && process.env.GIT_TOKEN && process.env.REPOSITORY) {
+            if (process.env.GIT_USERNAME && process.env.GIT_TOKEN && process.env.GIT_REPOSITORY) {
                 resolve(this.buildProfileFromEnvVariables());
             } else {
                 if (!profileName) {
@@ -42,7 +42,7 @@ export class GitProfileService {
                     resolve(profile);
                 })
                 .catch(err => {
-                    logger.error(new FatalError("Git Profile does not exit."));
+                    logger.error(new FatalError("Git Profile does not exist."));
                     reject(err);
                 });
         });
@@ -68,10 +68,11 @@ export class GitProfileService {
     private async buildProfileFromEnvVariables(): Promise<GitProfile> {
         const profileVariables = this.getProfileEnvVariables();
         const profile: GitProfile = {
-            name: profileVariables.repository,
+            name: "env-profile",
+            username: profileVariables.username,
             repository: profileVariables.repository,
-            token: profileVariables.apiToken,
-            authenticationType: AuthenticationType.SSH,
+            token: profileVariables.token,
+            authenticationType: AuthenticationType.HTTPS,
         };
         profile.authenticationType = await GitProfileValidator.validateProfile(profile);
         return profile;
@@ -112,9 +113,9 @@ export class GitProfileService {
 
     private getProfileEnvVariables(): any {
         return {
-            username: process.env.USERNAME,
+            username: process.env.GIT_USERNAME,
             token: process.env.GIT_TOKEN,
-            repository: process.env.REPOSITORY,
+            repository: process.env.GIT_REPOSITORY,
         };
     }
 }

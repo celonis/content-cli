@@ -104,9 +104,12 @@ export class GitService {
             return `git@github.com:${repository}.git`;
         }
 
-        const safeUsername = encodeURIComponent(username ?? "git");
-        const safeToken = encodeURIComponent(token);
-        return `https://${safeUsername}:${safeToken}@github.com/${repository}.git`;
+        if (token) {
+            const safeUsername = encodeURIComponent(username ?? "git");
+            const safeToken = encodeURIComponent(token);
+            return `https://${safeUsername}:${safeToken}@github.com/${repository}.git`;
+        }
+        return `https://github.com/${repository}.git`;
     }
 
     private cleanupGitDirectory(repoDirectory: string): void {

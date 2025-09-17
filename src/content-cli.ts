@@ -33,6 +33,7 @@ program.configureHelp({
 program.version(VersionUtils.getCurrentCliVersion());
 program.option("-q, --quietmode", "Reduce output to a minimum", false);
 program.option("-p, --profile [profile]");
+program.option("--gitProfile [gitProfile]", "Git profile to use");
 program.option("--debug", "Print debug messages", false);
 program.option("--dev", "Development Mode", false);
 program.parseOptions(process.argv);
