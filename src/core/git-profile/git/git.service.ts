@@ -43,7 +43,7 @@ export class GitService {
         const git = simpleGit();
 
         try {
-            await git.clone(repoUrl, workingDir, ["--branch", "main"]);
+            await git.clone(repoUrl, workingDir);
             const repoGit = simpleGit({ baseDir: workingDir });
 
             await repoGit.addConfig("user.name", this.gitProfile.username ?? "content-cli");
@@ -83,11 +83,18 @@ export class GitService {
     private async checkoutOrCreateLocalBranch(git: SimpleGit, branch: string): Promise<void> {
         const branches = await git.branch();
 
-        if (!branches.all.includes(`remotes/origin/${branch}`)) {
-            await git.checkoutLocalBranch(branch);
-        } else {
-            await git.checkout(["-b", branch, "--track", `origin/${branch}`]);
+        if (branches.current === branch) {
+            return;
         }
+        if (branches.all.includes(branch)) {
+            await git.checkout(branch);
+            return;
+        }
+        if (branches.all.includes(`remotes/origin/${branch}`)) {
+            await git.checkout(["--track", `origin/${branch}`]);
+            return;
+        }
+        await git.checkoutLocalBranch(branch);
     }
 
     private getRepoUrl(): string {
