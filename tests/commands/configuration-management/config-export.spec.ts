@@ -19,16 +19,23 @@ import { ConfigCommandService } from "../../../src/commands/configuration-manage
 import { testContext } from "../../utls/test-context";
 import { ConfigUtils } from "../../utls/config-utils";
 import { PacmanApiUtils } from "../../utls/pacman-api.utils";
+import { mockReadDirSync } from "../../utls/fs-mock-utils";
+import { GitService } from "../../../src/core/git-profile/git/git.service";
 
 describe("Config export", () => {
 
     const firstSpace = PacmanApiUtils.buildSpaceTransport("space-1", "First space", "Icon1");
     const secondSpace = PacmanApiUtils.buildSpaceTransport("space-2", "Second space", "Icon2");
 
+    let mockGitServicePushToBranch: jest.SpyInstance;
+
     beforeEach(() => {
         (fs.openSync as jest.Mock).mockReturnValue(100);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-1", {...firstSpace});
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-2", {...secondSpace});
+
+        // Mock GitService.pushToBranch
+        mockGitServicePushToBranch = jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
     });
 
     it("Should export studio file for studio packageKeys", async () => {
@@ -81,6 +88,61 @@ describe("Config export", () => {
             },
             runtimeVariableAssignments: []
         });
+    })
+
+    it("Should export to Github branch when branch is sent", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", BatchExportImportConstants.STUDIO));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-2", BatchExportImportConstants.STUDIO));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-3", "TEST"));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+
+        const firstStudioPackage = PacmanApiUtils.buildContentNodeTransport("key-1", "space-1");
+        const firstPackageRuntimeVariable: VariablesAssignments = {
+            key: "varKey",
+            type: PackageManagerVariableType.PLAIN_TEXT,
+            value: "default-value" as unknown as object
+        };
+
+        const secondStudioPackage = PacmanApiUtils.buildContentNodeTransport("key-2", "space-2");
+
+        // Mock fs.readdirSync for extractExportedZipWithNestedZips
+        mockReadDirSync(["key-1_1.0.0.zip", "key-2_1.0.0.zip", "key-3_1.0.0.zip", "manifest.json", "studio.json", "variables.json"]);
+
+        // Mock fs operations needed for file extraction
+        (fs.mkdirSync as jest.Mock).mockImplementation(() => {
+            // Mock implementation for mkdirSync
+        });
+        (fs.rmSync as jest.Mock).mockImplementation(() => {
+            // Mock implementation for rmSync
+        });
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&packageKeys=key-3&withDependencies=true", exportedPackagesZip.toBuffer());
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstStudioPackage.key}/${firstStudioPackage.key}`, firstStudioPackage);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${secondStudioPackage.key}/${secondStudioPackage.key}`, secondStudioPackage);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, [firstPackageRuntimeVariable]);
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, []);
+
+        const branchName = "my-branch";
+        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, branchName, null);
+
+        // Assert that gitService.pushToBranch was called with correct parameters
+        expect(mockGitServicePushToBranch).toHaveBeenCalledTimes(1);
+        expect(mockGitServicePushToBranch).toHaveBeenCalledWith(
+            expect.stringMatching(/.*content-cli-.*/), // extracted directory path
+            branchName
+        );
+        // Assert that file operations were NOT called (since we're using git branch)
+        expect(fs.openSync).not.toHaveBeenCalled();
+        expect(mockWriteSync).not.toHaveBeenCalled();
+        expect(loggingTestTransport.logMessages).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    message: "Successfully exported packages to branch: my-branch"
+                })
+            ])
+        );
     })
 
     it("Should export studio file for studio packageKeys and versions", async () => {
