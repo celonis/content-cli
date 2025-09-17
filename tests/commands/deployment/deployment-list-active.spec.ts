@@ -13,9 +13,9 @@ describe("Deployment list active", () => {
         packageVersion: "1.0.0",
         deployableType: "app-package",
         status: DeploymentStatus.SUCCESS,
-        createdAt: new Date().getDate() + "",
+        createdAt: new Date().toISOString(),
         createdBy: "user-id",
-        deployedAt: new Date().getDate() + "",
+        deployedAt: new Date().toISOString(),
         statusMessage: "Deployment in progress",
         target: {
             id: "target-id",
@@ -30,6 +30,7 @@ describe("Deployment list active", () => {
         await new DeploymentService(testContext).getActiveDeploymentForTarget(targetId, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
+
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${deployment.id}, Package: ${deployment.packageKey}, Version: ${deployment.packageVersion}, Status: ${deployment.status}, Deployed at: ${new Date(deployment.deployedAt).toISOString()}`);
     });
 
