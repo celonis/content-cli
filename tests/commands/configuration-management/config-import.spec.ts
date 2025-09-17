@@ -65,7 +65,8 @@ describe("Config import", () => {
     it.each([
         true,
         false
-    ]) ("Should batch import package configs from git branch with overwrite %p, when the branch is specified",
+    ]) ("Should batch import package configs from git branch with overwrite %p, when the branch is specified and" +
+        " branch contains zipped directory",
         async (overwrite: boolean) => {
         const branchName = "my-branch";
         const manifest: PackageManifestTransport[] = [];
@@ -98,7 +99,7 @@ describe("Config import", () => {
         true,
         false
     ]) ("Should batch import package configs from git branch with overwrite %p, when the branch is specified and" +
-        " git contains non-zipped directory",
+        " branch contains non-zipped directory",
         async (overwrite: boolean) => {
             const branchName = "my-branch";
             const manifest: PackageManifestTransport[] = [];
