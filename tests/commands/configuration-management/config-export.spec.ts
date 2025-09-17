@@ -34,7 +34,6 @@ describe("Config export", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-1", {...firstSpace});
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-2", {...secondSpace});
 
-        // Mock GitService.pushToBranch
         mockGitServicePushToBranch = jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
     });
 
