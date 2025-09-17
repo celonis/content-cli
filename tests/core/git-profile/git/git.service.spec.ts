@@ -4,8 +4,9 @@ import * as os from "node:os";
 import { GitService } from "../../../../src/core/git-profile/git/git.service";
 import { Context } from "../../../../src/core/command/cli-context";
 import { GitProfile } from "../../../../src/core/git-profile/git-profile.interface";
-import simpleGit, { SimpleGit } from "simple-git";
+import simpleGit from "simple-git";
 
+// Mock dependencies
 jest.mock("simple-git");
 jest.mock("fs");
 jest.mock("path");
@@ -14,65 +15,42 @@ jest.mock("uuid", () => ({
     v4: jest.fn(() => "test-uuid-1234")
 }));
 
+const mockSimpleGit = simpleGit as jest.MockedFunction<typeof simpleGit>;
+
 describe("GitService", () => {
     let gitService: GitService;
     let mockContext: Context;
-    let mockGit: jest.Mocked<SimpleGit>;
     let mockGitProfile: GitProfile;
+    let mockGit: any;
 
     const mockTargetDir = "/tmp/content-cli-test-uuid-1234";
 
     beforeEach(() => {
-        // Reset all mocks
         jest.clearAllMocks();
 
-        // Mock fs functions
         (fs.mkdirSync as jest.Mock).mockImplementation(() => {});
         (fs.rmSync as jest.Mock).mockImplementation(() => {});
         (fs.cpSync as jest.Mock).mockImplementation(() => {});
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readdirSync as jest.Mock).mockReturnValue([".git", "file1.txt", "file2.txt"]);
 
-        // Mock path and os functions
         (path.join as jest.Mock).mockImplementation((...args) => args.join("/"));
         (os.tmpdir as jest.Mock).mockReturnValue("/tmp");
 
-        // Mock SimpleGit
         mockGit = {
             clone: jest.fn().mockResolvedValue(undefined),
             add: jest.fn().mockResolvedValue(undefined),
             commit: jest.fn().mockResolvedValue(undefined),
             push: jest.fn().mockResolvedValue(undefined),
             addConfig: jest.fn().mockResolvedValue(undefined),
-            status: jest.fn().mockResolvedValue({
-                files: [{ path: "test.txt" }],
-                not_added: [],
-                conflicted: [],
-                created: [],
-                deleted: [],
-                modified: [],
-                renamed: [],
-                ahead: 0,
-                behind: 0,
-                current: "main",
-                tracking: null,
-                staged: [],
-                detached: false,
-                isClean: () => false
-            }),
-            branch: jest.fn().mockResolvedValue({
-                current: "main",
-                all: ["main", "remotes/origin/main"],
-                detached: false,
-                branches: {}
-            }),
+            status: jest.fn().mockResolvedValue({ files: [{ path: "test.txt" }] }),
+            branch: jest.fn().mockResolvedValue({ current: "main", all: ["main"] }),
             checkout: jest.fn().mockResolvedValue(undefined),
             checkoutLocalBranch: jest.fn().mockResolvedValue(undefined)
-        } as any;
+        };
 
-        (simpleGit as jest.Mock).mockImplementation(() => mockGit);
+        mockSimpleGit.mockReturnValue(mockGit);
 
-        // Setup mock git profile
         mockGitProfile = {
             name: "test-profile",
             authenticationType: "HTTPS",
@@ -81,7 +59,6 @@ describe("GitService", () => {
             token: "test-token"
         };
 
-        // Setup mock context
         mockContext = {
             gitProfile: mockGitProfile
         } as Context;
