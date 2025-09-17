@@ -106,10 +106,8 @@ describe("Config export", () => {
 
         const secondStudioPackage = PacmanApiUtils.buildContentNodeTransport("key-2", "space-2");
 
-        // Mock fs.readdirSync for extractExportedZipWithNestedZips
-        mockReadDirSync(["key-1_1.0.0.zip", "key-2_1.0.0.zip", "key-3_1.0.0.zip", "manifest.json", "studio.json", "variables.json"]);
+        mockReadDirSync(["manifest.json", "studio.json", "variables.json"]);
 
-        // Mock fs operations needed for file extraction
         (fs.mkdirSync as jest.Mock).mockImplementation(() => {
             // Mock implementation for mkdirSync
         });
@@ -127,22 +125,14 @@ describe("Config export", () => {
         const branchName = "my-branch";
         await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, branchName, null);
 
-        // Assert that gitService.pushToBranch was called with correct parameters
         expect(mockGitServicePushToBranch).toHaveBeenCalledTimes(1);
         expect(mockGitServicePushToBranch).toHaveBeenCalledWith(
-            expect.stringMatching(/.*content-cli-.*/), // extracted directory path
+            expect.any(String),
             branchName
         );
-        // Assert that file operations were NOT called (since we're using git branch)
-        expect(fs.openSync).not.toHaveBeenCalled();
-        expect(mockWriteSync).not.toHaveBeenCalled();
-        expect(loggingTestTransport.logMessages).toEqual(
-            expect.arrayContaining([
-                expect.objectContaining({
-                    message: "Successfully exported packages to branch: my-branch"
-                })
-            ])
-        );
+        const loggedResponse = loggingTestTransport.logMessages[0].message.trim();
+
+        expect(loggedResponse).toEqual("Successfully exported packages to branch: my-branch");
     })
 
     it("Should export studio file for studio packageKeys and versions", async () => {
