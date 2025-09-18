@@ -116,7 +116,6 @@ describe("Config import", () => {
             mockReadFileSync(exportedPackagesZip.toBuffer());
             mockCreateReadStream(exportedPackagesZip.toBuffer());
             mockReadDirSync(["manifest.json", "variables.json"]);
-            // mockReadFileSync(["manifest.json"]);
             mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
 
             const importResponse: PostPackageImportData[] = [{
