@@ -5,6 +5,10 @@ export function mockReadFileSync(data: any): void {
     (fs.readFileSync as jest.Mock).mockReturnValue(data);
 }
 
+export function mockReadDirSync(data: any): void {
+    (fs.readdirSync as jest.Mock).mockReturnValue(data);
+}
+
 export function mockCreateReadStream(data: any): void {
     const stream = new Readable();
     stream.push(data);

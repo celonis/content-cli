@@ -1,5 +1,5 @@
 import * as path from "path";
-import { mockCreateReadStream, mockExistsSync, mockReadFileSync } from "../../utls/fs-mock-utils";
+import { mockCreateReadStream, mockExistsSync, mockReadDirSync, mockReadFileSync } from "../../utls/fs-mock-utils";
 import {
     PackageManifestTransport, PostPackageImportData, StudioPackageManifest,
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
@@ -23,6 +23,8 @@ import {
 } from "../../../src/commands/configuration-management/interfaces/batch-export-import.constants";
 import { ConfigUtils } from "../../utls/config-utils";
 import { stringify } from "../../../src/core/utils/json";
+import { GitService } from "../../../src/core/git-profile/git/git.service";
+import { FileService } from "../../../src/core/utils/file-service";
 
 describe("Config import", () => {
 
@@ -59,6 +61,78 @@ describe("Config import", () => {
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
     })
+
+    it.each([
+        true,
+        false
+    ]) ("Should batch import package configs from git branch with overwrite %p, when the branch is specified and" +
+        " branch contains zipped directory",
+        async (overwrite: boolean) => {
+        const branchName = "my-branch";
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+
+        jest.spyOn(GitService.prototype, "pullFromBranch")
+            .mockResolvedValue("mocked-pulled-git-path");
+        mockReadFileSync(exportedPackagesZip.toBuffer());
+        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
+
+        const importResponse: PostPackageImportData[] = [{
+            packageKey: "key-1",
+            importedVersions: [{
+                oldVersion: "1.0.2",
+                newVersion: "1.0.0"
+            }]
+        }];
+
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+
+        await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
+
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
+    })
+
+    it.each([
+        true,
+        false
+    ]) ("Should batch import package configs from git branch with overwrite %p, when the branch is specified and" +
+        " branch contains non-zipped directory",
+        async (overwrite: boolean) => {
+            const branchName = "my-branch";
+            const manifest: PackageManifestTransport[] = [];
+            manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
+
+            const returnedGitPath = "mocked-pulled-git-path";
+            jest.spyOn(GitService.prototype, "pullFromBranch")
+                .mockResolvedValue(returnedGitPath);
+
+            jest.spyOn(FileService.prototype, "zipDirectoryInBatchExportFormat")
+                .mockReturnValue("export_file.zip");
+            const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+
+            mockReadFileSync(exportedPackagesZip.toBuffer());
+            mockCreateReadStream(exportedPackagesZip.toBuffer());
+            mockReadDirSync(["manifest.json", "variables.json"]);
+            mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
+
+            const importResponse: PostPackageImportData[] = [{
+                packageKey: "key-1",
+                importedVersions: [{
+                    oldVersion: "1.0.2",
+                    newVersion: "1.0.0"
+                }]
+            }];
+
+            mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+
+            await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
+
+            const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
+            expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
+        })
 
     it("Should batch import configs & map space ID as specified in manifest file for Studio Packages", async () => {
         const manifest: PackageManifestTransport[] = [];

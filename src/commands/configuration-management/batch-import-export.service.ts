@@ -16,7 +16,7 @@ import { PackageApi } from "../studio/api/package-api";
 import { BatchImportExportApi } from "./api/batch-import-export-api";
 import { StudioService } from "./studio.service";
 import { GitService } from "../../core/git-profile/git/git.service";
-import * as fs from "node:fs";
+import * as fs from "fs";
 
 export class BatchImportExportService {
 
