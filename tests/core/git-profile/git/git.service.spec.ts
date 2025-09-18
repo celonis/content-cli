@@ -6,7 +6,6 @@ import { Context } from "../../../../src/core/command/cli-context";
 import { GitProfile } from "../../../../src/core/git-profile/git-profile.interface";
 import simpleGit from "simple-git";
 
-// Mock dependencies
 jest.mock("simple-git");
 jest.mock("fs");
 jest.mock("path");
@@ -72,16 +71,9 @@ describe("GitService", () => {
 
             const result = await gitService.pullFromBranch(branch);
 
-            expect(mockGit.clone).toHaveBeenCalledWith(
-                "https://testuser:test-token@github.com/test-org/test-repo.git",
-                mockTargetDir,
-                ["--branch", branch, "--single-branch"]
-            );
-            expect(fs.mkdirSync).toHaveBeenCalledWith(mockTargetDir, { recursive: true });
-            expect(fs.rmSync).toHaveBeenCalledWith("/tmp/content-cli-test-uuid-1234/.git", {
-                recursive: true,
-                force: true
-            });
+            assertHttpsCloneWithCredentials(branch, mockTargetDir, "testuser", "test-token", "test-org/test-repo");
+            assertDirectoryCreated(mockTargetDir);
+            assertGitDirectoryCleanup("/tmp/content-cli-test-uuid-1234");
             expect(result).toBe(mockTargetDir);
         });
 
@@ -93,11 +85,7 @@ describe("GitService", () => {
 
             const result = await gitService.pullFromBranch(branch);
 
-            expect(mockGit.clone).toHaveBeenCalledWith(
-                "git@github.com:test-org/test-repo.git",
-                mockTargetDir,
-                ["--branch", branch, "--single-branch"]
-            );
+            assertSshClone(branch, mockTargetDir, "test-org/test-repo");
             expect(result).toBe(mockTargetDir);
         });
 
@@ -136,16 +124,13 @@ describe("GitService", () => {
 
             await gitService.pushToBranch(sourceDir, branch);
 
-            expect(fs.mkdirSync).toHaveBeenCalledWith(workingDir, { recursive: true });
-            expect(mockGit.clone).toHaveBeenCalledWith("https://testuser:test-token@github.com/test-org/test-repo.git", workingDir);
-            expect(mockGit.addConfig).toHaveBeenCalledWith("user.name", "testuser");
-            expect(mockGit.addConfig).toHaveBeenCalledWith("user.email", "testuser@users.noreply.github.com");
-            expect(mockGit.checkoutLocalBranch).toHaveBeenCalledWith(branch);
-            expect(fs.cpSync).toHaveBeenCalledWith(sourceDir, workingDir, { recursive: true });
-            expect(mockGit.add).toHaveBeenCalledWith("./*");
-            expect(mockGit.commit).toHaveBeenCalledWith("Update from content-cli");
-            expect(mockGit.push).toHaveBeenCalledWith(["--set-upstream", "origin", branch]);
-            expect(fs.rmSync).toHaveBeenCalledWith(workingDir, { recursive: true, force: true });
+            assertDirectoryCreated(workingDir);
+            assertHttpsCloneForPush(workingDir, "testuser", "test-token", "test-org/test-repo");
+            assertGitCredentialsConfigured("testuser");
+            assertBranchCreatedAndCheckedOut(branch);
+            assertSourceCopiedToWorkingDirectory(sourceDir, workingDir);
+            assertFilesCommittedAndPushed(branch);
+            assertWorkingDirectoryCleanup(workingDir);
         });
 
         it("should not commit when there are no changes", async () => {
@@ -167,8 +152,7 @@ describe("GitService", () => {
             });
 
             await gitService.pushToBranch(sourceDir, branch);
-
-            expect(mockGit.commit).not.toHaveBeenCalled();
+            assertNoCommitOrPush();
             expect(mockGit.push).not.toHaveBeenCalled();
         });
     });
@@ -211,4 +195,67 @@ describe("GitService", () => {
             );
         });
     });
+
+    const assertDirectoryCreated = (directory: string) => {
+        expect(fs.mkdirSync).toHaveBeenCalledWith(directory, { recursive: true });
+    };
+
+    const assertGitDirectoryCleanup = (directory: string) => {
+        expect(fs.rmSync).toHaveBeenCalledWith(`${directory}/.git`, {
+            recursive: true,
+            force: true
+        });
+    };
+
+    const assertWorkingDirectoryCleanup = (directory: string) => {
+        expect(fs.rmSync).toHaveBeenCalledWith(directory, { recursive: true, force: true });
+    };
+
+    const assertHttpsCloneWithCredentials = (branch: string, targetDir: string, username: string, token: string, repository: string) => {
+        expect(mockGit.clone).toHaveBeenCalledWith(
+            `https://${username}:${token}@github.com/${repository}.git`,
+            targetDir,
+            ["--branch", branch, "--single-branch"]
+        );
+    };
+
+    const assertHttpsCloneForPush = (targetDir: string, username: string, token: string, repository: string) => {
+        expect(mockGit.clone).toHaveBeenCalledWith(
+            `https://${username}:${token}@github.com/${repository}.git`,
+            targetDir
+        );
+    };
+
+    const assertSshClone = (branch: string, targetDir: string, repository: string) => {
+        expect(mockGit.clone).toHaveBeenCalledWith(
+            `git@github.com:${repository}.git`,
+            targetDir,
+            ["--branch", branch, "--single-branch"]
+        );
+    };
+
+    const assertGitCredentialsConfigured = (username: string) => {
+        expect(mockGit.addConfig).toHaveBeenCalledWith("user.name", username);
+        expect(mockGit.addConfig).toHaveBeenCalledWith("user.email", `${username}@users.noreply.github.com`);
+    };
+
+    const assertBranchCreatedAndCheckedOut = (branch: string) => {
+        expect(mockGit.checkoutLocalBranch).toHaveBeenCalledWith(branch);
+    };
+
+    const assertFilesCommittedAndPushed = (branch: string, commitMessage: string = "Update from content-cli") => {
+        expect(mockGit.add).toHaveBeenCalledWith("./*");
+        expect(mockGit.commit).toHaveBeenCalledWith(commitMessage);
+        expect(mockGit.push).toHaveBeenCalledWith(["--set-upstream", "origin", branch]);
+    };
+
+    const assertSourceCopiedToWorkingDirectory = (sourceDir: string, workingDir: string) => {
+        expect(fs.cpSync).toHaveBeenCalledWith(sourceDir, workingDir, { recursive: true });
+    };
+
+    const assertNoCommitOrPush = () => {
+        expect(mockGit.commit).not.toHaveBeenCalled();
+        expect(mockGit.push).not.toHaveBeenCalled();
+    };
+
 });
