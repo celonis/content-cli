@@ -9,6 +9,7 @@ describe("Configuration Management Module - Action Validations", () => {
     let module: Module;
     let mockCommand: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
+    const contextWithGitProfile = { gitProfile: "myProfile" } as any;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -83,8 +84,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
         describe("gitProfile and gitBranch validation", () => {
             it("should throw error when gitProfile is set in context without gitBranch option", async () => {
-                const contextWithGitProfile = Object.assign(Object.create(Object.getPrototypeOf(testContext)), testContext);
-                contextWithGitProfile.gitProfile = "myProfile";
                 const options: OptionValues = {
                     packageKeys: ["package1"],
                 };
@@ -97,8 +96,6 @@ describe("Configuration Management Module - Action Validations", () => {
             });
 
             it("should pass validation when gitProfile is set in context with gitBranch option", async () => {
-                const contextWithGitProfile = Object.assign(Object.create(Object.getPrototypeOf(testContext)), testContext);
-                contextWithGitProfile.gitProfile = "myProfile";
                 const options: OptionValues = {
                     packageKeys: ["package1"],
                     gitBranch: "main",
@@ -197,8 +194,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
         describe("combined validation scenarios", () => {
             it("should fail on first validation error (packageKeys conflict) before checking gitProfile", async () => {
-                const contextWithGitProfile = Object.assign(Object.create(Object.getPrototypeOf(testContext)), testContext);
-                contextWithGitProfile.gitProfile = "myProfile";
                 const options: OptionValues = {
                     packageKeys: ["package1"],
                     keysByVersion: ["package2:v1"],
@@ -216,8 +211,6 @@ describe("Configuration Management Module - Action Validations", () => {
     describe("batchImportPackages validation", () => {
         describe("gitProfile and gitBranch validation", () => {
             it("should throw error when gitProfile is set in context without gitBranch option", async () => {
-                const contextWithGitProfile = Object.assign(Object.create(Object.getPrototypeOf(testContext)), testContext);
-                contextWithGitProfile.gitProfile = "myProfile";
                 const options: OptionValues = {
                     file: "export.zip",
                 };
@@ -230,8 +223,6 @@ describe("Configuration Management Module - Action Validations", () => {
             });
 
             it("should pass validation when gitProfile is set in context with gitBranch option", async () => {
-                const contextWithGitProfile = Object.assign(Object.create(Object.getPrototypeOf(testContext)), testContext);
-                contextWithGitProfile.gitProfile = "myProfile";
                 const options: OptionValues = {
                     file: "export.zip",
                     gitBranch: "main",
