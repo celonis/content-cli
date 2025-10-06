@@ -1,7 +1,3 @@
-/**
- * Unit tests for configuration-management module action method validations
- */
-
 import Module = require("../../../src/commands/configuration-management/module");
 import { Context } from "../../../src/core/command/cli-context";
 import { Command, OptionValues } from "commander";
@@ -41,7 +37,6 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(mockContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                // Ensure the service method was never called
                 expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
@@ -52,7 +47,6 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(mockContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                // Ensure the service method was never called
                 expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
@@ -63,7 +57,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1", "package2"],
                     undefined,
@@ -80,7 +73,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
                     undefined,
                     ["package3:v1", "package4:v2"],
@@ -102,7 +94,6 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(mockContext, mockCommand, options)
                 ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
 
-                // Ensure the service method was never called
                 expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
@@ -115,7 +106,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
@@ -133,7 +123,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
@@ -150,7 +139,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalled();
             });
         });
@@ -236,7 +224,6 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchImportPackages(mockContext, mockCommand, options)
                 ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
 
-                // Ensure the service method was never called
                 expect(mockConfigCommandService.batchImportPackages).not.toHaveBeenCalled();
             });
 
@@ -249,7 +236,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
                     undefined,
@@ -266,7 +252,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
                     undefined,
                     "./exported",
@@ -282,7 +267,6 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(mockContext, mockCommand, options);
 
-                // Ensure the service method was called
                 expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
                     undefined,
