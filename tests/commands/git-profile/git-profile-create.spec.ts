@@ -31,6 +31,9 @@ describe("Git Profile - Create Profile", () => {
 
         gitProfileCommandService = new GitProfileCommandService();
 
+        jest.spyOn(process, "exit").mockImplementation((code?: number) => {
+            return undefined as never;
+        });
         (fs.existsSync as jest.Mock).mockReturnValue(false);
         (fs.mkdirSync as jest.Mock).mockImplementation(() => void 0);
         (fs.writeFileSync as jest.Mock).mockImplementation(() => void 0);
@@ -164,11 +167,9 @@ describe("Git Profile - Create Profile", () => {
 
         await gitProfileCommandService.createProfile(false);
 
-        const errorMessage = loggingTestTransport.logMessages.find(msg =>
-            msg.level === "error"
-        );
-        expect(errorMessage).toBeDefined();
-        expect(errorMessage.message).toContain("Invalid type");
+        const errorMessage = loggingTestTransport.logMessages[0];
+        expect(errorMessage.level).toContain("error");
+        expect(errorMessage.message.trim()).toContain("Invalid type");
         expect(mockQuestionClose).toHaveBeenCalled();
 
         expect(fs.writeFileSync).toHaveBeenCalled();
@@ -210,10 +211,9 @@ describe("Git Profile - Create Profile", () => {
 
         await gitProfileCommandService.createProfile(false);
 
-        const loggedError = loggingTestTransport.logMessages.find(msg =>
-            msg.level === "error" && msg.message.includes(errorMessage)
-        );
-        expect(loggedError).toBeDefined();
+        const loggedError = loggingTestTransport.logMessages[0];
+        expect(loggedError.level).toContain("error");
+        expect(loggedError.message.trim()).toContain(errorMessage);
         expect(mockQuestionClose).toHaveBeenCalled();
     });
 
