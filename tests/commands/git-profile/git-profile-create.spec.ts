@@ -8,28 +8,32 @@ import * as os from "os";
 
 jest.mock("fs");
 jest.mock("os");
+jest.mock("../../../src/core/utils/question.service");
 
 describe("Git Profile - Create Profile", () => {
 
     let gitProfileCommandService: GitProfileCommandService;
-    let mockQuestionAsk: jest.SpyInstance;
-    let mockQuestionClose: jest.SpyInstance;
+    let mockQuestionAsk: jest.Mock;
+    let mockQuestionClose: jest.Mock;
     const mockHomedir = "/mock/home";
     const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-git-profiles");
 
     beforeEach(() => {
         (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
 
+        mockQuestionAsk = jest.fn();
+        mockQuestionClose = jest.fn().mockResolvedValue(undefined);
+
+        (QuestionService as jest.Mock).mockImplementation(() => ({
+            ask: mockQuestionAsk,
+            close: mockQuestionClose
+        }));
+
         gitProfileCommandService = new GitProfileCommandService();
 
-        mockQuestionAsk = jest.spyOn(QuestionService.prototype, "ask");
-        mockQuestionClose = jest.spyOn(QuestionService.prototype, "close").mockResolvedValue();
-
         (fs.existsSync as jest.Mock).mockReturnValue(false);
-        (fs.mkdirSync as jest.Mock).mockImplementation(() => {
-        });
-        (fs.writeFileSync as jest.Mock).mockImplementation(() => {
-        });
+        (fs.mkdirSync as jest.Mock).mockImplementation(() => void 0);
+        (fs.writeFileSync as jest.Mock).mockImplementation(() => void 0);
         (fs.readFileSync as jest.Mock).mockImplementation(() => "{}");
 
         loggingTestTransport.logMessages = [];
