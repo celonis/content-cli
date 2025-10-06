@@ -18,28 +18,19 @@ describe("Deployment list targets", () => {
     }
 
     it("Should list targets", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package", [firstTarget, secondTarget]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package&packageKey=package-key", [firstTarget, secondTarget]);
 
-        await new DeploymentService(testContext).getTargets(false, "app-package");
+        await new DeploymentService(testContext).getTargets(false, "app-package", "package-key");
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${firstTarget.id}, Name: ${firstTarget.name}`);
         expect(loggingTestTransport.logMessages[1].message).toContain(`ID: ${secondTarget.id}, Name: ${secondTarget.name}`);
     });
 
-    it("Should list targets with package key filter", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package&packageKey=package-key", [firstTarget]);
-
-        await new DeploymentService(testContext).getTargets(false, "app-package", "package-key");
-
-        expect(loggingTestTransport.logMessages.length).toBe(1);
-        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${firstTarget.id}, Name: ${firstTarget.name}`);
-    });
-
     it("Should list targets as JSON", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package", [firstTarget, secondTarget]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package&packageKey=package-key", [firstTarget, secondTarget]);
 
-        await new DeploymentService(testContext).getTargets(true, "app-package");
+        await new DeploymentService(testContext).getTargets(true, "app-package","package-key");
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
