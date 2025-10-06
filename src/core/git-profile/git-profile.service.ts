@@ -13,7 +13,7 @@ export class GitProfileService {
     private readonly homedir: string = os.homedir();
     private readonly gitProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-git-profiles");
     private readonly configContainer = path.resolve(this.gitProfileContainerPath, "config.json");
-    private static readonly INVALID_FILENAME_CHARS = /[\/\\:*?"<>|]/;
+    private static readonly INVALID_FILENAME_CHARS = /[\/\\:*?"<>|.]/;
 
     public async findProfile(profileName: string): Promise<GitProfile> {
         return new Promise<GitProfile>((resolve, reject) => {
