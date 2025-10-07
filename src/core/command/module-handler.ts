@@ -214,7 +214,7 @@ export class CommandConfig {
                 this.printBetaNoticeIfBetaCommand();
                 this.printBetaNoticeIfBetaOptions();
                 this.printDeprecationNoticeIfDeprecated();
-                await handler(this.ctx, this.cmd, this.cmd.opts());
+                await handler(this.ctx, this.cmd, this.cmd.optsWithGlobals());
             } catch (error) {
                 logger.error(`An unexpected error occured executing a command: ${error}`);
             }
@@ -237,7 +237,7 @@ export class CommandConfig {
         if ((this.cmd as any).isBeta) {
             return;
         }
-        const providedOptions = this.cmd.opts();
+        const providedOptions = this.cmd.optsWithGlobals();
         for (const option of this.cmd.options) {
             const optionName = option.attributeName();
             if ((option as any).isBeta && Object.hasOwn(providedOptions, optionName)) {
