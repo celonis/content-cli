@@ -9,7 +9,6 @@ describe("Configuration Management Module - Action Validations", () => {
     let module: Module;
     let mockCommand: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
-    const contextWithGitProfile = { gitProfile: "myProfile" } as any;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -83,25 +82,27 @@ describe("Configuration Management Module - Action Validations", () => {
         });
 
         describe("gitProfile and gitBranch validation", () => {
-            it("should throw error when gitProfile is set in context without gitBranch option", async () => {
+            it("should throw error when gitProfile is provided without gitBranch option", async () => {
                 const options: OptionValues = {
                     packageKeys: ["package1"],
+                    gitProfile: "myProfile",
                 };
 
                 await expect(
-                    (module as any).batchExportPackages(contextWithGitProfile, mockCommand, options)
+                    (module as any).batchExportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
 
                 expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
-            it("should pass validation when gitProfile is set in context with gitBranch option", async () => {
+            it("should pass validation when gitProfile provided with gitBranch option", async () => {
                 const options: OptionValues = {
                     packageKeys: ["package1"],
                     gitBranch: "main",
+                    gitProfile: "myProfile",
                 };
 
-                await (module as any).batchExportPackages(contextWithGitProfile, mockCommand, options);
+                await (module as any).batchExportPackages(testContext, mockCommand, options);
 
                 expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
@@ -197,10 +198,11 @@ describe("Configuration Management Module - Action Validations", () => {
                 const options: OptionValues = {
                     packageKeys: ["package1"],
                     keysByVersion: ["package2:v1"],
+                    gitProfile: "myProfile",
                 };
 
                 await expect(
-                    (module as any).batchExportPackages(contextWithGitProfile, mockCommand, options)
+                    (module as any).batchExportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
                 expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
@@ -210,25 +212,27 @@ describe("Configuration Management Module - Action Validations", () => {
 
     describe("batchImportPackages validation", () => {
         describe("gitProfile and gitBranch validation", () => {
-            it("should throw error when gitProfile is set in context without gitBranch option", async () => {
+            it("should throw error when gitProfile is provided without gitBranch option", async () => {
                 const options: OptionValues = {
                     file: "export.zip",
+                    gitProfile: "myProfile",
                 };
 
                 await expect(
-                    (module as any).batchImportPackages(contextWithGitProfile, mockCommand, options)
+                    (module as any).batchImportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
 
                 expect(mockConfigCommandService.batchImportPackages).not.toHaveBeenCalled();
             });
 
-            it("should pass validation when gitProfile is set in context with gitBranch option", async () => {
+            it("should pass validation when gitProfile is provided with gitBranch option", async () => {
                 const options: OptionValues = {
                     file: "export.zip",
                     gitBranch: "main",
+                    gitProfile: "myProfile",
                 };
 
-                await (module as any).batchImportPackages(contextWithGitProfile, mockCommand, options);
+                await (module as any).batchImportPackages(testContext, mockCommand, options);
 
                 expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
