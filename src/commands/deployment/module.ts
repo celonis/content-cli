@@ -58,7 +58,7 @@ class Module extends IModule {
             .beta()
             .description("List all targets for a given deployable type and package key")
             .requiredOption("--deployableType <deployableType>", "The type of the deployable")
-            .option("--packageKey <packageKey>", "Identifier of the package to list targets for")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package to list targets for")
             .option("--json", "Return the response as a JSON file")
             .action(this.listTargets);
     }

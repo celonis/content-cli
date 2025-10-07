@@ -85,7 +85,7 @@ export class DeploymentService {
         }
     }
 
-    public async getTargets(jsonResponse: boolean, deployableType: string, packageKey?: string): Promise<void> {
+    public async getTargets(jsonResponse: boolean, deployableType: string, packageKey: string): Promise<void> {
         const targets = await this.deploymentApi.getTargets(deployableType, packageKey);
 
         if (jsonResponse) {

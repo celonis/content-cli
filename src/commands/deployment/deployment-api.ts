@@ -80,13 +80,10 @@ export class DeploymentApi {
             });
     }
 
-    public async getTargets(deployableType: string, packageKey?: string): Promise<TargetTransport[]> {
+    public async getTargets(deployableType: string, packageKey: string): Promise<TargetTransport[]> {
         const queryParams = new URLSearchParams();
         queryParams.set("deployableType", deployableType);
-
-        if (packageKey) {
-            queryParams.set("packageKey", packageKey);
-        }
+        queryParams.set("packageKey", packageKey);
 
         return this.httpClient()
             .get(`/pacman/api/deployments/targets?${queryParams.toString()}`)
