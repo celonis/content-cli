@@ -85,6 +85,9 @@ class Module extends IModule {
         if ((options.packageKeys && options.keysByVersion) || (!options.packageKeys && !options.keysByVersion)) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
+        if (options.gitProfile && !options.gitBranch) {
+            throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
+        }
         options.withDependencies = options.withDependencies ?? false;
         await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch, options.unzip);
     }
@@ -94,6 +97,9 @@ class Module extends IModule {
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.gitProfile && !options.gitBranch) {
+            throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
+        }
         await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch);
     }
 
