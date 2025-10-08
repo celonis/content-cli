@@ -22,11 +22,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compute CalVer
+      - name: Determine CalVer Branch Name
         id: calver
-        run: echo "calver=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+        run: |
+          branch_name=$(date +"%Y%m%d-%H%M%S_RC00")
+          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
+          echo "Creating release branch: $branch_name"
 
-      - name: Bump NPM version on CalVer branch
+      - name: Bump NPM version on release branch
         uses: ./.github/action/bump-npm-version
         with:
           bump: ${{ inputs.bump }}
