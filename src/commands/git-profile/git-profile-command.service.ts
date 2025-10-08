@@ -11,6 +11,7 @@ export class GitProfileCommandService {
         const questions = new QuestionService();
         try {
             profile.name = await questions.ask("Name of the Git profile to create: ");
+            this.gitProfileService.validateProfileName(profile.name)
             profile.username = await questions.ask("Your Git username: ");
             profile.repository = await questions.ask("Your repository (format: repoOwner/repoName): ");
             const type = await questions.ask("Authentication type: HTTPS (1), SSH token (2): " );
@@ -31,10 +32,12 @@ export class GitProfileCommandService {
             if (setAsDefault) {
                 await this.makeDefaultProfile(profile.name);
             }
+            logger.info("Git Profile created successfully!");
+        } catch (e) {
+            logger.error(e.toString())
         } finally {
             await questions.close();
         }
-        logger.info("Git Profile created successfully!");
     }
 
     public async listProfiles(): Promise<void> {

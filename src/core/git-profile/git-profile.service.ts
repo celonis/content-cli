@@ -13,6 +13,7 @@ export class GitProfileService {
     private readonly homedir: string = os.homedir();
     private readonly gitProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-git-profiles");
     private readonly configContainer = path.resolve(this.gitProfileContainerPath, "config.json");
+    private static readonly INVALID_FILENAME_CHARS = /[\/\\:*?"<>|.]/;
 
     public async findProfile(profileName: string): Promise<GitProfile> {
         return new Promise<GitProfile>((resolve, reject) => {
@@ -63,6 +64,14 @@ export class GitProfileService {
         fs.writeFileSync(path.resolve(this.gitProfileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
         });
+    }
+
+    public validateProfileName(name: string): void {
+        if (GitProfileService.INVALID_FILENAME_CHARS.test(name)) {
+            throw new Error(
+                `Invalid profile name "${name}". The following characters are not allowed: / \\ : * ? " < > |`
+            );
+        }
     }
 
     private async buildProfileFromEnvVariables(): Promise<GitProfile> {
