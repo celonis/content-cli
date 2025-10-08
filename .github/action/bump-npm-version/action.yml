@@ -1,6 +1,5 @@
 name: Bump NPM Version
 
-
 inputs:
   bump:
     description: 'Which version bump (patch, minor, major)'
@@ -11,12 +10,17 @@ inputs:
   repository:
     description: 'GitHub repository to push changes to'
     required: true
+  branch:
+    description: 'Branch name to create and push (e.g., release/2025.10.06)'
+    required: true
 
 runs:
   using: composite
   steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -30,10 +34,15 @@ runs:
         git config user.email 'github-celobot@celonis.com'
         git remote set-url origin https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}
 
-    - name: Run npm version
+    - name: Create branch
       shell: bash
       run: |
-        npm version ${{ inputs.bump }} -m "chore: bump version to %s"
+        git checkout -b ${{ inputs.branch }}
+
+    - name: Run npm version bump
+      shell: bash
+      run: |
+        npm version ${{ inputs.bump }} -m "[Release] Bump version to %s"
         npm install
         git push origin HEAD
         git push origin --tags

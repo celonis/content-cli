@@ -1,4 +1,4 @@
-name: Build and Publish Workflow
+name: Create Release
 
 on:
   workflow_dispatch:
@@ -19,19 +19,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Bump NPM version
+      - name: Compute CalVer
+        id: calver
+        run: echo "calver=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+
+      - name: Bump NPM version on CalVer branch
         uses: ./.github/action/bump-npm-version
         with:
           bump: ${{ inputs.bump }}
           token: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
           repository: ${{ github.repository }}
+          branch: release/${{ steps.calver.outputs.calver }}
 
   build:
     needs: version-bump
     runs-on: ubuntu-latest
     name: Npm install and npm build
-
     steps:
       - uses: actions/checkout@v2
 
@@ -50,28 +56,6 @@ jobs:
 
       - name: Yarn Test
         run: yarn test
-
-      - name: Move files to build
-        run: |
-          cp README.md dist/README.md
-          cp LICENSE dist/LICENSE
-
-      - name: Publish to Github Registry
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cd dist/ && npm publish
-
-      - name: Setup publish to Npm Registry
-        uses: actions/setup-node@v1
-        with:
-          node-version: '16'
-          registry-url: https://registry.npmjs.org/
-          scope: '@celonis'
-
-      - name: Publish to Npm Registry
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: cd dist/ && npm publish --access public
 
       - uses: actions/checkout@master
         name: Checkout Master
