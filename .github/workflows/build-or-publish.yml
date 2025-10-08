@@ -1,9 +1,10 @@
-name: Build and Publish Workflow
+name: Build / Publish Workflow
 
 on:
   push:
     branches:
-      - master
+      - 'master'
+      - 'release/*'
     paths-ignore:
       - '.github/**'
 

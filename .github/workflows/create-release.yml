@@ -22,12 +22,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine CalVer Branch Name
+      - name: Determine Unique CalVer Branch Name
         id: calver
+        shell: bash
         run: |
-          branch_name=$(date +"%Y%m%d-%H%M%S_RC00")
+          base_name=$(date +"%Y%m%d-%H%M%S")
+          rc_index=0
+          
+          git fetch origin "+refs/heads/release/*:refs/remotes/origin/release/*" || true
+
+          while git branch -r | grep -q "origin/release/${base_name}_RC$(printf '%02d' $rc_index)"; do
+            rc_index=$((rc_index + 1))
+          done
+
+          branch_name="${base_name}_RC$(printf '%02d' $rc_index)"
           echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
-          echo "Creating release branch: $branch_name"
+          echo "Release branch name: release/${branch_name}"
 
       - name: Bump NPM version on release branch
         uses: ./.github/action/bump-npm-version
@@ -35,19 +45,21 @@ jobs:
           bump: ${{ inputs.bump }}
           token: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
           repository: ${{ github.repository }}
-          branch: release/${{ steps.calver.outputs.calver }}
+          branch: release/${{ steps.calver.outputs.branch_name }}
 
   build:
     needs: version-bump
     runs-on: ubuntu-latest
     name: Npm install and npm build
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node with Github Registry
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           registry-url: https://npm.pkg.github.com/celonis
           scope: '@celonis'
 
@@ -60,7 +72,8 @@ jobs:
       - name: Yarn Test
         run: yarn test
 
-      - uses: actions/checkout@master
-        name: Checkout Master
+      - name: Checkout Master
+        uses: actions/checkout@v4
         with:
-          fetch-depth: '0'
+          ref: master
+          fetch-depth: 0
