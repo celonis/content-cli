@@ -99,7 +99,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Publishing to GitHub Registry..."
+          echo "Publishing to GitHub Registry"
           cd dist/
           npm publish
 
@@ -114,9 +114,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          echo "Publishing to npm Registry..."
+          echo "Publishing to npm Registry"
           cd dist/
           npm publish --access public
 
       - name: Done
-        run: echo "Version bump detected — published successfully."
+        run: echo "Version bump detected, published successfully."
