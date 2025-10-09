@@ -152,5 +152,15 @@ jobs:
           cd dist/
           npm publish --access public
 
+      - name: Tag release version
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag="v${version}"
+          git tag "${tag}"
+          git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "${tag}"
+
       - name: Post-publish note
-        run: echo "Release branch ${{ steps.calver.outputs.release_branch }} created and published."
+        run: echo "Release branch ${{ steps.calver.outputs.release_branch }} created, published, and tagged with version."
