@@ -27,6 +27,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate base branch (only master or release/* allowed)
+        id: validate
+        shell: bash
+        run: |
+          BASE="${{ github.ref_name }}"
+          echo "Validating base branch: $BASE"
+          if [[ ! "$BASE" =~ ^master$ ]] && [[ ! "$BASE" =~ ^release\/.+$ ]]; then
+            echo "ERROR: workflow may only be dispatched from 'master' or a 'release/*' branch. Selected: $BASE"
+            exit 1
+          fi
+          echo "ok=true" >> $GITHUB_OUTPUT
+
       - name: Compute automation branch name
         id: names
         run: |
