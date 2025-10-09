@@ -13,8 +13,13 @@ on:
           - minor
           - major
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
-  version-bump:
+  create-bump-pr:
+    name: Create bump PR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,58 +27,30 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine Unique CalVer Branch Name
-        id: calver
-        shell: bash
+      - name: Compute automation branch name
+        id: names
         run: |
-          base_name=$(date +"%Y%m%d-%H%M%S")
-          rc_index=0
-          
-          git fetch origin "+refs/heads/release/*:refs/remotes/origin/release/*" || true
+          ts=$(date +"%Y%m%d-%H%M%S")
+          auto_branch="automation/release-bump-${ts}"
+          echo "auto_branch=${auto_branch}" >> $GITHUB_OUTPUT
+          echo "automation branch: ${auto_branch}"
 
-          while git branch -r | grep -q "origin/release/${base_name}_RC$(printf '%02d' $rc_index)"; do
-            rc_index=$((rc_index + 1))
-          done
-
-          branch_name="${base_name}_RC$(printf '%02d' $rc_index)"
-          echo "branch_name=$branch_name" >> $GITHUB_OUTPUT
-          echo "Release branch name: release/${branch_name}"
-
-      - name: Bump NPM version on release branch
+      - name: Create temporary branch and bump version
         uses: ./.github/action/bump-npm-version
         with:
           bump: ${{ inputs.bump }}
           token: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
           repository: ${{ github.repository }}
-          branch: release/${{ steps.calver.outputs.branch_name }}
+          branch: ${{ steps.names.outputs.auto_branch }}
 
-  build:
-    needs: version-bump
-    runs-on: ubuntu-latest
-    name: Npm install and npm build
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node with Github Registry
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://npm.pkg.github.com/celonis
-          scope: '@celonis'
-
-      - name: Yarn Install
-        run: yarn install
-
-      - name: Yarn Build
-        run: yarn build
-
-      - name: Yarn Test
-        run: yarn test
-
-      - name: Checkout Master
-        uses: actions/checkout@v4
-        with:
-          ref: master
-          fetch-depth: 0
+      - name: Open PR from temporary branch -> master
+        env:
+          GH_TOKEN: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+        run: |
+          auto_branch="${{ steps.names.outputs.auto_branch }}"
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base master \
+            --head "${auto_branch}" \
+            --title "[Release] Bump version - automated" \
+            --body "Automated version bump (created by Create Release workflow). Please review and merge."
