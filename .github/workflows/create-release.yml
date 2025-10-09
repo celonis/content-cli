@@ -62,7 +62,7 @@ jobs:
           auto_branch="${{ steps.names.outputs.auto_branch }}"
           gh pr create \
             --repo "${{ github.repository }}" \
-            --base master \
+            --base "${{ github.ref_name }}" \
             --head "${auto_branch}" \
             --title "[Release] Bump version - automated" \
             --body "Automated version bump (created by Create Release workflow). Please review and merge."
