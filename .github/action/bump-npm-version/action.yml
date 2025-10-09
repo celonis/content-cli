@@ -10,9 +10,11 @@ inputs:
   repository:
     description: 'GitHub repository to push changes to'
     required: true
-  branch:
-    description: 'Branch name to create and push (e.g., release/2025.10.06)'
-    required: true
+
+outputs:
+  auto_branch:
+    description: 'The created automation branch name'
+    value: ${{ steps.names.outputs.auto_branch }}
 
 runs:
   using: composite
@@ -34,10 +36,15 @@ runs:
         git config user.email 'github-celobot@celonis.com'
         git remote set-url origin https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}
 
-    - name: Create branch
+    - name: Compute automation branch name
+      id: names
       shell: bash
       run: |
-        git checkout -b ${{ inputs.branch }}
+        ts=$(date +"%Y%m%d-%H%M%S")
+        auto_branch="automation/release-bump-${ts}"
+        echo "auto_branch=${auto_branch}" >> $GITHUB_OUTPUT
+        echo "Creating automation branch: ${auto_branch}"
+        git checkout -b "${auto_branch}"
 
     - name: Run npm version bump
       shell: bash
