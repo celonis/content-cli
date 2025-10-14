@@ -28,16 +28,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate base branch (only master or release/* allowed)
+      - name: Validate base branch and bump type
         id: validate
         shell: bash
         run: |
           BASE="${{ github.ref_name }}"
+          BUMP="${{ inputs.bump }}"
           echo "Validating base branch: $BASE"
+          echo "Requested bump type: $BUMP"
+
+          # Restrict workflow execution to master or release/*
           if [[ ! "$BASE" =~ ^master$ ]] && [[ ! "$BASE" =~ ^release\/.+$ ]]; then
             echo "ERROR: workflow may only be dispatched from 'master' or a 'release/*' branch. Selected: $BASE"
             exit 1
           fi
+
+          # Restrict bump types on release branches
+          if [[ "$BASE" =~ ^release\/.+$ ]] && [[ "$BUMP" != "patch" ]]; then
+            echo "ERROR: Only 'patch' bumps are allowed on release branches (attempted '$BUMP')."
+            exit 1
+          fi
+
+          echo "Validation passed for $BASE with bump '$BUMP'"
           echo "ok=true" >> $GITHUB_OUTPUT
 
       - name: Run bump version and create automation branch
