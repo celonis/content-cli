@@ -45,12 +45,12 @@ jobs:
         uses: ./.github/action/bump-npm-version
         with:
           bump: ${{ inputs.bump }}
-          token: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 
       - name: Open PR from automation branch
         env:
-          GH_TOKEN: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr create \
             --repo "${{ github.repository }}" \

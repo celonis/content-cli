@@ -96,7 +96,7 @@ jobs:
         id: calver
         shell: bash
         env:
-          GIT_TOKEN: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           base_name=$(date +"%Y%m%d-%H%M%S")
 
@@ -115,7 +115,7 @@ jobs:
 
       - name: Create and push release branch from current master commit
         env:
-          GIT_TOKEN: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           release_branch="${{ steps.calver.outputs.release_branch }}"
@@ -154,7 +154,7 @@ jobs:
 
       - name: Tag release version
         env:
-          GIT_TOKEN: ${{ secrets.GIT_CLI_ADMIN_TOKEN }}
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           version=$(node -p "require('./package.json').version")
