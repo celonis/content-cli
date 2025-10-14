@@ -21,6 +21,7 @@ Publishing happens **only** when a version bump PR is merged.
 
 1. Create a feature branch from `master`.
 2. Implement and test your feature.
+    - Testing should be done locally. Check this guide for [testing your local build of master](https://github.com/celonis/content-cli/blob/master/README.md#building-and-using-the-project-locally).
 3. Open a PR targeting `master`.
 4. After approval, merge your PR into `master`.
     - Merging to `master` **does not** publish anything — it only updates the development state of the CLI.
