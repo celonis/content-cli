@@ -1,6 +1,5 @@
 name: Bump NPM Version
 
-
 inputs:
   bump:
     description: 'Which version bump (patch, minor, major)'
@@ -12,11 +11,18 @@ inputs:
     description: 'GitHub repository to push changes to'
     required: true
 
+outputs:
+  auto_branch:
+    description: 'The created automation branch name'
+    value: ${{ steps.names.outputs.auto_branch }}
+
 runs:
   using: composite
   steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -30,10 +36,20 @@ runs:
         git config user.email 'github-celobot@celonis.com'
         git remote set-url origin https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}
 
-    - name: Run npm version
+    - name: Compute automation branch name
+      id: names
       shell: bash
       run: |
-        npm version ${{ inputs.bump }} -m "chore: bump version to %s"
+        ts=$(date +"%Y%m%d-%H%M%S")
+        auto_branch="automation/release-bump-${ts}"
+        echo "auto_branch=${auto_branch}" >> $GITHUB_OUTPUT
+        echo "Creating automation branch: ${auto_branch}"
+        git checkout -b "${auto_branch}"
+
+    - name: Run npm version bump
+      shell: bash
+      run: |
+        npm version ${{ inputs.bump }} -m "[Release] Bump version to %s"
         npm install
         git push origin HEAD
         git push origin --tags

@@ -1,0 +1,72 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Which version bump (patch, minor, major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-bump-pr:
+    name: Create bump PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate base branch and bump type
+        id: validate
+        shell: bash
+        run: |
+          BASE="${{ github.ref_name }}"
+          BUMP="${{ inputs.bump }}"
+          echo "Validating base branch: $BASE"
+          echo "Requested bump type: $BUMP"
+
+          # Restrict workflow execution to master or release/*
+          if [[ ! "$BASE" =~ ^master$ ]] && [[ ! "$BASE" =~ ^release\/.+$ ]]; then
+            echo "ERROR: workflow may only be dispatched from 'master' or a 'release/*' branch. Selected: $BASE"
+            exit 1
+          fi
+
+          # Restrict bump types on release branches
+          if [[ "$BASE" =~ ^release\/.+$ ]] && [[ "$BUMP" != "patch" ]]; then
+            echo "ERROR: Only 'patch' bumps are allowed on release branches (attempted '$BUMP')."
+            exit 1
+          fi
+
+          echo "Validation passed for $BASE with bump '$BUMP'"
+          echo "ok=true" >> $GITHUB_OUTPUT
+
+      - name: Run bump version and create automation branch
+        id: bump
+        uses: ./.github/action/bump-npm-version
+        with:
+          bump: ${{ inputs.bump }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+
+      - name: Open PR from automation branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --head "${{ steps.bump.outputs.auto_branch }}" \
+            --base "${{ github.ref_name }}" \
+            --title "[Release] Bump version - automated" \
+            --body "Automated version bump (created by Create Release workflow). Please review and merge."

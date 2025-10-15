@@ -1,0 +1,30 @@
+name: Build
+description: Reusable action to install dependencies, build the project, and run tests.
+
+inputs:
+  node-version:
+    description: Node.js version to use
+    required: false
+    default: '20'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://npm.pkg.github.com/celonis'
+        scope: '@celonis'
+
+    - name: Install Dependencies
+      shell: bash
+      run: yarn install --frozen-lockfile
+
+    - name: Build
+      shell: bash
+      run: yarn build
+
+    - name: Test
+      shell: bash
+      run: yarn test
