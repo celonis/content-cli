@@ -5,9 +5,8 @@ on:
     branches:
       - 'master'
       - 'release/*'
-#    paths-ignore:
-#      - '.github/**'
-
+    paths-ignore:
+      - '.github/**'
 
 permissions:
   contents: write
