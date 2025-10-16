@@ -14,7 +14,7 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        registry-url: https://npm.pkg.github.com/celonis
+        registry-url: https://npm.pkg.github.com
         scope: '@celonis'
 
     - name: Install Dependencies

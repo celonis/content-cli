@@ -107,7 +107,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd dist/
-          npm publish --registry=https://npm.pkg.github.com --loglevel verbose
+          npm publish
 
       - name: Setup Node for NPM Registry
         uses: actions/setup-node@v4
