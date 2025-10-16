@@ -72,40 +72,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build and Test
-        uses: ./.github/action/build
-
-      - name: Prepare dist
-        run: |
-          cp README.md dist/README.md
-          cp LICENSE dist/LICENSE
-
-      - name: Setup Node for GitHub Packages (auth)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: https://npm.pkg.github.com/celonis
-          scope: '@celonis'
-
-      - name: Publish to GitHub Registry
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cd dist/ && npm publish
-
-      - name: Setup Node for NPM Registry
-        uses: actions/setup-node@v1
-        with:
-          node-version: '20'
-          registry-url: https://registry.npmjs.org/
-          scope: '@celonis'
-
-      - name: Publish to NPM Registry
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          cd dist/
-          npm publish --access public
-
       - name: Compute unique CalVer release branch name
         id: calver
         run: |
@@ -130,6 +96,33 @@ jobs:
           branch="${{ steps.calver.outputs.release_branch }}"
           git checkout -b "$branch"
           git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "HEAD:refs/heads/${branch}"
+
+      - name: Build and Test
+        uses: ./.github/action/build
+
+      - name: Prepare dist
+        run: |
+          cp README.md dist/README.md
+          cp LICENSE dist/LICENSE
+
+      - name: Publish to GitHub Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cd dist/ && npm publish
+
+      - name: Setup Node for NPM Registry
+        uses: actions/setup-node@v1
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org/
+          scope: '@celonis'
+
+      - name: Publish to NPM Registry
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          cd dist/
+          npm publish --access public
 
       - name: Tag release version
         env:
