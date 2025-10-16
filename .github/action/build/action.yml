@@ -11,17 +11,20 @@ runs:
   using: composite
   steps:
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v1
       with:
         node-version: ${{ inputs.node-version }}
         registry-url: https://npm.pkg.github.com/celonis
         scope: '@celonis'
 
     - name: Install Dependencies
+      shell: bash
       run: yarn install
 
     - name: Build
+      shell: bash
       run: yarn build
 
     - name: Test
+      shell: bash
       run: yarn test

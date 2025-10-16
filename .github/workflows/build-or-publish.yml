@@ -109,7 +109,7 @@ jobs:
         run: cd dist/ && npm publish
 
       - name: Setup Node for NPM Registry
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v1
         with:
           node-version: '20'
           registry-url: https://registry.npmjs.org/
