@@ -71,31 +71,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compute unique CalVer release branch name
-        id: calver
-        run: |
-          base_name=$(date +"%Y%m%d-%H%M%S")
-
-          git fetch origin "+refs/heads/release/*:refs/remotes/origin/release/*" || true
-
-          rc_index=0
-          candidate="${base_name}_RC$(printf '%02d' $rc_index)"
-          while git branch -r | grep -q "origin/release/${candidate}"; do
-            rc_index=$((rc_index + 1))
-            candidate="${base_name}_RC$(printf '%02d' $rc_index)"
-          done
-          release_branch="release/${candidate}"
-          echo "release_branch=${release_branch}" >> $GITHUB_OUTPUT
-          echo "Selected release branch: ${release_branch}"
-
-      - name: Create and push release branch from current master commit
-        env:
-          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          branch="${{ steps.calver.outputs.release_branch }}"
-          git checkout -b "$branch"
-          git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "HEAD:refs/heads/${branch}"
-
       - name: Build and Test
         uses: ./.github/action/build
 
@@ -129,6 +104,31 @@ jobs:
         run: |
           cd dist/
           npm publish --access public
+
+      - name: Compute unique CalVer release branch name
+        id: calver
+        run: |
+          base_name=$(date +"%Y%m%d-%H%M%S")
+
+          git fetch origin "+refs/heads/release/*:refs/remotes/origin/release/*" || true
+
+          rc_index=0
+          candidate="${base_name}_RC$(printf '%02d' $rc_index)"
+          while git branch -r | grep -q "origin/release/${candidate}"; do
+            rc_index=$((rc_index + 1))
+            candidate="${base_name}_RC$(printf '%02d' $rc_index)"
+          done
+          release_branch="release/${candidate}"
+          echo "release_branch=${release_branch}" >> $GITHUB_OUTPUT
+          echo "Selected release branch: ${release_branch}"
+
+      - name: Create and push release branch from current master commit
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branch="${{ steps.calver.outputs.release_branch }}"
+          git checkout -b "$branch"
+          git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "HEAD:refs/heads/${branch}"
 
       - name: Tag release version
         env:
