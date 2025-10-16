@@ -8,7 +8,6 @@ on:
 #    paths-ignore:
 #      - '.github/**'
 
-
 permissions:
   contents: write
 
@@ -69,11 +68,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Setup Git user
-        run: |
-          git config user.name "celobot"
-          git config user.email "github-celobot@celonis.com"
 
       - name: Compute unique CalVer release branch name
         id: calver
