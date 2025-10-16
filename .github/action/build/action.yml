@@ -19,7 +19,7 @@ runs:
 
     - name: Install Dependencies
       shell: bash
-      run: yarn install --frozen-lockfile
+      run: yarn install
 
     - name: Build
       shell: bash
