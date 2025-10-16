@@ -94,33 +94,15 @@ jobs:
           git checkout -b "$branch"
           git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "HEAD:refs/heads/${branch}"
 
-      - name: Setup Node with Github Registry
-        uses: actions/setup-node@v1
-        with:
-          node-version: '20'
-          registry-url: https://npm.pkg.github.com/celonis
-          scope: '@celonis'
-
-      - name: Yarn Install
-        run: yarn install
-
-      - name: Yarn Build
-        run: yarn build
-
-      - name: Yarn Test
-        run: yarn test
-
-      - name: Move files to build
-        run: |
-          cp README.md dist/README.md
-          cp LICENSE dist/LICENSE
+      - name: Build and Test
+        uses: ./.github/action/build
 
       - name: Prepare dist
         run: |
           cp README.md dist/README.md
           cp LICENSE dist/LICENSE
 
-      - name: Publish to Github Registry
+      - name: Publish to GitHub Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: cd dist/ && npm publish
