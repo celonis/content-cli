@@ -18,13 +18,10 @@ runs:
         scope: '@celonis'
 
     - name: Install Dependencies
-      shell: bash
       run: yarn install
 
     - name: Build
-      shell: bash
       run: yarn build
 
     - name: Test
-      shell: bash
       run: yarn test
