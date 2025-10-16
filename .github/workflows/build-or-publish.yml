@@ -33,8 +33,10 @@ jobs:
           echo "Last commit message: $last_commit_message"
           if [[ "$last_commit_message" =~ "\[Release\] Bump version" ]]; then
             echo "is_bump=true" >> $GITHUB_OUTPUT
+            echo "Bump commit detected."
           else
             echo "is_bump=false" >> $GITHUB_OUTPUT
+            echo "No bump commit detected."
           fi
 
   build-only:
