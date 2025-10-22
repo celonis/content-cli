@@ -7,6 +7,7 @@ import { Context } from "../../core/command/cli-context";
 import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "./config-command.service";
 import { VariableCommandService } from "./variable-command.service";
+import { NodeService } from "./node.service";
 
 class Module extends IModule {
 
@@ -68,6 +69,17 @@ class Module extends IModule {
             .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
             .action(this.listVariables);
 
+        const nodesCommand = configCommand.command("nodes")
+            .description("Commands related to staging nodes of the package");
+
+        nodesCommand.command("find")
+            .description("Find a specific node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .option("--withConfiguration", "Include node configuration in the response", false)
+            .option("--json", "Return the response as a JSON file")
+            .action(this.findNode);
+
         const listCommand = configurator.command("list");
         listCommand.command("assignments")
             .description("Command to list possible variable assignments for a type")
@@ -113,6 +125,10 @@ class Module extends IModule {
 
     private async listAssignments(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new VariableCommandService(context).listAssignments(options.type, options.json, options.params);
+    }
+
+    private async findNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.json);
     }
 }
 
