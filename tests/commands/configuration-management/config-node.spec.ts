@@ -62,7 +62,7 @@ describe("Node find", () => {
 
         expect(loggingTestTransport.logMessages.length).toBe(12);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${nodeWithConfig.id}`);
-        expect(loggingTestTransport.logMessages[10].message).toContain(`Configuration: ${JSON.stringify(nodeWithConfig.configuration)}`);
+        expect(loggingTestTransport.logMessages[10].message).toContain(`Configuration: ${JSON.stringify(nodeWithConfig.configuration, null, 2)}`);
         expect(loggingTestTransport.logMessages[11].message).toContain(`Flavor: ${nodeWithConfig.flavor}`);
     });
 
