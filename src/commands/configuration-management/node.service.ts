@@ -16,7 +16,7 @@ export class NodeService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(node), filename);
+            fileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
             logger.info(FileService.fileDownloadedMessage + filename);
         } else {
             logger.info(`ID: ${node.id}`);
@@ -32,7 +32,7 @@ export class NodeService {
             logger.info(`Creation Date: ${new Date(node.creationDate).toISOString()}`);
             logger.info(`Change Date: ${new Date(node.changeDate).toISOString()}`);
             if (node.configuration) {
-                logger.info(`Configuration: ${JSON.stringify(node.configuration)}`);
+                logger.info(`Configuration: ${JSON.stringify(node.configuration, null, 2)}`);
             }
             logger.info(`Flavor: ${node.flavor}`);
         }
