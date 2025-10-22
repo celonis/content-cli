@@ -27,6 +27,10 @@
         - [Listing package variables](#listing-package-variables)
         - [Listing assignments](#listing-assignments)
         - [Mapping variables](#mapping-variables)
+    - [Finding staging nodes](#finding-staging-nodes)
+        - [Find a node](#find-a-node)
+        - [Find a node with configuration](#find-a-node-with-configuration)
+        - [Export node as JSON](#export-node-as-json)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -633,6 +637,60 @@ After getting the variables list (with definitions and assignments in the source
 This mapping should be saved and then used during import.
 Since the format of the variables.json file on import is the same JSON structure as the list variables result, you can either map the values to the variables.json file for each variable, or replace the variables.json file with the result of the listing & mapping altogether.
 If the mapping of variables is skipped, you should delete the variables.json file before importing.
+
+#### Finding staging nodes
+
+The **config nodes find** command allows you to retrieve information about a specific node within a package in the staging environment.
+
+##### Find a node
+To find a specific node in a package, use the following command:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey>
+```
+
+The command will display the node information in the console:
+```
+info:    ID: node-id-123
+info:    Key: node-key
+info:    Name: My Node
+info:    Type: VIEW
+info:    Package Node Key: package-node-key
+info:    Parent Node Key: parent-node-key
+info:    Created By: user@celonis.com
+info:    Updated By: user@celonis.com
+info:    Creation Date: 2025-10-22T10:30:00.000Z
+info:    Change Date: 2025-10-22T15:45:00.000Z
+info:    Flavor: STUDIO
+```
+
+##### Find a node with configuration
+By default, the node configuration is not included in the response. To include the node's configuration, use the `--withConfiguration` flag:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration
+```
+
+When configuration is included, it will be displayed as a JSON string in the output:
+```
+info:    Configuration: {"key":"value","nested":{"field":"data"}}
+```
+
+##### Export node as JSON
+To export the node information as a JSON file instead of displaying it in the console, use the `--json` option:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --json
+```
+
+This will create a JSON file in the current working directory with a UUID filename:
+```
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+The JSON file contains the complete node information including all fields and, if requested, the configuration.
+
+You can combine options to export a node with its configuration:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration --json
+```
 
 ### Deployment commands (beta)
 The **deployment** command group allows you to create deployments, list their history, check active deployments, and retrieve deployables and targets.
