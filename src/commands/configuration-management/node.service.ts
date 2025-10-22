@@ -12,7 +12,7 @@ export class NodeService {
     }
 
     public async findNode(packageKey: string, nodeKey: string, withConfiguration: boolean, jsonResponse: boolean): Promise<void> {
-        const node = await this.nodeApi.findNode(packageKey, nodeKey, withConfiguration);
+        const node = await this.nodeApi.findStagingNodeByKey(packageKey, nodeKey, withConfiguration);
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";

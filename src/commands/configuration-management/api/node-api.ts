@@ -10,7 +10,7 @@ export class NodeApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async findNode(packageKey: string, nodeKey: string, withConfiguration: boolean): Promise<NodeTransport> {
+    public async findStagingNodeByKey(packageKey: string, nodeKey: string, withConfiguration: boolean): Promise<NodeTransport> {
         const queryParams = new URLSearchParams();
         queryParams.set("withConfiguration", withConfiguration.toString());
 
