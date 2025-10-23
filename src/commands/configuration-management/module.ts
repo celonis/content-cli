@@ -70,7 +70,7 @@ class Module extends IModule {
             .action(this.listVariables);
 
         const nodesCommand = configCommand.command("nodes")
-            .description("Commands related to staging nodes of the package");
+            .description("Commands related to nodes of the package");
 
         nodesCommand.command("find")
             .description("Find a specific node in a package")
