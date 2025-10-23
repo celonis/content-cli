@@ -34,6 +34,9 @@ export class NodeService {
             if (node.configuration) {
                 logger.info(`Configuration: ${JSON.stringify(node.configuration, null, 2)}`);
             }
+            if (node.invalidContent) {
+                logger.info(`Invalid Configuration: ${node.invalidConfiguration}`);
+            }
             logger.info(`Flavor: ${node.flavor}`);
         }
     }

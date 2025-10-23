@@ -126,5 +126,50 @@ describe("Node find", () => {
         expect(nodeTransport).toEqual(nodeWithConfig);
         expect(nodeTransport.configuration).toEqual(nodeWithConfig.configuration);
     });
+
+    it("Should find node with invalid configuration", async () => {
+        const packageKey = "package-key";
+        const nodeKey = "node-key";
+        const invalidConfigMessage = "Invalid JSON: Unexpected token at position 10";
+        const nodeWithInvalidConfig: NodeTransport = {
+            ...node,
+            invalidContent: true,
+            invalidConfiguration: invalidConfigMessage,
+        };
+
+        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, nodeWithInvalidConfig);
+
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, false);
+
+        expect(loggingTestTransport.logMessages.length).toBe(12);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${nodeWithInvalidConfig.id}`);
+        expect(loggingTestTransport.logMessages[10].message).toContain(`Invalid Configuration: ${invalidConfigMessage}`);
+        expect(loggingTestTransport.logMessages[11].message).toContain(`Flavor: ${nodeWithInvalidConfig.flavor}`);
+    });
+
+    it("Should find node with invalid configuration and return as JSON", async () => {
+        const packageKey = "package-key";
+        const nodeKey = "node-key";
+        const invalidConfigMessage = "Syntax error in configuration";
+        const nodeWithInvalidConfig: NodeTransport = {
+            ...node,
+            invalidContent: true,
+            invalidConfiguration: invalidConfigMessage,
+        };
+
+        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, nodeWithInvalidConfig);
+
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, true);
+
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+
+        const nodeTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport;
+
+        expect(nodeTransport).toEqual(nodeWithInvalidConfig);
+        expect(nodeTransport.invalidConfiguration).toEqual(invalidConfigMessage);
+        expect(nodeTransport.invalidContent).toBe(true);
+    });
 });
 
