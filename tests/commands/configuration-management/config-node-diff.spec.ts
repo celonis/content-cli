@@ -20,8 +20,8 @@ describe("Node diff", () => {
         name: "Test Node",
         type: "VIEW",
         invalidContent: false,
-        changeDate: new Date("2024-01-01T10:00:00Z"),
-        updatedBy: new Date("2024-01-01T10:00:00Z"),
+        changeDate: "2024-01-01T10:00:00.000Z",
+        updatedBy: "user@celonis.com",
         changeType: NodeConfigurationChangeType.CHANGED,
         changes: {
             op: "replace",
@@ -40,7 +40,7 @@ describe("Node diff", () => {
     };
 
     it("Should diff two versions of a node", async () => {
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, nodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -51,7 +51,7 @@ describe("Node diff", () => {
         expect(loggingTestTransport.logMessages[2].message).toContain(`Name: ${nodeDiff.name}`);
         expect(loggingTestTransport.logMessages[3].message).toContain(`Type: ${nodeDiff.type}`);
         expect(loggingTestTransport.logMessages[4].message).toContain(`Parent Node Key: ${nodeDiff.parentNodeKey}`);
-        expect(loggingTestTransport.logMessages[5].message).toContain(`Change Date: ${new Date(nodeDiff.changeDate).toISOString()}`);
+        expect(loggingTestTransport.logMessages[5].message).toContain(`Change Date: ${nodeDiff.changeDate}`);
         expect(loggingTestTransport.logMessages[6].message).toContain(`Updated By: ${nodeDiff.updatedBy}`);
         expect(loggingTestTransport.logMessages[7].message).toContain(`Change Type: ${nodeDiff.changeType}`);
         expect(loggingTestTransport.logMessages[8].message).toContain(`Changes:`);
@@ -59,7 +59,7 @@ describe("Node diff", () => {
     });
 
     it("Should diff two versions of a node and return as JSON", async () => {
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, nodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, true);
@@ -90,7 +90,7 @@ describe("Node diff", () => {
             parentNodeKey: undefined,
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, nodeDiffWithoutParent);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -121,7 +121,7 @@ describe("Node diff", () => {
             },
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, addedNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -150,7 +150,7 @@ describe("Node diff", () => {
             },
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, deletedNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -178,7 +178,7 @@ describe("Node diff", () => {
             },
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, unchangedNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -207,7 +207,7 @@ describe("Node diff", () => {
             },
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, invalidNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -250,7 +250,7 @@ describe("Node diff", () => {
             },
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, complexNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -284,7 +284,7 @@ describe("Node diff", () => {
             },
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, emptyChangesNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, true);
@@ -304,7 +304,7 @@ describe("Node diff", () => {
     });
 
     it("Should verify all logging output fields are present", async () => {
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, nodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -336,7 +336,7 @@ describe("Node diff", () => {
                 type: nodeType,
             };
 
-            const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+            const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
             mockAxiosGet(url, typedNodeDiff);
 
             await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
@@ -346,20 +346,20 @@ describe("Node diff", () => {
     });
 
     it("Should format dates as ISO strings in output", async () => {
-        const specificDate = new Date("2024-06-15T14:30:45.123Z");
+        const specificDate = "2024-06-15T14:30:45.123Z";
         const nodeDiffWithDate: NodeConfigurationDiffTransport = {
             ...nodeDiff,
             changeDate: specificDate,
-            updatedBy: specificDate,
+            updatedBy: "admin@celonis.com",
         };
 
-        const url = `https://myTeam.celonis.cloud/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
         mockAxiosGet(url, nodeDiffWithDate);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
         const changeDateLog = loggingTestTransport.logMessages.find(log => log.message.includes("Change Date:"));
-        expect(changeDateLog.message).toContain(specificDate.toISOString());
+        expect(changeDateLog.message).toContain(specificDate);
     });
 });
 
