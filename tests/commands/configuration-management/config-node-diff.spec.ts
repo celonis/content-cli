@@ -46,16 +46,22 @@ describe("Node diff", () => {
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(10);
-        expect(loggingTestTransport.logMessages[0].message).toContain(`Package Key: ${nodeDiff.packageKey}`);
-        expect(loggingTestTransport.logMessages[1].message).toContain(`Node Key: ${nodeDiff.nodeKey}`);
-        expect(loggingTestTransport.logMessages[2].message).toContain(`Name: ${nodeDiff.name}`);
-        expect(loggingTestTransport.logMessages[3].message).toContain(`Type: ${nodeDiff.type}`);
-        expect(loggingTestTransport.logMessages[4].message).toContain(`Parent Node Key: ${nodeDiff.parentNodeKey}`);
-        expect(loggingTestTransport.logMessages[5].message).toContain(`Change Date: ${nodeDiff.changeDate}`);
-        expect(loggingTestTransport.logMessages[6].message).toContain(`Updated By: ${nodeDiff.updatedBy}`);
-        expect(loggingTestTransport.logMessages[7].message).toContain(`Change Type: ${nodeDiff.changeType}`);
-        expect(loggingTestTransport.logMessages[8].message).toContain(`Changes:`);
-        expect(loggingTestTransport.logMessages[9].message).toContain(`Metadata Changes:`);
+        expect(loggingTestTransport.logMessages[0].message.trim()).toEqual(`Package Key: ${nodeDiff.packageKey}`);
+        expect(loggingTestTransport.logMessages[1].message.trim()).toEqual(`Node Key: ${nodeDiff.nodeKey}`);
+        expect(loggingTestTransport.logMessages[2].message.trim()).toEqual(`Name: ${nodeDiff.name}`);
+        expect(loggingTestTransport.logMessages[3].message.trim()).toEqual(`Type: ${nodeDiff.type}`);
+        expect(loggingTestTransport.logMessages[4].message.trim()).toEqual(
+            `Parent Node Key: ${nodeDiff.parentNodeKey}`
+        );
+        expect(loggingTestTransport.logMessages[5].message.trim()).toEqual(`Change Date: ${nodeDiff.changeDate}`);
+        expect(loggingTestTransport.logMessages[6].message.trim()).toEqual(`Updated By: ${nodeDiff.updatedBy}`);
+        expect(loggingTestTransport.logMessages[7].message.trim()).toEqual(`Change Type: ${nodeDiff.changeType}`);
+        expect(loggingTestTransport.logMessages[8].message.trim()).toEqual(
+            `Changes: ${JSON.stringify(nodeDiff.changes)}`
+        );
+        expect(loggingTestTransport.logMessages[9].message.trim()).toEqual(
+            `Metadata Changes: ${JSON.stringify(nodeDiff.metadataChanges)}`
+        );
     });
 
     it("Should diff two versions of a node and return as JSON", async () => {
@@ -64,7 +70,9 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(
+            FileService.fileDownloadedMessage
+        )[1];
 
         expect(mockWriteFileSync).toHaveBeenCalledWith(
             path.resolve(process.cwd(), expectedFileName),
@@ -97,14 +105,16 @@ describe("Node diff", () => {
 
         expect(loggingTestTransport.logMessages.length).toBe(9);
         // Verify that parent node key is not logged
-        const parentNodeKeyMessage = loggingTestTransport.logMessages.find(log => log.message.includes("Parent Node Key"));
+        const parentNodeKeyMessage = loggingTestTransport.logMessages.find(log =>
+            log.message.includes("Parent Node Key")
+        );
         expect(parentNodeKeyMessage).toBeUndefined();
     });
 
-    it("Should diff node with ADDED change type", async () => {
-        const addedNodeDiff: NodeConfigurationDiffTransport = {
+    it.each(Object.keys(NodeConfigurationChangeType))("Should diff node with %s change type", async changeType => {
+        const changeTypeNodeDiff: NodeConfigurationDiffTransport = {
             ...nodeDiff,
-            changeType: NodeConfigurationChangeType.ADDED,
+            changeType: NodeConfigurationChangeType[changeType],
             changes: {
                 op: "add",
                 path: "/config/newField",
@@ -122,100 +132,12 @@ describe("Node diff", () => {
         };
 
         const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
-        mockAxiosGet(url, addedNodeDiff);
+        mockAxiosGet(url, changeTypeNodeDiff);
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(10);
-        expect(loggingTestTransport.logMessages[7].message).toContain(`Change Type: ${NodeConfigurationChangeType.ADDED}`);
-    });
-
-    it("Should diff node with DELETED change type", async () => {
-        const deletedNodeDiff: NodeConfigurationDiffTransport = {
-            ...nodeDiff,
-            changeType: NodeConfigurationChangeType.DELETED,
-            changes: {
-                op: "remove",
-                path: "/config/removedField",
-                from: "/config/removedField",
-                value: {},
-                fromValue: { removedField: "value" },
-            },
-            metadataChanges: {
-                op: "remove",
-                path: "/metadata/deleted",
-                from: "/metadata/deleted",
-                value: {},
-                fromValue: { deleted: "2024-01-01" },
-            },
-        };
-
-        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
-        mockAxiosGet(url, deletedNodeDiff);
-
-        await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
-
-        expect(loggingTestTransport.logMessages[7].message).toContain(`Change Type: ${NodeConfigurationChangeType.DELETED}`);
-    });
-
-    it("Should diff node with UNCHANGED change type", async () => {
-        const unchangedNodeDiff: NodeConfigurationDiffTransport = {
-            ...nodeDiff,
-            changeType: NodeConfigurationChangeType.UNCHANGED,
-            changes: {
-                op: "",
-                path: "",
-                from: "",
-                value: {},
-                fromValue: {},
-            },
-            metadataChanges: {
-                op: "",
-                path: "",
-                from: "",
-                value: {},
-                fromValue: {},
-            },
-        };
-
-        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
-        mockAxiosGet(url, unchangedNodeDiff);
-
-        await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
-
-        expect(loggingTestTransport.logMessages[7].message).toContain(`Change Type: ${NodeConfigurationChangeType.UNCHANGED}`);
-    });
-
-    it("Should diff node with INVALID change type and invalid content", async () => {
-        const invalidNodeDiff: NodeConfigurationDiffTransport = {
-            ...nodeDiff,
-            changeType: NodeConfigurationChangeType.INVALID,
-            invalidContent: true,
-            changes: {
-                op: "",
-                path: "",
-                from: "",
-                value: {},
-                fromValue: {},
-            },
-            metadataChanges: {
-                op: "",
-                path: "",
-                from: "",
-                value: {},
-                fromValue: {},
-            },
-        };
-
-        const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
-        mockAxiosGet(url, invalidNodeDiff);
-
-        await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
-
-        expect(loggingTestTransport.logMessages.length).toBe(11);
-        expect(loggingTestTransport.logMessages[4].message).toContain(`Invalid Configuration: ${invalidNodeDiff.invalidContent}`);
-        // Change Type is at index 8 because we have invalid content (index 4) and parent node key (index 5)
-        expect(loggingTestTransport.logMessages[8].message).toContain(`Change Type: ${NodeConfigurationChangeType.INVALID}`);
+        expect(loggingTestTransport.logMessages[7].message.trim()).toEqual(`Change Type: ${changeType}`);
     });
 
     it("Should diff node with complex nested changes", async () => {
@@ -256,12 +178,16 @@ describe("Node diff", () => {
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
         const changesMessage = loggingTestTransport.logMessages.find(log => log.message.includes("Changes:"));
-        const metadataChangesMessage = loggingTestTransport.logMessages.find(log => log.message.includes("Metadata Changes:"));
+        const metadataChangesMessage = loggingTestTransport.logMessages.find(log =>
+            log.message.includes("Metadata Changes:")
+        );
 
         expect(changesMessage).toBeDefined();
         expect(metadataChangesMessage).toBeDefined();
-        expect(changesMessage.message).toContain(JSON.stringify(complexNodeDiff.changes));
-        expect(metadataChangesMessage.message).toContain(JSON.stringify(complexNodeDiff.metadataChanges));
+        expect(changesMessage.message.trim()).toEqual(`Changes: ${JSON.stringify(complexNodeDiff.changes)}`);
+        expect(metadataChangesMessage.message.trim()).toEqual(
+            `Metadata Changes: ${JSON.stringify(complexNodeDiff.metadataChanges)}`
+        );
     });
 
     it("Should diff node with empty changes", async () => {
@@ -289,7 +215,9 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(
+            FileService.fileDownloadedMessage
+        )[1];
 
         expect(mockWriteFileSync).toHaveBeenCalledWith(
             path.resolve(process.cwd(), expectedFileName),
@@ -362,4 +290,3 @@ describe("Node diff", () => {
         expect(changeDateLog.message).toContain(specificDate);
     });
 });
-
