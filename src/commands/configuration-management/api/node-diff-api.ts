@@ -17,7 +17,7 @@ export class NodeDiffApi {
         queryParams.set("compareVersion", request.compareVersion);
 
         return this.httpClient()
-            .get(`/api/core/packages/${request.packageKey}/nodes/${request.nodeKey}/diff/configuration?${queryParams}`)
+            .get(`/pacman/api/core/packages/${request.packageKey}/nodes/${request.nodeKey}/diff/configuration?${queryParams.toString()}`)
             .catch(exception => {
                 throw new FatalError(`Problem getting the node diff: ${exception}`);
             });

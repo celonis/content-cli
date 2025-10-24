@@ -14,8 +14,8 @@ export interface NodeConfigurationDiffTransport {
     name: string,
     type: string,
     invalidContent: boolean
-    changeDate: Date
-    updatedBy: Date
+    changeDate: string
+    updatedBy: string
     changeType: NodeConfigurationChangeType
     changes: ConfigurationChangeTransport
     metadataChanges: ConfigurationChangeTransport
