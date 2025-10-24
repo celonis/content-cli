@@ -638,11 +638,11 @@ This mapping should be saved and then used during import.
 Since the format of the variables.json file on import is the same JSON structure as the list variables result, you can either map the values to the variables.json file for each variable, or replace the variables.json file with the result of the listing & mapping altogether.
 If the mapping of variables is skipped, you should delete the variables.json file before importing.
 
-#### Finding staging nodes
+#### Finding nodes
 
-The **config nodes find** command allows you to retrieve information about a specific node within a package in the staging environment.
+The **config nodes find** command allows you to retrieve information about a specific node within a package.
 
-##### Find a node
+##### Find a staging node
 To find a specific node in a package, use the following command:
 ```
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey>
@@ -663,7 +663,7 @@ info:    Change Date: 2025-10-22T15:45:00.000Z
 info:    Flavor: STUDIO
 ```
 
-##### Find a node with configuration
+##### Find a staging node with configuration
 By default, the node configuration is not included in the response. To include the node's configuration, use the `--withConfiguration` flag:
 ```
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration
@@ -674,7 +674,7 @@ When configuration is included, it will be displayed as a JSON string in the out
 info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ```
 
-##### Export node as JSON
+##### Export staging node as JSON
 To export the node information as a JSON file instead of displaying it in the console, use the `--json` option:
 ```
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --json
