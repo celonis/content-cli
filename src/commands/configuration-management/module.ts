@@ -8,6 +8,7 @@ import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "./config-command.service";
 import { VariableCommandService } from "./variable-command.service";
 import { NodeService } from "./node.service";
+import { NodeDiffService } from "./node-diff.service";
 
 class Module extends IModule {
 
@@ -80,6 +81,15 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.findNode);
 
+        nodesCommand.command("diff")
+            .description("Diff two versions of a specific node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .requiredOption("--baseVersion <baseVersion>", "Base version of the node")
+            .requiredOption("--compareVersion <compareVersion>", "Compare version of the node")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.diffNode);
+
         const listCommand = configurator.command("list");
         listCommand.command("assignments")
             .description("Command to list possible variable assignments for a type")
@@ -129,6 +139,10 @@ class Module extends IModule {
 
     private async findNode(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.json);
+    }
+
+    private async diffNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeDiffService(context).diff(options.packageKey, options.nodeKey, options.baseVersion, options.compareVersion, options.json);
     }
 }
 
