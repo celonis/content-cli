@@ -31,6 +31,11 @@
         - [Find a node](#find-a-node)
         - [Find a node with configuration](#find-a-node-with-configuration)
         - [Export node as JSON](#export-node-as-json)
+    - [Diffing node configurations](#diffing-node-configurations)
+        - [Diff two versions of a node](#diff-two-versions-of-a-node)
+        - [Understanding change types](#understanding-change-types)
+        - [Changes structure](#changes-structure)
+        - [Export node diff as JSON](#export-node-diff-as-json)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -691,6 +696,61 @@ You can combine options to export a node with its configuration:
 ```
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration --json
 ```
+
+#### Diffing node configurations
+
+The **config nodes diff** command allows you to compare two versions of a node's configuration within a package.
+
+##### Diff two versions of a node
+To compare two versions of a node, use the following command:
+```
+content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --baseVersion <baseVersion> --compareVersion <compareVersion>
+```
+
+The command will display the differences in the console:
+```
+info:    Package Key: my-package
+info:    Node Key: my-node
+info:    Name: My Node
+info:    Type: VIEW
+info:    Parent Node Key: parent-node-key
+info:    Change Date: 2025-10-22T15:45:00.000Z
+info:    Updated By: 2025-10-22T15:45:00.000Z
+info:    Change Type: CHANGED
+info:    Changes: {"op":"replace","path":"/config/value","from":"/config/oldValue","value":{"newValue":"updated"},"fromValue":{"oldValue":"original"}}
+info:    Metadata Changes: {"op":"add","path":"/metadata/tags","from":"","value":{"tags":["tag1","tag2"]},"fromValue":{}}
+```
+
+##### Understanding change types
+The diff command returns one of the following change types:
+- **ADDED** - The node was newly created in the compare version
+- **DELETED** - The node was removed in the compare version
+- **CHANGED** - The node's configuration was modified between versions
+- **UNCHANGED** - No changes detected between versions
+- **INVALID** - The node configuration is invalid
+
+##### Changes structure
+The `changes` field contains configuration changes in JSON Patch format with the following fields:
+- **op** - The operation performed (add, remove, replace)
+- **path** - The JSON path where the change occurred
+- **from** - The source path (for move operations)
+- **value** - The new value after the change
+- **fromValue** - The original value before the change
+
+The `metadataChanges` field follows the same structure but represents changes to node metadata rather than configuration.
+
+##### Export node diff as JSON
+To export the node diff information as a JSON file instead of displaying it in the console, use the `--json` option:
+```
+content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --baseVersion <baseVersion> --compareVersion <compareVersion> --json
+```
+
+This will create a JSON file in the current working directory with a UUID filename:
+```
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+The JSON file contains the complete node diff information including the change type, all changes, and metadata changes.
 
 ### Deployment commands (beta)
 The **deployment** command group allows you to create deployments, list their history, check active deployments, and retrieve deployables and targets.
