@@ -27,9 +27,11 @@
         - [Listing package variables](#listing-package-variables)
         - [Listing assignments](#listing-assignments)
         - [Mapping variables](#mapping-variables)
-    - [Finding staging nodes](#finding-staging-nodes)
-        - [Find a node](#find-a-node)
-        - [Find a node with configuration](#find-a-node-with-configuration)
+    - [Finding nodes](#finding-nodes)
+        - [Find a staging node](#find-a-staging-node)
+        - [Find a staging node with configuration](#find-a-staging-node-with-configuration)
+        - [Find a versioned node](#find-a-versioned-node)
+        - [Find a versioned node with configuration](#find-a-versioned-node-with-configuration)
         - [Export node as JSON](#export-node-as-json)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
@@ -672,7 +674,44 @@ When configuration is included, it will be displayed as a JSON string in the out
 info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ```
 
-##### Export staging node as JSON
+##### Find a versioned node
+To find a specific node in a package by version, use the `--version` option:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version>
+```
+
+For example, to find a node in version 1.2.3.4:
+```
+content-cli config nodes find --packageKey my-package --nodeKey my-node --version 1.2.3.4
+```
+
+The command will display the node information in the console with the same format as staging nodes:
+```
+info:    ID: node-id-123
+info:    Key: node-key
+info:    Name: My Node
+info:    Type: VIEW
+info:    Package Node Key: package-node-key
+info:    Parent Node Key: parent-node-key
+info:    Created By: user@celonis.com
+info:    Updated By: user@celonis.com
+info:    Creation Date: 2025-10-22T10:30:00.000Z
+info:    Change Date: 2025-10-22T15:45:00.000Z
+info:    Flavor: STUDIO
+```
+
+##### Find a versioned node with configuration
+You can combine the `--version` and `--withConfiguration` options to retrieve a versioned node with its configuration:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration
+```
+
+When configuration is included, it will be displayed as a JSON string in the output:
+```
+info:    Configuration: {"key":"value","nested":{"field":"data"}}
+```
+
+##### Export node as JSON
 To export the node information as a JSON file instead of displaying it in the console, use the `--json` option:
 ```
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --json
@@ -688,6 +727,16 @@ The JSON file contains the complete node information including all fields and, i
 You can combine options to export a node with its configuration:
 ```
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration --json
+```
+
+You can also export versioned nodes as JSON:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --json
+```
+
+Or combine all options for a versioned node with configuration:
+```
+content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration --json
 ```
 
 ### Deployment commands (beta)
