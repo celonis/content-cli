@@ -76,6 +76,7 @@ class Module extends IModule {
             .description("Find a specific node in a package")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .option("--version <version>", "Version of the package")
             .option("--withConfiguration", "Include node configuration in the response", false)
             .option("--json", "Return the response as a JSON file")
             .action(this.findNode);
@@ -128,7 +129,7 @@ class Module extends IModule {
     }
 
     private async findNode(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.json);
+        await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.version ?? null, options.json);
     }
 }
 
