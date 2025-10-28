@@ -14,7 +14,7 @@ const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
 const expiryBuffer = 5000;
 const deviceCodeScopes = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
-const clientCredentialsScopes = ["studio", "integration.data-pools", "action-engine.projects"];
+const clientCredentialsScopes = ["studio", "integration.data-pools", "action-engine.projects", "package-manager"];
 
 export interface Config {
     defaultProfile: string;
