@@ -45,21 +45,22 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(10);
+        expect(loggingTestTransport.logMessages.length).toBe(11);
         expect(loggingTestTransport.logMessages[0].message.trim()).toEqual(`Package Key: ${nodeDiff.packageKey}`);
         expect(loggingTestTransport.logMessages[1].message.trim()).toEqual(`Node Key: ${nodeDiff.nodeKey}`);
         expect(loggingTestTransport.logMessages[2].message.trim()).toEqual(`Name: ${nodeDiff.name}`);
         expect(loggingTestTransport.logMessages[3].message.trim()).toEqual(`Type: ${nodeDiff.type}`);
-        expect(loggingTestTransport.logMessages[4].message.trim()).toEqual(
+        expect(loggingTestTransport.logMessages[4].message.trim()).toEqual(`Is invalid configuration: ${nodeDiff.invalidContent}`);
+        expect(loggingTestTransport.logMessages[5].message.trim()).toEqual(
             `Parent Node Key: ${nodeDiff.parentNodeKey}`
         );
-        expect(loggingTestTransport.logMessages[5].message.trim()).toEqual(`Change Date: ${nodeDiff.changeDate}`);
-        expect(loggingTestTransport.logMessages[6].message.trim()).toEqual(`Updated By: ${nodeDiff.updatedBy}`);
-        expect(loggingTestTransport.logMessages[7].message.trim()).toEqual(`Change Type: ${nodeDiff.changeType}`);
-        expect(loggingTestTransport.logMessages[8].message.trim()).toEqual(
+        expect(loggingTestTransport.logMessages[6].message.trim()).toEqual(`Change Date: ${nodeDiff.changeDate}`);
+        expect(loggingTestTransport.logMessages[7].message.trim()).toEqual(`Updated By: ${nodeDiff.updatedBy}`);
+        expect(loggingTestTransport.logMessages[8].message.trim()).toEqual(`Change Type: ${nodeDiff.changeType}`);
+        expect(loggingTestTransport.logMessages[9].message.trim()).toEqual(
             `Changes: ${JSON.stringify(nodeDiff.changes)}`
         );
-        expect(loggingTestTransport.logMessages[9].message.trim()).toEqual(
+        expect(loggingTestTransport.logMessages[10].message.trim()).toEqual(
             `Metadata Changes: ${JSON.stringify(nodeDiff.metadataChanges)}`
         );
     });
@@ -103,7 +104,7 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(9);
+        expect(loggingTestTransport.logMessages.length).toBe(10);
         // Verify that parent node key is not logged
         const parentNodeKeyMessage = loggingTestTransport.logMessages.find(log =>
             log.message.includes("Parent Node Key")
@@ -136,8 +137,8 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(10);
-        expect(loggingTestTransport.logMessages[7].message.trim()).toEqual(`Change Type: ${changeType}`);
+        expect(loggingTestTransport.logMessages.length).toBe(11);
+        expect(loggingTestTransport.logMessages[8].message.trim()).toEqual(`Change Type: ${changeType}`);
     });
 
     it("Should diff node with complex nested changes", async () => {

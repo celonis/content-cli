@@ -35,9 +35,7 @@ export class NodeDiffService {
             logger.info(`Node Key: ${nodeDiff.nodeKey}`);
             logger.info(`Name: ${nodeDiff.name}`);
             logger.info(`Type: ${nodeDiff.type}`);
-            if (nodeDiff.invalidContent) {
-                logger.info(`Invalid Configuration: ${nodeDiff.invalidContent}`);
-            }
+            logger.info(`Is invalid configuration: ${nodeDiff.invalidContent}`);
             if (nodeDiff.parentNodeKey) {
                 logger.info(`Parent Node Key: ${nodeDiff.parentNodeKey}`);
             }
