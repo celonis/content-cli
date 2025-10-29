@@ -666,7 +666,7 @@ info:    Flavor: STUDIO
 ##### Find a staging node with configuration
 By default, the node configuration is not included in the response. To include the node's configuration, use the `--withConfiguration` flag:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration
 ```
 
 When configuration is included, it will be displayed as a JSON string in the output:
@@ -677,12 +677,12 @@ info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ##### Find a versioned node
 To find a specific node in a package by version, use the `--version` option:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version>
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version>
 ```
 
 For example, to find a node in version 1.2.3:
 ```
-content-cli config nodes find --packageKey my-package --nodeKey my-node --version 1.2.3
+content-cli config nodes get --packageKey my-package --nodeKey my-node --version 1.2.3
 ```
 
 The command will display the node information in the console with the same format as staging nodes:
@@ -703,7 +703,7 @@ info:    Flavor: STUDIO
 ##### Find a versioned node with configuration
 You can combine the `--version` and `--withConfiguration` options to retrieve a versioned node with its configuration:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration
 ```
 
 When configuration is included, it will be displayed as a JSON string in the output:
@@ -714,7 +714,7 @@ info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ##### Export node as JSON
 To export the node information as a JSON file instead of displaying it in the console, use the `--json` option:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --json
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --json
 ```
 
 This will create a JSON file in the current working directory with a UUID filename:
@@ -726,17 +726,17 @@ The JSON file contains the complete node information including all fields and, i
 
 You can combine options to export a node with its configuration:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration --json
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration --json
 ```
 
 You can also export versioned nodes as JSON:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --json
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --json
 ```
 
 Or combine all options for a versioned node with configuration:
 ```
-content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration --json
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration --json
 ```
 
 ### Deployment commands (beta)
