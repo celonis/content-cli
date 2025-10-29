@@ -680,9 +680,9 @@ To find a specific node in a package by version, use the `--version` option:
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey> --version <version>
 ```
 
-For example, to find a node in version 1.2.3.4:
+For example, to find a node in version 1.2.3:
 ```
-content-cli config nodes find --packageKey my-package --nodeKey my-node --version 1.2.3.4
+content-cli config nodes find --packageKey my-package --nodeKey my-node --version 1.2.3
 ```
 
 The command will display the node information in the console with the same format as staging nodes:
