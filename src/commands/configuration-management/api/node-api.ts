@@ -20,5 +20,17 @@ export class NodeApi {
                 throw new FatalError(`Problem finding node ${nodeKey} in package ${packageKey}: ${e}`);
             });
     }
+
+    public async findVersionedNodeByKey(packageKey: string, nodeKey: string, version: string, withConfiguration: boolean): Promise<NodeTransport> {
+        const queryParams = new URLSearchParams();
+        queryParams.set("version", version);
+        queryParams.set("withConfiguration", withConfiguration.toString());
+
+        return this.httpClient()
+            .get(`/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}?${queryParams.toString()}`)
+            .catch((e) => {
+                throw new FatalError(`Problem finding node ${nodeKey} in package ${packageKey} for version ${version}: ${e}`);
+            });
+    }
 }
 

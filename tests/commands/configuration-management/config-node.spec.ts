@@ -29,7 +29,7 @@ describe("Node find", () => {
         const nodeKey = "node-key";
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, node);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, false, false);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(11);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${node.id}`);
@@ -45,6 +45,18 @@ describe("Node find", () => {
         expect(loggingTestTransport.logMessages[10].message).toContain(`Flavor: ${node.flavor}`);
     });
 
+    it("Should find versioned node without configuration", async () => {
+        const packageKey = "package-key";
+        const nodeKey = "node-key";
+        const version = "1.2.3.4";
+        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}?version=${version}&withConfiguration=false`, node);
+
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, version, false);
+
+        expect(loggingTestTransport.logMessages.length).toBe(11);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${node.id}`);
+    });
+
     it("Should find node with configuration", async () => {
         const packageKey = "package-key";
         const nodeKey = "node-key";
@@ -58,7 +70,7 @@ describe("Node find", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=true`, nodeWithConfig);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, true, false);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, true, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(12);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${nodeWithConfig.id}`);
@@ -76,7 +88,7 @@ describe("Node find", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, nodeWithoutParent);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, false, false);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(10);
         // Verify that parent node key is not logged
@@ -89,7 +101,7 @@ describe("Node find", () => {
         const nodeKey = "node-key";
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, node);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, false, true);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -115,7 +127,7 @@ describe("Node find", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=true`, nodeWithConfig);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, true, true);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, true, null, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -139,7 +151,7 @@ describe("Node find", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, nodeWithInvalidConfig);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, false, false);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(12);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${nodeWithInvalidConfig.id}`);
@@ -159,7 +171,7 @@ describe("Node find", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}?withConfiguration=false`, nodeWithInvalidConfig);
 
-        await new NodeService(testContext).findNode(packageKey, nodeKey, false, true);
+        await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
