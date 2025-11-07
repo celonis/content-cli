@@ -130,6 +130,28 @@ generate an Application key in the `Team Settings` section of your Celonis accou
 under `Applications`. After creating an Application, you can assign it different
 permissions based on how much power you want to give to the key owner.
 
+#### Security Considerations
+
+| ⚠️ **IMPORTANT SECURITY WARNING** |
+|-----------------------------------|
+| Profile credentials (API tokens, OAuth client secrets, and access tokens) are **stored in plaintext** on your local filesystem. **No encryption is applied** to these credentials. |
+
+**Storage Location:**
+- **Linux/macOS:
+  - ** `~/.celonis-content-cli-profiles`
+  - ** `~/.celonis-content-cli-git-profiles`
+- **Windows:
+  - ** `%USERPROFILE%\.celonis-content-cli-profiles`
+  - ** `%USERPROFILE%\.celonis-content-cli-git-profiles`
+
+**Protection Mechanisms:**
+The security of your credentials relies **entirely on native operating system filesystem permissions**. The CLI does not provide additional encryption. 
+
+Ensure that:
+- Your user account and filesystem are properly secured
+- File permissions restrict access to your user account only
+- You use appropriate security measures on shared or multi-user systems
+
 #### When to create profiles
 
 So let's say you have a Studio package in [https://my-team.eu-1.celonis.cloud]() 
