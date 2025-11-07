@@ -1,5 +1,4 @@
 import simpleGit from "simple-git";
-import { logger } from "../../utils/logger";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "node:os";
@@ -55,11 +54,6 @@ export class GitService {
             fs.cpSync(sourceDir, workingDir, { recursive: true });
 
             await repoGit.add("./*");
-            const status = await repoGit.status();
-            if (status.files.length === 0) {
-                logger.debug("No changes to commit.");
-                return;
-            }
 
             const commitMessage = "Update from content-cli";
             await repoGit.commit(commitMessage);

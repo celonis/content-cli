@@ -133,7 +133,7 @@ describe("GitService", () => {
             assertWorkingDirectoryCleanup(workingDir);
         });
 
-        it("should not commit when there are no changes", async () => {
+        it("should push even when there are no changes", async () => {
             mockGit.status.mockResolvedValue({
                 files: [],
                 not_added: [],
@@ -152,8 +152,7 @@ describe("GitService", () => {
             });
 
             await gitService.pushToBranch(sourceDir, branch);
-            assertNoCommitOrPush();
-            expect(mockGit.push).not.toHaveBeenCalled();
+            assertFilesCommittedAndPushed(branch)
         });
     });
 
@@ -251,11 +250,6 @@ describe("GitService", () => {
 
     const assertSourceCopiedToWorkingDirectory = (sourceDir: string, workingDir: string) => {
         expect(fs.cpSync).toHaveBeenCalledWith(sourceDir, workingDir, { recursive: true });
-    };
-
-    const assertNoCommitOrPush = () => {
-        expect(mockGit.commit).not.toHaveBeenCalled();
-        expect(mockGit.push).not.toHaveBeenCalled();
     };
 
 });
