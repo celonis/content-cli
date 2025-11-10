@@ -9,6 +9,7 @@ import { ConfigCommandService } from "./config-command.service";
 import { VariableCommandService } from "./variable-command.service";
 import { NodeService } from "./node.service";
 import { NodeDiffService } from "./node-diff.service";
+import { NodeDependencyService } from "./node-dependency.service";
 
 class Module extends IModule {
 
@@ -91,6 +92,17 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.diffNode);
 
+        const nodeDependenciesCommand = configCommand.command("node-dependencies")
+            .description("Commands related to node dependencies");
+
+        nodeDependenciesCommand.command("list")
+            .description("List dependencies of a specific node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .requiredOption("--packageVersion <packageVersion>", "Version of the package")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.listNodeDependencies);
+
         const listCommand = configurator.command("list");
         listCommand.command("assignments")
             .description("Command to list possible variable assignments for a type")
@@ -144,6 +156,10 @@ class Module extends IModule {
 
     private async diffNode(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new NodeDiffService(context).diff(options.packageKey, options.nodeKey, options.baseVersion, options.compareVersion, options.json);
+    }
+
+    private async listNodeDependencies(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeDependencyService(context).listNodeDependencies(options.packageKey, options.nodeKey, options.packageVersion, options.json);
     }
 }
 
