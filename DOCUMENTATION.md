@@ -38,6 +38,9 @@
         - [Understanding change types](#understanding-change-types)
         - [Changes structure](#changes-structure)
         - [Export node diff as JSON](#export-node-diff-as-json)
+    - [Listing node dependencies](#listing-node-dependencies)
+        - [List dependencies of a node](#list-dependencies-of-a-node)
+        - [Export node dependencies as JSON](#export-node-dependencies-as-json)
 -   [Data Pool export / import commands](#data-pool-export--import-commands)
     - [Export Data Pool](#export-data-pool)
     - [Batch Import multiple Data Pools](#batch-import-multiple-data-pools)
@@ -819,6 +822,73 @@ info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1
 ```
 
 The JSON file contains the complete node diff information including the change type, all changes, and metadata changes.
+
+#### Listing node dependencies
+
+The **config node-dependencies list** command allows you to retrieve all dependencies of a specific node within a package version.
+
+##### List dependencies of a node
+To list all dependencies of a node in a specific package version, use the following command:
+```
+content-cli config node-dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version>
+```
+
+For example, to list dependencies of a node in version 1.0.0:
+```
+content-cli config node-dependencies list --packageKey my-package --nodeKey my-node --packageVersion 1.0.0
+```
+
+The command will display the dependencies in the console:
+```
+info:    Found 3 dependencies:
+info:    
+info:    [1]
+info:      Package Key: dependency-package-1
+info:      Key: dependency-key-1
+info:      Type: ANALYSIS
+info:    
+info:    [2]
+info:      Package Key: dependency-package-2
+info:      Key: dependency-key-2
+info:      Type: VIEW
+info:    
+info:    [3]
+info:      Package Key: dependency-package-3
+info:      Key: dependency-key-3
+info:      Type: SKILL
+```
+
+If no dependencies are found, the command will display:
+```
+info:    No dependencies found for this node.
+```
+
+##### Export node dependencies as JSON
+To export the node dependencies as a JSON file instead of displaying them in the console, use the `--json` option:
+```
+content-cli config node-dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version> --json
+```
+
+This will create a JSON file in the current working directory with a UUID filename:
+```
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+The JSON file contains an array of dependency objects with the following structure:
+```json
+[
+  {
+    "packageKey": "dependency-package-1",
+    "key": "dependency-key-1",
+    "type": "ANALYSIS"
+  },
+  {
+    "packageKey": "dependency-package-2",
+    "key": "dependency-key-2",
+    "type": "VIEW"
+  }
+]
+```
 
 ### Deployment commands (beta)
 The **deployment** command group allows you to create deployments, list their history, check active deployments, and retrieve deployables and targets.
