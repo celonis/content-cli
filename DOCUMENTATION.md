@@ -702,14 +702,14 @@ info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ```
 
 ##### Find a versioned node
-To find a specific node in a package by version, use the `--version` option:
+To find a specific node in a package by version, use the `--packageVersion` option:
 ```
-content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version>
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion>
 ```
 
 For example, to find a node in version 1.2.3:
 ```
-content-cli config nodes get --packageKey my-package --nodeKey my-node --version 1.2.3
+content-cli config nodes get --packageKey my-package --nodeKey my-node --packageVersion 1.2.3
 ```
 
 The command will display the node information in the console with the same format as staging nodes:
@@ -728,9 +728,9 @@ info:    Flavor: STUDIO
 ```
 
 ##### Find a versioned node with configuration
-You can combine the `--version` and `--withConfiguration` options to retrieve a versioned node with its configuration:
+You can combine the `--packageVersion` and `--withConfiguration` options to retrieve a versioned node with its configuration:
 ```
-content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --withConfiguration
 ```
 
 When configuration is included, it will be displayed as a JSON string in the output:
@@ -758,12 +758,12 @@ content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --wit
 
 You can also export versioned nodes as JSON:
 ```
-content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --json
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --json
 ```
 
 Or combine all options for a versioned node with configuration:
 ```
-content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --version <version> --withConfiguration --json
+content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --withConfiguration --json
 ```
 #### Diffing node configurations
 

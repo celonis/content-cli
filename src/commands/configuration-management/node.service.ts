@@ -11,9 +11,9 @@ export class NodeService {
         this.nodeApi = new NodeApi(context);
     }
 
-    public async findNode(packageKey: string, nodeKey: string, withConfiguration: boolean, version: string | null, jsonResponse: boolean): Promise<void> {
-        const node = version
-            ? await this.nodeApi.findVersionedNodeByKey(packageKey, nodeKey, version, withConfiguration)
+    public async findNode(packageKey: string, nodeKey: string, withConfiguration: boolean, packageVersion: string | null, jsonResponse: boolean): Promise<void> {
+        const node = packageVersion
+            ? await this.nodeApi.findVersionedNodeByKey(packageKey, nodeKey, packageVersion, withConfiguration)
             : await this.nodeApi.findStagingNodeByKey(packageKey, nodeKey, withConfiguration);
 
         if (jsonResponse) {
