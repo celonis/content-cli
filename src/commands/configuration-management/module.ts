@@ -92,7 +92,7 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.diffNode);
 
-        const nodeDependenciesCommand = configCommand.command("node-dependencies")
+        const nodeDependenciesCommand = nodesCommand.command("dependencies")
             .description("Commands related to node dependencies");
 
         nodeDependenciesCommand.command("list")
