@@ -2,7 +2,6 @@ import { HttpClient } from "../../../core/http/http-client";
 import { Context } from "../../../core/command/cli-context";
 import { NodeTransport } from "../interfaces/node.interfaces";
 import { FatalError } from "../../../core/utils/logger";
-import { OffsetSearchResult } from "../interfaces/offset-search-result.interfaces";
 
 export class NodeApi {
     private httpClient: () => HttpClient;
@@ -34,7 +33,7 @@ export class NodeApi {
             });
     }
 
-    public async findVersionedNodesByPackage(packageKey: string, version: string, withConfiguration: boolean, limit: number, offset: number): Promise<OffsetSearchResult<NodeTransport>> {
+    public async findVersionedNodesByPackage(packageKey: string, version: string, withConfiguration: boolean, limit: number, offset: number): Promise<NodeTransport[]> {
         const queryParams = new URLSearchParams();
         queryParams.set("version", version);
         queryParams.set("withConfiguration", withConfiguration.toString());
@@ -47,7 +46,7 @@ export class NodeApi {
         }
         return this.httpClient()
             .get(`/pacman/api/core/packages/${packageKey}/nodes?${queryParams.toString()}`)
-            .catch((e) => {
+            .catch(e => {
                 throw new FatalError(`Problem fetching nodes from package ${packageKey} for version ${version}: ${e}`);
             });
     }

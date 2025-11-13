@@ -4,7 +4,6 @@ import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 import { NodeTransport } from "./interfaces/node.interfaces";
-import { OffsetSearchResult } from "./interfaces/offset-search-result.interfaces";
 
 export class NodeService {
     private nodeApi: NodeApi;
@@ -28,8 +27,7 @@ export class NodeService {
     }
 
     public async listNodes(packageKey: string, packageVersion: string, limit: number, offset: number, withConfiguration: boolean, jsonResponse: boolean): Promise<void> {
-        const offsetSearchResult: OffsetSearchResult<NodeTransport> = await this.nodeApi.findVersionedNodesByPackage(packageKey, packageVersion, withConfiguration, limit, offset);
-        const nodes: NodeTransport[] = offsetSearchResult.content;
+        const nodes: NodeTransport[] = await this.nodeApi.findVersionedNodesByPackage(packageKey, packageVersion, withConfiguration, limit, offset);
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";

@@ -4,7 +4,6 @@ import { NodeService } from "../../../src/commands/configuration-management/node
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
-import { OffsetSearchResult } from "../../../src/commands/configuration-management/interfaces/offset-search-result.interfaces";
 import * as path from "path";
 
 describe("Node list", () => {
@@ -34,9 +33,7 @@ describe("Node list", () => {
         const node1 = createNode("node-id-1", "node-key-1", "Node 1", "parent-key");
         const node2 = createNode("node-id-2", "node-key-2", "Node 2");
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1, node2]
-        };
+        const response: NodeTransport[] = [node1, node2];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
@@ -85,9 +82,7 @@ describe("Node list", () => {
             }
         };
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1, node2]
-        };
+        const response: NodeTransport[] = [node1, node2];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=true&limit=${limit}`,
@@ -110,9 +105,7 @@ describe("Node list", () => {
 
         const node1 = createNode("node-id-101", "node-key-101", "Node 101");
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1]
-        };
+        const response: NodeTransport[] = [node1];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}&offset=${offset}`,
@@ -131,9 +124,7 @@ describe("Node list", () => {
         const limit = 10;
         const offset = 0;
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: []
-        };
+        const response: NodeTransport[] = [];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
@@ -154,9 +145,7 @@ describe("Node list", () => {
         const node1 = createNode("node-id-1", "node-key-1", "Node 1");
         const node2 = createNode("node-id-2", "node-key-2", "Node 2");
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1, node2]
-        };
+        const response: NodeTransport[] = [node1, node2];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
@@ -198,9 +187,7 @@ describe("Node list", () => {
             }
         };
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1, node2]
-        };
+        const response: NodeTransport[] = [node1, node2];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=true&limit=${limit}`,
@@ -233,9 +220,7 @@ describe("Node list", () => {
             invalidConfiguration: invalidConfigMessage
         };
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1]
-        };
+        const response: NodeTransport[] = [node1];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
@@ -265,9 +250,7 @@ describe("Node list", () => {
 
         const node2 = createNode("node-id-2", "node-key-2", "Node 2");
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1, node2]
-        };
+        const response: NodeTransport[] = [node1, node2];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
@@ -296,9 +279,7 @@ describe("Node list", () => {
 
         const node1 = createNode("node-id-1", "node-key-1", "Single Node", "parent-key");
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1]
-        };
+        const response: NodeTransport[] = [node1];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
@@ -323,9 +304,7 @@ describe("Node list", () => {
         const node2 = createNode("node-id-2", "node-key-2", "Node 2");
         const node3 = createNode("node-id-3", "node-key-3", "Node 3");
 
-        const response: OffsetSearchResult<NodeTransport> = {
-            content: [node1, node2, node3]
-        };
+        const response: NodeTransport[] = [node1, node2, node3];
 
         mockAxiosGet(
             `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes?version=${packageVersion}&withConfiguration=false&limit=${limit}`,
