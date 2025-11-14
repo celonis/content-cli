@@ -19,12 +19,25 @@ This structure promotes keeping commands organized into the ownership areas they
 
 Example of this usage: `content-cli profile create`
 
+### Nested Commands for Subresources
+
+When working with subresources or related operations, use nested command structures to maintain logical grouping. Subresources should follow the same command hierarchy as their parent resource.
+
+#### Structure for Subresources
+
+```
+content-cli <resource> <subresource> <action>
+```
+
+This keeps related functionality organized under a single parent command.
+
 ### Existing commands
 The existing CLI commands may not always follow this structure because of legacy design. When extending these commands, pay attention to existing patterns and structure.
 
 For example:
 - `list packages`
 - `push asset`
+
 ---
 
 ## Adding a New Command to an Existing Group

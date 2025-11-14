@@ -1,14 +1,17 @@
 import Module = require("../../../src/commands/configuration-management/module");
 import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
 import { testContext } from "../../utls/test-context";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
+jest.mock("../../../src/commands/configuration-management/node-dependency.service");
 
 describe("Configuration Management Module - Action Validations", () => {
     let module: Module;
     let mockCommand: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
+    let mockNodeDependencyService: jest.Mocked<NodeDependencyService>;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -20,7 +23,12 @@ describe("Configuration Management Module - Action Validations", () => {
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockNodeDependencyService = {
+            listNodeDependencies: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
+        (NodeDependencyService as jest.MockedClass<typeof NodeDependencyService>).mockImplementation(() => mockNodeDependencyService);
     });
 
     describe("batchExportPackages validation", () => {
@@ -337,6 +345,80 @@ describe("Configuration Management Module - Action Validations", () => {
                     "feature-branch"
                 );
             });
+        });
+    });
+
+    describe("listNodeDependencies", () => {
+        it("should call listNodeDependencies with correct parameters", async () => {
+            const options: OptionValues = {
+                packageKey: "test-package",
+                nodeKey: "test-node",
+                packageVersion: "1.0.0",
+            };
+
+            await (module as any).listNodeDependencies(testContext, mockCommand, options);
+
+            expect(mockNodeDependencyService.listNodeDependencies).toHaveBeenCalledWith(
+                "test-package",
+                "test-node",
+                "1.0.0",
+                undefined
+            );
+        });
+
+        it("should pass json option when provided", async () => {
+            const options: OptionValues = {
+                packageKey: "test-package",
+                nodeKey: "test-node",
+                packageVersion: "2.0.0",
+                json: true,
+            };
+
+            await (module as any).listNodeDependencies(testContext, mockCommand, options);
+
+            expect(mockNodeDependencyService.listNodeDependencies).toHaveBeenCalledWith(
+                "test-package",
+                "test-node",
+                "2.0.0",
+                true
+            );
+        });
+
+        it("should handle different package versions", async () => {
+            const options: OptionValues = {
+                packageKey: "production-package",
+                nodeKey: "production-node",
+                packageVersion: "3.5.2",
+                json: false,
+            };
+
+            await (module as any).listNodeDependencies(testContext, mockCommand, options);
+
+            expect(mockNodeDependencyService.listNodeDependencies).toHaveBeenCalledWith(
+                "production-package",
+                "production-node",
+                "3.5.2",
+                false
+            );
+        });
+
+        it("should handle all parameters correctly", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                nodeKey: "my-node",
+                packageVersion: "1.2.3",
+                json: true,
+            };
+
+            await (module as any).listNodeDependencies(testContext, mockCommand, options);
+
+            expect(mockNodeDependencyService.listNodeDependencies).toHaveBeenCalledTimes(1);
+            expect(mockNodeDependencyService.listNodeDependencies).toHaveBeenCalledWith(
+                "my-package",
+                "my-node",
+                "1.2.3",
+                true
+            );
         });
     });
 });
