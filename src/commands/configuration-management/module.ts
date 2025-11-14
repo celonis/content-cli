@@ -82,6 +82,16 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.findNode);
 
+        nodesCommand.command("list")
+            .description("List nodes in a specific package version")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--packageVersion <packageVersion>", "Version of the package")
+            .option("--limit <limit>", "Limit the number of results returned")
+            .option("--offset <offset>", "Offset for pagination")
+            .option("--withConfiguration", "Include node configuration in the response", false)
+            .option("--json", "Return the response as a JSON file")
+            .action(this.listNodes);
+
         nodesCommand.command("diff")
             .description("Diff two versions of a specific node in a package")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
@@ -140,6 +150,10 @@ class Module extends IModule {
 
     private async findNode(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.packageVersion ?? null, options.json);
+    }
+
+    private async listNodes(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeService(context).listNodes(options.packageKey, options.packageVersion, options.limit, options.offset, options.withConfiguration, options.json);
     }
 
     private async diffNode(context: Context, command: Command, options: OptionValues): Promise<void> {

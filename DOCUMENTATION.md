@@ -33,6 +33,11 @@
         - [Find a versioned node](#find-a-versioned-node)
         - [Find a versioned node with configuration](#find-a-versioned-node-with-configuration)
         - [Export node as JSON](#export-node-as-json)
+    - [Listing nodes](#listing-nodes)
+        - [List nodes in a package version](#list-nodes-in-a-package-version)
+        - [Pagination](#pagination)
+        - [List nodes with configuration](#list-nodes-with-configuration)
+        - [Export nodes list as JSON](#export-nodes-list-as-json)
     - [Diffing node configurations](#diffing-node-configurations)
         - [Diff two versions of a node](#diff-two-versions-of-a-node)
         - [Understanding change types](#understanding-change-types)
@@ -765,6 +770,75 @@ Or combine all options for a versioned node with configuration:
 ```
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --withConfiguration --json
 ```
+#### Listing nodes
+
+The **config nodes list** command allows you to retrieve all nodes within a specific package version.
+
+##### List nodes in a package version
+To list all nodes in a specific package version, use the following command:
+```
+content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion>
+```
+
+For example, to list all nodes in version 1.2.3 of the package with key `my-package`:
+```
+content-cli config nodes list --packageKey my-package --packageVersion 1.2.3
+```
+
+The command will display information for each node in the console as a JSON object:
+```
+info: {"id":"node-id-123","key":"node-key-1","name":"My First Node","type":"VIEW",...} 
+info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNOWLEDGE_MODEL",...} 
+...
+```
+
+##### Pagination
+The response is paginated, and the page size can be controlled with the `--limit` and `--offset` options (defaults to 100 and 0 respectively).
+
+To limit the number of nodes returned:
+```
+content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 10
+```
+
+To retrieve the next page of results:
+```
+content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 10 --offset 10
+```
+
+##### List nodes with configuration
+By default, the node configuration is not included in the response. To include each node's configuration, use the `--withConfiguration` flag:
+```
+content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --withConfiguration
+```
+
+When configuration is included, it will be displayed as a JSON string in the output for each node:
+```
+info:    Configuration: {"key":"value","nested":{"field":"data"}}
+```
+
+##### Export nodes list as JSON
+To export the nodes list as a JSON file instead of displaying it in the console, use the `--json` option:
+```
+content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --json
+```
+
+This will create a JSON file in the current working directory with a UUID filename:
+```
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+The JSON file contains the complete list of nodes with all fields and, if requested, their configurations.
+
+You can combine options to export nodes with their configurations:
+```
+content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --withConfiguration --json
+```
+
+You can also combine pagination with JSON export:
+```
+content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 50 --offset 100 --json
+```
+
 #### Diffing node configurations
 
 The **config nodes diff** command allows you to compare two versions of a node's configuration within a package.

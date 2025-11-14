@@ -32,5 +32,23 @@ export class NodeApi {
                 throw new FatalError(`Problem finding node ${nodeKey} in package ${packageKey} for version ${version}: ${e}`);
             });
     }
+
+    public async findVersionedNodesByPackage(packageKey: string, version: string, withConfiguration: boolean, limit: number, offset: number): Promise<NodeTransport[]> {
+        const queryParams = new URLSearchParams();
+        queryParams.set("version", version);
+        queryParams.set("withConfiguration", withConfiguration.toString());
+
+        if (limit) {
+            queryParams.set("limit", limit.toString());
+        }
+        if (offset) {
+            queryParams.set("offset", offset.toString());
+        }
+        return this.httpClient()
+            .get(`/pacman/api/core/packages/${packageKey}/nodes?${queryParams.toString()}`)
+            .catch(e => {
+                throw new FatalError(`Problem fetching nodes from package ${packageKey} for version ${version}: ${e}`);
+            });
+    }
 }
 
