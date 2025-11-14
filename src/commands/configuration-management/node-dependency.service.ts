@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { NodeDependencyTransport } from "./interfaces/node-dependency.interfaces";
 
 export class NodeDependencyService {
-    private nodeDependencyApi: NodeDependencyApi;
+    private readonly nodeDependencyApi: NodeDependencyApi;
 
     constructor(context: Context) {
         this.nodeDependencyApi = new NodeDependencyApi(context);
@@ -23,15 +23,11 @@ export class NodeDependencyService {
             if (dependencies.length === 0) {
                 logger.info("No dependencies found for this node.");
             } else {
-                logger.info(`Found ${dependencies.length} dependencies:`);
+                logger.info(`Found ${dependencies.length} ${dependencies.length === 1 ? "dependency" : "dependencies"}:`);
                 dependencies.forEach((dep, index) => {
-                    logger.info(`\n[${index + 1}]`);
-                    logger.info(`  Package Key: ${dep.packageKey}`);
-                    logger.info(`  Key: ${dep.key}`);
-                    logger.info(`  Type: ${dep.type}`);
+                    logger.info(JSON.stringify(dep));
                 });
             }
         }
     }
 }
-
