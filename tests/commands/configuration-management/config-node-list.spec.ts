@@ -42,21 +42,10 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(23);
+        expect(loggingTestTransport.logMessages.length).toBe(2);
 
-        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${node1.id}`);
-        expect(loggingTestTransport.logMessages[1].message).toContain(`Key: ${node1.key}`);
-        expect(loggingTestTransport.logMessages[2].message).toContain(`Name: ${node1.name}`);
-        expect(loggingTestTransport.logMessages[3].message).toContain(`Type: ${node1.type}`);
-        expect(loggingTestTransport.logMessages[4].message).toContain(`Package Node Key: ${node1.packageNodeKey}`);
-        expect(loggingTestTransport.logMessages[5].message).toContain(`Parent Node Key: ${node1.parentNodeKey}`);
-        expect(loggingTestTransport.logMessages[10].message).toContain(`Flavor: ${node1.flavor}`);
-        expect(loggingTestTransport.logMessages[11].message).toContain("--------------------------------------------------");
-
-        expect(loggingTestTransport.logMessages[12].message).toContain(`ID: ${node2.id}`);
-        expect(loggingTestTransport.logMessages[13].message).toContain(`Key: ${node2.key}`);
-        expect(loggingTestTransport.logMessages[21].message).toContain(`Flavor: ${node2.flavor}`);
-        expect(loggingTestTransport.logMessages[22].message).toContain("--------------------------------------------------");
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
+        expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(node2));
     });
 
     it("Should list nodes with configuration", async () => {
@@ -91,10 +80,10 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, true, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(24);
+        expect(loggingTestTransport.logMessages.length).toBe(2);
 
-        expect(loggingTestTransport.logMessages[9].message).toContain(`Configuration: ${JSON.stringify(node1.configuration, null, 2)}`);
-        expect(loggingTestTransport.logMessages[21].message).toContain(`Configuration: ${JSON.stringify(node2.configuration, null, 2)}`);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${JSON.stringify(node1.configuration)}`);
+        expect(loggingTestTransport.logMessages[1].message).toContain(`${JSON.stringify(node2.configuration)}`);
     });
 
     it("Should list nodes with pagination (limit and offset)", async () => {
@@ -114,8 +103,8 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(11);
-        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${node1.id}`);
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
     });
 
     it("Should list empty nodes array", async () => {
@@ -229,10 +218,8 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(12);
-        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${node1.id}`);
-        expect(loggingTestTransport.logMessages[9].message).toContain(`Invalid Configuration: ${invalidConfigMessage}`);
-        expect(loggingTestTransport.logMessages[11].message).toContain("--------------------------------------------------");
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1.invalidConfiguration));
     });
 
     it("Should list nodes with invalid configuration and return as JSON", async () => {
@@ -288,10 +275,8 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(12);
-        expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${node1.id}`);
-        expect(loggingTestTransport.logMessages[5].message).toContain(`Parent Node Key: ${node1.parentNodeKey}`);
-        expect(loggingTestTransport.logMessages[11].message).toContain("--------------------------------------------------");
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
     });
 
     it("Should list multiple nodes without parent keys", async () => {
@@ -313,7 +298,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(33);
+        expect(loggingTestTransport.logMessages.length).toBe(3);
 
         const parentKeyMessages = loggingTestTransport.logMessages.filter(log => log.message.includes("Parent Node Key"));
         expect(parentKeyMessages.length).toBe(0);

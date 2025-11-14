@@ -35,8 +35,7 @@ export class NodeService {
             logger.info(FileService.fileDownloadedMessage + filename);
         } else {
             nodes.forEach(node => {
-                this.printNode(node)
-                logger.info("--------------------------------------------------");
+                logger.info(JSON.stringify(node))
             });
         }
     }
