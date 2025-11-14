@@ -790,7 +790,6 @@ The command will display information for each node in the console as a JSON obje
 info: {"id":"node-id-123","key":"node-key-1","name":"My First Node","type":"VIEW",...} 
 info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNOWLEDGE_MODEL",...} 
 ...
-...
 ```
 
 ##### Pagination
