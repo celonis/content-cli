@@ -785,24 +785,11 @@ For example, to list all nodes in version 1.2.3 of the package with key `my-pack
 content-cli config nodes list --packageKey my-package --packageVersion 1.2.3
 ```
 
-The command will display information for each node in the console:
+The command will display information for each node in the console as a JSON object:
 ```
-info:    ID: node-id-123
-info:    Key: node-key-1
-info:    Name: My First Node
-info:    Type: VIEW
-info:    Package Node Key: my-package
-info:    Parent Node Key: parent-node-key
-info:    Created By: user@celonis.com
-info:    Updated By: user@celonis.com
-info:    Creation Date: 2025-10-22T10:30:00.000Z
-info:    Change Date: 2025-10-22T15:45:00.000Z
-info:    Flavor: STUDIO
-info:    ----------------------------------------
-info:    ID: node-id-456
-info:    Key: node-key-2
-info:    Name: My Second Node
-info:    Type: KNOWLEDGE_MODEL
+info: {"id":"node-id-123","key":"node-key-1","name":"My First Node","type":"VIEW",...} 
+info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNOWLEDGE_MODEL",...} 
+...
 ...
 ```
 
