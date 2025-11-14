@@ -37,20 +37,11 @@ describe("Node Dependencies", () => {
 
         await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, version, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(13);
+        expect(loggingTestTransport.logMessages.length).toBe(4);
         expect(loggingTestTransport.logMessages[0].message.trim()).toBe("Found 3 dependencies:");
-        expect(loggingTestTransport.logMessages[1].message.trim()).toBe("[1]");
-        expect(loggingTestTransport.logMessages[2].message.trim()).toBe("Package Key: dependency-package-1");
-        expect(loggingTestTransport.logMessages[3].message.trim()).toBe("Key: dependency-key-1");
-        expect(loggingTestTransport.logMessages[4].message.trim()).toBe("Type: ANALYSIS");
-        expect(loggingTestTransport.logMessages[5].message.trim()).toBe("[2]");
-        expect(loggingTestTransport.logMessages[6].message.trim()).toBe("Package Key: dependency-package-2");
-        expect(loggingTestTransport.logMessages[7].message.trim()).toBe("Key: dependency-key-2");
-        expect(loggingTestTransport.logMessages[8].message.trim()).toBe("Type: VIEW");
-        expect(loggingTestTransport.logMessages[9].message.trim()).toBe("[3]");
-        expect(loggingTestTransport.logMessages[10].message.trim()).toBe("Package Key: dependency-package-3");
-        expect(loggingTestTransport.logMessages[11].message.trim()).toBe("Key: dependency-key-3");
-        expect(loggingTestTransport.logMessages[12].message.trim()).toBe("Type: SKILL");
+        expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(dependencies[0]));
+        expect(loggingTestTransport.logMessages[2].message).toContain(JSON.stringify(dependencies[1]));
+        expect(loggingTestTransport.logMessages[3].message).toContain(JSON.stringify(dependencies[2]));
     });
 
     it("Should list node dependencies and return as JSON", async () => {
@@ -127,12 +118,9 @@ describe("Node Dependencies", () => {
 
         await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, version, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(5);
-        expect(loggingTestTransport.logMessages[0].message.trim()).toBe("Found 1 dependencies:");
-        expect(loggingTestTransport.logMessages[1].message.trim()).toBe("[1]");
-        expect(loggingTestTransport.logMessages[2].message.trim()).toBe("Package Key: single-dependency-package");
-        expect(loggingTestTransport.logMessages[3].message.trim()).toBe("Key: single-dependency-key");
-        expect(loggingTestTransport.logMessages[4].message.trim()).toBe("Type: KNOWLEDGE_MODEL");
+        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages[0].message.trim()).toBe("Found 1 dependency:");
+        expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(singleDependency[0]));
     });
 });
 

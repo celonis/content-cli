@@ -841,21 +841,9 @@ content-cli config nodes dependencies list --packageKey my-package --nodeKey my-
 The command will display the dependencies in the console:
 ```
 info:    Found 3 dependencies:
-info:    
-info:    [1]
-info:      Package Key: dependency-package-1
-info:      Key: dependency-key-1
-info:      Type: ANALYSIS
-info:    
-info:    [2]
-info:      Package Key: dependency-package-2
-info:      Key: dependency-key-2
-info:      Type: VIEW
-info:    
-info:    [3]
-info:      Package Key: dependency-package-3
-info:      Key: dependency-key-3
-info:      Type: SKILL
+info:    {"packageKey":"dependency-package-1","key":"dependency-key-1","type":"ANALYSIS"}
+info:    {"packageKey":"dependency-package-2","key":"dependency-key-2","type":"VIEW"}
+info:    {"packageKey":"dependency-package-3","key":"dependency-key-3","type":"SKILL"}
 ```
 
 If no dependencies are found, the command will display:
