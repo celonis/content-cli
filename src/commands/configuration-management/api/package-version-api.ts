@@ -12,7 +12,7 @@ export class PackageVersionApi {
 
     public async findOne(packageKey: string, version: string): Promise<PackageVersionTransport> {
         return this.httpClient()
-            .get(`/pacman/api/core/packages/${packageKey}/version/${version}`)
+            .get(`/pacman/api/core/packages/${packageKey}/versions/${version}`)
             .catch(e => {
                 throw new FatalError(`Problem finding Package with key '${packageKey}' and version '${version}': ${e}`);
             });

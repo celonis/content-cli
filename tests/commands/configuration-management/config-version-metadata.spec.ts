@@ -21,7 +21,7 @@ describe("Package Version get", () => {
     it("Should get package version metadata", async () => {
         const packageKey = "test-package-key";
         const version = "1.2.3";
-        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/version/${version}`, packageVersion);
+        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersion);
 
         await new PackageVersionService(testContext).findNode(packageKey, version, false);
 
@@ -39,7 +39,7 @@ describe("Package Version get", () => {
     it("Should get package version metadata and return as JSON", async () => {
         const packageKey = "test-package-key";
         const version = "1.2.3";
-        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/version/${version}`, packageVersion);
+        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersion);
 
         await new PackageVersionService(testContext).findNode(packageKey, version, true);
 
@@ -62,7 +62,7 @@ describe("Package Version get", () => {
             publishMessage: "",
         };
 
-        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/version/${version}`, packageVersionWithEmptyMessage);
+        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersionWithEmptyMessage);
 
         await new PackageVersionService(testContext).findNode(packageKey, version, false);
 

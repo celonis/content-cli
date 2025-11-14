@@ -153,7 +153,7 @@ class Module extends IModule {
     }
 
     private async getPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new PackageVersionCommandService(context).getPackageVersion(options.packageKey, options.version, options.json);
+        await new PackageVersionCommandService(context).getPackageVersion(options.packageKey, options.packageVersion, options.json);
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
