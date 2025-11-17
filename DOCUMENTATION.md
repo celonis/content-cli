@@ -258,6 +258,7 @@ A Git profile contains:
 
 #### Authentication
 The authentication is delegated your local Git configuration, based on the selected method (SSH or HTTPS).
+If you haven't configured Git on your machine yet, you can follow [this guide](https://docs.github.com/en/get-started/git-basics/set-up-git) (required).
 
 Besides profile authentication, the git related commands can also be set up in pipelines via the following environment variables:
 - GIT_REPOSITORY – the GitHub repository in the format `owner/repo`
