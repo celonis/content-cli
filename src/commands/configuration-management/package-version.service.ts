@@ -12,7 +12,7 @@ export class PackageVersionService {
         this.packageVersionApi = new PackageVersionApi(context);
     }
 
-    public async findNode(packageKey: string, version: string, jsonResponse: boolean): Promise<void> {
+    public async findPackageVersion(packageKey: string, version: string, jsonResponse: boolean): Promise<void> {
         const packageVersionTransport: PackageVersionTransport = await this.packageVersionApi.findOne(packageKey, version);
         if (jsonResponse) {
             const filename = uuidv4() + ".json";

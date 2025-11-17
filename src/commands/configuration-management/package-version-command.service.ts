@@ -10,6 +10,6 @@ export class PackageVersionCommandService {
     }
 
     public async getPackageVersion(packageKey: string, version: string, jsonResponse: boolean): Promise<void> {
-        await this.packageVersionService.findNode(packageKey, version, jsonResponse);
+        await this.packageVersionService.findPackageVersion(packageKey, version, jsonResponse);
     }
 }

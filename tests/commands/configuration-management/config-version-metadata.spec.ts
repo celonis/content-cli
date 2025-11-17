@@ -23,7 +23,7 @@ describe("Package Version get", () => {
         const version = "1.2.3";
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersion);
 
-        await new PackageVersionService(testContext).findNode(packageKey, version, false);
+        await new PackageVersionService(testContext).findPackageVersion(packageKey, version, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(8);
         expect(loggingTestTransport.logMessages[0].message).toContain(`Package Key: ${packageVersion.packageKey}`);
@@ -41,7 +41,7 @@ describe("Package Version get", () => {
         const version = "1.2.3";
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersion);
 
-        await new PackageVersionService(testContext).findNode(packageKey, version, true);
+        await new PackageVersionService(testContext).findPackageVersion(packageKey, version, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -64,7 +64,7 @@ describe("Package Version get", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersionWithEmptyMessage);
 
-        await new PackageVersionService(testContext).findNode(packageKey, version, false);
+        await new PackageVersionService(testContext).findPackageVersion(packageKey, version, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(8);
         expect(loggingTestTransport.logMessages[5].message).toContain("Publish Message: ");
