@@ -26,6 +26,7 @@ export class ProfileService {
 
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
+            this.mapCelonisEnvProfile();
             this.checkIfMissingProfile(profileName, reject);
             try {
                 if (process.env.TEAM_URL && process.env.API_TOKEN) {
@@ -300,6 +301,20 @@ export class ProfileService {
     private checkIfMissingProfile(profileName: string, reject: any): void {
         if (!profileName && (!process.env.TEAM_URL || !process.env.API_TOKEN)) {
             reject("Profile not found");
+        }
+    }
+
+    private mapCelonisEnvProfile(): void {
+        if (!process.env.CELONIS_URL) {
+            return;
+        }
+
+        process.env.TEAM_URL = process.env.CELONIS_URL;
+
+        if (process.env.CELONIS_API_TOKEN) {
+            process.env.API_TOKEN = process.env.CELONIS_API_TOKEN;
+        } else {
+            delete process.env.API_TOKEN;
         }
     }
 }
