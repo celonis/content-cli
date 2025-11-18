@@ -177,11 +177,10 @@ which of your commands is set to default.
 #### Using the CLI without a profile
 
 If you do not want to use profiles, you can still use the CLI by providing 
-the Team URL and API token directly in the command using the ***TEAM_URL/CELONIS_URL*** and
- ***API_TOKEN/CELONIS_API_TOKEN*** environment variables respectively. For example:
+the Team URL and API token directly in the command by using the ***CELONIS_URL*** 
+and ***CELONIS_API_TOKEN*** environment variables. For example:
 
 ```
-TEAM_URL <your-team-url> API_TOKEN <your-api-token> content-cli <command>
 CELONIS_URL <your-team-url> CELONIS_API_TOKEN <your-api-token> content-cli <comand>
 ```
 
