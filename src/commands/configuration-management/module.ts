@@ -62,7 +62,7 @@ class Module extends IModule {
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
             .action(this.diffPackages);
 
-        const configVersionCommand = configCommand.command("version")
+        const configVersionCommand = configCommand.command("versions")
             .description("Commands related to Package version metadata");
 
         configVersionCommand.command("get")
