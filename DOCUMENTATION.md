@@ -27,8 +27,8 @@
         - [Listing package variables](#listing-package-variables)
         - [Listing assignments](#listing-assignments)
         - [Mapping variables](#mapping-variables)
-    - [Package Version Metadata](#package-version-metadata)
-        - [Get package version metadata](#get-package-version-metadata)
+    - [Package Version](#package-version)
+        - [Get package version](#get-package-version)
     - [Finding nodes](#finding-nodes)
         - [Find a staging node](#find-a-staging-node)
         - [Find a staging node with configuration](#find-a-staging-node-with-configuration)
@@ -676,20 +676,20 @@ This mapping should be saved and then used during import.
 Since the format of the variables.json file on import is the same JSON structure as the list variables result, you can either map the values to the variables.json file for each variable, or replace the variables.json file with the result of the listing & mapping altogether.
 If the mapping of variables is skipped, you should delete the variables.json file before importing.
 
-### Package Version Metadata
+### Package Version
 
-The **config version-metadata** command group allows you to retrieve metadata information about specific package versions.
+The **config versions** command group allows you to retrieve metadata information about specific package versions.
 
-#### Get package version metadata
+#### Get package version
 
 To get metadata for a specific package version, use the following command:
 ```
-content-cli config version-metadata get --packageKey <packageKey> --packageVersion <packageVersion>
+content-cli config versions get --packageKey <packageKey> --packageVersion <packageVersion>
 ```
 
 For example, to get metadata for version 1.2.3 of a package:
 ```
-content-cli config version-metadata get --packageKey my-package --packageVersion 1.2.3
+content-cli config versions get --packageKey my-package --packageVersion 1.2.3
 ```
 
 The command will display the version metadata in the console:
@@ -708,7 +708,7 @@ info:    Published By: user@example.com
 
 To export the version metadata as a JSON file instead of displaying it in the console, use the `--json` option:
 ```
-content-cli config version-metadata get --packageKey <packageKey> --packageVersion <packageVersion> --json
+content-cli config versions get --packageKey <packageKey> --packageVersion <packageVersion> --json
 ```
 
 This will create a JSON file in the current working directory with a UUID filename:
