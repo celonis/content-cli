@@ -174,6 +174,17 @@ commands. You can do so by using ***content-cli profile default
 \<YOUR\_PROFILE\_NAME\>***. With the list command, you can also see
 which of your commands is set to default.
 
+#### Using the CLI without a profile
+
+If you do not want to use profiles, you can still use the CLI by providing 
+the Team URL and API token directly in the command by using the ***CELONIS_URL*** 
+and ***CELONIS_API_TOKEN*** environment variables. For example:
+
+```
+CELONIS_URL <your-team-url> CELONIS_API_TOKEN <your-api-token> content-cli <command>
+```
+
+
 ### Pull command
 
 By using ***content-cli pull***, you can pull content from a Celonis Platform team.
