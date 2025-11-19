@@ -4,7 +4,7 @@
     -   [Using profiles](#using-profiles)
     -   [Pull command](#pull-command)
     -   [Push command](#push-command)
-    -   [Using Git Profiles (beta)](#using-git-profiles-beta)
+    -   [Using Git Profiles](#using-git-profiles)
 -   [Using content-cli inside Studio](#using-content-cli-inside-studio)
     -   [Pull/Push packages from/to Studio](#pullpush-packages-fromto-studio)
         -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
@@ -229,7 +229,7 @@ content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-f
 content-cli push ctp -p my-profile-name --file path-to-ctp-file --password ctp-file-password --pushDataModels
 ```
 
-### Using Git Profiles (beta)
+### Using Git Profiles
 
 In addition to Celonis profiles, you can configure **Git profiles** to interact with GitHub repositories directly from Content CLI.  
 This enables workflows where you export packages to a Git branch, collaborate via Git pull requests, and then import reviewed content back into Celonis.
@@ -586,10 +586,10 @@ exported_package_random_uuid/
 ├─ package_keyN-version.zip
 ```
 
-Additionally, the following **Git options** are available (**beta**):
+Additionally, the following **Git options** are available:
 - ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for exporting directly to a repository. 
-If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
-- ```--gitBranch <branchName>``` – specifies the branch in the Github repository where the export will be pushed. ⚠️ *(beta: may change or be removed in future releases)*
+If not specified, the default profile will be used.
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository where the export will be pushed.
 
 Example exporting to Git:
 ```
@@ -624,10 +624,10 @@ When packages with the same keys exist in the target team, the --overwrite optio
 content-cli config import -p <sourceProfile> -f <file path> --overwrite
 ```
 
-Additionally, the following **Git options** are available (**beta**):
+Additionally, the following **Git options** are available:
 - ```--gitProfile <gitProfileName>``` – specifies the Git profile to use for importing directly from a repository.
-If not specified, the default profile will be used. ⚠️ *(beta: may change or be removed in future releases)*
-- ```--gitBranch <branchName>``` – specifies the branch in the Github repository from which to import. ⚠️ *(beta: may change or be removed in future releases)*
+If not specified, the default profile will be used.
+- ```--gitBranch <branchName>``` – specifies the branch in the Github repository from which to import.
 
 Example importing from Git:
 ```
