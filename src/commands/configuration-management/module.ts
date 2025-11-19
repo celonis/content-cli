@@ -62,10 +62,10 @@ class Module extends IModule {
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
             .action(this.diffPackages);
 
-        const versionMetadataCommand = configCommand.command("version-metadata")
+        const configVersionCommand = configCommand.command("version")
             .description("Commands related to Package version metadata");
 
-        versionMetadataCommand.command("get")
+        configVersionCommand.command("get")
             .description("Get version metadata for a specific package version")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--packageVersion <packageVersion>", "Version of the package")
