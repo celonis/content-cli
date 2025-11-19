@@ -5,6 +5,9 @@ import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import * as path from "path";
+import {
+    PackageVersionCommandService
+} from "../../../src/commands/configuration-management/package-version-command.service";
 
 describe("Package Version get", () => {
     const packageVersion: PackageVersionTransport = {
@@ -23,7 +26,7 @@ describe("Package Version get", () => {
         const version = "1.2.3";
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersion);
 
-        await new PackageVersionService(testContext).findPackageVersion(packageKey, version, false);
+        await new PackageVersionCommandService(testContext).getPackageVersion(packageKey, version, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(8);
         expect(loggingTestTransport.logMessages[0].message).toContain(`Package Key: ${packageVersion.packageKey}`);
@@ -64,7 +67,7 @@ describe("Package Version get", () => {
 
         mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/versions/${version}`, packageVersionWithEmptyMessage);
 
-        await new PackageVersionService(testContext).findPackageVersion(packageKey, version, false);
+        await new PackageVersionCommandService(testContext).getPackageVersion(packageKey, version, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(8);
         expect(loggingTestTransport.logMessages[5].message).toContain("Publish Message: ");
