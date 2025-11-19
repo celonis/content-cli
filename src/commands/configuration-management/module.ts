@@ -10,6 +10,7 @@ import { VariableCommandService } from "./variable-command.service";
 import { NodeService } from "./node.service";
 import { NodeDiffService } from "./node-diff.service";
 import { NodeDependencyService } from "./node-dependency.service";
+import { PackageVersionCommandService } from "./package-version-command.service";
 
 class Module extends IModule {
 
@@ -60,6 +61,16 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
             .action(this.diffPackages);
+
+        const configVersionCommand = configCommand.command("versions")
+            .description("Commands related to Package version metadata");
+
+        configVersionCommand.command("get")
+            .description("Get version metadata for a specific package version")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--packageVersion <packageVersion>", "Version of the package")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.getPackageVersion)
 
         const variablesCommand = configCommand.command("variables")
             .description("Commands related to variable configs");
@@ -139,6 +150,10 @@ class Module extends IModule {
 
     private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConfigCommandService(context).batchExportPackagesMetadata(options.packageKeys, options.json);
+    }
+
+    private async getPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new PackageVersionCommandService(context).getPackageVersion(options.packageKey, options.packageVersion, options.json);
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
