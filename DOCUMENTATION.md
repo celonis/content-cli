@@ -183,7 +183,7 @@ the Team URL and API token directly in the command by using the ***CELONIS_URL*
 and ***CELONIS_API_TOKEN*** environment variables. For example:
 
 ```
-CELONIS_URL <your-team-url> CELONIS_API_TOKEN <your-api-token> content-cli <command>
+CELONIS_URL=<your-team-url> CELONIS_API_TOKEN=<your-api-token> content-cli <command>
 ```
 
 
