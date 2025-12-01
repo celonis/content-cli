@@ -15,6 +15,9 @@ outputs:
   auto_branch:
     description: 'The created automation branch name'
     value: ${{ steps.names.outputs.auto_branch }}
+  version:
+    description: 'The new version that was created'
+    value: ${{ steps.version_bump.outputs.version }}
 
 runs:
   using: composite
@@ -47,9 +50,11 @@ runs:
         git checkout -b "${auto_branch}"
 
     - name: Run npm version bump
+      id: version_bump
       shell: bash
       run: |
-        npm version ${{ inputs.bump }} -m "[Release] Bump version to %s"
+        NEW_VERSION=$(npm version ${{ inputs.bump }} -m "[Release] Bump version to %s" | tail -n 1)
+        echo "version=${NEW_VERSION}" >> $GITHUB_OUTPUT
         npm install
         git push origin HEAD
         git push origin --tags
