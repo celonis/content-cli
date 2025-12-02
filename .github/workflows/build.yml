@@ -18,3 +18,13 @@ jobs:
       run: yarn build
     - name: Yarn Test
       run: yarn test
+    - name: Generate release notes
+      uses: softprops/action-gh-release@v2.4.2
+      with:
+        tag_name: v1.4.0
+        name: v1.4.0
+        target_commitish: 4de7e7e8fdd8f6bb1b91e39087113cf2809be2c3
+        draft: false
+        prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
+        generate_release_notes: true
