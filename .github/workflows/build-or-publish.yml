@@ -124,13 +124,27 @@ jobs:
           npm publish --access public
 
       - name: Tag release version
+        id: tag
         env:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           version=$(node -p "require('./package.json').version")
           tag="v${version}"
+          echo "version=${version}" >> $GITHUB_OUTPUT
+          echo "tag=${tag}" >> $GITHUB_OUTPUT
           git tag "${tag}"
           git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "${tag}"
+
+      - name: Generate release notes
+        uses: softprops/action-gh-release@v2.4.2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
 
       - name: Post-publish note
         run: echo "Release branch ${{ steps.calver.outputs.release_branch }} created, published, and tagged with version."
