@@ -130,10 +130,14 @@ jobs:
         run: |
           version=$(node -p "require('./package.json').version")
           tag="v${version}"
-          echo "version=${version}" >> $GITHUB_OUTPUT
           echo "tag=${tag}" >> $GITHUB_OUTPUT
-          git tag "${tag}"
-          git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "${tag}"
+          git fetch origin --tags || true
+          if ! git rev-parse "${tag}" >/dev/null 2>&1; then
+            git tag "${tag}"
+            git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "${tag}"
+          else
+            echo "Tag ${tag} already exists, skipping creation"
+          fi
 
       - name: Generate release notes
         uses: softprops/action-gh-release@v2.4.2
