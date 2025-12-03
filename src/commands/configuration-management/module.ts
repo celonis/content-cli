@@ -68,7 +68,7 @@ class Module extends IModule {
         configVersionCommand.command("get")
             .description("Get version metadata for a specific package version")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
-            .requiredOption("--packageVersion <packageVersion>", "Version of the package")
+            .requiredOption("--packageVersion <packageVersion>", "Version of the package. Can be a specific version or \"LATEST\" keyword, which will return the most recently created version.")
             .option("--json", "Return the response as a JSON file")
             .action(this.getPackageVersion)
 
