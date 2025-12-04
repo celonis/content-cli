@@ -715,7 +715,7 @@ info:    Deployed: true
 info:    Published By: user@example.com
 ```
 
-Note: You can also use `LATEST` instead of a specific version to get the latest version:
+Note: You can also use `LATEST` instead of a specific version to get the most recently created version:
 ```
 content-cli config versions get --packageKey my-package --packageVersion LATEST
 ```
