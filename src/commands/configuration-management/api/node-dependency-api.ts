@@ -10,7 +10,15 @@ export class NodeDependencyApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async findAll(packageKey: string, nodeKey: string, version: string): Promise<NodeDependencyTransport[]> {
+    public async findAllStaging(packageKey: string, nodeKey: string): Promise<NodeDependencyTransport[]> {
+        return this.httpClient()
+            .get(`/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}/dependencies`)
+            .catch((e) => {
+                throw new FatalError(`Problem finding dependencies for node ${nodeKey} in package ${packageKey}: ${e}`);
+            });
+    }
+
+    public async findAllByVersion(packageKey: string, nodeKey: string, version: string): Promise<NodeDependencyTransport[]> {
         const queryParams = new URLSearchParams();
         queryParams.set("version", version);
 

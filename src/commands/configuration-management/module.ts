@@ -120,7 +120,7 @@ class Module extends IModule {
             .description("List dependencies of a specific node in a package")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
-            .requiredOption("--packageVersion <packageVersion>", "Version of the package")
+            .option("--packageVersion <packageVersion>", "Version of the package")
             .option("--json", "Return the response as a JSON file")
             .action(this.listNodeDependencies);
 
@@ -188,6 +188,9 @@ class Module extends IModule {
     }
 
     private async listNodeDependencies(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.packageVersion === "") {
+            throw new Error("Please specify a valid package version");
+        }
         await new NodeDependencyService(context).listNodeDependencies(options.packageKey, options.nodeKey, options.packageVersion, options.json);
     }
 }
