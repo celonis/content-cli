@@ -13,7 +13,13 @@ export class NodeDependencyService {
     }
 
     public async listNodeDependencies(packageKey: string, nodeKey: string, version: string, jsonResponse: boolean): Promise<void> {
-        const dependencies: NodeDependencyTransport[] = await this.nodeDependencyApi.findAll(packageKey, nodeKey, version);
+        let dependencies : NodeDependencyTransport[];
+
+        if (version) {
+            dependencies = await this.nodeDependencyApi.findAllByVersion(packageKey, nodeKey, version);
+        } else {
+            dependencies = await this.nodeDependencyApi.findAllStaging(packageKey, nodeKey);
+        }
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
