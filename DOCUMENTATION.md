@@ -955,9 +955,9 @@ The JSON file contains the complete node diff information including the change t
 
 #### Listing node dependencies
 
-The **config nodes dependencies list** command allows you to retrieve all dependencies of a specific node within a package version.
+The **config nodes dependencies list** command allows you to retrieve all dependencies of a specific node within a package.
 
-##### List dependencies of a node
+##### List dependencies of a versioned node
 To list all dependencies of a node in a specific package version, use the following command:
 ```
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version>
@@ -981,10 +981,26 @@ If no dependencies are found, the command will display:
 info:    No dependencies found for this node.
 ```
 
+##### List dependencies of a staging node
+The `--packageVersion` parameter is optional. When omitted, the command will retrieve dependencies from the staging (draft) version of the node instead of a published version:
+```
+content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey>
+```
+
+For example, to list dependencies of a node in its current staging state:
+```
+content-cli config nodes dependencies list --packageKey my-package --nodeKey my-node
+```
+
 ##### Export node dependencies as JSON
 To export the node dependencies as a JSON file instead of displaying them in the console, use the `--json` option:
 ```
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version> --json
+```
+
+Or for staging dependencies:
+```
+content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --json
 ```
 
 This will create a JSON file in the current working directory with a UUID filename:
