@@ -715,6 +715,12 @@ info:    Deployed: true
 info:    Published By: user@example.com
 ```
 
+Note: You can also use `LATEST` instead of a specific version to get the most recently created version:
+```
+content-cli config versions get --packageKey my-package --packageVersion LATEST
+```
+
+
 ##### Export version metadata as JSON
 
 To export the version metadata as a JSON file instead of displaying it in the console, use the `--json` option:
