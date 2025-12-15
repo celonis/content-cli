@@ -309,7 +309,11 @@ export class ProfileService {
             return;
         }
 
-        process.env.TEAM_URL = process.env.CELONIS_URL;
+        let celonisUrl = process.env.CELONIS_URL;
+        if (!celonisUrl.startsWith("http://") && !celonisUrl.startsWith("https://")) {
+            celonisUrl = `https://${celonisUrl}`;
+        }
+        process.env.TEAM_URL = celonisUrl;
 
         if (process.env.CELONIS_API_TOKEN) {
             process.env.API_TOKEN = process.env.CELONIS_API_TOKEN;
