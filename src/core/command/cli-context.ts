@@ -76,6 +76,8 @@ export class Context {
         }
         try {
             this.gitProfile = await this.gitProfileService.findProfile(gitProfileName);
+            console.log("gitProfile: " + this.gitProfile);
+            console.log("gitProfileName: " + this.gitProfileName);
             this.gitProfileName = gitProfileName;
             this.log.debug(`Using Git profile ${gitProfileName}`);
         } catch (err) {
