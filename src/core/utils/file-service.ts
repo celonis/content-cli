@@ -64,7 +64,7 @@ export class FileService {
         const files = fs.readdirSync(sourceDir);
         const finalZip = new AdmZip();
 
-        for (const file of files) {
+        files.forEach(file => {
             const fullPath = path.join(sourceDir, file);
             const stat = fs.lstatSync(fullPath);
 
@@ -77,7 +77,7 @@ export class FileService {
             } else if (stat.isFile()) {
                 finalZip.addLocalFile(fullPath);
             }
-        }
+        });
 
         const tempDir = path.join(os.tmpdir(), "content-cli-exports");
         fs.mkdirSync(tempDir, { recursive: true });
