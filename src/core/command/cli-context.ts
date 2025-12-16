@@ -56,6 +56,7 @@ export class Context {
             }
         }
         try {
+            this.log.debug("Another log");
             this.profile = await this.profileService.findProfile(profileName);
             this.profileName = profileName;
             this.log.debug(`Using profile ${profileName}`);
