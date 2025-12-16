@@ -82,6 +82,9 @@ export class ProfileService {
 
     private async buildProfileFromEnvVariables(): Promise<Profile> {
         const profileVariables = this.getProfileEnvVariables();
+        this.log.debug("building profile token: " + profileVariables.apiToken)
+        this.log.debug("building profile url: " + profileVariables.teamUrl)
+
         const profile: Profile = {
             name: profileVariables.teamUrl,
             team: profileVariables.teamUrl,
