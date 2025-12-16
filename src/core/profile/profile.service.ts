@@ -36,6 +36,8 @@ export class ProfileService {
                     const profile : Profile = JSON.parse(file);
                     this.refreshProfile(profile)
                         .then(() => resolve(profile));
+                } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
+                    resolve(this.buildProfileFromEnvVariables());
                 } else {
                     this.mapCelonisEnvProfile();
                     resolve(this.buildProfileFromEnvVariables());
