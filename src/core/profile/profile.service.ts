@@ -29,6 +29,7 @@ export class ProfileService {
         return new Promise<Profile>((resolve, reject) => {
             try {
                 if (!this.checkIfMissingProfile(profileName)) {
+                    this.log.debug("has profile")
                     const file = fs.readFileSync(
                         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                         { encoding: "utf-8" }
@@ -37,8 +38,10 @@ export class ProfileService {
                     this.refreshProfile(profile)
                         .then(() => resolve(profile));
                 } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
+                    this.log.debug("has TEAM_URL and API_TOKEN")
                     resolve(this.buildProfileFromEnvVariables());
                 } else {
+                    this.log.debug("doesn't have TEAM_URL and API_TOKEN")
                     this.mapCelonisEnvProfile();
                     resolve(this.buildProfileFromEnvVariables());
                 }
