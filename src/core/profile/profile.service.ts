@@ -27,12 +27,8 @@ export class ProfileService {
 
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
-            // this.mapCelonisEnvProfile();
-            this.checkIfMissingProfile(profileName, reject);
             try {
-                if (process.env.TEAM_URL && process.env.API_TOKEN) {
-                    resolve(this.buildProfileFromEnvVariables());
-                } else {
+                if (!this.checkIfMissingProfile(profileName)) {
                     const file = fs.readFileSync(
                         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                         { encoding: "utf-8" }
@@ -40,7 +36,22 @@ export class ProfileService {
                     const profile : Profile = JSON.parse(file);
                     this.refreshProfile(profile)
                         .then(() => resolve(profile));
+                } else {
+                    this.mapCelonisEnvProfile();
+                    resolve(this.buildProfileFromEnvVariables());
                 }
+
+                // if (process.env.TEAM_URL && process.env.API_TOKEN) {
+                //     resolve(this.buildProfileFromEnvVariables());
+                // } else {
+                //     const file = fs.readFileSync(
+                //         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
+                //         { encoding: "utf-8" }
+                //     );
+                //     const profile : Profile = JSON.parse(file);
+                //     this.refreshProfile(profile)
+                //         .then(() => resolve(profile));
+                // }
             } catch (e) {
                 reject(`The profile ${profileName} couldn't be resolved.`);
             }
@@ -302,11 +313,11 @@ export class ProfileService {
         })
     }
 
-    private checkIfMissingProfile(profileName: string, reject: any): void {
+    private checkIfMissingProfile(profileName: string): boolean {
         this.log.debug("teamUrl: " + process.env.TEAM_URL);
         this.log.debug("apiToken: " + process.env.API_TOKEN);
-        if (!profileName && (!process.env.TEAM_URL || !process.env.API_TOKEN)) {
-            reject("Profile not found");
+        if (!profileName) {
+            return true;
         }
     }
 
