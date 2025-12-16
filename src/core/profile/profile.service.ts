@@ -21,6 +21,7 @@ export interface Config {
 }
 
 export class ProfileService {
+    private log;
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
@@ -313,6 +314,7 @@ export class ProfileService {
         if (!celonisUrl.startsWith("http://") && !celonisUrl.startsWith("https://")) {
             celonisUrl = `https://${celonisUrl}`;
         }
+        this.log.debug("url: " + celonisUrl);
         process.env.TEAM_URL = celonisUrl;
 
         if (process.env.CELONIS_API_TOKEN) {
