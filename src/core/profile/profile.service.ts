@@ -272,6 +272,9 @@ export class ProfileService {
     }
 
     private getProfileEnvVariables(): any {
+        this.log.debug("inside getProfileEnvVariables");
+        this.log.debug("TEAM_URL: " + process.env.TEAM_URL);
+        this.log.debug("API_TOKEN: " + process.env.API_TOKEN);
         return {
             teamUrl: this.getBaseTeamUrl(process.env.TEAM_URL),
             apiToken: process.env.API_TOKEN,
