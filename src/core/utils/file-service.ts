@@ -52,22 +52,21 @@ export class FileService {
         return targetDir;
     }
 
-    public copyDirectoryToCurrentLocation(sourceDir: string, targetName: string): void {
-        fs.mkdirSync(targetName, { recursive: true });
-        fs.cpSync(sourceDir, targetName, { recursive: true });
-    }
-
     public isDirectory(sourcePath: string): boolean {
         return fs.statSync(sourcePath)?.isDirectory()
     }
 
     public zipDirectoryInBatchExportFormat(sourceDir: string): string {
+        if (fs.lstatSync(sourceDir).isSymbolicLink()) {
+            throw new FatalError("Source directory cannot be a symbolic link.");
+        }
+
         const files = fs.readdirSync(sourceDir);
         const finalZip = new AdmZip();
 
         files.forEach(file => {
             const fullPath = path.join(sourceDir, file);
-            const stat = fs.statSync(fullPath);
+            const stat = fs.lstatSync(fullPath);
 
             if (stat.isDirectory()) {
                 const zip = new AdmZip();
