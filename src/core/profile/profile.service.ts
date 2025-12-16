@@ -307,6 +307,7 @@ export class ProfileService {
 
     private mapCelonisEnvProfile(): void {
         if (!process.env.CELONIS_URL) {
+            this.log.debug("no CELONIS_URL env var");
             return;
         }
 
