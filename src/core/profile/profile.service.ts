@@ -21,7 +21,6 @@ export interface Config {
 }
 
 export class ProfileService {
-    private log = logger;
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
@@ -29,7 +28,6 @@ export class ProfileService {
         return new Promise<Profile>((resolve, reject) => {
             try {
                 if (!this.checkIfMissingProfile(profileName)) {
-                    this.log.debug("has profile")
                     const file = fs.readFileSync(
                         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                         { encoding: "utf-8" }
@@ -38,25 +36,11 @@ export class ProfileService {
                     this.refreshProfile(profile)
                         .then(() => resolve(profile));
                 } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
-                    this.log.debug("has TEAM_URL and API_TOKEN")
                     resolve(this.buildProfileFromEnvVariables());
                 } else {
-                    this.log.debug("doesn't have TEAM_URL and API_TOKEN")
                     this.mapCelonisEnvProfile();
                     resolve(this.buildProfileFromEnvVariables());
                 }
-
-                // if (process.env.TEAM_URL && process.env.API_TOKEN) {
-                //     resolve(this.buildProfileFromEnvVariables());
-                // } else {
-                //     const file = fs.readFileSync(
-                //         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
-                //         { encoding: "utf-8" }
-                //     );
-                //     const profile : Profile = JSON.parse(file);
-                //     this.refreshProfile(profile)
-                //         .then(() => resolve(profile));
-                // }
             } catch (e) {
                 reject(`The profile ${profileName} couldn't be resolved.`);
             }
@@ -98,9 +82,6 @@ export class ProfileService {
 
     private async buildProfileFromEnvVariables(): Promise<Profile> {
         const profileVariables = this.getProfileEnvVariables();
-        this.log.debug("building profile token: " + profileVariables.apiToken)
-        this.log.debug("building profile url: " + profileVariables.teamUrl)
-
         const profile: Profile = {
             name: profileVariables.teamUrl,
             team: profileVariables.teamUrl,
@@ -275,9 +256,6 @@ export class ProfileService {
     }
 
     private getProfileEnvVariables(): any {
-        this.log.debug("inside getProfileEnvVariables");
-        this.log.debug("TEAM_URL: " + process.env.TEAM_URL);
-        this.log.debug("API_TOKEN: " + process.env.API_TOKEN);
         return {
             teamUrl: this.getBaseTeamUrl(process.env.TEAM_URL),
             apiToken: process.env.API_TOKEN,
@@ -322,8 +300,6 @@ export class ProfileService {
     }
 
     private checkIfMissingProfile(profileName: string): boolean {
-        this.log.debug("teamUrl: " + process.env.TEAM_URL);
-        this.log.debug("apiToken: " + process.env.API_TOKEN);
         if (!profileName) {
             return true;
         }
@@ -331,7 +307,6 @@ export class ProfileService {
 
     private mapCelonisEnvProfile(): void {
         if (!process.env.CELONIS_URL) {
-            this.log.debug("no CELONIS_URL env var");
             return;
         }
 
@@ -339,7 +314,6 @@ export class ProfileService {
         if (!celonisUrl.startsWith("http://") && !celonisUrl.startsWith("https://")) {
             celonisUrl = `https://${celonisUrl}`;
         }
-        this.log.debug("url: " + celonisUrl);
         process.env.TEAM_URL = celonisUrl;
 
         if (process.env.CELONIS_API_TOKEN) {

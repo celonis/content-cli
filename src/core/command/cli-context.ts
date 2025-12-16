@@ -56,12 +56,8 @@ export class Context {
             }
         }
         try {
-            this.log.debug("Another log");
             this.profile = await this.profileService.findProfile(profileName);
             this.profileName = profileName;
-            this.log.debug("Profile name: " + this.profile.name)
-            this.log.debug("Profile url: " + this.profile.apiToken)
-            this.log.debug("Profile url " + this.profile.team)
             this.log.debug(`Using profile ${profileName}`);
         } catch (err) {
             this.log.debug(err);
