@@ -21,7 +21,8 @@ export interface Config {
 }
 
 export class ProfileService {
-    private log;
+    // @ts-ignore
+    private log: logger;
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
