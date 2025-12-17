@@ -53,5 +53,8 @@
       "prettier --write",
       "git add"
     ]
+  },
+  "repository": {
+    "url": "https://github.com/celonis/content-cli"
   }
 }
