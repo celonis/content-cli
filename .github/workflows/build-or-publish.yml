@@ -9,6 +9,7 @@ on:
       - '.github/**'
 
 permissions:
+  id-token: write
   contents: write
   packages: write
 
@@ -63,6 +64,7 @@ jobs:
     needs: detect-bump
     if: needs.detect-bump.outputs.is_bump == 'true' && github.ref == 'refs/heads/master'
     permissions:
+      id-token: write
       contents: write
       packages: write
     steps:
@@ -117,8 +119,6 @@ jobs:
           scope: '@celonis'
 
       - name: Publish to NPM Registry
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd dist/
           npm publish --access public
