@@ -1,7 +1,12 @@
 name: Build / Publish Workflow
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - 'master'
+      - 'release/*'
+    paths-ignore:
+      - '.github/**'
 
 permissions:
   id-token: write
@@ -36,10 +41,28 @@ jobs:
             echo "No bump commit detected."
           fi
 
+  build-only:
+    name: Build (no publish)
+    runs-on: ubuntu-latest
+    needs: detect-bump
+    if: needs.detect-bump.outputs.is_bump != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build and Test
+        uses: ./.github/action/build
+
+      - name: Done
+        run: echo "Regular commit detected — build and test completed."
+
   create-release-branch-and-publish:
     name: Create release branch (CalVer) and Publish
     runs-on: ubuntu-latest
     needs: detect-bump
+    if: needs.detect-bump.outputs.is_bump == 'true' && github.ref == 'refs/heads/master'
     permissions:
       id-token: write
       contents: write
@@ -94,9 +117,6 @@ jobs:
           node-version: '20'
           registry-url: https://registry.npmjs.org/
           scope: '@celonis'
-
-      - name: Upgrade npm to support Trusted Publishing
-        run: npm install -g npm@^11.5.1
 
       - name: Publish to NPM Registry
         run: |
