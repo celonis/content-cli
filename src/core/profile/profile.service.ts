@@ -37,9 +37,11 @@ export class ProfileService {
                         .then(() => resolve(profile));
                 } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
                     resolve(this.buildProfileFromEnvVariables());
-                } else {
+                } else if (process.env.CELONIS_URL && process.env.CELONIS_API_TOKEN) {
                     this.mapCelonisEnvProfile();
                     resolve(this.buildProfileFromEnvVariables());
+                } else {
+                    reject(`The profile ${profileName} couldn't be resolved due to missing environment variables.`);
                 }
             } catch (e) {
                 reject(`The profile ${profileName} couldn't be resolved.`);
@@ -306,10 +308,6 @@ export class ProfileService {
     }
 
     private mapCelonisEnvProfile(): void {
-        if (!process.env.CELONIS_URL) {
-            return;
-        }
-
         let celonisUrl = process.env.CELONIS_URL;
         if (!celonisUrl.startsWith("http://") && !celonisUrl.startsWith("https://")) {
             celonisUrl = `https://${celonisUrl}`;
