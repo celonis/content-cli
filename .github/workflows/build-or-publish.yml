@@ -118,6 +118,9 @@ jobs:
           registry-url: https://registry.npmjs.org/
           scope: '@celonis'
 
+      - name: Upgrade npm to support Trusted Publishing
+        run: npm install -g npm@11.7.0
+
       - name: Publish to NPM Registry
         run: |
           cd dist/
