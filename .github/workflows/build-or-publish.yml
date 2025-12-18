@@ -119,7 +119,7 @@ jobs:
           scope: '@celonis'
 
       - name: Upgrade npm to support Trusted Publishing
-        run: npm install -g npm@^11.5.1
+        run: npm install -g npm@11.5.1
 
       - name: Publish to NPM Registry
         run: |
