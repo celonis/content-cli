@@ -26,12 +26,8 @@ export class ProfileService {
 
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
-            this.mapCelonisEnvProfile();
-            this.checkIfMissingProfile(profileName, reject);
             try {
-                if (process.env.TEAM_URL && process.env.API_TOKEN) {
-                    resolve(this.buildProfileFromEnvVariables());
-                } else {
+                if (!this.checkIfMissingProfile(profileName)) {
                     const file = fs.readFileSync(
                         path.resolve(this.profileContainerPath, this.constructProfileFileName(profileName)),
                         { encoding: "utf-8" }
@@ -39,6 +35,13 @@ export class ProfileService {
                     const profile : Profile = JSON.parse(file);
                     this.refreshProfile(profile)
                         .then(() => resolve(profile));
+                } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
+                    resolve(this.buildProfileFromEnvVariables());
+                } else if (process.env.CELONIS_URL && process.env.CELONIS_API_TOKEN) {
+                    this.mapCelonisEnvProfile();
+                    resolve(this.buildProfileFromEnvVariables());
+                } else {
+                    reject(`The profile ${profileName} couldn't be resolved due to missing environment variables.`);
                 }
             } catch (e) {
                 reject(`The profile ${profileName} couldn't be resolved.`);
@@ -298,18 +301,18 @@ export class ProfileService {
         })
     }
 
-    private checkIfMissingProfile(profileName: string, reject: any): void {
-        if (!profileName && (!process.env.TEAM_URL || !process.env.API_TOKEN)) {
-            reject("Profile not found");
+    private checkIfMissingProfile(profileName: string): boolean {
+        if (!profileName) {
+            return true;
         }
     }
 
     private mapCelonisEnvProfile(): void {
-        if (!process.env.CELONIS_URL) {
-            return;
+        let celonisUrl = process.env.CELONIS_URL;
+        if (!celonisUrl.startsWith("http://") && !celonisUrl.startsWith("https://")) {
+            celonisUrl = `https://${celonisUrl}`;
         }
-
-        process.env.TEAM_URL = process.env.CELONIS_URL;
+        process.env.TEAM_URL = celonisUrl;
 
         if (process.env.CELONIS_API_TOKEN) {
             process.env.API_TOKEN = process.env.CELONIS_API_TOKEN;
