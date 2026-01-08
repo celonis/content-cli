@@ -497,7 +497,8 @@ describe("Profile Service - Store Profile", () => {
             apiToken: "test-token",
             clientSecret: "client-secret",
             refreshToken: "refresh-token",
-            authenticationType: AuthenticationType.BEARER
+            authenticationType: AuthenticationType.BEARER,
+            secretsStoredSecurely: false
         };
 
         (fs.existsSync as jest.Mock).mockReturnValue(true);
