@@ -91,7 +91,12 @@ export class SecureSecretStorageService {
             return false;
         }
 
-        return await keytarModule.setPassword(service, account, secret);
+        try {
+            await keytarModule.setPassword(service, account, secret);
+            return true;
+        } catch (err) {
+            return false;
+        }
     }
 }
 
