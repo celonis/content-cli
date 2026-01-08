@@ -26,7 +26,7 @@ export class ProfileService {
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
     public async findProfile(profileName: string): Promise<Profile> {
-        return new Promise<Profile>(async (resolve, reject) => {
+        return new Promise<Profile>((resolve, reject) => {
             try {
                 if (!this.checkIfMissingProfile(profileName)) {
                     const file = fs.readFileSync(
@@ -36,18 +36,25 @@ export class ProfileService {
                     const profile : Profile = JSON.parse(file);
 
                     if (profile.secretsStoredSecurely) {
-                        const profileSecureSecrets = await secureSecretStorageService.getSecrets(profileName);
-                        if (profileSecureSecrets) {
-                            profile.apiToken = profileSecureSecrets.apiToken;
-                            profile.refreshToken = profileSecureSecrets.refreshToken;
-                            profile.clientSecret = profileSecureSecrets.clientSecret;
-                        } else {
-                            reject("Failed to read secrets from system keychain.");
-                        }
+                        secureSecretStorageService.getSecrets(profileName)
+                            .then(profileSecureSecrets => {
+                                if (profileSecureSecrets) {
+                                    profile.apiToken = profileSecureSecrets.apiToken;
+                                    profile.refreshToken = profileSecureSecrets.refreshToken;
+                                    profile.clientSecret = profileSecureSecrets.clientSecret;
+                                    this.refreshProfile(profile)
+                                        .then(() => resolve(profile))
+                                        .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
+                                } else {
+                                    reject("Failed to read secrets from system keychain.");
+                                }
+                            })
+                            .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
+                    } else {
+                        this.refreshProfile(profile)
+                            .then(() => resolve(profile))
+                            .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
                     }
-
-                    this.refreshProfile(profile)
-                        .then(() => resolve(profile));
                 } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
                     resolve(this.buildProfileFromEnvVariables());
                 } else if (process.env.CELONIS_URL && process.env.CELONIS_API_TOKEN) {
