@@ -142,25 +142,42 @@ permissions based on how much power you want to give to the key owner.
 
 #### Security Considerations
 
-| ⚠️ **IMPORTANT SECURITY WARNING** |
-|-----------------------------------|
-| Profile credentials (API tokens, OAuth client secrets, and access tokens) are **stored in plaintext** on your local filesystem. **No encryption is applied** to these credentials. |
+| ⚠️ **IMPORTANT SECURITY WARNING**                                                                                                                                                                                                                                                    |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| The CLI attempts to store profile credentials (API tokens, OAuth client secrets, and access tokens) securely using your system's native keychain/credential store. However, if keychain storage fails, credentials **will fall back to plaintext storage** on your local filesystem. |
+
+**Secure Storage (Preferred):**
+- When creating profiles, the CLI automatically attempts to store secrets in your system's secure credential store:
+    - **macOS**: Keychain Access
+    - **Windows**: Windows Credential Manager
+    - **Linux**: libsecret (requires a secret service like GNOME Keyring or KWallet)
+- If successful, secrets are **removed from the profile file** and stored securely in the system keychain
+
+**Fallback to Plaintext Storage:**
+- If keychain storage fails (e.g., keychain unavailable, permission denied, or unsupported system), secrets **will be stored in plaintext** in the profile file
+- A warning message will be displayed: `⚠️ Failed to store secrets securely. They will be stored in plain text file.`
+- For profiles with plaintext secrets, you may see a warning when accessing them: `⚠️ Profile secrets are stored as plain-text insecurely. Consider re-creating the profile to save the secrets securely.`
 
 **Storage Location:**
-- **Linux/macOS:
-  - ** `~/.celonis-content-cli-profiles`
-  - ** `~/.celonis-content-cli-git-profiles`
-- **Windows:
-  - ** `%USERPROFILE%\.celonis-content-cli-profiles`
-  - ** `%USERPROFILE%\.celonis-content-cli-git-profiles`
+- **Profile files** (may contain non-sensitive data if secrets are stored securely):
+    - **Linux/macOS**: `~/.celonis-content-cli-profiles`
+    - **Windows**: `%USERPROFILE%\.celonis-content-cli-profiles`
+- **Secure secrets** (when successfully stored):
+    - Stored in your system's native credential manager/keychain
+    - Service name: `celonis-content-cli:<profile-name>`
 
 **Protection Mechanisms:**
-The security of your credentials relies **entirely on native operating system filesystem permissions**. The CLI does not provide additional encryption. 
+- **For securely stored profiles**: Secrets are protected by your system's keychain security (typically requires user authentication or system-level access)
+- **For plaintext profiles**: Security relies **entirely on native operating system filesystem permissions**
 
-Ensure that:
-- Your user account and filesystem are properly secured
-- File permissions restrict access to your user account only
-- You use appropriate security measures on shared or multi-user systems
+**Best Practices:**
+- Ensure your system keychain is properly configured and accessible
+- If you see warnings about plaintext storage, consider re-creating the profile to enable secure storage
+- Ensure that:
+    - Your user account and filesystem are properly secured
+    - File permissions restrict access to your user account only
+    - You use appropriate security measures on shared or multi-user systems
+    - Your system keychain is locked when not in use
 
 #### When to create profiles
 

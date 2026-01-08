@@ -9,6 +9,7 @@ import { FatalError, logger } from "../utils/logger";
 import { Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
+import { secureSecretStorageService } from "./secret-storage.service";
 
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
@@ -25,7 +26,7 @@ export class ProfileService {
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
     public async findProfile(profileName: string): Promise<Profile> {
-        return new Promise<Profile>((resolve, reject) => {
+        return new Promise<Profile>(async (resolve, reject) => {
             try {
                 if (!this.checkIfMissingProfile(profileName)) {
                     const file = fs.readFileSync(
@@ -33,6 +34,18 @@ export class ProfileService {
                         { encoding: "utf-8" }
                     );
                     const profile : Profile = JSON.parse(file);
+
+                    if (profile.secretsStoredSecurely) {
+                        const profileSecureSecrets = await secureSecretStorageService.getSecrets(profileName);
+                        if (profileSecureSecrets) {
+                            profile.apiToken = profileSecureSecrets.apiToken;
+                            profile.refreshToken = profileSecureSecrets.refreshToken;
+                            profile.clientSecret = profileSecureSecrets.clientSecret;
+                        } else {
+                            reject("Failed to read secrets from system keychain.");
+                        }
+                    }
+
                     this.refreshProfile(profile)
                         .then(() => resolve(profile));
                 } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
@@ -73,10 +86,21 @@ export class ProfileService {
         }
     }
 
-    public storeProfile(profile: Profile): void {
+    public async storeProfile(profile: Profile): Promise<void> {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
         profile.team = this.getBaseTeamUrl(profile.team);
+
+        const secretsStoredInKeychain = await secureSecretStorageService.storeSecrets(profile);
+
+        // Remove secrets from plain text storage if they were successfully stored in system keychain
+        if (secretsStoredInKeychain) {
+            profile.secretsStoredSecurely = true;
+            delete profile.apiToken;
+            delete profile.refreshToken;
+            delete profile.clientSecret;
+        }
+
         fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
         });
@@ -254,7 +278,7 @@ export class ProfileService {
             }
         }
 
-        this.storeProfile(profile);
+        await this.storeProfile(profile);
     }
 
     private getProfileEnvVariables(): any {

@@ -34,7 +34,7 @@ export class ProfileCommandService {
             profile.authenticationType = await ProfileValidator.validateProfile(profile);
             await this.profileService.authorizeProfile(profile);
 
-            this.profileService.storeProfile(profile);
+            await this.profileService.storeProfile(profile);
             if (setAsDefault) {
                 await this.makeDefaultProfile(profile.name);
             }
