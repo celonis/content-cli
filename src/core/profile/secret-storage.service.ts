@@ -1,4 +1,3 @@
-import * as keytar from "keytar";
 import { Profile, ProfileSecrets } from "./profile.interface";
 import { logger } from "../utils/logger";
 
@@ -9,6 +8,26 @@ enum PROFILE_SECRET_TYPE {
 }
 
 const CONTENT_CLI_SERVICE_NAME = "celonis-content-cli";
+
+// Lazy load keytar to handle cases where native dependencies are not available
+let keytar: any = null;
+let keytarLoadError: Error | null = null;
+
+function getKeytar(): any {
+    if (keytar !== null) {
+        return keytar;
+    }
+    if (keytarLoadError !== null) {
+        return null;
+    }
+    try {
+        keytar = require("keytar");
+        return keytar;
+    } catch (error) {
+        keytarLoadError = error as Error;
+        return null;
+    }
+}
 
 export class SecureSecretStorageService {
 
@@ -42,20 +61,29 @@ export class SecureSecretStorageService {
     }
 
     public async getSecrets(profileName: string): Promise<ProfileSecrets | undefined> {
-        const secrets = await keytar.findCredentials(this.getSecretServiceName(profileName));
-
-        if (!secrets.length) {
-            logger.warn("⚠️ Profile secrets are stored as plain-text insecurely. Consider re-creating the profile to save the secrets securely.");
+        const keytarModule = getKeytar();
+        if (!keytarModule) {
             return undefined;
         }
 
-        const profileSecrets = {};
+        try {
+            const secrets = await keytarModule.findCredentials(this.getSecretServiceName(profileName));
 
-        for (const secret of secrets) {
-            profileSecrets[secret.account] = secret.password
+            if (!secrets.length) {
+                logger.warn("⚠️ Profile secrets are stored as plain-text insecurely. Consider re-creating the profile to save the secrets securely.");
+                return undefined;
+            }
+
+            const profileSecrets = {};
+
+            for (const secret of secrets) {
+                profileSecrets[secret.account] = secret.password
+            }
+
+            return profileSecrets as ProfileSecrets;
+        } catch (error) {
+            return undefined;
         }
-
-        return profileSecrets as ProfileSecrets;
     }
 
     private getSecretServiceName(profileName: string): string {
@@ -63,8 +91,13 @@ export class SecureSecretStorageService {
     }
 
     private async storeSecret(service: string, account: string, secret: string): Promise<boolean> {
+        const keytarModule = getKeytar();
+        if (!keytarModule) {
+            return false;
+        }
+
         try {
-            await keytar.setPassword(service, account, secret);
+            await keytarModule.setPassword(service, account, secret);
             return true;
         } catch (error) {
             return false;
