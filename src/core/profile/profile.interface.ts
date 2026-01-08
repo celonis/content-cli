@@ -1,14 +1,18 @@
-export interface Profile {
+export interface ProfileSecrets {
+    apiToken: string;
+    clientSecret?: string;
+    refreshToken?: string;
+    secretsStoredSecurely?: boolean;
+}
+
+export interface Profile extends ProfileSecrets{
     name: string;
     team: string;
     type: ProfileType;
-    apiToken: string;
     authenticationType: AuthenticationType;
     clientId?: string;
-    clientSecret?: string;
     scopes?: string[];
     clientAuthenticationMethod?: ClientAuthenticationMethod;
-    refreshToken?: string;
     expiresAt?: number;
 }
 
