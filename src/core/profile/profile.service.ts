@@ -96,19 +96,24 @@ export class ProfileService {
     public async storeProfile(profile: Profile): Promise<void> {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
-        profile.team = this.getBaseTeamUrl(profile.team);
+        
+        // Create a copy of the profile to avoid mutating the input
+        const profileToStore: Profile = { ...profile };
+        profileToStore.team = this.getBaseTeamUrl(profile.team);
 
-        const secretsStoredInKeychain = await secureSecretStorageService.storeSecrets(profile);
+        const secretsStoredInKeychain = await secureSecretStorageService.storeSecrets(profileToStore);
 
         // Remove secrets from plain text storage if they were successfully stored in system keychain
         if (secretsStoredInKeychain) {
-            profile.secretsStoredSecurely = true;
-            delete profile.apiToken;
-            delete profile.refreshToken;
-            delete profile.clientSecret;
+            profileToStore.secretsStoredSecurely = true;
+            delete profileToStore.apiToken;
+            delete profileToStore.refreshToken;
+            delete profileToStore.clientSecret;
+        } else {
+            profileToStore.secretsStoredSecurely = false;
         }
 
-        fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
+        fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profileToStore), {
             encoding: "utf-8",
         });
     }
