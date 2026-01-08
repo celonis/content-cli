@@ -66,24 +66,19 @@ export class SecureSecretStorageService {
             return undefined;
         }
 
-        try {
-            const secrets = await keytarModule.findCredentials(this.getSecretServiceName(profileName));
+        const secrets = await keytarModule.findCredentials(this.getSecretServiceName(profileName));
 
-            if (!secrets.length) {
-                logger.warn("⚠️ Profile secrets are stored as plain-text insecurely. Consider re-creating the profile to save the secrets securely.");
-                return undefined;
-            }
-
-            const profileSecrets = {};
-
-            for (const secret of secrets) {
-                profileSecrets[secret.account] = secret.password
-            }
-
-            return profileSecrets as ProfileSecrets;
-        } catch (error) {
+        if (!secrets.length) {
             return undefined;
         }
+
+        const profileSecrets = {};
+
+        for (const secret of secrets) {
+            profileSecrets[secret.account] = secret.password
+        }
+
+        return profileSecrets as ProfileSecrets;
     }
 
     private getSecretServiceName(profileName: string): string {
@@ -96,12 +91,7 @@ export class SecureSecretStorageService {
             return false;
         }
 
-        try {
-            await keytarModule.setPassword(service, account, secret);
-            return true;
-        } catch (error) {
-            return false;
-        }
+        return await keytarModule.setPassword(service, account, secret);
     }
 }
 
