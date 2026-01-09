@@ -5,7 +5,7 @@ export interface ProfileSecrets {
     secretsStoredSecurely?: boolean;
 }
 
-export interface Profile extends ProfileSecrets{
+export interface Profile extends ProfileSecrets {
     name: string;
     team: string;
     type: ProfileType;

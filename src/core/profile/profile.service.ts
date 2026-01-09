@@ -9,7 +9,7 @@ import { FatalError, logger } from "../utils/logger";
 import { Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
-import { secureSecretStorageService } from "./secret-storage.service";
+import { SecureSecretStorageService } from "./secret-storage.service";
 
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
@@ -25,6 +25,8 @@ export class ProfileService {
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
+    private secureSecretStorageService = new SecureSecretStorageService();
+
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
             try {
@@ -36,7 +38,7 @@ export class ProfileService {
                     const profile : Profile = JSON.parse(file);
 
                     if (profile.secretsStoredSecurely) {
-                        secureSecretStorageService.getSecrets(profileName)
+                        this.secureSecretStorageService.getSecrets(profileName)
                             .then(profileSecureSecrets => {
                                 if (profileSecureSecrets) {
                                     profile.apiToken = profileSecureSecrets.apiToken;
@@ -101,7 +103,7 @@ export class ProfileService {
         const profileToStore: Profile = { ...profile };
         profileToStore.team = this.getBaseTeamUrl(profile.team);
 
-        const secretsStoredInKeychain = await secureSecretStorageService.storeSecrets(profileToStore);
+        const secretsStoredInKeychain = await this.secureSecretStorageService.storeSecrets(profileToStore);
 
         // Remove secrets from plain text storage if they were successfully stored in system keychain
         if (secretsStoredInKeychain) {
@@ -358,4 +360,3 @@ export class ProfileService {
     }
 }
 
-export const profileService = new ProfileService();

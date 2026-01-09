@@ -10,15 +10,17 @@ jest.mock("os", () => ({
     homedir: jest.fn(() => mockHomedir)
 }));
 
+const mockStoreSecrets = jest.fn();
+const mockGetSecrets = jest.fn();
+
 jest.mock("../../../src/core/profile/secret-storage.service", () => ({
-    secureSecretStorageService: {
-        storeSecrets: jest.fn(),
-        getSecrets: jest.fn()
-    }
+    SecureSecretStorageService: jest.fn().mockImplementation(() => ({
+        storeSecrets: mockStoreSecrets,
+        getSecrets: mockGetSecrets
+    }))
 }));
 
 import { ProfileService } from "../../../src/core/profile/profile.service";
-import { secureSecretStorageService } from "../../../src/core/profile/secret-storage.service";
 
 describe("ProfileService - mapCelonisEnvProfile", () => {
     let profileService: ProfileService;
@@ -29,6 +31,10 @@ describe("ProfileService - mapCelonisEnvProfile", () => {
 
     beforeEach(() => {
         profileService = new ProfileService();
+        
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+        
         originalCelonisUrl = process.env.CELONIS_URL;
         originalCelonisApiToken = process.env.CELONIS_API_TOKEN;
         originalTeamUrl = process.env.TEAM_URL;
@@ -227,6 +233,10 @@ describe("ProfileService - findProfile", () => {
     beforeEach(() => {
         (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
         profileService = new ProfileService();
+        
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+        
         originalCelonisUrl = process.env.CELONIS_URL;
         originalCelonisApiToken = process.env.CELONIS_API_TOKEN;
         originalTeamUrl = process.env.TEAM_URL;
@@ -480,6 +490,9 @@ describe("Profile Service - Store Profile", () => {
     beforeEach(() => {
         profileService = new ProfileService();
 
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+
         (fs.existsSync as jest.Mock).mockReturnValue(false);
         (fs.mkdirSync as jest.Mock).mockImplementation(() => void 0);
         (fs.writeFileSync as jest.Mock).mockImplementation(() => void 0);
@@ -502,7 +515,7 @@ describe("Profile Service - Store Profile", () => {
         };
 
         (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (secureSecretStorageService.storeSecrets as jest.Mock).mockResolvedValue(false);
+        mockStoreSecrets.mockResolvedValue(false);
 
         await profileService.storeProfile(profile);
 
@@ -531,7 +544,7 @@ describe("Profile Service - Store Profile", () => {
         };
 
         (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (secureSecretStorageService.storeSecrets as jest.Mock).mockResolvedValue(true);
+        mockStoreSecrets.mockResolvedValue(true);
 
         await profileService.storeProfile(profile);
 
@@ -551,6 +564,9 @@ describe("Profile Service - Find Profile", () => {
 
     beforeEach(() => {
         profileService = new ProfileService();
+
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
 
         // Clear environment variables to avoid env-based profile resolution
         delete process.env.TEAM_URL;
@@ -590,11 +606,11 @@ describe("Profile Service - Find Profile", () => {
         };
 
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(storedProfile));
-        (secureSecretStorageService.getSecrets as jest.Mock).mockResolvedValue(secureSecrets);
+        mockGetSecrets.mockResolvedValue(secureSecrets);
 
         const profile = await profileService.findProfile(profileName);
 
-        expect(secureSecretStorageService.getSecrets).toHaveBeenCalledWith(profileName);
+        expect(mockGetSecrets).toHaveBeenCalledWith(profileName);
         expect(profile.name).toBe(profileName);
         expect(profile.team).toBe("https://test-team.celonis.cloud");
         expect(profile.apiToken).toBe(secureSecrets.apiToken);
@@ -619,7 +635,7 @@ describe("Profile Service - Find Profile", () => {
 
         const profile = await profileService.findProfile(profileName);
 
-        expect(secureSecretStorageService.getSecrets).not.toHaveBeenCalled();
+        expect(mockGetSecrets).not.toHaveBeenCalled();
         expect(profile.name).toBe(profileName);
         expect(profile.team).toBe("https://test-team.celonis.cloud");
         expect(profile.apiToken).toBe(storedProfile.apiToken);
@@ -639,10 +655,10 @@ describe("Profile Service - Find Profile", () => {
         };
 
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(storedProfile));
-        (secureSecretStorageService.getSecrets as jest.Mock).mockResolvedValue(undefined);
+        mockGetSecrets.mockResolvedValue(undefined);
 
         await expect(profileService.findProfile(profileName)).rejects.toBe("Failed to read secrets from system keychain.");
-        expect(secureSecretStorageService.getSecrets).toHaveBeenCalledWith(profileName);
+        expect(mockGetSecrets).toHaveBeenCalledWith(profileName);
     });
 });
 
