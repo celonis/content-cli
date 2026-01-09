@@ -99,5 +99,3 @@ export class SecureSecretStorageService {
         }
     }
 }
-
-export const secureSecretStorageService = new SecureSecretStorageService();
