@@ -44,12 +44,4 @@ export class PackageCommandService {
             await this.packageService.listPackages();
         }
     }
-
-    public async batchExportPackages(packageKeys: string[], includeDependencies: boolean, excludeActionFlows?: boolean): Promise<void> {
-        await this.packageService.batchExportPackages(packageKeys, includeDependencies, excludeActionFlows);
-    }
-
-    public async batchImportPackages(spaceMappings: string[], dataModelMappingsFilePath: string, exportedPackagesFile: string, overwrite: boolean, excludeActionFlows?: boolean): Promise<void> {
-        await this.packageService.batchImportPackages(spaceMappings ?? [], dataModelMappingsFilePath, exportedPackagesFile, overwrite, excludeActionFlows);
-    }
 }
