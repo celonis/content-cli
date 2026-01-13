@@ -1,30 +1,16 @@
 import {v4 as uuidv4} from "uuid";
-import * as fs from "fs";
-import AdmZip = require("adm-zip");
-import * as path from "path";
-import {tmpdir} from "os";
-import * as FormData from "form-data";
 import { Context } from "../../../core/command/cli-context";
 import { PackageApi } from "../api/package-api";
-import { FatalError, logger } from "../../../core/utils/logger";
+import { logger } from "../../../core/utils/logger";
 import {
-    ContentNodeTransport,
     PackageDependencyTransport,
     PackageManagerVariableType,
 } from "../interfaces/package-manager.interfaces";
-import { DataPoolInstallVersionReport } from "../../data-pipeline/data-pool/data-pool-manager.interfaces";
 import { FileService, fileService } from "../../../core/utils/file-service";
 import { BatchExportNodeTransport } from "../interfaces/batch-export-node.interfaces";
-import { ManifestDependency, ManifestNodeTransport } from "../interfaces/manifest.interface";
-import { parse } from "../../../core/utils/yaml";
-import { stringify } from "yaml";
-import { SemanticVersioning } from "../utils/semantic-versioning";
-import { SpaceTransport } from "../interfaces/space.interface";
-import { NodeApi } from "../api/node-api";
 import { PackageDependenciesApi } from "../api/package-dependencies-api";
 import { DataModelService } from "./data-model.service";
 import { StudioVariableService } from "./studio-variable.service";
-import { SpaceService } from "./space.service";
 
 export class PackageService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
