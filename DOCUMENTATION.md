@@ -652,6 +652,8 @@ Finally, the result of this command will be a list of PostPackageImportData expo
 info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
+**Handling Unpublished Changes**: If the target environment contains unpublished changes during an import, they are automatically saved as a new version. This allows you to audit, compare, or roll back to your previous state via the version history if needed.
+
 ### Listing & Mapping Variables
 
 #### Listing package variables
