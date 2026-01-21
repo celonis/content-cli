@@ -632,7 +632,7 @@ If importing from a directory containing the exported packages, the following co
 content-cli config import -p <sourceProfile> -d <relative exported directory file path> 
 ```
 Where ```-d``` is the shorthand operation for ```--directory```.  
-When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages.
+When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages. If the package in target environment contains unpublished changes, they are automatically saved under a new version. This allows you to audit, compare, or roll back to your previous state via the version history if needed.
 ```
 content-cli config import -p <sourceProfile> -f <file path> --overwrite
 ```
@@ -651,9 +651,6 @@ Finally, the result of this command will be a list of PostPackageImportData expo
 ```
 info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
-
-**Handling Unpublished Changes**: If the target environment contains unpublished changes during an import, they are automatically saved as a new version. This allows you to audit, compare, or roll back to your previous state via the version history if needed.
-
 ### Listing & Mapping Variables
 
 #### Listing package variables
