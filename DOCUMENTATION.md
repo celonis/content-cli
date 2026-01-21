@@ -10,8 +10,6 @@
         -   [Pull package for Celonis Marketplace](#pull-package-for-celonis-marketplace)
     -   [Pull/Push individual assets from/to Studio](#pullpush-individual-assets-fromto-studio)
     -   [Overwrite Package In Studio](#overwrite-package-in-studio)
-    -   [Batch Export packages from Studio](#export-multiple-packages-at-once-from-studio)
-    -   [Batch import packages into Studio](#importing-multiple-packages-into-studio)
     -   [List all spaces in Studio](#list-all-spaces-in-studio)
     -   [List all packages in Studio](#list-all-packages-in-studio)
     -   [List assignments](#list-assignments)
@@ -390,70 +388,6 @@ When you use overwrite the following is to be taken into consideration:
 ```
 // Overwrite a Package
 content-cli push package -p my-profile-name --spaceKey my-space -f <path-to-my-local-package> --overwrite
-```
-
-### Batch export packages from Studio
-
-You can use the export packages command to batch export packages from studio.
-
-```
-//Batch export packages
-content-cli export packages -p <profileName> --packageKeys <package1> <package2>
-```
-
-You can use the --includeDependencies flag to also export the dependencies of the specified packages.
-
-```
-//Batch export packages with dependencies
-content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies
-```
-
-If you don't want to export any Action Flows with the packages you can use --excludeActionFlows flag
-
-```
-//Batch export packages with excluded Action Flows
-content-cli export packages -p <profileName> --packageKeys <package1> <package2> --includeDependencies --excludeActionFlows
-```
-
-### Batch import packages into Studio
-
-You can use the `import packages` command to batch import packages that were exported using `export packages` at once into studio.
-
-```
-//Batch import packages
-content-cli import packages -p <profileName> --file <exportedPackagesFile>
-```
-
-You can also use the `--spaceMappings` flag to provide a mapping of packages to spaces in target team:
-
-```
-// Example usage of spaceMappings
-content-cli import packages -p <profileName> --file <exportedPackagesFile> --spaceMappings <packageKey1>:<targetSpaceKey1> <packageKey2>:<targetSpaceKey2> ...
-```
-
-By default, all imported package variables will be assigned values as defined in the `manifest.yml` file of the exported packages. 
-Alternatively, if you want to update only the dataModel variables, you can do so by using the --dataModelMappingsFile option and 
-providing the output file from the data pool import command.
-
-```
-// Example usage of dataModelMappingsFile
-content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile>
-```
-
-**Note: The --dataModelMappingsFile option is deprecated and will be removed in future releases.**
-
-By default, you can not overwrite a package in the target team. To do this you can use the overwrite flag --overwrite
-
-```
-// Example usage of dataModelMappingsFile
-content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> --overwrite
-```
-
-If you want to overwrite a package but not the Action Flows inside that package you can use the --excludeActionFlows flag
-
-```
-// Example usage of excludeActionFlows
-content-cli import packages -p <profileName> --file <exportedPackagesFile> --dataModelMappingsFile <dataModelMappingsFile> --overwrite --excludeActionFlows
 ```
 
 ### List all spaces in Studio
