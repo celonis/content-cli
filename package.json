@@ -12,6 +12,8 @@
   "scripts": {
     "build": "./node_modules/.bin/tsc && cp package.json dist/package.json",
     "lint": "tslint -p .",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\" \"*.json\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\" \"*.ts\" \"*.json\"",
     "test": "jest"
   },
   "engines": {
