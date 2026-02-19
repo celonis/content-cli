@@ -50,6 +50,9 @@
   "resolutions": {
     "glob": "10.0.0"
   },
+  "prettier": {
+    "arrowParens": "avoid"
+  },
   "lint-staged": {
     "src/**/*.ts": [
       "prettier --write",
