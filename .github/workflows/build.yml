@@ -12,6 +12,8 @@ jobs:
     - uses: actions/setup-node@v1
       with:
         node-version: '20'
+    - name: Lint
+      run: yarn format:check
     - name: Yarn Install
       run: yarn install
     - name: Yarn Build
