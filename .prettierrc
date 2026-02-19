@@ -2,5 +2,8 @@
     "printWidth": 120,
     "trailingComma": "es5",
     "tabWidth": 4,
-    "semi": true
+    "semi": true,
+    "quoteProps": "preserve",
+    "bracketSpacing": false,
+    "arrowParens": "avoid"
 }

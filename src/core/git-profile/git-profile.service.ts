@@ -1,154 +1,132 @@
 import * as path from "path";
 import * as fs from "fs";
-import { FatalError, logger } from "../utils/logger";
+import {FatalError, logger} from "../utils/logger";
 import os = require("os");
-import { AuthenticationType, GitProfile } from "./git-profile.interface";
-import { GitProfileValidator } from "./git-profile.validator";
+import {AuthenticationType, GitProfile} from "./git-profile.interface";
+import {GitProfileValidator} from "./git-profile.validator";
 
 export interface GitConfig {
-  defaultProfile: string;
+    defaultProfile: string;
 }
 
 export class GitProfileService {
-  private readonly homedir: string = os.homedir();
-  private readonly gitProfileContainerPath = path.resolve(
-    this.homedir,
-    ".celonis-content-cli-git-profiles",
-  );
-  private readonly configContainer = path.resolve(
-    this.gitProfileContainerPath,
-    "config.json",
-  );
-  private static readonly INVALID_FILENAME_CHARS = /[\/\\:*?"<>|.]/;
+    private readonly homedir: string = os.homedir();
+    private readonly gitProfileContainerPath = path.resolve(this.homedir, ".celonis-content-cli-git-profiles");
+    private readonly configContainer = path.resolve(this.gitProfileContainerPath, "config.json");
+    private static readonly INVALID_FILENAME_CHARS = /[\/\\:*?"<>|.]/;
 
-  public async findProfile(profileName: string): Promise<GitProfile> {
-    return new Promise<GitProfile>((resolve, reject) => {
-      if (
-        process.env.GIT_USERNAME &&
-        process.env.GIT_TOKEN &&
-        process.env.GIT_REPOSITORY
-      ) {
-        resolve(this.buildProfileFromEnvVariables());
-      } else {
-        if (!profileName) {
-          reject(new Error("No profile was found"));
-        }
-        this.createProfileContainerIfNotExists();
-        const file = fs.readFileSync(
-          path.resolve(
-            this.gitProfileContainerPath,
-            this.constructProfileFileName(profileName),
-          ),
-          { encoding: "utf-8" },
-        );
-        const profile: GitProfile = JSON.parse(file);
-        resolve(profile);
-      }
-    });
-  }
-
-  public async makeDefaultProfile(profileName: string): Promise<GitProfile> {
-    return new Promise<GitProfile>((resolve, reject) => {
-      this.findProfile(profileName)
-        .then((profile: GitProfile) => {
-          this.createProfileContainerIfNotExists();
-          this.storeConfig({ defaultProfile: profileName });
-          resolve(profile);
-        })
-        .catch(err => {
-          logger.error(new FatalError("Git Profile does not exist."));
-          reject(err);
+    public async findProfile(profileName: string): Promise<GitProfile> {
+        return new Promise<GitProfile>((resolve, reject) => {
+            if (process.env.GIT_USERNAME && process.env.GIT_TOKEN && process.env.GIT_REPOSITORY) {
+                resolve(this.buildProfileFromEnvVariables());
+            } else {
+                if (!profileName) {
+                    reject(new Error("No profile was found"));
+                }
+                this.createProfileContainerIfNotExists();
+                const file = fs.readFileSync(
+                    path.resolve(this.gitProfileContainerPath, this.constructProfileFileName(profileName)),
+                    {encoding: "utf-8"}
+                );
+                const profile: GitProfile = JSON.parse(file);
+                resolve(profile);
+            }
         });
-    });
-  }
-
-  public getDefaultProfile(): string {
-    if (fs.existsSync(this.configContainer)) {
-      const config = JSON.parse(
-        fs.readFileSync(this.configContainer, { encoding: "utf-8" }),
-      ) as GitConfig;
-      return config.defaultProfile;
-    } else {
-      return null;
     }
-  }
 
-  public storeProfile(profile: GitProfile): void {
-    this.createProfileContainerIfNotExists();
-    const newProfileFileName = this.constructProfileFileName(profile.name);
-    fs.writeFileSync(
-      path.resolve(this.gitProfileContainerPath, newProfileFileName),
-      JSON.stringify(profile),
-      {
-        encoding: "utf-8",
-      },
-    );
-  }
-
-  public validateProfileName(name: string): void {
-    if (GitProfileService.INVALID_FILENAME_CHARS.test(name)) {
-      throw new Error(
-        `Invalid profile name "${name}". The following characters are not allowed: / \\ : * ? " < > |`,
-      );
+    public async makeDefaultProfile(profileName: string): Promise<GitProfile> {
+        return new Promise<GitProfile>((resolve, reject) => {
+            this.findProfile(profileName)
+                .then((profile: GitProfile) => {
+                    this.createProfileContainerIfNotExists();
+                    this.storeConfig({defaultProfile: profileName});
+                    resolve(profile);
+                })
+                .catch(err => {
+                    logger.error(new FatalError("Git Profile does not exist."));
+                    reject(err);
+                });
+        });
     }
-  }
 
-  private async buildProfileFromEnvVariables(): Promise<GitProfile> {
-    const profileVariables = this.getProfileEnvVariables();
-    const profile: GitProfile = {
-      name: "env-profile",
-      username: profileVariables.username,
-      repository: profileVariables.repository,
-      token: profileVariables.token,
-      authenticationType: AuthenticationType.HTTPS,
-    };
-    profile.authenticationType =
-      await GitProfileValidator.validateProfile(profile);
-    return profile;
-  }
-
-  private storeConfig(config: GitConfig): void {
-    fs.writeFileSync(this.configContainer, JSON.stringify(config), {
-      encoding: "utf-8",
-    });
-  }
-
-  private createProfileContainerIfNotExists(): void {
-    if (!fs.existsSync(this.gitProfileContainerPath)) {
-      fs.mkdirSync(this.gitProfileContainerPath);
+    public getDefaultProfile(): string {
+        if (fs.existsSync(this.configContainer)) {
+            const config = JSON.parse(fs.readFileSync(this.configContainer, {encoding: "utf-8"})) as GitConfig;
+            return config.defaultProfile;
+        } else {
+            return null;
+        }
     }
-  }
 
-  private constructProfileFileName(profileName: string): string {
-    return profileName + ".json";
-  }
-
-  public readAllProfiles(): string[] {
-    let fileNames: string[] = [];
-    try {
-      if (fs.existsSync(this.gitProfileContainerPath)) {
-        fileNames = fs
-          // @ts-ignore
-          .readdirSync(this.gitProfileContainerPath, { withFileTypes: true })
-          .filter(
-            dirent =>
-              !dirent.isDirectory() &&
-              dirent.name.endsWith(".json") &&
-              dirent.name !== "config.json",
-          )
-          .map(dirent => dirent.name.replace(".json", ""));
-      }
-    } catch (err) {
-      logger.error(new FatalError(err));
+    public storeProfile(profile: GitProfile): void {
+        this.createProfileContainerIfNotExists();
+        const newProfileFileName = this.constructProfileFileName(profile.name);
+        fs.writeFileSync(path.resolve(this.gitProfileContainerPath, newProfileFileName), JSON.stringify(profile), {
+            encoding: "utf-8",
+        });
     }
-    return fileNames;
-  }
 
-  private getProfileEnvVariables(): any {
-    return {
-      username: process.env.GIT_USERNAME,
-      token: process.env.GIT_TOKEN,
-      repository: process.env.GIT_REPOSITORY,
-    };
-  }
+    public validateProfileName(name: string): void {
+        if (GitProfileService.INVALID_FILENAME_CHARS.test(name)) {
+            throw new Error(
+                `Invalid profile name "${name}". The following characters are not allowed: / \\ : * ? " < > |`
+            );
+        }
+    }
+
+    private async buildProfileFromEnvVariables(): Promise<GitProfile> {
+        const profileVariables = this.getProfileEnvVariables();
+        const profile: GitProfile = {
+            name: "env-profile",
+            username: profileVariables.username,
+            repository: profileVariables.repository,
+            token: profileVariables.token,
+            authenticationType: AuthenticationType.HTTPS,
+        };
+        profile.authenticationType = await GitProfileValidator.validateProfile(profile);
+        return profile;
+    }
+
+    private storeConfig(config: GitConfig): void {
+        fs.writeFileSync(this.configContainer, JSON.stringify(config), {
+            encoding: "utf-8",
+        });
+    }
+
+    private createProfileContainerIfNotExists(): void {
+        if (!fs.existsSync(this.gitProfileContainerPath)) {
+            fs.mkdirSync(this.gitProfileContainerPath);
+        }
+    }
+
+    private constructProfileFileName(profileName: string): string {
+        return profileName + ".json";
+    }
+
+    public readAllProfiles(): string[] {
+        let fileNames: string[] = [];
+        try {
+            if (fs.existsSync(this.gitProfileContainerPath)) {
+                fileNames = fs
+                    // @ts-ignore
+                    .readdirSync(this.gitProfileContainerPath, {withFileTypes: true})
+                    .filter(
+                        dirent =>
+                            !dirent.isDirectory() && dirent.name.endsWith(".json") && dirent.name !== "config.json"
+                    )
+                    .map(dirent => dirent.name.replace(".json", ""));
+            }
+        } catch (err) {
+            logger.error(new FatalError(err));
+        }
+        return fileNames;
+    }
+
+    private getProfileEnvVariables(): any {
+        return {
+            username: process.env.GIT_USERNAME,
+            token: process.env.GIT_TOKEN,
+            repository: process.env.GIT_REPOSITORY,
+        };
+    }
 }

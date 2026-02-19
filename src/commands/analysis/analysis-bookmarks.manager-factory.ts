@@ -1,38 +1,38 @@
 import * as fs from "fs";
 import * as path from "path";
-import { AnalysisBookmarksManager } from "./analysis-bookmarks.manager";
-import { FatalError, logger } from "../../core/utils/logger";
-import { Context } from "../../core/command/cli-context";
+import {AnalysisBookmarksManager} from "./analysis-bookmarks.manager";
+import {FatalError, logger} from "../../core/utils/logger";
+import {Context} from "../../core/command/cli-context";
 
 export class AnalysisBookmarksManagerFactory {
-  private readonly context: Context;
+    private readonly context: Context;
 
-  constructor(context: Context) {
-    this.context = context;
-  }
-
-  public createAnalysisBookmarksManager(
-    filename: string,
-    analysisId: string,
-    type?: string,
-  ): AnalysisBookmarksManager {
-    const analysisBookmarksManager = new AnalysisBookmarksManager(this.context);
-    analysisBookmarksManager.analysisId = analysisId;
-    if (type === undefined || type === null) {
-      type = "user";
+    constructor(context: Context) {
+        this.context = context;
     }
 
-    analysisBookmarksManager.type = type;
-    if (filename !== null) {
-      analysisBookmarksManager.fileName = this.readFile(filename);
-    }
-    return analysisBookmarksManager;
-  }
+    public createAnalysisBookmarksManager(
+        filename: string,
+        analysisId: string,
+        type?: string
+    ): AnalysisBookmarksManager {
+        const analysisBookmarksManager = new AnalysisBookmarksManager(this.context);
+        analysisBookmarksManager.analysisId = analysisId;
+        if (type === undefined || type === null) {
+            type = "user";
+        }
 
-  private readFile(fileName: string): string {
-    if (!fs.existsSync(path.resolve(process.cwd(), fileName))) {
-      logger.error(new FatalError("The provided file does not exist"));
+        analysisBookmarksManager.type = type;
+        if (filename !== null) {
+            analysisBookmarksManager.fileName = this.readFile(filename);
+        }
+        return analysisBookmarksManager;
     }
-    return path.resolve(process.cwd(), fileName);
-  }
+
+    private readFile(fileName: string): string {
+        if (!fs.existsSync(path.resolve(process.cwd(), fileName))) {
+            logger.error(new FatalError("The provided file does not exist"));
+        }
+        return path.resolve(process.cwd(), fileName);
+    }
 }

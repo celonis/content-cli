@@ -1,21 +1,17 @@
 {
-  "extends": [
-    "tslint:recommended",
-    "tslint-consistent-codestyle",
-    "tslint-config-prettier"
-  ],
-  "rules": {
-    "interface-name": false,
-    "member-ordering": false,
-    "no-use-before-declare": false,
-    "object-literal-shorthand": false,
-    "object-literal-sort-keys": false,
-    "ordered-imports": false,
-    "no-var-keyword": true,
-    "variable-name": [true, "allow-leading-underscore"],
-    "arrow-parens": [true, "ban-single-arg-parens"],
-    "member-access": [true, "check-accessor"],
-    "quotemark": [true, "double", "avoid-escape", "avoid-template"],
-    "typedef": [true, "call-signature", "parameter", "property-declaration"]
-  }
+    "extends": ["tslint:recommended", "tslint-consistent-codestyle", "tslint-config-prettier"],
+    "rules": {
+        "interface-name": false,
+        "member-ordering": false,
+        "no-use-before-declare": false,
+        "object-literal-shorthand": false,
+        "object-literal-sort-keys": false,
+        "ordered-imports": false,
+        "no-var-keyword": true,
+        "variable-name": [true, "allow-leading-underscore"],
+        "arrow-parens": [true, "ban-single-arg-parens"],
+        "member-access": [true, "check-accessor"],
+        "quotemark": [true, "double", "avoid-escape", "avoid-template"],
+        "typedef": [true, "call-signature", "parameter", "property-declaration"]
+    }
 }

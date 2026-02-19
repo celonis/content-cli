@@ -1,68 +1,61 @@
-import { QuestionService } from "../../core/utils/question.service";
-import { FatalError, logger } from "../../core/utils/logger";
-import { GitProfileService } from "../../core/git-profile/git-profile.service";
-import {
-  AuthenticationType,
-  GitProfile,
-} from "../../core/git-profile/git-profile.interface";
+import {QuestionService} from "../../core/utils/question.service";
+import {FatalError, logger} from "../../core/utils/logger";
+import {GitProfileService} from "../../core/git-profile/git-profile.service";
+import {AuthenticationType, GitProfile} from "../../core/git-profile/git-profile.interface";
 
 export class GitProfileCommandService {
-  private gitProfileService = new GitProfileService();
+    private gitProfileService = new GitProfileService();
 
-  public async createProfile(setAsDefault: boolean): Promise<void> {
-    const profile: GitProfile = {} as GitProfile;
-    const questions = new QuestionService();
-    try {
-      profile.name = await questions.ask("Name of the Git profile to create: ");
-      this.gitProfileService.validateProfileName(profile.name);
-      profile.username = await questions.ask("Your Git username: ");
-      profile.repository = await questions.ask(
-        "Your repository (format: repoOwner/repoName): ",
-      );
-      const type = await questions.ask(
-        "Authentication type: HTTPS (1), SSH token (2): ",
-      );
-      switch (type) {
-        case "1":
-          profile.authenticationType = AuthenticationType.HTTPS;
-          break;
-        case "2":
-          profile.authenticationType = AuthenticationType.SSH;
-          break;
-        default:
-          logger.error(new FatalError("Invalid type"));
-          break;
-      }
-      // possibly check if the user has sent a valid token that has access in the repository
+    public async createProfile(setAsDefault: boolean): Promise<void> {
+        const profile: GitProfile = {} as GitProfile;
+        const questions = new QuestionService();
+        try {
+            profile.name = await questions.ask("Name of the Git profile to create: ");
+            this.gitProfileService.validateProfileName(profile.name);
+            profile.username = await questions.ask("Your Git username: ");
+            profile.repository = await questions.ask("Your repository (format: repoOwner/repoName): ");
+            const type = await questions.ask("Authentication type: HTTPS (1), SSH token (2): ");
+            switch (type) {
+                case "1":
+                    profile.authenticationType = AuthenticationType.HTTPS;
+                    break;
+                case "2":
+                    profile.authenticationType = AuthenticationType.SSH;
+                    break;
+                default:
+                    logger.error(new FatalError("Invalid type"));
+                    break;
+            }
+            // possibly check if the user has sent a valid token that has access in the repository
 
-      this.gitProfileService.storeProfile(profile);
-      if (setAsDefault) {
-        await this.makeDefaultProfile(profile.name);
-      }
-      logger.info("Git Profile created successfully!");
-    } catch (e) {
-      logger.error(e.toString());
-    } finally {
-      await questions.close();
-    }
-  }
-
-  public async listProfiles(): Promise<void> {
-    const profiles: string[] = this.gitProfileService.readAllProfiles();
-    const defaultProfile = this.gitProfileService.getDefaultProfile();
-    if (profiles) {
-      profiles.forEach(profile => {
-        if (defaultProfile && defaultProfile === profile) {
-          logger.info(profile + " (default)");
-        } else {
-          logger.info(profile);
+            this.gitProfileService.storeProfile(profile);
+            if (setAsDefault) {
+                await this.makeDefaultProfile(profile.name);
+            }
+            logger.info("Git Profile created successfully!");
+        } catch (e) {
+            logger.error(e.toString());
+        } finally {
+            await questions.close();
         }
-      });
     }
-  }
 
-  public async makeDefaultProfile(profile: string): Promise<void> {
-    await this.gitProfileService.makeDefaultProfile(profile);
-    logger.info("Default Git profile: " + profile);
-  }
+    public async listProfiles(): Promise<void> {
+        const profiles: string[] = this.gitProfileService.readAllProfiles();
+        const defaultProfile = this.gitProfileService.getDefaultProfile();
+        if (profiles) {
+            profiles.forEach(profile => {
+                if (defaultProfile && defaultProfile === profile) {
+                    logger.info(profile + " (default)");
+                } else {
+                    logger.info(profile);
+                }
+            });
+        }
+    }
+
+    public async makeDefaultProfile(profile: string): Promise<void> {
+        await this.gitProfileService.makeDefaultProfile(profile);
+        logger.info("Default Git profile: " + profile);
+    }
 }
