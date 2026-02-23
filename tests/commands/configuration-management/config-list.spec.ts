@@ -214,4 +214,64 @@ describe("Config list", () => {
         expect(exportedTransports.length).toBe(2);
     })
 
+    it("Should list packages by keysByVersion for non-json response", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const keysByVersion = ["key-1.1.0.0", "key-2.1.0.1"];
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/list?packageKeysWithVersion=key-1.1.0.0&packageKeysWithVersion=key-2.1.0.1&withDependencies=false",
+            [firstPackage, secondPackage]
+        );
+
+        await new ConfigCommandService(testContext).listActivePackages(false, [], false, undefined, keysByVersion, null, null);
+
+        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
+        expect(loggingTestTransport.logMessages[1].message).toContain(`${secondPackage.name} - Key: "${secondPackage.key}"`);
+    })
+
+    it("Should list packages by keysByVersion with withDependencies for non-json response", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const keysByVersion = ["key-1.1.0.0", "key-2.1.0.1"];
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/list?packageKeysWithVersion=key-1.1.0.0&packageKeysWithVersion=key-2.1.0.1&withDependencies=true",
+            [firstPackage, secondPackage]
+        );
+
+        await new ConfigCommandService(testContext).listActivePackages(false, [], true, undefined, keysByVersion, null, null);
+
+        expect(loggingTestTransport.logMessages.length).toBe(2);
+    })
+
+    it("Should list packages by keysByVersion for json response", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const studioPackage: ContentNodeTransport = PacmanApiUtils.buildContentNodeTransport("key-1", "spaceId-1");
+        const keysByVersion = ["key-1.1.0.0", "key-2.1.0.1"];
+
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/list?packageKeysWithVersion=key-1.1.0.0&packageKeysWithVersion=key-2.1.0.1&withDependencies=false",
+            [{...firstPackage}, {...secondPackage}]
+        );
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
+
+        await new ConfigCommandService(testContext).listActivePackages(true, [], false, [], keysByVersion, null, null);
+
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+
+        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        expect(exportedTransports.length).toBe(2);
+
+        const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
+        const exportedSecondPackage = exportedTransports.filter(transport => transport.key === secondPackage.key)[0];
+
+        expect(exportedSecondPackage).toEqual(secondPackage);
+        expect(exportedFirstPackage).toEqual({...firstPackage, spaceId: "spaceId-1"});
+    })
 })

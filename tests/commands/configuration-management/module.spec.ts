@@ -19,6 +19,7 @@ describe("Configuration Management Module - Action Validations", () => {
         mockCommand = {} as Command;
 
         mockConfigCommandService = {
+            listActivePackages: jest.fn().mockResolvedValue(undefined),
             batchExportPackages: jest.fn().mockResolvedValue(undefined),
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
         } as any;
@@ -29,6 +30,61 @@ describe("Configuration Management Module - Action Validations", () => {
 
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (NodeDependencyService as jest.MockedClass<typeof NodeDependencyService>).mockImplementation(() => mockNodeDependencyService);
+    });
+
+    describe("listActivePackages validation", () => {
+        describe("packageKeys and keysByVersion validation", () => {
+            it("should throw error when both packageKeys and keysByVersion are provided", async () => {
+                const options: OptionValues = {
+                    packageKeys: ["package1", "package2"],
+                    keysByVersion: ["package3.1.0.0", "package4.1.0.0"],
+                };
+
+                await expect(
+                    (module as any).listActivePackages(testContext, mockCommand, options)
+                ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
+
+                expect(mockConfigCommandService.listActivePackages).not.toHaveBeenCalled();
+            });
+
+            it("should pass validation when only packageKeys is provided", async () => {
+                const options: OptionValues = {
+                    packageKeys: ["package1", "package2"],
+                    json: true,
+                };
+
+                await (module as any).listActivePackages(testContext, mockCommand, options);
+
+                expect(mockConfigCommandService.listActivePackages).toHaveBeenCalledWith(
+                    true,
+                    undefined,
+                    undefined,
+                    ["package1", "package2"],
+                    undefined,
+                    undefined,
+                    undefined
+                );
+            });
+
+            it("should pass validation when only keysByVersion is provided", async () => {
+                const options: OptionValues = {
+                    keysByVersion: ["package3.1.0.0", "package4.1.0.0"],
+                    json: true,
+                };
+
+                await (module as any).listActivePackages(testContext, mockCommand, options);
+
+                expect(mockConfigCommandService.listActivePackages).toHaveBeenCalledWith(
+                    true,
+                    undefined,
+                    undefined,
+                    undefined,
+                    ["package3.1.0.0", "package4.1.0.0"],
+                    undefined,
+                    undefined
+                );
+            });
+        });
     });
 
     describe("batchExportPackages validation", () => {
