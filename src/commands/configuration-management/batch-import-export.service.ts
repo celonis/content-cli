@@ -41,7 +41,7 @@ export class BatchImportExportService {
         });
     }
 
-    public async findAndExportListOfActivePackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean): Promise<void> {
+    public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean): Promise<void> {
         let packagesToExport: PackageExportTransport[];
 
         if (keysByVersion.length) {
@@ -58,8 +58,8 @@ export class BatchImportExportService {
     }
 
     public async listPackagesByKeysWithVersion(keysByVersion: string[], withDependencies: boolean): Promise<void> {
-        const activePackages = await this.batchImportExportApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
-        activePackages.forEach(pkg => {
+        const exportedPackages = await this.batchImportExportApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
+        exportedPackages.forEach(pkg => {
             logger.info(`${pkg.name} - Key: "${pkg.key}"`);
         });
     }

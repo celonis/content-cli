@@ -19,7 +19,7 @@ describe("Configuration Management Module - Action Validations", () => {
         mockCommand = {} as Command;
 
         mockConfigCommandService = {
-            listActivePackages: jest.fn().mockResolvedValue(undefined),
+            listPackages: jest.fn().mockResolvedValue(undefined),
             batchExportPackages: jest.fn().mockResolvedValue(undefined),
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
         } as any;
@@ -41,10 +41,10 @@ describe("Configuration Management Module - Action Validations", () => {
                 };
 
                 await expect(
-                    (module as any).listActivePackages(testContext, mockCommand, options)
+                    (module as any).listPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                expect(mockConfigCommandService.listActivePackages).not.toHaveBeenCalled();
+                expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
             });
 
             it("should pass validation when only packageKeys is provided", async () => {
@@ -53,9 +53,9 @@ describe("Configuration Management Module - Action Validations", () => {
                     json: true,
                 };
 
-                await (module as any).listActivePackages(testContext, mockCommand, options);
+                await (module as any).listPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.listActivePackages).toHaveBeenCalledWith(
+                expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
                     true,
                     undefined,
                     undefined,
@@ -72,9 +72,9 @@ describe("Configuration Management Module - Action Validations", () => {
                     json: true,
                 };
 
-                await (module as any).listActivePackages(testContext, mockCommand, options);
+                await (module as any).listPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.listActivePackages).toHaveBeenCalledWith(
+                expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
                     true,
                     undefined,
                     undefined,
