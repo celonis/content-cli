@@ -22,6 +22,7 @@ class Module extends IModule {
             .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only given package keys")
+            .option("--keysByVersion <keysByVersion...>", "Lists only given package keys by version")
             .option("--variableValue <variableValue>", "Variable value for filtering packages by.")
             .option("--variableType <variableType>", "Variable type for filtering packages by.")
             .action(this.listActivePackages);
@@ -134,7 +135,10 @@ class Module extends IModule {
     }
 
     private async listActivePackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).listActivePackages(options.json, options.flavors, options.withDependencies, options.packageKeys, options.variableValue, options.variableType);
+        if (options.packageKeys && options.keysByVersion) {
+            throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
+        }
+        await new ConfigCommandService(context).listActivePackages(options.json, options.flavors, options.withDependencies, options.packageKeys, options.keysByVersion, options.variableValue, options.variableType);
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

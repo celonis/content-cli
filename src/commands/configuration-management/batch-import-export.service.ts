@@ -41,18 +41,27 @@ export class BatchImportExportService {
         });
     }
 
-    public async findAndExportListOfActivePackages(flavors: string[], packageKeys: string[], withDependencies: boolean): Promise<void> {
+    public async findAndExportListOfActivePackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean): Promise<void> {
         let packagesToExport: PackageExportTransport[];
 
-        if (packageKeys.length) {
+        if (keysByVersion.length) {
+            packagesToExport = await this.batchImportExportApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
+        } else if (packageKeys.length) {
             packagesToExport = await this.batchImportExportApi.findActivePackagesByKeys(packageKeys, withDependencies);
-        } else  {
+        } else {
             packagesToExport = await this.batchImportExportApi.findAllActivePackages(flavors, withDependencies);
         }
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, withDependencies);
 
         this.exportListOfPackages(packagesToExport);
+    }
+
+    public async listPackagesByKeysWithVersion(keysByVersion: string[], withDependencies: boolean): Promise<void> {
+        const activePackages = await this.batchImportExportApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
+        activePackages.forEach(pkg => {
+            logger.info(`${pkg.name} - Key: "${pkg.key}"`);
+        });
     }
 
     public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
