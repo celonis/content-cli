@@ -16,14 +16,16 @@ export class ConfigCommandService {
         this.diffService = new DiffService(context);
     }
 
-    public async listActivePackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys: string[], variableValue: string, variableType: string): Promise<void> {
+    public async listPackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys: string[], keysByVersion: string[], variableValue: string, variableType: string): Promise<void> {
         if (variableValue) {
             await this.listPackagesByVariableValue(jsonResponse, flavors, variableValue, variableType);
             return;
         }
 
         if (jsonResponse) {
-            await this.batchImportExportService.findAndExportListOfActivePackages(flavors ?? [], packageKeys ?? [], withDependencies)
+            await this.batchImportExportService.findAndExportListOfPackages(flavors ?? [], packageKeys ?? [], keysByVersion ?? [], withDependencies);
+        } else if (keysByVersion) {
+            await this.batchImportExportService.listPackagesByKeysWithVersion(keysByVersion, withDependencies);
         } else {
             await this.batchImportExportService.listActivePackages(flavors ?? []);
         }

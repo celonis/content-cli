@@ -17,14 +17,15 @@ class Module extends IModule {
     public register(context: Context, configurator: Configurator): void {
         const configCommand = configurator.command("config");
         configCommand.command("list")
-            .description("Command to list active packages that can be exported")
+            .description("Command to list packages")
             .option("--json", "Return response as json type", "")
             .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
-            .option("--packageKeys <packageKeys...>", "Lists only given package keys")
+            .option("--packageKeys <packageKeys...>", "Lists only active versions of given package keys")
+            .option("--keysByVersion <keysByVersion...>", "Lists packages by given key and version [packageKey.version]")
             .option("--variableValue <variableValue>", "Variable value for filtering packages by.")
             .option("--variableType <variableType>", "Variable type for filtering packages by.")
-            .action(this.listActivePackages);
+            .action(this.listPackages);
 
         configCommand.command("export")
             .description("Command to export package configs")
@@ -133,8 +134,11 @@ class Module extends IModule {
             .action(this.listAssignments);
     }
 
-    private async listActivePackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).listActivePackages(options.json, options.flavors, options.withDependencies, options.packageKeys, options.variableValue, options.variableType);
+    private async listPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.packageKeys && options.keysByVersion) {
+            throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
+        }
+        await new ConfigCommandService(context).listPackages(options.json, options.flavors, options.withDependencies, options.packageKeys, options.keysByVersion, options.variableValue, options.variableType);
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

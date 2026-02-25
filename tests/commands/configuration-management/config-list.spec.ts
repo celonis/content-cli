@@ -1,5 +1,4 @@
 import * as path from "path";
-import { stringify } from "../../../src/core/utils/json";
 import { PacmanApiUtils } from "../../utls/pacman-api.utils";
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
@@ -33,7 +32,7 @@ describe("Config list", () => {
 
             mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
-            await new ConfigCommandService(testContext).listActivePackages(false, flavorsArray, false, [], null, null);
+            await new ConfigCommandService(testContext).listPackages(false, flavorsArray, false, [], undefined, null, null);
 
             expect(loggingTestTransport.logMessages.length).toBe(2);
             expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -50,7 +49,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new ConfigCommandService(testContext).listActivePackages(true, [], false, [],  null, null);
+        await new ConfigCommandService(testContext).listPackages(true, [], false, [], undefined, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -96,7 +95,7 @@ describe("Config list", () => {
         };
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/compute-pools/data-models/details", [dataModelDetailResponse]);
 
-        await new ConfigCommandService(testContext).listActivePackages(true, [], true, [], null, null);
+        await new ConfigCommandService(testContext).listPackages(true, [], true, [], undefined, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -121,7 +120,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new ConfigCommandService(testContext).listActivePackages(true, [], false, [firstPackage.key, secondPackage.key], null, null);
+        await new ConfigCommandService(testContext).listPackages(true, [], false, [firstPackage.key, secondPackage.key], undefined, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -167,7 +166,7 @@ describe("Config list", () => {
         };
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/compute-pools/data-models/details", [dataModelDetailResponse]);
 
-        await new ConfigCommandService(testContext).listActivePackages(true, [], true, [firstPackage.key, secondPackage.key], null, null);
+        await new ConfigCommandService(testContext).listPackages(true, [], true, [firstPackage.key, secondPackage.key], undefined, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -191,7 +190,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-variable-value?variableValue=1", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
 
-        await new ConfigCommandService(testContext).listActivePackages(false, [], false, [],  "1", null);
+        await new ConfigCommandService(testContext).listPackages(false, [], false, [], undefined, "1", null);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -205,7 +204,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-variable-value?variableValue=1", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
 
-        await new ConfigCommandService(testContext).listActivePackages(true, [], false, [],  "1", null);
+        await new ConfigCommandService(testContext).listPackages(true, [], false, [], undefined, "1", null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -215,4 +214,64 @@ describe("Config list", () => {
         expect(exportedTransports.length).toBe(2);
     })
 
+    it("Should list packages by keysByVersion for non-json response", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const keysByVersion = ["key-1.1.0.0", "key-2.1.0.1"];
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/list?packageKeysWithVersion=key-1.1.0.0&packageKeysWithVersion=key-2.1.0.1&withDependencies=false",
+            [firstPackage, secondPackage]
+        );
+
+        await new ConfigCommandService(testContext).listPackages(false, [], false, undefined, keysByVersion, null, null);
+
+        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
+        expect(loggingTestTransport.logMessages[1].message).toContain(`${secondPackage.name} - Key: "${secondPackage.key}"`);
+    })
+
+    it("Should list packages by keysByVersion with withDependencies for non-json response", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const keysByVersion = ["key-1.1.0.0", "key-2.1.0.1"];
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/list?packageKeysWithVersion=key-1.1.0.0&packageKeysWithVersion=key-2.1.0.1&withDependencies=true",
+            [firstPackage, secondPackage]
+        );
+
+        await new ConfigCommandService(testContext).listPackages(false, [], true, undefined, keysByVersion, null, null);
+
+        expect(loggingTestTransport.logMessages.length).toBe(2);
+    })
+
+    it("Should list packages by keysByVersion for json response", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("key-1", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("key-2", "name-2");
+
+        const studioPackage: ContentNodeTransport = PacmanApiUtils.buildContentNodeTransport("key-1", "spaceId-1");
+        const keysByVersion = ["key-1.1.0.0", "key-2.1.0.1"];
+
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/list?packageKeysWithVersion=key-1.1.0.0&packageKeysWithVersion=key-2.1.0.1&withDependencies=false",
+            [{...firstPackage}, {...secondPackage}]
+        );
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
+
+        await new ConfigCommandService(testContext).listPackages(true, [], false, [], keysByVersion, null, null);
+
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+
+        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        expect(exportedTransports.length).toBe(2);
+
+        const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
+        const exportedSecondPackage = exportedTransports.filter(transport => transport.key === secondPackage.key)[0];
+
+        expect(exportedSecondPackage).toEqual(secondPackage);
+        expect(exportedFirstPackage).toEqual({...firstPackage, spaceId: "spaceId-1"});
+    })
 })
