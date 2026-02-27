@@ -15,6 +15,16 @@ jest.mock("openid-client", () => ({
     },
 }));
 
+jest.mock("../../../src/core/utils/logger", () => ({
+    logger: { error: jest.fn(), info: jest.fn() },
+    FatalError: class FatalError extends Error {
+        constructor(m: string) {
+            super(m);
+            this.name = "FatalError";
+        }
+    },
+}));
+
 import { ProfileService } from "../../../src/core/profile/profile.service";
 
 describe("ProfileService - mapCelonisEnvProfile", () => {
@@ -680,6 +690,342 @@ describe("ProfileService - authorizeProfile (client credentials)", () => {
         expect(profile.apiToken).toBe("token-post");
         expect(profile.scopes).toEqual(["studio"]);
         expect(profile.clientAuthenticationMethod).toBe("client_secret_post");
+    });
+});
+
+describe("ProfileService - makeDefaultProfile", () => {
+    let profileService: ProfileService;
+    const mockHomedir = "/mock/home";
+    const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
+    const configPath = path.resolve(mockProfilePath, "config.json");
+
+    beforeEach(() => {
+        (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
+        profileService = new ProfileService();
+        jest.spyOn(profileService, "findProfile").mockResolvedValue({
+            name: "my-profile",
+            team: "https://example.celonis.cloud",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.KEY,
+        } as Profile);
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it("should call findProfile and store default profile name in config", async () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+
+        await profileService.makeDefaultProfile("my-profile");
+
+        expect(profileService.findProfile).toHaveBeenCalledWith("my-profile");
+        expect(fs.writeFileSync).toHaveBeenCalledWith(configPath, JSON.stringify({ defaultProfile: "my-profile" }), { encoding: "utf-8" });
+    });
+
+    it("should reject when findProfile fails", async () => {
+        jest.spyOn(profileService, "findProfile").mockRejectedValue(new Error("Profile not found"));
+
+        await expect(profileService.makeDefaultProfile("missing")).rejects.toThrow("Profile not found");
+    });
+});
+
+describe("ProfileService - getDefaultProfile", () => {
+    let profileService: ProfileService;
+    const mockHomedir = "/mock/home";
+    const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
+    const configPath = path.resolve(mockProfilePath, "config.json");
+
+    beforeEach(() => {
+        (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
+        profileService = new ProfileService();
+    });
+
+    it("should return default profile name when config exists", () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ defaultProfile: "my-default" }));
+
+        const result = profileService.getDefaultProfile();
+
+        expect(result).toBe("my-default");
+        expect(fs.readFileSync).toHaveBeenCalledWith(configPath, { encoding: "utf-8" });
+    });
+
+    it("should return null when config file does not exist", () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const result = profileService.getDefaultProfile();
+
+        expect(result).toBeNull();
+        expect(fs.readFileSync).not.toHaveBeenCalled();
+    });
+});
+
+describe("ProfileService - storeProfile", () => {
+    let profileService: ProfileService;
+    const mockHomedir = "/mock/home";
+    const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
+
+    beforeEach(() => {
+        (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
+        profileService = new ProfileService();
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+    });
+
+    it("should create profile container if not exists and write profile with normalized team URL", () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const profile: Profile = {
+            name: "test-profile",
+            team: "https://example.celonis.cloud/some/path",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.KEY,
+        };
+
+        profileService.storeProfile(profile);
+
+        expect(fs.mkdirSync).toHaveBeenCalledWith(mockProfilePath);
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.resolve(mockProfilePath, "test-profile.json"),
+            expect.stringContaining("https://example.celonis.cloud"),
+            { encoding: "utf-8" }
+        );
+        expect(profile.team).toBe("https://example.celonis.cloud");
+    });
+
+    it("should write profile with correct filename", () => {
+        const profile: Profile = {
+            name: "my-profile",
+            team: "https://team.celonis.cloud",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.KEY,
+        };
+
+        profileService.storeProfile(profile);
+
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.resolve(mockProfilePath, "my-profile.json"),
+            expect.any(String),
+            { encoding: "utf-8" }
+        );
+    });
+});
+
+describe("ProfileService - readAllProfiles", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should resolve with list of profile names from getAllFilesInDirectory", async () => {
+        const mockNames = ["profile-a", "profile-b"];
+        jest.spyOn(profileService, "getAllFilesInDirectory").mockReturnValue(mockNames);
+
+        const result = await profileService.readAllProfiles();
+
+        expect(result).toEqual(mockNames);
+        expect(profileService.getAllFilesInDirectory).toHaveBeenCalled();
+    });
+});
+
+describe("ProfileService - getAllFilesInDirectory", () => {
+    let profileService: ProfileService;
+    const mockHomedir = "/mock/home";
+    const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
+
+    beforeEach(() => {
+        (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
+        profileService = new ProfileService();
+    });
+
+    it("should return profile names (without .json) when directory exists", () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readdirSync as jest.Mock).mockReturnValue([
+            { name: "profile1.json", isDirectory: () => false },
+            { name: "profile2.json", isDirectory: () => false },
+            { name: "config.json", isDirectory: () => false },
+            { name: "subdir", isDirectory: () => true },
+        ]);
+
+        const result = profileService.getAllFilesInDirectory();
+
+        expect(result).toEqual(["profile1", "profile2"]);
+        expect(fs.readdirSync).toHaveBeenCalledWith(mockProfilePath, { withFileTypes: true });
+    });
+
+    it("should return empty array when directory does not exist", () => {
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+
+        const result = profileService.getAllFilesInDirectory();
+
+        expect(result).toEqual([]);
+        expect(fs.readdirSync).not.toHaveBeenCalled();
+    });
+});
+
+describe("ProfileService - getBaseTeamUrl", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should return origin for URL with path", () => {
+        const result = (profileService as any).getBaseTeamUrl("https://example.celonis.cloud/team/path");
+        expect(result).toBe("https://example.celonis.cloud");
+    });
+
+    it("should return origin for URL without path", () => {
+        const result = (profileService as any).getBaseTeamUrl("https://example.celonis.cloud");
+        expect(result).toBe("https://example.celonis.cloud");
+    });
+
+    it("should return null for null or undefined input", () => {
+        expect((profileService as any).getBaseTeamUrl(null)).toBeNull();
+    });
+});
+
+describe("ProfileService - isProfileExpired", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should return false for KEY profile type", () => {
+        const profile: Profile = {
+            name: "key-profile",
+            team: "https://example.com",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.KEY,
+        };
+        expect((profileService as any).isProfileExpired(profile)).toBe(false);
+    });
+
+    it("should return false when profile has null or undefined type", () => {
+        const profile = {
+            name: "p",
+            team: "https://example.com",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: null,
+        } as unknown as Profile;
+        expect((profileService as any).isProfileExpired(profile)).toBe(false);
+    });
+
+    it("should return true when expiresAt is in the past", () => {
+        const profile: Profile = {
+            name: "oauth-profile",
+            team: "https://example.com",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            expiresAt: Math.floor(Date.now() / 1000) - 3600,
+        };
+        expect((profileService as any).isProfileExpired(profile)).toBe(true);
+    });
+
+    it("should return false when expiresAt is in the future", () => {
+        const profile: Profile = {
+            name: "oauth-profile",
+            team: "https://example.com",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        };
+        expect((profileService as any).isProfileExpired(profile)).toBe(false);
+    });
+});
+
+describe("ProfileService - checkIfMissingProfile", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should return true when profileName is empty string", () => {
+        expect((profileService as any).checkIfMissingProfile("")).toBe(true);
+    });
+
+    it("should return true when profileName is null or undefined", () => {
+        expect((profileService as any).checkIfMissingProfile(null)).toBe(true);
+        expect((profileService as any).checkIfMissingProfile(undefined)).toBe(true);
+    });
+
+    it("should return undefined when profileName is non-empty", () => {
+        expect((profileService as any).checkIfMissingProfile("my-profile")).toBeUndefined();
+    });
+});
+
+describe("ProfileService - refreshProfile", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+        mockIssuerDiscover.mockResolvedValue({});
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+    });
+
+    it("should not refresh when profile is not expired", async () => {
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.com",
+            apiToken: "token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "id",
+            clientSecret: "secret",
+            scopes: ["studio"],
+            clientAuthenticationMethod: "client_secret_basic",
+            expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        };
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(() => {});
+
+        await profileService.refreshProfile(profile);
+
+        expect(mockIssuerDiscover).not.toHaveBeenCalled();
+        expect(storeSpy).not.toHaveBeenCalled();
+    });
+
+    it("should refresh client credentials profile and store when expired", async () => {
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.com",
+            apiToken: "old-token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "id",
+            clientSecret: "secret",
+            scopes: ["studio"],
+            clientAuthenticationMethod: "client_secret_basic",
+            expiresAt: Math.floor(Date.now() / 1000) - 10,
+        };
+        const newTokenSet = {
+            access_token: "new-token",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+        };
+        mockIssuerDiscover.mockResolvedValue({
+            Client: jest.fn().mockImplementation(() => ({
+                grant: jest.fn().mockResolvedValue(newTokenSet),
+            })),
+        });
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(() => {});
+
+        await profileService.refreshProfile(profile);
+
+        expect(profile.apiToken).toBe("new-token");
+        expect(profile.expiresAt).toBe(newTokenSet.expires_at);
+        expect(storeSpy).toHaveBeenCalledWith(profile);
     });
 });
 
