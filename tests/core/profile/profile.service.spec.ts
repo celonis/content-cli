@@ -8,6 +8,13 @@ jest.mock("os", () => ({
     homedir: jest.fn(() => "/mock/home")
 }));
 
+const mockIssuerDiscover = jest.fn();
+jest.mock("openid-client", () => ({
+    Issuer: {
+        discover: (...args: any[]) => mockIssuerDiscover(...args),
+    },
+}));
+
 import { ProfileService } from "../../../src/core/profile/profile.service";
 
 describe("ProfileService - mapCelonisEnvProfile", () => {
@@ -461,6 +468,218 @@ describe("ProfileService - findProfile", () => {
                 `The profile ${profileName} couldn't be resolved.`
             );
         });
+    });
+});
+
+describe("ProfileService - getScopeCombinationsOrderedBySize", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should return 15 combinations for 4 scopes", () => {
+        const scopes = ["a", "b", "c", "d"];
+        const result = (profileService as any).getScopeCombinationsOrderedBySize(scopes);
+        expect(result).toHaveLength(15);
+    });
+
+    it("should order by size descending: first 1 combination of 4, then 4 of 3, then 6 of 2, then 4 of 1", () => {
+        const scopes = ["a", "b", "c", "d"];
+        const result = (profileService as any).getScopeCombinationsOrderedBySize(scopes);
+        expect(result[0]).toHaveLength(4);
+        expect(result[0]).toEqual(["a", "b", "c", "d"]);
+        const size3 = result.slice(1, 5);
+        expect(size3.every((s: string[]) => s.length === 3)).toBe(true);
+        expect(size3).toHaveLength(4);
+        const size2 = result.slice(5, 11);
+        expect(size2.every((s: string[]) => s.length === 2)).toBe(true);
+        expect(size2).toHaveLength(6);
+        const size1 = result.slice(11, 15);
+        expect(size1.every((s: string[]) => s.length === 1)).toBe(true);
+        expect(size1).toHaveLength(4);
+    });
+
+    it("should return each combination once (order within set does not matter)", () => {
+        const scopes = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
+        const result = (profileService as any).getScopeCombinationsOrderedBySize(scopes);
+        const sorted = result.map((combo: string[]) => [...combo].sort());
+        const unique = new Set(sorted.map((s: string[]) => s.join(",")));
+        expect(unique.size).toBe(15);
+    });
+});
+
+describe("ProfileService - extractScopesFromTokenSet", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should return scopes from token response when scope is present", () => {
+        const tokenSet = { scope: "studio package-manager integration.data-pools" };
+        const fallback = ["fallback"];
+        const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
+        expect(result).toEqual(["studio", "package-manager", "integration.data-pools"]);
+    });
+
+    it("should return fallback when token response has no scope", () => {
+        const tokenSet = {};
+        const fallback = ["studio", "package-manager"];
+        const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
+        expect(result).toEqual(["studio", "package-manager"]);
+    });
+
+    it("should return fallback when scope is empty string", () => {
+        const tokenSet = { scope: "   " };
+        const fallback = ["fallback"];
+        const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
+        expect(result).toEqual(["fallback"]);
+    });
+
+    it("should trim and split single scope", () => {
+        const tokenSet = { scope: "  studio  " };
+        const fallback = ["fallback"];
+        const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
+        expect(result).toEqual(["studio"]);
+    });
+});
+
+describe("ProfileService - authorizeProfile (device code)", () => {
+    let profileService: ProfileService;
+    let mockClientInstance: { deviceAuthorization: jest.Mock };
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+        mockIssuerDiscover.mockReset();
+        mockClientInstance = {
+            deviceAuthorization: jest.fn(),
+        };
+        mockIssuerDiscover.mockResolvedValue({
+            Client: jest.fn().mockReturnValue(mockClientInstance),
+        });
+    });
+
+    it("should throw FatalError when both scope attempts fail", async () => {
+        mockClientInstance.deviceAuthorization.mockRejectedValue(new Error("invalid_scope"));
+
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.DEVICE_CODE,
+        };
+
+        await expect(profileService.authorizeProfile(profile)).rejects.toThrow("Device code authorization failed");
+    });
+
+    it("should set profile token when second scope attempt succeeds", async () => {
+        const tokenSet = {
+            access_token: "access-123",
+            refresh_token: "refresh-456",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+        };
+        const mockPoll = jest.fn().mockResolvedValue(tokenSet);
+        mockClientInstance.deviceAuthorization
+            .mockRejectedValueOnce(new Error("invalid_scope"))
+            .mockResolvedValueOnce({ verification_uri_complete: "https://example.com/device", poll: mockPoll });
+
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.DEVICE_CODE,
+        };
+
+        await profileService.authorizeProfile(profile);
+
+        expect(profile.apiToken).toBe("access-123");
+        expect(profile.refreshToken).toBe("refresh-456");
+        expect(profile.expiresAt).toBe(tokenSet.expires_at);
+    });
+});
+
+describe("ProfileService - authorizeProfile (client credentials)", () => {
+    let profileService: ProfileService;
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+        mockIssuerDiscover.mockResolvedValue({});
+    });
+
+    it("should set profile scopes and token when tryClientCredentialsGrant returns result", async () => {
+        const tokenSet = {
+            access_token: "token-123",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            scope: "studio package-manager",
+        };
+        const tryGrantSpy = jest.spyOn(profileService as any, "tryClientCredentialsGrant")
+            .mockResolvedValueOnce({ tokenSet, scopes: ["studio", "package-manager"] });
+
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "client-id",
+            clientSecret: "client-secret",
+        };
+
+        await profileService.authorizeProfile(profile);
+
+        expect(tryGrantSpy).toHaveBeenCalled();
+        expect(profile.apiToken).toBe("token-123");
+        expect(profile.expiresAt).toBe(tokenSet.expires_at);
+        expect(profile.scopes).toEqual(["studio", "package-manager"]);
+        expect(profile.clientAuthenticationMethod).toBe("client_secret_basic");
+    });
+
+    it("should throw when both basic and post client credentials fail", async () => {
+        jest.spyOn(profileService as any, "tryClientCredentialsGrant").mockResolvedValue(null);
+
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "client-id",
+            clientSecret: "client-secret",
+        };
+
+        await expect(profileService.authorizeProfile(profile)).rejects.toThrow(
+            "The OAuth client configuration is incorrect"
+        );
+    });
+
+    it("should use post result when basic fails", async () => {
+        const tokenSet = {
+            access_token: "token-post",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            scope: "studio",
+        };
+        jest.spyOn(profileService as any, "tryClientCredentialsGrant")
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({ tokenSet, scopes: ["studio"] });
+
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "client-id",
+            clientSecret: "client-secret",
+        };
+
+        await profileService.authorizeProfile(profile);
+
+        expect(profile.apiToken).toBe("token-post");
+        expect(profile.scopes).toEqual(["studio"]);
+        expect(profile.clientAuthenticationMethod).toBe("client_secret_post");
     });
 });
 
