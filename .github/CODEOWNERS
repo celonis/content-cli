@@ -11,4 +11,4 @@
 /src/commands/analysis/                           @celonis/process-analytics
 /src/commands/cpm4/                               @celonis/cpm4
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
-/src/commands/studio/                             @celonis/navi
+/src/commands/studio/                             @celonis/astro
