@@ -164,7 +164,6 @@ export class ProfileService {
                 let deviceCodeSuccess = false;
                 for (const scopeList of deviceCodeScopeAttempts) {
                     try {
-                        logger.error(`[device code] Trying scopes: ${JSON.stringify(scopeList)}`);
                         const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
                             scope: scopeList.join(" "),
                         });
