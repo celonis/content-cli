@@ -553,6 +553,139 @@ describe("ProfileService - extractScopesFromTokenSet", () => {
         const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
         expect(result).toEqual(["studio"]);
     });
+
+    it("should return copy of fallback so original is not mutated", () => {
+        const tokenSet = {};
+        const fallback = ["studio", "package-manager"];
+        const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
+        expect(result).toEqual(["studio", "package-manager"]);
+        expect(result).not.toBe(fallback);
+    });
+
+    it("should handle scope string with multiple spaces between scopes", () => {
+        const tokenSet = { scope: "studio   package-manager   integration.data-pools" };
+        const fallback = ["fallback"];
+        const result = (profileService as any).extractScopesFromTokenSet(tokenSet, fallback);
+        expect(result).toEqual(["studio", "package-manager", "integration.data-pools"]);
+    });
+});
+
+describe("ProfileService - tryClientCredentialsGrant", () => {
+    let profileService: ProfileService;
+    const mockProfile: Profile = {
+        name: "test",
+        team: "https://example.celonis.cloud",
+        apiToken: "",
+        authenticationType: AuthenticationType.BEARER,
+        type: ProfileType.CLIENT_CREDENTIALS,
+        clientId: "client-id",
+        clientSecret: "client-secret",
+    };
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+    });
+
+    it("should return tokenSet and scopes when grant succeeds for first scope combination", async () => {
+        const tokenSet = {
+            access_token: "access-token-123",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            scope: "studio package-manager",
+        };
+        const mockGrant = jest.fn().mockResolvedValue(tokenSet);
+        const mockIssuer = {
+            Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
+        };
+        jest.spyOn(profileService as any, "getScopeCombinationsOrderedBySize").mockReturnValue([
+            ["studio", "package-manager"],
+            ["studio"],
+        ]);
+
+        const result = await (profileService as any).tryClientCredentialsGrant(
+            mockIssuer,
+            mockProfile,
+            "client_secret_basic"
+        );
+
+        expect(result).not.toBeNull();
+        expect(result!.tokenSet.access_token).toBe("access-token-123");
+        expect(result!.tokenSet.expires_at).toBe(tokenSet.expires_at);
+        expect(result!.scopes).toEqual(["studio", "package-manager"]);
+        expect(mockGrant).toHaveBeenCalledWith({
+            grant_type: "client_credentials",
+            scope: "studio package-manager",
+        });
+    });
+
+    it("should try next scope combination when first grant fails", async () => {
+        const tokenSet = {
+            access_token: "token-2",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+            scope: "studio",
+        };
+        const mockGrant = jest.fn()
+            .mockRejectedValueOnce(new Error("invalid_scope"))
+            .mockResolvedValueOnce(tokenSet);
+        const mockIssuer = {
+            Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
+        };
+        jest.spyOn(profileService as any, "getScopeCombinationsOrderedBySize").mockReturnValue([
+            ["studio", "package-manager"],
+            ["studio"],
+        ]);
+
+        const result = await (profileService as any).tryClientCredentialsGrant(
+            mockIssuer,
+            mockProfile,
+            "client_secret_post"
+        );
+
+        expect(result).not.toBeNull();
+        expect(result!.tokenSet.access_token).toBe("token-2");
+        expect(result!.scopes).toEqual(["studio"]);
+        expect(mockGrant).toHaveBeenCalledTimes(2);
+    });
+
+    it("should return null when all scope combinations fail", async () => {
+        const mockGrant = jest.fn().mockRejectedValue(new Error("invalid_scope"));
+        const mockIssuer = {
+            Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
+        };
+        jest.spyOn(profileService as any, "getScopeCombinationsOrderedBySize").mockReturnValue([
+            ["studio"],
+            ["package-manager"],
+        ]);
+
+        const result = await (profileService as any).tryClientCredentialsGrant(
+            mockIssuer,
+            mockProfile,
+            "client_secret_basic"
+        );
+
+        expect(result).toBeNull();
+        expect(mockGrant).toHaveBeenCalledTimes(2);
+    });
+
+    it("should use fallback scopes when token response has no scope field", async () => {
+        const tokenSet = {
+            access_token: "token-no-scope",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+        };
+        const mockGrant = jest.fn().mockResolvedValue(tokenSet);
+        const mockIssuer = {
+            Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
+        };
+        jest.spyOn(profileService as any, "getScopeCombinationsOrderedBySize").mockReturnValue([["studio"]]);
+
+        const result = await (profileService as any).tryClientCredentialsGrant(
+            mockIssuer,
+            mockProfile,
+            "client_secret_basic"
+        );
+
+        expect(result).not.toBeNull();
+        expect(result!.scopes).toEqual(["studio"]);
+    });
 });
 
 describe("ProfileService - authorizeProfile (device code)", () => {
