@@ -6,7 +6,7 @@ import { ProfileValidator } from "./profile.validator";
 import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../utils/logger";
-import { Issuer } from "openid-client";
+import { Client, Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
 
@@ -354,7 +354,7 @@ export class ProfileService {
      * Returns { tokenSet, scopes } or null if no grant succeeded.
      */
     private async tryClientCredentialsGrant(
-        issuer: import("openid-client").Issuer<import("openid-client").Client>,
+        issuer: Issuer<Client>,
         profile: Profile,
         tokenEndpointAuthMethod: ClientAuthenticationMethod
     ): Promise<{ tokenSet: { access_token: string; expires_at: number; scope?: string }; scopes: string[] } | null> {
