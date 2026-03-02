@@ -6,15 +6,17 @@ import { ProfileValidator } from "./profile.validator";
 import * as path from "path";
 import * as fs from "fs";
 import { FatalError, logger } from "../utils/logger";
-import { Issuer } from "openid-client";
+import { Client, Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
 
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
 const expiryBuffer = 5000;
-const deviceCodeScopes = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
-const clientCredentialsScopes = ["studio", "integration.data-pools", "action-engine.projects", "package-manager"];
+/** All OAuth scopes; used for both device code and client credentials. */
+const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
+/** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
+const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
 
 export interface Config {
     defaultProfile: string;
@@ -153,63 +155,65 @@ export class ProfileService {
                 }
                 break;
             case ProfileType.DEVICE_CODE:
-                try {
-                    const deviceCodeIssuer = await Issuer.discover(profile.team);
-                    const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
-                        client_id: "content-cli",
-                        token_endpoint_auth_method: "none",
-                    });
-                    const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
-                        scope: deviceCodeScopes.join(" ")
-                    });
-                    logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
-                    const deviceCodeTokenSet = await deviceCodeHandle.poll();
-                    profile.apiToken = deviceCodeTokenSet.access_token;
-                    profile.refreshToken = deviceCodeTokenSet.refresh_token;
-                    profile.expiresAt = deviceCodeTokenSet.expires_at;
-                } catch (err) {
-                    logger.error(new FatalError("The provided team is wrong."));
-                    logger.error(err);
+                const deviceCodeIssuer = await Issuer.discover(profile.team);
+                const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
+                    client_id: "content-cli",
+                    token_endpoint_auth_method: "none",
+                });
+                const deviceCodeScopeAttempts: string[][] = [OAUTH_SCOPES, DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE];
+                let deviceCodeSuccess = false;
+                for (const scopeList of deviceCodeScopeAttempts) {
+                    try {
+                        const deviceCodeHandle = await deviceCodeOAuthClient.deviceAuthorization({
+                            scope: scopeList.join(" "),
+                        });
+                        logger.info(`Continue authorization here: ${deviceCodeHandle.verification_uri_complete}`);
+                        const deviceCodeTokenSet = await deviceCodeHandle.poll();
+                        profile.apiToken = deviceCodeTokenSet.access_token;
+                        profile.refreshToken = deviceCodeTokenSet.refresh_token;
+                        profile.expiresAt = deviceCodeTokenSet.expires_at;
+                        deviceCodeSuccess = true;
+                        break;
+                    } catch (err) {
+                        // This scope set failed; try next or fail below
+                    }
+                }
+                if (!deviceCodeSuccess) {
+                    throw new FatalError(
+                        "Device code authorization failed. The provided team or requested scopes may be invalid."
+                    );
                 }
                 break;
             case ProfileType.CLIENT_CREDENTIALS:
                 const clientCredentialsIssuer = await Issuer.discover(profile.team);
-                try {
-                    // try with client secret basic
-                    const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
-                        client_id: profile.clientId,
-                        client_secret: profile.clientSecret,
-                        token_endpoint_auth_method: ClientAuthenticationMethod.CLIENT_SECRET_BASIC,
-                    });
-                    const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
-                        grant_type: "client_credentials",
-                        scope: clientCredentialsScopes.join(" ")
-                    });
+                const basicResult = await this.tryClientCredentialsGrant(
+                    clientCredentialsIssuer,
+                    profile,
+                    ClientAuthenticationMethod.CLIENT_SECRET_BASIC
+                );
+                if (basicResult) {
                     profile.clientAuthenticationMethod = ClientAuthenticationMethod.CLIENT_SECRET_BASIC;
-                    profile.apiToken = clientCredentialsTokenSet.access_token;
-                    profile.expiresAt = clientCredentialsTokenSet.expires_at;
-                } catch (e) {
-                    try {
-                        // try with client secret post
-                        const clientCredentialsOAuthClient = new clientCredentialsIssuer.Client({
-                            client_id: profile.clientId,
-                            client_secret: profile.clientSecret,
-                            token_endpoint_auth_method: ClientAuthenticationMethod.CLIENT_SECRET_POST,
-                        });
-                        const clientCredentialsTokenSet = await clientCredentialsOAuthClient.grant({
-                            grant_type: "client_credentials",
-                            scope: clientCredentialsScopes.join(" ")
-                        });
+                    profile.apiToken = basicResult.tokenSet.access_token;
+                    profile.expiresAt = basicResult.tokenSet.expires_at;
+                    profile.scopes = basicResult.scopes;
+                } else {
+                    const postResult = await this.tryClientCredentialsGrant(
+                        clientCredentialsIssuer,
+                        profile,
+                        ClientAuthenticationMethod.CLIENT_SECRET_POST
+                    );
+                    if (postResult) {
                         profile.clientAuthenticationMethod = ClientAuthenticationMethod.CLIENT_SECRET_POST;
-                        profile.apiToken = clientCredentialsTokenSet.access_token;
-                        profile.expiresAt = clientCredentialsTokenSet.expires_at;
-                    } catch (err) {
-                        logger.error(new FatalError("The OAuth client configuration is incorrect. " +
-                            "Check the id, secret and scopes for correctness."));
+                        profile.apiToken = postResult.tokenSet.access_token;
+                        profile.expiresAt = postResult.tokenSet.expires_at;
+                        profile.scopes = postResult.scopes;
+                    } else {
+                        throw new FatalError(
+                            "The OAuth client configuration is incorrect. " +
+                            "Check the id, secret and allowed scopes for this client."
+                        );
                     }
                 }
-                profile.scopes = [...clientCredentialsScopes];
-
                 break;
             default:
                 logger.error(new FatalError("Unsupported profile type"));
@@ -319,6 +323,81 @@ export class ProfileService {
         } else {
             delete process.env.API_TOKEN;
         }
+    }
+
+    /**
+     * Returns all non-empty combinations of scopes, ordered by size descending (4, then 3, 2, 1).
+     * Order within a combination does not matter; each set is tried once.
+     */
+    private getScopeCombinationsOrderedBySize(scopes: string[]): string[][] {
+        function combinations<T>(arr: T[], k: number): T[][] {
+            if (k === 0) return [[]];
+            if (k > arr.length) return [];
+            const result: T[][] = [];
+            for (let i = 0; i <= arr.length - k; i++) {
+                const rest = combinations(arr.slice(i + 1), k - 1);
+                rest.forEach(r => result.push([arr[i], ...r]));
+            }
+            return result;
+        }
+        return [
+            ...combinations(scopes, 4),
+            ...combinations(scopes, 3),
+            ...combinations(scopes, 2),
+            ...combinations(scopes, 1),
+        ];
+    }
+
+    /**
+     * Tries to obtain a client_credentials token. First tries with all scopes (including
+     * action-engine.projects); if no token is returned, tries again without action-engine.projects.
+     * Returns { tokenSet, scopes } or null if no grant succeeded.
+     */
+    private async tryClientCredentialsGrant(
+        issuer: Issuer<Client>,
+        profile: Profile,
+        tokenEndpointAuthMethod: ClientAuthenticationMethod
+    ): Promise<{ tokenSet: { access_token: string; expires_at: number; scope?: string }; scopes: string[] } | null> {
+        const Client = issuer.Client as new (args: object) => {
+            grant: (params: { grant_type: string; scope?: string }) => Promise<{ access_token: string; expires_at: number; scope?: string }>;
+        };
+        const client = new Client({
+            client_id: profile.clientId,
+            client_secret: profile.clientSecret,
+            token_endpoint_auth_method: tokenEndpointAuthMethod,
+        });
+
+        const scopeAttempts = this.getScopeCombinationsOrderedBySize(OAUTH_SCOPES);
+
+        for (const scopeList of scopeAttempts) {
+            try {
+                const tokenSet = await client.grant({
+                    grant_type: "client_credentials",
+                    scope: scopeList.join(" "),
+                });
+                if (tokenSet && tokenSet.access_token) {
+                    const scopes = this.extractScopesFromTokenSet(tokenSet, scopeList);
+                    return { tokenSet, scopes };
+                }
+            } catch (_e) {
+                // This scope set failed (e.g. invalid_scope); try next
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Extracts granted scopes from the token response (OAuth 2.0 scope parameter).
+     * Used at profile creation so we store the scopes the server actually granted for this client.
+     */
+    private extractScopesFromTokenSet(tokenSet: { scope?: string }, fallbackScopes: string[]): string[] {
+        if (tokenSet.scope && typeof tokenSet.scope === "string") {
+            const scopes = tokenSet.scope.trim().split(/\s+/).filter(Boolean);
+            if (scopes.length > 0) {
+                return scopes;
+            }
+        }
+        return [...fallbackScopes];
     }
 }
 
