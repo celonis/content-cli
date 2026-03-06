@@ -142,7 +142,7 @@ export class BatchImportExportService {
         configs = await this.studioService.mapSpaces(configs, studioManifests);
         const existingStudioPackages = await this.studioPackageApi.findAllPackages();
 
-        const formData = this.buildBodyForImport(configs, variablesManifests);
+        const formData = this.buildBodyForImport(configs, sourceToBeImported, variablesManifests);
         const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite);
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
@@ -205,8 +205,10 @@ export class BatchImportExportService {
         logger.info(FileService.fileDownloadedMessage + filename);
     }
 
-    private buildBodyForImport(configs: AdmZip, variablesManifests: VariableManifestTransport[]): FormData {
+    private buildBodyForImport(configs: AdmZip, sourcePath: string, variablesManifests: VariableManifestTransport[]): FormData {
         const formData = new FormData();
+
+        this.assertUncompressedSizeWithinLimit(configs, sourcePath);
         const readableStream = this.getReadableStream(configs);
 
         formData.append("file", readableStream, {filename: "configs.zip"});
@@ -218,6 +220,16 @@ export class BatchImportExportService {
         }
 
         return formData;
+    }
+
+    private assertUncompressedSizeWithinLimit(configs: AdmZip, sourcePath: string): void {
+        const MAX_ZIP_SIZE = 4 * 1024 * 1024 * 1024;
+        const totalUncompressedBytes = configs.getEntries().reduce((sum, entry) => sum + entry.header.size, 0);
+        if (totalUncompressedBytes > MAX_ZIP_SIZE) {
+            throw new Error(
+                `Failed to handle zip file "${sourcePath}": uncompressed size ${(totalUncompressedBytes / (1024 ** 3)).toFixed(2)} GB exceeds the 4 GB limit.`
+            );
+        }
     }
 
     private getReadableStream(configs: AdmZip): Readable {
