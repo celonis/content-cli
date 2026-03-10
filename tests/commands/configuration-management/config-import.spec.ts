@@ -1,5 +1,11 @@
 import * as path from "path";
+import AdmZip = require("adm-zip");
 import { mockCreateReadStream, mockExistsSync, mockReadDirSync, mockReadFileSync } from "../../utls/fs-mock-utils";
+
+jest.mock("adm-zip", () => {
+    const realAdmZip = jest.requireActual("adm-zip");
+    return jest.fn((...args: any[]) => realAdmZip(...args));
+});
 import {
     PackageManifestTransport, PostPackageImportData, StudioPackageManifest,
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
@@ -333,6 +339,27 @@ describe("Config import", () => {
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8"});
         expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
+    })
+
+    it("Should throw an error when zip bomb causes uncompressed size to exceed 4 GB limit", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+
+        mockReadFileSync(exportedPackagesZip.toBuffer());
+        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
+
+        const FIVE_GB = 5 * 1024 * 1024 * 1024;
+        (AdmZip as unknown as jest.Mock).mockImplementationOnce((...args: any[]) => {
+            const instance = jest.requireActual<any>("adm-zip")(...args);
+            instance.getEntries = () => [{ header: { size: FIVE_GB } }];
+            return instance;
+        });
+
+        await expect(
+            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null)
+        ).rejects.toThrow('Failed to handle zip file "./export_file.zip": uncompressed size 5.00 GB exceeds the 4 GB limit.');
     })
 
     it("Should assign studio runtime variable values after import", async () => {
