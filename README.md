@@ -9,10 +9,11 @@ teams and execute commands in a profile's context.
 
 1. [Getting Started](#getting-started)
 2. [About the Project](#about-the-project)
-3. [Building the Project](#building-the-project)
-4. [Release Process](#release-process)
-5. [Contributing](#contributing)
-6. [License](#license)
+3. [Building the Project](#building-and-using-the-project-locally)
+4. [Troubleshooting](#troubleshooting)
+5. [Release Process](#release-process)
+6. [Contributing](#contributing)
+7. [License](#license)
 
 ## Getting Started
 
@@ -85,16 +86,65 @@ content-cli pull package -h
 ## Building and Using the Project locally 
 
 This tool is tightly connected with the Celonis Platform and all capabilities require to have access to a Celonis Platform Team. 
-After cloning the project, the next step is to install the project dependencies. We use `yarn` as our package manager, 
-so running `yarn install` on the project root folder should install all the necessary dependencies. After installing 
-the project dependencies, you can run `yarn build` to build the project artifact. To use the built artifact, you can 
-run `node content-cli.js` in the generated `dist` folder.
 
-If we want to use a specific local build of the tool globally, we can do this by:
-- Move to the root directory of the project.
-- Execute `cd dist`, to move to the `dist` directory.
-- Execute the `npm link` command. 
-This will create a symbolic link in the global `node_modules` directory, allowing you to run the CLI from anywhere on your machine.
+### Prerequisites
+
+- **Node.js** `>=18.20.5` (LTS recommended). Check with `node -v`.
+- **yarn** package manager. Install with `npm install -g yarn` if not already available.
+
+### Build steps
+
+```bash
+git clone https://github.com/celonis/content-cli.git
+cd content-cli
+yarn install
+yarn build
+```
+
+The build compiles TypeScript into the `dist/` folder and copies `package.json` there.
+
+### Running the built CLI
+
+You can run the built artifact directly from the `dist` folder:
+
+```bash
+node dist/content-cli.js -h
+```
+
+### Installing the local build globally
+
+To use your local build as the global `content-cli` command:
+
+```bash
+cd dist
+npm link
+```
+
+This creates a symbolic link in the global `node_modules` directory, allowing you to run `content-cli` from anywhere on your machine. To unlink later, run `npm unlink -g @celonis/content-cli`.
+
+## Troubleshooting
+
+### `Error: Cannot find module '...'`
+
+If you see a `Cannot find module` error when running `content-cli`, dependencies may not be installed correctly:
+
+- **Global install:** Try updating to the latest version: `npm install -g @celonis/content-cli@latest`.
+- **Local development:** Run `yarn install` from the project root before building.
+
+### `content-cli: command not found`
+
+- Ensure Node.js is installed and on your `PATH` (`node -v`).
+- If installed via `npm install -g`, check that npm's global `bin` directory is in your `PATH`. You can find it with `npm bin -g`.
+- If using `npm link`, make sure you ran it from the `dist/` directory (not the project root).
+
+### Node.js version errors
+
+Content CLI requires Node.js `>=18.20.5`. If you see compatibility errors, upgrade your Node.js installation. We recommend using [nvm](https://github.com/nvm-sh/nvm) to manage Node.js versions:
+
+```bash
+nvm install --lts
+nvm use --lts
+```
 
 ## Release Process
 
