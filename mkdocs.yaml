@@ -1,0 +1,34 @@
+site_name: Content CLI
+repo_url: https://github.com/celonis/content-cli
+edit_uri: edit/master/docs/
+docs_dir: ./docs
+
+plugins:
+  - techdocs-core
+
+nav:
+  - Overview: './index.md'
+  - Getting Started: './getting-started.md'
+  - User Guide:
+      - Studio Commands: './user-guide/studio-commands.md'
+      - Config Commands: './user-guide/config-commands.md'
+      - Deployment Commands: './user-guide/deployment-commands.md'
+      - Data Pool Commands: './user-guide/data-pool-commands.md'
+      - Action Flow Commands: './user-guide/action-flow-commands.md'
+  - Development:
+      - Architecture: './internal-architecture.md'
+      - How to Add a Command: './how-to-add-command.md'
+      - Release Management: './how-to-release.md'
+
+theme:
+  name: material
+  palette:
+    scheme: celonis
+  features:
+    - content.code.annotate
+    - navigation.instant
+    - navigation.sections
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
