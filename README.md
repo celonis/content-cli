@@ -72,8 +72,8 @@ Example, if you want to push a package from zipped file "interesting-package.zip
 content-cli push package -p my-dev-profile --spaceKey my-cool-space -f interesting-package.zip
 ```
 
-A more comprehensive list of Content CLI capabilities can be found on the following 
-[documentation](https://github.com/celonis/content-cli/blob/master/DOCUMENTATION.md). 
+A comprehensive list of Content CLI capabilities can be found in the 
+[documentation](https://github.com/celonis/content-cli/tree/master/docs).
 
 You can still explore the full capabilities of Content CLI and the list of options for the different commands 
 by using the `-h` option in your command.
