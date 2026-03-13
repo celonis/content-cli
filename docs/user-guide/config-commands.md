@@ -12,7 +12,7 @@ content-cli config list -p <sourceProfile>
 
 The result will be printed in the console containing only the package name and key:
 
-```log
+```text
 info:    Package1 - Key: "package-1"
 ```
 
@@ -24,7 +24,7 @@ content-cli config list -p <sourceProfile> --json
 
 The name of the file will be printed in the console with the following format:
 
-```log
+```text
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
@@ -61,7 +61,7 @@ The `--unzip` option can be used to unzip the exported packages into the current
 
 Depending on the `--unzip` option used, a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
 
-```log
+```text
 exported_package_random_uuid/
 ├─ manifest.json
 ├─ variable.json
@@ -139,7 +139,7 @@ content-cli config import -p <sourceProfile> --gitProfile myGitProfile --gitBran
 
 Finally, the result of this command will be a list of PostPackageImportData exported as a json file. The file name will be printed with the following message format:
 
-```log
+```text
 info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
@@ -174,7 +174,7 @@ content-cli list assignments --type <type> --params <additionalFilteringParams>
 
 The params argument should be passed in a key value format separated by commas with this specified format:
 
-```log
+```text
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
@@ -205,7 +205,7 @@ content-cli config versions get --packageKey my-package --packageVersion 1.2.3
 
 The command will display the version metadata in the console:
 
-```log
+```text
 info:    Package Key: my-package-key
 info:    Version: 1.2.3
 info:    History ID: history-id
@@ -244,7 +244,7 @@ content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey>
 
 The command will display the node information in the console:
 
-```log
+```text
 info:    ID: node-id-123
 info:    Key: node-key
 info:    Name: My Node
@@ -268,7 +268,7 @@ content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --wit
 
 When configuration is included, it will be displayed as a JSON string in the output:
 
-```log
+```text
 info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ```
 
@@ -314,7 +314,7 @@ content-cli config nodes list --packageKey <packageKey> --packageVersion <packag
 
 The command will display information for each node in the console as a JSON object:
 
-```log
+```text
 info: {"id":"node-id-123","key":"node-key-1","name":"My First Node","type":"VIEW",...}
 info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNOWLEDGE_MODEL",...}
 ...
@@ -366,7 +366,7 @@ content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --ba
 
 The command will display the differences in the console:
 
-```log
+```text
 info:    Package Key: my-package
 info:    Node Key: my-node
 info:    Name: My Node
@@ -423,7 +423,7 @@ content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <
 
 The command will display the dependencies in the console:
 
-```log
+```text
 info:    Found 3 dependencies:
 info:    {"packageKey":"dependency-package-1","key":"dependency-key-1","type":"ANALYSIS"}
 info:    {"packageKey":"dependency-package-2","key":"dependency-key-2","type":"VIEW"}
@@ -432,7 +432,7 @@ info:    {"packageKey":"dependency-package-3","key":"dependency-key-3","type":"S
 
 If no dependencies are found, the command will display:
 
-```log
+```text
 info:    No dependencies found for this node.
 ```
 
