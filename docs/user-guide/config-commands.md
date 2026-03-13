@@ -6,25 +6,25 @@ The `config` command group allows you to list, batch export, import packages of 
 
 Packages can be listed using the following command:
 
-```
+```bash
 content-cli config list -p <sourceProfile>
 ```
 
 The result will be printed in the console containing only the package name and key:
 
-```
+```text
 info:    Package1 - Key: "package-1"
 ```
 
 By using the `--json` option, packages can be exported (saved) in an extended form as a json file in the current working directory.
 
-```
+```bash
 content-cli config list -p <sourceProfile> --json
 ```
 
 The name of the file will be printed in the console with the following format:
 
-```
+```text
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
@@ -36,13 +36,13 @@ When using the listing command with the `--json` option, two additional options 
 
 -  **--withDependencies**: This option will include the dependencies of the packages in the output.
 
-```
+```bash
 content-cli config list -p <sourceProfile> --withDependencies
 ```
 
 - **--packageKeys**: This option allows you to filter the packages by their keys. You can specify multiple package keys separated by spaces.
 
-```
+```bash
 content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN
 [optional] –withDependencies
 ```
@@ -51,7 +51,7 @@ content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN
 
 Packages can be exported using the following command:
 
-```
+```bash
 content-cli config export -p <sourceProfile> --packageKeys key1 ... keyN
 ```
 
@@ -61,7 +61,7 @@ The `--unzip` option can be used to unzip the exported packages into the current
 
 Depending on the `--unzip` option used, a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
 
-```
+```text
 exported_package_random_uuid/
 ├─ manifest.json
 ├─ variable.json
@@ -81,7 +81,7 @@ The following **Git options** are available:
 
 Example exporting to Git:
 
-```
+```bash
 content-cli config export -p <sourceProfile> --packageKeys key1 key2 --gitProfile myGitProfile --gitBranch feature-branch
 ```
 
@@ -105,21 +105,21 @@ Inside the nodes directory, a file for each node will be present:
 
 Packages can be imported using the following commands, if importing from a zip file:
 
-```
+```bash
 content-cli config import -p <sourceProfile> -f <relative exported zip file path>
 ```
 
 Where `-f` is the short hand operation for `--file`.
 If importing from a directory containing the exported packages, the following command can be used:
 
-```
+```bash
 content-cli config import -p <sourceProfile> -d <relative exported directory file path>
 ```
 
 Where `-d` is the shorthand operation for `--directory`.
 When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages. If the package in target environment contains unpublished changes, they are automatically saved under a new version. This allows you to audit, compare, or roll back to your previous state via the version history if needed.
 
-```
+```bash
 content-cli config import -p <sourceProfile> -f <file path> --overwrite
 ```
 
@@ -133,13 +133,13 @@ The following **Git options** are available:
 
 Example importing from Git:
 
-```
+```bash
 content-cli config import -p <sourceProfile> --gitProfile myGitProfile --gitBranch feature-branch
 ```
 
 Finally, the result of this command will be a list of PostPackageImportData exported as a json file. The file name will be printed with the following message format:
 
-```
+```text
 info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
@@ -149,13 +149,13 @@ info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 
 Package variables (with assignments) can be listed with the following command:
 
-```
+```bash
 content-cli config variables list -p <sourceProfile> --keysByVersion key1:version1 ... keyN:versionN
 ```
 
 The --keysByVersion option should specify a list of key :(colon) version pairs. Alternatively, a json file path containing a list of key and version pairs can be used. The PackageKeyAndVersionPair for the file should have the following form:
 
-```
+```typescript
 export interface PackageKeyAndVersionPair {
     packageKey: string;
     version: string;
@@ -168,13 +168,13 @@ Similar to the other listing commands, the --json option can be used for exporti
 
 By using the list assignments command, possible assignment values for the target team can be fetched for each variable type. The list assignments command has the following format:
 
-```
+```bash
 content-cli list assignments --type <type> --params <additionalFilteringParams>
 ```
 
 The params argument should be passed in a key value format separated by commas with this specified format:
 
-```
+```text
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
@@ -193,19 +193,19 @@ The **config versions** command group allows you to retrieve metadata informatio
 
 To get metadata for a specific package version, use the following command:
 
-```
+```bash
 content-cli config versions get --packageKey <packageKey> --packageVersion <packageVersion>
 ```
 
 For example, to get metadata for version 1.2.3 of a package:
 
-```
+```bash
 content-cli config versions get --packageKey my-package --packageVersion 1.2.3
 ```
 
 The command will display the version metadata in the console:
 
-```
+```text
 info:    Package Key: my-package-key
 info:    Version: 1.2.3
 info:    History ID: history-id
@@ -218,7 +218,7 @@ info:    Published By: user@example.com
 
 Note: You can also use `LATEST` instead of a specific version to get the most recently created version:
 
-```
+```bash
 content-cli config versions get --packageKey my-package --packageVersion LATEST
 ```
 
@@ -226,7 +226,7 @@ content-cli config versions get --packageKey my-package --packageVersion LATEST
 
 To export the version metadata as a JSON file instead of displaying it in the console, use the `--json` option:
 
-```
+```bash
 content-cli config versions get --packageKey <packageKey> --packageVersion <packageVersion> --json
 ```
 
@@ -238,13 +238,13 @@ The **config nodes find** command allows you to retrieve information about a spe
 
 To find a specific node in a package, use the following command:
 
-```
+```bash
 content-cli config nodes find --packageKey <packageKey> --nodeKey <nodeKey>
 ```
 
 The command will display the node information in the console:
 
-```
+```text
 info:    ID: node-id-123
 info:    Key: node-key
 info:    Name: My Node
@@ -262,13 +262,13 @@ info:    Flavor: STUDIO
 
 By default, the node configuration is not included in the response. To include the node's configuration, use the `--withConfiguration` flag:
 
-```
+```bash
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --withConfiguration
 ```
 
 When configuration is included, it will be displayed as a JSON string in the output:
 
-```
+```text
 info:    Configuration: {"key":"value","nested":{"field":"data"}}
 ```
 
@@ -276,13 +276,13 @@ info:    Configuration: {"key":"value","nested":{"field":"data"}}
 
 To find a specific node in a package by version, use the `--packageVersion` option:
 
-```
+```bash
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion>
 ```
 
 You can combine the `--packageVersion` and `--withConfiguration` options:
 
-```
+```bash
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --withConfiguration
 ```
 
@@ -290,13 +290,13 @@ content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --pac
 
 To export the node information as a JSON file instead of displaying it in the console, use the `--json` option:
 
-```
+```bash
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --json
 ```
 
 You can combine options to export a versioned node with its configuration:
 
-```
+```bash
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --withConfiguration --json
 ```
 
@@ -308,13 +308,13 @@ The **config nodes list** command allows you to retrieve all nodes within a spec
 
 To list all nodes in a specific package version, use the following command:
 
-```
+```bash
 content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion>
 ```
 
 The command will display information for each node in the console as a JSON object:
 
-```
+```text
 info: {"id":"node-id-123","key":"node-key-1","name":"My First Node","type":"VIEW",...}
 info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNOWLEDGE_MODEL",...}
 ...
@@ -324,7 +324,7 @@ info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNO
 
 The response is paginated, and the page size can be controlled with the `--limit` and `--offset` options (defaults to 100 and 0 respectively).
 
-```
+```bash
 content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 10
 content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 10 --offset 10
 ```
@@ -333,7 +333,7 @@ content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --l
 
 By default, the node configuration is not included in the response. To include each node's configuration, use the `--withConfiguration` flag:
 
-```
+```bash
 content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --withConfiguration
 ```
 
@@ -341,13 +341,13 @@ content-cli config nodes list --packageKey <packageKey> --packageVersion <packag
 
 To export the nodes list as a JSON file, use the `--json` option:
 
-```
+```bash
 content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --json
 ```
 
 You can combine options:
 
-```
+```bash
 content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --withConfiguration --json
 content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 50 --offset 100 --json
 ```
@@ -360,13 +360,13 @@ The **config nodes diff** command allows you to compare two versions of a node's
 
 To compare two versions of a node, use the following command:
 
-```
+```bash
 content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --baseVersion <baseVersion> --compareVersion <compareVersion>
 ```
 
 The command will display the differences in the console:
 
-```
+```text
 info:    Package Key: my-package
 info:    Node Key: my-node
 info:    Name: My Node
@@ -405,7 +405,7 @@ The `metadataChanges` field follows the same structure but represents changes to
 
 To export the node diff as a JSON file, use the `--json` option:
 
-```
+```bash
 content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --baseVersion <baseVersion> --compareVersion <compareVersion> --json
 ```
 
@@ -417,13 +417,13 @@ The **config nodes dependencies list** command allows you to retrieve all depend
 
 To list all dependencies of a node in a specific package version, use the following command:
 
-```
+```bash
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version>
 ```
 
 The command will display the dependencies in the console:
 
-```
+```text
 info:    Found 3 dependencies:
 info:    {"packageKey":"dependency-package-1","key":"dependency-key-1","type":"ANALYSIS"}
 info:    {"packageKey":"dependency-package-2","key":"dependency-key-2","type":"VIEW"}
@@ -432,7 +432,7 @@ info:    {"packageKey":"dependency-package-3","key":"dependency-key-3","type":"S
 
 If no dependencies are found, the command will display:
 
-```
+```text
 info:    No dependencies found for this node.
 ```
 
@@ -440,7 +440,7 @@ info:    No dependencies found for this node.
 
 The `--packageVersion` parameter is optional. When omitted, the command will retrieve dependencies from the staging (draft) version of the node:
 
-```
+```bash
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey>
 ```
 
@@ -448,7 +448,7 @@ content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <
 
 To export the node dependencies as a JSON file, use the `--json` option:
 
-```
+```bash
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version> --json
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --json
 ```
