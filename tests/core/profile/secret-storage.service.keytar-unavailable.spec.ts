@@ -1,6 +1,6 @@
 import { Profile, ProfileType, AuthenticationType } from "../../../src/core/profile/profile.interface";
 
-jest.doMock("keytar", () => {
+jest.doMock("@github/keytar", () => {
     throw new Error("Mock failure in loading lib");
 }, { virtual: true });
 

@@ -100,14 +100,12 @@ export class ProfileService {
     public async storeProfile(profile: Profile): Promise<void> {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
-        
-        // Create a copy of the profile to avoid mutating the input
+        profile.team = this.getBaseTeamUrl(profile.team);
+
+        const secretsStoredInKeychain = await this.secureSecretStorageService.storeSecrets(profile);
+
         const profileToStore: Profile = { ...profile };
-        profileToStore.team = this.getBaseTeamUrl(profile.team);
 
-        const secretsStoredInKeychain = await this.secureSecretStorageService.storeSecrets(profileToStore);
-
-        // Remove secrets from plain text storage if they were successfully stored in system keychain
         if (secretsStoredInKeychain) {
             profileToStore.secretsStoredSecurely = true;
             delete profileToStore.apiToken;

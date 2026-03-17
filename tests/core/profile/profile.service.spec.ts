@@ -927,7 +927,7 @@ describe("ProfileService - storeProfile", () => {
         (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
     });
 
-    it("should create profile container if not exists and write profile with normalized team URL", () => {
+    it("should create profile container if not exists and write profile with normalized team URL", async () => {
         (fs.existsSync as jest.Mock).mockReturnValue(false);
 
         const profile: Profile = {
@@ -938,7 +938,7 @@ describe("ProfileService - storeProfile", () => {
             type: ProfileType.KEY,
         };
 
-        profileService.storeProfile(profile);
+        await profileService.storeProfile(profile);
 
         expect(fs.mkdirSync).toHaveBeenCalledWith(mockProfilePath);
         expect(fs.writeFileSync).toHaveBeenCalledWith(
@@ -949,7 +949,7 @@ describe("ProfileService - storeProfile", () => {
         expect(profile.team).toBe("https://example.celonis.cloud");
     });
 
-    it("should write profile with correct filename", () => {
+    it("should write profile with correct filename", async () => {
         const profile: Profile = {
             name: "my-profile",
             team: "https://team.celonis.cloud",
@@ -958,7 +958,7 @@ describe("ProfileService - storeProfile", () => {
             type: ProfileType.KEY,
         };
 
-        profileService.storeProfile(profile);
+        await profileService.storeProfile(profile);
 
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve(mockProfilePath, "my-profile.json"),
@@ -1141,7 +1141,7 @@ describe("ProfileService - refreshProfile", () => {
             clientAuthenticationMethod: "client_secret_basic",
             expiresAt: Math.floor(Date.now() / 1000) + 3600,
         };
-        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(() => {});
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
 
         await profileService.refreshProfile(profile);
 
@@ -1171,13 +1171,15 @@ describe("ProfileService - refreshProfile", () => {
                 grant: jest.fn().mockResolvedValue(newTokenSet),
             })),
         });
-        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(() => {});
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
 
         await profileService.refreshProfile(profile);
 
         expect(profile.apiToken).toBe("new-token");
         expect(profile.expiresAt).toBe(newTokenSet.expires_at);
         expect(storeSpy).toHaveBeenCalledWith(profile);
+    });
+});
 
 describe("Profile Service - Store Profile", () => {
     let profileService: ProfileService;

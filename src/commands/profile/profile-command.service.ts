@@ -63,4 +63,22 @@ export class ProfileCommandService {
         await this.profileService.makeDefaultProfile(profile);
         logger.info("Default profile: " + profile);
     }
+
+    public async secureProfile(profileName: string): Promise<void> {
+        const profile = await this.profileService.findProfile(profileName);
+
+        if (profile.secretsStoredSecurely) {
+            logger.info(`Profile "${profileName}" is already using secure storage.`);
+            return;
+        }
+
+        await this.profileService.storeProfile(profile);
+
+        const updatedProfile = await this.profileService.findProfile(profileName);
+        if (updatedProfile.secretsStoredSecurely) {
+            logger.info(`Profile "${profileName}" secrets have been migrated to secure storage.`);
+        } else {
+            logger.warn(`Failed to migrate profile "${profileName}" to secure storage. Secrets remain in plaintext.`);
+        }
+    }
 }

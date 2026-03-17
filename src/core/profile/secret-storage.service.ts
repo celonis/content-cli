@@ -21,7 +21,7 @@ function getKeytar(): any {
         return null;
     }
     try {
-        keytar = require("keytar");
+        keytar = require("@github/keytar");
         return keytar;
     } catch (error) {
         keytarLoadError = error as Error;

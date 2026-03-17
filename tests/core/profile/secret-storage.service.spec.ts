@@ -8,7 +8,7 @@ const mockKeytar = {
     findCredentials: jest.fn()
 };
 
-jest.mock("keytar", () => {
+jest.mock("@github/keytar", () => {
     return mockKeytar;
 }, { virtual: true });
 
@@ -25,7 +25,7 @@ describe("SecureSecretStorageService", () => {
         
         service = new SecureSecretStorageService();
 
-        const keytarModule = require("keytar");
+        const keytarModule = require("@github/keytar");
         expect(keytarModule).toBe(mockKeytar);
     });
 
