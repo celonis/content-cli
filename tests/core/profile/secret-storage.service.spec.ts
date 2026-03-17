@@ -108,6 +108,7 @@ describe("SecureSecretStorageService", () => {
                 "test-api-token"
             );
         });
+
     });
 
     describe("getSecrets", () => {
@@ -140,6 +141,17 @@ describe("SecureSecretStorageService", () => {
 
             expect(result).toBeUndefined();
             expect(mockKeytar.findCredentials).toHaveBeenCalledWith("celonis-content-cli:non-existent-profile");
+        });
+
+        it("Should return undefined when findCredentials throws", async () => {
+            const profileName = "locked-keychain-profile";
+
+            mockKeytar.findCredentials.mockRejectedValue(new Error("Keychain locked"));
+
+            const result = await service.getSecrets(profileName);
+
+            expect(result).toBeUndefined();
+            expect(mockKeytar.findCredentials).toHaveBeenCalledWith("celonis-content-cli:locked-keychain-profile");
         });
 
         it("Should map account names to profile secrets correctly", async () => {

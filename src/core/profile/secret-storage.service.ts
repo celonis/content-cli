@@ -66,19 +66,23 @@ export class SecureSecretStorageService {
             return undefined;
         }
 
-        const secrets = await keytarModule.findCredentials(this.getSecretServiceName(profileName));
+        try {
+            const secrets = await keytarModule.findCredentials(this.getSecretServiceName(profileName));
 
-        if (!secrets.length) {
+            if (!secrets.length) {
+                return undefined;
+            }
+
+            const profileSecrets = {};
+
+            for (const secret of secrets) {
+                profileSecrets[secret.account] = secret.password
+            }
+
+            return profileSecrets as ProfileSecrets;
+        } catch (err) {
             return undefined;
         }
-
-        const profileSecrets = {};
-
-        for (const secret of secrets) {
-            profileSecrets[secret.account] = secret.password
-        }
-
-        return profileSecrets as ProfileSecrets;
     }
 
     private getSecretServiceName(profileName: string): string {
