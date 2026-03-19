@@ -84,7 +84,7 @@ class Module extends IModule {
             .action(this.listVariables);
 
         variablesCommand.command("listStaging")
-            .description("List staging (unpublished) variables via Pacman public API")
+            .description("Command to list the staging variables of packages")
             .option("--json", "Return response as json type", "")
             .requiredOption("--packageKeys <packageKeys...>", "Package keys")
             .option("--variableType <variableType>", "Filter staging variables by type", "")
