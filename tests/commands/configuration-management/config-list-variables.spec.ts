@@ -222,6 +222,6 @@ describe("Config listVariables", () => {
     it("Should throw when listStagingVariables called with empty package keys", async () => {
         await expect(
             new ConfigCommandService(testContext).listStagingVariables(false, [], "")
-        ).rejects.toThrow("With --staging, provide at least one --packageKeys value.");
+        ).rejects.toThrow("Please provide at least one package key!");
     });
 })
