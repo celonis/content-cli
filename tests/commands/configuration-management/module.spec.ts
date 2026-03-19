@@ -2,10 +2,12 @@ import Module = require("../../../src/commands/configuration-management/module")
 import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
+import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
 import { testContext } from "../../utls/test-context";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
 jest.mock("../../../src/commands/configuration-management/node-dependency.service");
+jest.mock("../../../src/commands/configuration-management/package-version-command.service");
 
 describe("Configuration Management Module - Action Validations", () => {
     let module: Module;
@@ -401,6 +403,96 @@ describe("Configuration Management Module - Action Validations", () => {
                     "feature-branch"
                 );
             });
+        });
+    });
+
+    describe("createPackageVersion validation", () => {
+        let mockPackageVersionCommandService: jest.Mocked<PackageVersionCommandService>;
+
+        beforeEach(() => {
+            mockPackageVersionCommandService = {
+                createPackageVersion: jest.fn().mockResolvedValue(undefined),
+            } as any;
+
+            (PackageVersionCommandService as jest.MockedClass<typeof PackageVersionCommandService>).mockImplementation(() => mockPackageVersionCommandService);
+        });
+
+        it("should throw error when both --version and --versionBumpOption PATCH are provided", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                version: "1.2.0",
+                versionBumpOption: "PATCH",
+            };
+
+            await expect(
+                (module as any).createPackageVersion(testContext, mockCommand, options)
+            ).rejects.toThrow("Please provide either --version or --versionBumpOption, but not both.");
+
+            expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
+        });
+
+        it("should throw error when neither --version nor --versionBumpOption PATCH are provided", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                versionBumpOption: "NONE",
+            };
+
+            await expect(
+                (module as any).createPackageVersion(testContext, mockCommand, options)
+            ).rejects.toThrow("Please provide either --version or --versionBumpOption PATCH.");
+
+            expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
+        });
+
+        it("should throw error when --version is missing and --versionBumpOption is not provided (defaults to NONE)", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+            };
+
+            await expect(
+                (module as any).createPackageVersion(testContext, mockCommand, options)
+            ).rejects.toThrow("Please provide either --version or --versionBumpOption PATCH.");
+
+            expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
+        });
+
+        it("should pass validation when only --version is provided", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                version: "1.2.0",
+                versionBumpOption: "NONE",
+                summaryOfChanges: "New features",
+            };
+
+            await (module as any).createPackageVersion(testContext, mockCommand, options);
+
+            expect(mockPackageVersionCommandService.createPackageVersion).toHaveBeenCalledWith(
+                "my-package",
+                "1.2.0",
+                "NONE",
+                "New features",
+                undefined,
+                undefined,
+            );
+        });
+
+        it("should pass validation when only --versionBumpOption PATCH is provided", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                versionBumpOption: "PATCH",
+                summaryOfChanges: "Bug fixes",
+            };
+
+            await (module as any).createPackageVersion(testContext, mockCommand, options);
+
+            expect(mockPackageVersionCommandService.createPackageVersion).toHaveBeenCalledWith(
+                "my-package",
+                undefined,
+                "PATCH",
+                "Bug fixes",
+                undefined,
+                undefined,
+            );
         });
     });
 
