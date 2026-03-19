@@ -49,6 +49,11 @@ export interface VariableManifestTransport {
     variables?: VariableExportTransport[];
 }
 
+export interface StagingVariableManifestTransport {
+    packageKey: string;
+    variables?: VariableExportTransport[];
+}
+
 export interface PackageKeyAndVersionPair {
     packageKey: string;
     version: string;

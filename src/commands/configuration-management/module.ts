@@ -83,6 +83,13 @@ class Module extends IModule {
             .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
             .action(this.listVariables);
 
+        variablesCommand.command("listStaging")
+            .description("List staging (unpublished) variables via Pacman public API")
+            .option("--json", "Return response as json type", "")
+            .requiredOption("--packageKeys <packageKeys...>", "Package keys")
+            .option("--variableType <variableType>", "Filter staging variables by type", "")
+            .action(this.listStagingVariables);
+
         const nodesCommand = configCommand.command("nodes")
             .description("Commands related to nodes of the package");
 
@@ -173,6 +180,10 @@ class Module extends IModule {
 
     private async listVariables(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConfigCommandService(context).listVariables(options.json, options.keysByVersion, options.keysByVersionFile);
+    }
+
+    private async listStagingVariables(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new ConfigCommandService(context).listStagingVariables(options.json, options.packageKeys, options.variableType ?? "");
     }
 
     private async listAssignments(context: Context, command: Command, options: OptionValues): Promise<void> {
