@@ -26,6 +26,7 @@
     "form-data": "4.0.4",
     "openid-client": "5.6.1",
     "hpagent": "1.2.0",
+    "@github/keytar": "7.10.6",
     "semver": "7.6.3",
     "simple-git": "3.32.3",
     "valid-url": "1.0.9",

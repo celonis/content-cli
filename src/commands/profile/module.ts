@@ -26,6 +26,11 @@ class Module extends IModule {
         command.command("default <profile>")
                 .description("Command to set a profile as default")
                 .action(this.defaultProfile);
+
+        command.command("secure <profile>")
+                .description("Migrate a profile's secrets to secure system keychain storage")
+                .action(this.secureProfile);
+
     }
 
     private async defaultProfile(context: Context, command: Command): Promise<void> {
@@ -41,6 +46,12 @@ class Module extends IModule {
         logger.debug("List profiles");
         await new ProfileCommandService().listProfiles();
     }
+
+    private async secureProfile(context: Context, command: Command): Promise<void> {
+        const profile = command.args[0];
+        await new ProfileCommandService().secureProfile(profile);
+    }
+
 }
 
 export = Module;
