@@ -172,7 +172,8 @@ To list **staging** (unpublished) variables from Pacman’s public API (per pack
 content-cli config variables listStaging -p <profile> --packageKeys <packageKey> [<packageKey> ...]
 ```
 
-Optional `--variableType` filters by variable type (Pacman query parameter `type`). With `--json`, the CLI writes one JSON file containing an array of `{ "packageKey", "variables" }` objects (one entry per requested package).
+Optional `--variableType` filters by variable type (Pacman query parameter `type`).
+The --json option can be used for exporting the result as a json file.
 
 ### Listing Assignments
 
