@@ -70,6 +70,10 @@ export class VariableService {
         variableType: string
     ): Promise<StagingVariableManifestTransport[]> {
         const results: StagingVariableManifestTransport[] = [];
+        if (packageKeys.length === 0) {
+            throw new FatalError("Please provide at least one package key!");
+        }
+
         for (const packageKey of packageKeys) {
             const variableManifestTransport = await this.stagingPackageVariablesApi.findAllByPackageKey(packageKey, variableType);
             results.push( variableManifestTransport );

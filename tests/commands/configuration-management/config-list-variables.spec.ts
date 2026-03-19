@@ -191,7 +191,7 @@ describe("Config listVariables", () => {
             stagingVarsPkgB
         );
 
-        await new ConfigCommandService(testContext).listVariables(false, [], "", true, ["pkg-a", "pkg-b"]);
+        await new ConfigCommandService(testContext).listStagingVariables(false, ["pkg-a", "pkg-b"], "");
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -208,7 +208,7 @@ describe("Config listVariables", () => {
             [stagingVarsPkgA[0]]
         );
 
-        await new ConfigCommandService(testContext).listVariables(true, [], "", true, ["pkg-a"], "SINGLE_VALUE");
+        await new ConfigCommandService(testContext).listStagingVariables(true, ["pkg-a"], "SINGLE_VALUE");
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
@@ -219,21 +219,9 @@ describe("Config listVariables", () => {
         );
     });
 
-    it("Should throw when --staging without package keys", async () => {
+    it("Should throw when listStagingVariables called with empty package keys", async () => {
         await expect(
-            new ConfigCommandService(testContext).listVariables(false, [], "", true, [])
+            new ConfigCommandService(testContext).listStagingVariables(false, [], "")
         ).rejects.toThrow("With --staging, provide at least one --packageKeys value.");
-    });
-
-    it("Should throw when --staging combined with keysByVersion", async () => {
-        await expect(
-            new ConfigCommandService(testContext).listVariables(false, ["k:1.0.0"], "", true, ["pkg-a"])
-        ).rejects.toThrow("Do not combine --staging with --keysByVersion or --keysByVersionFile.");
-    });
-
-    it("Should throw when --packageKeys without --staging", async () => {
-        await expect(
-            new ConfigCommandService(testContext).listVariables(false, ["k:1.0.0"], "", false, ["pkg-a"])
-        ).rejects.toThrow("--packageKeys is only used together with --staging.");
     });
 })

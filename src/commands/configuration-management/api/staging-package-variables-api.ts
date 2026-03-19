@@ -20,6 +20,7 @@ export class StagingPackageVariablesApi {
 
     /**
      * Public Pacman API (TA-5048): staging variables for a package.
+     * Backend returns an array of VariableTransport; we wrap as { packageKey, variables }.
      */
     public async findAllByPackageKey(packageKey: string, variableType?: string): Promise<StagingVariableManifestTransport> {
         const params = new URLSearchParams();
@@ -28,10 +29,12 @@ export class StagingPackageVariablesApi {
         }
         const query = params.toString();
         const path = `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/variables${query ? `?${query}` : ""}`;
-        return await this.httpClient()
+        const response = await this.httpClient()
             .get(path)
             .catch((e: unknown) => {
                 throw new FatalError(`Problem listing staging variables for package '${packageKey}': ${e}`);
             });
+        const variables = Array.isArray(response) ? response : (response as StagingVariableManifestTransport).variables ?? [];
+        return { packageKey, variables };
     }
 }

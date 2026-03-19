@@ -48,35 +48,6 @@ export class ConfigCommandService {
         }
     }
 
-/*
-    public async listVariables(
-        jsonResponse: boolean,
-        keysByVersion: string[],
-        keysByVersionFile: string,
-        staging?: boolean,
-        packageKeys?: string[],
-        variableType?: string
-    ): Promise<void> {
-        if (staging) {
-            const keys = packageKeys ?? [];
-            if (keys.length === 0) {
-                throw new FatalError("With --staging, provide at least one --packageKeys value.");
-            }
-            if ((keysByVersion?.length ?? 0) > 0 || (keysByVersionFile && keysByVersionFile !== "")) {
-                throw new FatalError("Do not combine --staging with --keysByVersion or --keysByVersionFile.");
-            }
-            if (jsonResponse) {
-                await this.variableService.exportStagingVariables(keys, variableType);
-            } else {
-                await this.variableService.listStagingVariables(keys, variableType);
-            }
-            return;
-        }
-        if ((packageKeys?.length ?? 0) > 0) {
-            throw new FatalError("--packageKeys is only used together with --staging.");
-        }
-*/
-
     public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
         return this.batchImportExportService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies, gitBranch, unzip);
     }
