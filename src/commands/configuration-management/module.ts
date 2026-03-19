@@ -183,7 +183,7 @@ class Module extends IModule {
     }
 
     private async listStagingVariables(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).listStagingVariables(options.json, options.packageKeys, options.variableType ?? "");
+        await new ConfigCommandService(context).listStagingVariables(options.json, options.packageKeys, options.variableType);
     }
 
     private async listAssignments(context: Context, command: Command, options: OptionValues): Promise<void> {
