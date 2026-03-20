@@ -166,14 +166,15 @@ Similar to the other listing commands, the --json option can be used for exporti
 
 ### Listing staging package variables
 
-To list **staging** (unpublished) variables from Pacman’s public API (per package key), use the `listStaging` subcommand with `--packageKeys`:
+Staging (unpublished) package variables can be listed with the following command:
 
 ```bash
 content-cli config variables listStaging -p <profile> --packageKeys <packageKey> [<packageKey> ...]
 ```
 
-Optional `--variableType` filters by variable type (Pacman query parameter `type`).
-Pacman returns one manifest object per package (`packageKey` and `variables`). With `--json`, the CLI writes a JSON array containing those manifests (one entry per requested package key).
+The `--packageKeys` option specifies which packages to include. Optional `--variableType` limits the result to variables of that type.
+
+Similar to the other listing commands, the `--json` option can be used for exporting (saving) the result as a json file.
 
 ### Listing Assignments
 

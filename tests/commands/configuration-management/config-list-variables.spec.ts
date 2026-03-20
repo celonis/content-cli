@@ -6,7 +6,7 @@ import {
     VariableManifestTransport,
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
 import { PackageManagerVariableType } from "../../../src/commands/studio/interfaces/package-manager.interfaces";
-import { mockAxiosGet, mockAxiosPost, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
+import { mockAxiosPost, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
@@ -181,31 +181,31 @@ describe("Config listVariables", () => {
     ];
     const stagingVarsPkgB = [{ key: "DATA_POOL", type: "SINGLE_VALUE", value: "pool-id-2" }];
 
-    it("Should list staging variables per package via Pacman public API", async () => {
-        mockAxiosGet(
-            "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/pkg-a/variables",
-            { packageKey: "pkg-a", variables: stagingVarsPkgA }
-        );
-        mockAxiosGet(
-            "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/pkg-b/variables",
-            { packageKey: "pkg-b", variables: stagingVarsPkgB }
+    it("Should list staging variables in one Pacman batch public API call", async () => {
+        const batchResponse = [
+            { packageKey: "pkg-a", variables: stagingVarsPkgA },
+            { packageKey: "pkg-b", variables: stagingVarsPkgB },
+        ];
+        mockAxiosPost(
+            "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/variables/by-package-keys",
+            batchResponse
         );
 
         await new ConfigCommandService(testContext).listStagingVariables(false, ["pkg-a", "pkg-b"], "");
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
-        expect(loggingTestTransport.logMessages[0].message).toContain(
-            JSON.stringify({ packageKey: "pkg-a", variables: stagingVarsPkgA })
-        );
-        expect(loggingTestTransport.logMessages[1].message).toContain(
-            JSON.stringify({ packageKey: "pkg-b", variables: stagingVarsPkgB })
-        );
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(batchResponse[0]));
+        expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(batchResponse[1]));
+        expect(JSON.parse(mockedPostRequestBodyByUrl.get(
+            "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/variables/by-package-keys"
+        ))).toEqual(["pkg-a", "pkg-b"]);
     });
 
     it("Should export staging variables as json file", async () => {
-        mockAxiosGet(
-            "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/pkg-a/variables?type=SINGLE_VALUE",
-            { packageKey: "pkg-a", variables: [stagingVarsPkgA[0]] }
+        const filtered = [{ packageKey: "pkg-a", variables: [stagingVarsPkgA[0]] }];
+        mockAxiosPost(
+            "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/variables/by-package-keys?variableType=SINGLE_VALUE",
+            filtered
         );
 
         await new ConfigCommandService(testContext).listStagingVariables(true, ["pkg-a"], "SINGLE_VALUE");
@@ -214,7 +214,7 @@ describe("Config listVariables", () => {
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(
             path.resolve(process.cwd(), expectedFileName),
-            JSON.stringify([{ packageKey: "pkg-a", variables: [stagingVarsPkgA[0]] }]),
+            JSON.stringify(filtered),
             { encoding: "utf-8" }
         );
     });
@@ -224,4 +224,4 @@ describe("Config listVariables", () => {
             new ConfigCommandService(testContext).listStagingVariables(false, [], "")
         ).rejects.toThrow("Please provide at least one package key!");
     });
-})
+});
