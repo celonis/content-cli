@@ -76,7 +76,7 @@ export class VariableService {
 
         for (const packageKey of packageKeys) {
             const variableManifestTransport = await this.stagingPackageVariablesApi.findAllByPackageKey(packageKey, variableType);
-            results.push( variableManifestTransport );
+            results.push(variableManifestTransport);
         }
         return results;
     }

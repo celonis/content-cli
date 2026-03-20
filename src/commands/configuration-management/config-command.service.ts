@@ -1,5 +1,4 @@
 import { Context } from "../../core/command/cli-context";
-import { FatalError } from "../../core/utils/logger";
 import { BatchImportExportService } from "./batch-import-export.service";
 import { VariableService } from "./variable.service";
 import { DiffService } from "./diff.service";

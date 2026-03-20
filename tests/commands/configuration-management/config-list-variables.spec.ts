@@ -184,11 +184,11 @@ describe("Config listVariables", () => {
     it("Should list staging variables per package via Pacman public API", async () => {
         mockAxiosGet(
             "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/pkg-a/variables",
-            stagingVarsPkgA
+            { packageKey: "pkg-a", variables: stagingVarsPkgA }
         );
         mockAxiosGet(
             "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/pkg-b/variables",
-            stagingVarsPkgB
+            { packageKey: "pkg-b", variables: stagingVarsPkgB }
         );
 
         await new ConfigCommandService(testContext).listStagingVariables(false, ["pkg-a", "pkg-b"], "");
@@ -205,7 +205,7 @@ describe("Config listVariables", () => {
     it("Should export staging variables as json file", async () => {
         mockAxiosGet(
             "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/pkg-a/variables?type=SINGLE_VALUE",
-            [stagingVarsPkgA[0]]
+            { packageKey: "pkg-a", variables: [stagingVarsPkgA[0]] }
         );
 
         await new ConfigCommandService(testContext).listStagingVariables(true, ["pkg-a"], "SINGLE_VALUE");
