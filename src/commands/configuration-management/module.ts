@@ -77,18 +77,13 @@ class Module extends IModule {
             .description("Commands related to variable configs");
 
         variablesCommand.command("list")
-            .description("Command to list versioned variables of packages")
+            .description("List package variables: use --packageKeys for staging (unpublished), or --keysByVersion / --keysByVersionFile for versioned variables")
             .option("--json", "Return response as json type", "")
-            .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", "")
+            .option("--packageKeys <packageKeys...>", "Package keys (staging variables only; mutually exclusive with versioned options)", [])
+            .option("--variableType <variableType>", "Filter staging variables by type (only with --packageKeys)", "")
+            .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", [])
             .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
             .action(this.listVariables);
-
-        variablesCommand.command("listStaging")
-            .description("Command to list the staging variables of packages")
-            .option("--json", "Return response as json type", "")
-            .requiredOption("--packageKeys <packageKeys...>", "Package keys")
-            .option("--variableType <variableType>", "Filter staging variables by type", "")
-            .action(this.listStagingVariables);
 
         const nodesCommand = configCommand.command("nodes")
             .description("Commands related to nodes of the package");
@@ -179,11 +174,28 @@ class Module extends IModule {
     }
 
     private async listVariables(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).listVariables(options.json, options.keysByVersion, options.keysByVersionFile);
-    }
+        const hasStagingKeys = options.packageKeys.length > 0;
+        const hasVersioned =
+            options.keysByVersion.length > 0 || options.keysByVersionFile !== "";
 
-    private async listStagingVariables(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).listStagingVariables(options.json, options.packageKeys, options.variableType);
+        if (hasStagingKeys && hasVersioned) {
+            throw new Error(
+                "Please provide either --packageKeys or --keysByVersion/--keysByVersionFile, but not both."
+            );
+        }
+        if (!hasStagingKeys && !hasVersioned) {
+            throw new Error(
+                "Please provide --packageKeys for staging variables, or --keysByVersion / --keysByVersionFile for versioned variables."
+            );
+        }
+
+        await new ConfigCommandService(context).listVariables(
+            options.json,
+            options.keysByVersion,
+            options.keysByVersionFile,
+            options.packageKeys,
+            options.variableType
+        );
     }
 
     private async listAssignments(context: Context, command: Command, options: OptionValues): Promise<void> {

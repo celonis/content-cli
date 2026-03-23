@@ -31,19 +31,25 @@ export class ConfigCommandService {
         }
     }
 
-    public async listVariables(jsonResponse: boolean, keysByVersion: string[], keysByVersionFile: string): Promise<void> {
+    public async listVariables(
+        jsonResponse: boolean,
+        keysByVersion: string[],
+        keysByVersionFile: string,
+        packageKeys: string[],
+        variableType: string
+    ): Promise<void> {
+        if (packageKeys.length > 0) {
+            if (jsonResponse) {
+                await this.variableService.exportStagingVariables(packageKeys, variableType);
+            } else {
+                await this.variableService.listStagingVariables(packageKeys, variableType);
+            }
+            return;
+        }
         if (jsonResponse) {
             await this.variableService.exportVariables(keysByVersion, keysByVersionFile);
         } else {
             await this.variableService.listVariables(keysByVersion, keysByVersionFile);
-        }
-    }
-
-    public async listStagingVariables(jsonResponse: boolean, packageKeys: string[], variableType: string): Promise<void> {
-        if (jsonResponse) {
-            await this.variableService.exportStagingVariables(packageKeys, variableType);
-        } else {
-            await this.variableService.listStagingVariables(packageKeys, variableType);
         }
     }
 

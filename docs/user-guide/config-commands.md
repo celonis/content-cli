@@ -147,7 +147,9 @@ info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 
 ### Listing Package Variables
 
-Package variables (with assignments) can be listed with the following command:
+Variables can be read for **published package versions** (each package identified with a version) or for the **unpublished** configuration of packages (identified by package key only).
+
+**Published versions** — `config variables list` with `--keysByVersion` or `--keysByVersionFile`:
 
 ```bash
 content-cli config variables list -p <sourceProfile> --keysByVersion key1:version1 ... keyN:versionN
@@ -164,17 +166,13 @@ export interface PackageKeyAndVersionPair {
 
 Similar to the other listing commands, the --json option can be used for exporting (saving) the result as a json file.
 
-### Listing staging package variables
-
-Staging (unpublished) package variables can be listed with the following command:
+**Unpublished configuration** — `config variables list` with `--packageKeys`:
 
 ```bash
-content-cli config variables listStaging -p <profile> --packageKeys <packageKey> [<packageKey> ...]
+content-cli config variables list -p <profile> --packageKeys <packageKey> [<packageKey> ...]
 ```
 
-The `--packageKeys` option specifies which packages to include. Optional `--variableType` limits the result to variables of that type.
-
-Similar to the other listing commands, the `--json` option can be used for exporting (saving) the result as a json file.
+Optional `--variableType` limits the result to variables of that type. The --json option can be used for exporting (saving) the result as a json file.
 
 ### Listing Assignments
 
