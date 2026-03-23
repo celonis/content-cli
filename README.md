@@ -73,7 +73,7 @@ content-cli push package -p my-dev-profile --spaceKey my-cool-space -f interesti
 ```
 
 A comprehensive list of Content CLI capabilities can be found in the 
-[documentation](https://github.com/celonis/content-cli/tree/master/docs).
+[documentation](https://github.com/celonis/content-cli/tree/main/docs).
 
 You can still explore the full capabilities of Content CLI and the list of options for the different commands 
 by using the `-h` option in your command.
@@ -159,14 +159,14 @@ npm i -g @celonis/content-cli
 ## Contributing
 
 We encourage public contributions! Please check 
-[CONTRIBUTING.md](https://github.com/celonis/content-cli/blob/master/CONTRIBUTING.md) for details on our 
+[CONTRIBUTING.md](https://github.com/celonis/content-cli/blob/main/CONTRIBUTING.md) for details on our 
 code of conduct.
 
-For details on command development, refer to the [How to Add a Command](https://github.com/celonis/content-cli/blob/master/docs/how-to-add-command.md) guide.
+For details on command development, refer to the [How to Add a Command](https://github.com/celonis/content-cli/blob/main/docs/how-to-add-command.md) guide.
 
 ## License
 
 Copyright (c) 2021 Celonis SE
 
 This project is licensed under the MIT License - 
-see [LICENSE](https://github.com/celonis/content-cli/blob/master/LICENSE) file for details.
+see [LICENSE](https://github.com/celonis/content-cli/blob/main/LICENSE) file for details.
