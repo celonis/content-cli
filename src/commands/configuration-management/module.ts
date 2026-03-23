@@ -76,7 +76,7 @@ class Module extends IModule {
         configVersionCommand.command("create")
             .description("Create a new version for a package")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
-            .option("--version <version>", "Version string (required if versionBumpOption is NONE)")
+            .option("--packageVersion <packageVersion>", "Version string (required if versionBumpOption is NONE)")
             .option("--versionBumpOption <versionBumpOption>", "Version bump option: NONE or PATCH", "NONE")
             .option("--summaryOfChanges <summaryOfChanges>", "Summary of changes for this version")
             .option("--nodeFilterKeys <nodeFilterKeys...>", "Node keys to include in the version. If omitted, all nodes of the package are included.")
@@ -171,19 +171,19 @@ class Module extends IModule {
     }
 
     private async createPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const hasExplicitVersion = !!options.version;
+        const hasExplicitVersion = !!options.packageVersion;
         const hasVersionBump = options.versionBumpOption && options.versionBumpOption !== "NONE";
 
         if (hasExplicitVersion && hasVersionBump) {
-            throw new Error("Please provide either --version or --versionBumpOption, but not both.");
+            throw new Error("Please provide either --packageVersion or --versionBumpOption, but not both.");
         }
         if (!hasExplicitVersion && !hasVersionBump) {
-            throw new Error("Please provide either --version or --versionBumpOption PATCH.");
+            throw new Error("Please provide either --packageVersion or --versionBumpOption PATCH.");
         }
 
         await new PackageVersionCommandService(context).createPackageVersion(
             options.packageKey,
-            options.version,
+            options.packageVersion,
             options.versionBumpOption,
             options.summaryOfChanges,
             options.nodeFilterKeys,

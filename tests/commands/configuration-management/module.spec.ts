@@ -417,21 +417,21 @@ describe("Configuration Management Module - Action Validations", () => {
             (PackageVersionCommandService as jest.MockedClass<typeof PackageVersionCommandService>).mockImplementation(() => mockPackageVersionCommandService);
         });
 
-        it("should throw error when both --version and --versionBumpOption PATCH are provided", async () => {
+        it("should throw error when both --packageVersion and --versionBumpOption PATCH are provided", async () => {
             const options: OptionValues = {
                 packageKey: "my-package",
-                version: "1.2.0",
+                packageVersion: "1.2.0",
                 versionBumpOption: "PATCH",
             };
 
             await expect(
                 (module as any).createPackageVersion(testContext, mockCommand, options)
-            ).rejects.toThrow("Please provide either --version or --versionBumpOption, but not both.");
+            ).rejects.toThrow("Please provide either --packageVersion or --versionBumpOption, but not both.");
 
             expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
         });
 
-        it("should throw error when neither --version nor --versionBumpOption PATCH are provided", async () => {
+        it("should throw error when neither --packageVersion nor --versionBumpOption PATCH are provided", async () => {
             const options: OptionValues = {
                 packageKey: "my-package",
                 versionBumpOption: "NONE",
@@ -439,27 +439,27 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await expect(
                 (module as any).createPackageVersion(testContext, mockCommand, options)
-            ).rejects.toThrow("Please provide either --version or --versionBumpOption PATCH.");
+            ).rejects.toThrow("Please provide either --packageVersion or --versionBumpOption PATCH.");
 
             expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
         });
 
-        it("should throw error when --version is missing and --versionBumpOption is not provided (defaults to NONE)", async () => {
+        it("should throw error when --packageVersion is missing and --versionBumpOption is not provided (defaults to NONE)", async () => {
             const options: OptionValues = {
                 packageKey: "my-package",
             };
 
             await expect(
                 (module as any).createPackageVersion(testContext, mockCommand, options)
-            ).rejects.toThrow("Please provide either --version or --versionBumpOption PATCH.");
+            ).rejects.toThrow("Please provide either --packageVersion or --versionBumpOption PATCH.");
 
             expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
         });
 
-        it("should pass validation when only --version is provided", async () => {
+        it("should pass validation when only --packageVersion is provided", async () => {
             const options: OptionValues = {
                 packageKey: "my-package",
-                version: "1.2.0",
+                packageVersion: "1.2.0",
                 versionBumpOption: "NONE",
                 summaryOfChanges: "New features",
             };
