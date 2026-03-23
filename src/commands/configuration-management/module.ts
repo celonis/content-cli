@@ -80,7 +80,6 @@ class Module extends IModule {
             .description("List package variables: use --packageKeys for staging (unpublished), or --keysByVersion / --keysByVersionFile for versioned variables")
             .option("--json", "Return response as json type", "")
             .option("--packageKeys <packageKeys...>", "Package keys (staging variables only; mutually exclusive with versioned options)", [])
-            .option("--variableType <variableType>", "Filter staging variables by type (only with --packageKeys)", "")
             .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", [])
             .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
             .action(this.listVariables);
@@ -193,8 +192,7 @@ class Module extends IModule {
             options.json,
             options.keysByVersion,
             options.keysByVersionFile,
-            options.packageKeys,
-            options.variableType
+            options.packageKeys
         );
     }
 

@@ -10,7 +10,6 @@ jest.mock("../../../src/commands/configuration-management/node-dependency.servic
 /** Mirrors default values on `config variables list` Commander options (keep in sync with module.ts). */
 const variablesListOptionDefaults: OptionValues = {
     packageKeys: [],
-    variableType: "",
     keysByVersion: [],
     keysByVersionFile: "",
 };
@@ -463,7 +462,6 @@ describe("Configuration Management Module - Action Validations", () => {
                 ...variablesListOptionDefaults,
                 packageKeys: ["pkg-a", "pkg-b"],
                 json: true,
-                variableType: "SINGLE_VALUE",
             };
 
             await (module as any).listVariables(testContext, mockCommand, options);
@@ -472,8 +470,7 @@ describe("Configuration Management Module - Action Validations", () => {
                 true,
                 [],
                 "",
-                ["pkg-a", "pkg-b"],
-                "SINGLE_VALUE"
+                ["pkg-a", "pkg-b"]
             );
         });
 
@@ -490,8 +487,7 @@ describe("Configuration Management Module - Action Validations", () => {
                 false,
                 ["k:v"],
                 "",
-                [],
-                ""
+                []
             );
         });
     });

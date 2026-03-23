@@ -35,14 +35,13 @@ export class ConfigCommandService {
         jsonResponse: boolean,
         keysByVersion: string[],
         keysByVersionFile: string,
-        packageKeys: string[],
-        variableType: string
+        packageKeys: string[]
     ): Promise<void> {
         if (packageKeys.length > 0) {
             if (jsonResponse) {
-                await this.variableService.exportStagingVariables(packageKeys, variableType);
+                await this.variableService.exportStagingVariables(packageKeys);
             } else {
-                await this.variableService.listStagingVariables(packageKeys, variableType);
+                await this.variableService.listStagingVariables(packageKeys);
             }
             return;
         }

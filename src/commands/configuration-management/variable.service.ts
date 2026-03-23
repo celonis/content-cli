@@ -53,27 +53,26 @@ export class VariableService {
         this.exportToJson(variableManifests);
     }
 
-    public async listStagingVariables(packageKeys: string[], variableType: string): Promise<void> {
-        const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys, variableType);
+    public async listStagingVariables(packageKeys: string[]): Promise<void> {
+        const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys);
         byPackage.forEach(entry => {
             logger.info(JSON.stringify(entry));
         });
     }
 
-    public async exportStagingVariables(packageKeys: string[], variableType: string): Promise<void> {
-        const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys, variableType);
+    public async exportStagingVariables(packageKeys: string[]): Promise<void> {
+        const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys);
         this.exportToJson(byPackage);
     }
 
     private async fetchStagingVariablesByPackageKeys(
-        packageKeys: string[],
-        variableType: string
+        packageKeys: string[]
     ): Promise<StagingVariableManifestTransport[]> {
         if (packageKeys.length === 0) {
             throw new FatalError("Please provide at least one package key!");
         }
 
-        return await this.stagingPackageVariablesApi.findAllByPackageKeys(packageKeys, variableType);
+        return await this.stagingPackageVariablesApi.findAllByPackageKeys(packageKeys);
     }
 
     private async getVersionedVariablesByKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<VariableManifestTransport[]> {

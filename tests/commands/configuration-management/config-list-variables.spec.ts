@@ -1,6 +1,5 @@
 import * as path from "path";
 import * as fs from "fs";
-import { URLSearchParams } from "url";
 import { parse } from "../../../src/core/utils/json";
 import {
     PackageKeyAndVersionPair,
@@ -14,13 +13,6 @@ import { ConfigCommandService } from "../../../src/commands/configuration-manage
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
-
-function withQueryString(baseUrl: string, queryParams?: Record<string, string>): string {
-    if (!queryParams || Object.keys(queryParams).length === 0) {
-        return baseUrl;
-    }
-    return `${baseUrl}?${new URLSearchParams(queryParams).toString()}`;
-}
 
 describe("Config listVariables", () => {
 
@@ -122,7 +114,7 @@ describe("Config listVariables", () => {
     })
 
     it("Should list fixed variables for non-json response", async () => {
-        await new ConfigCommandService(testContext).listVariables(false, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], "", [], "");
+        await new ConfigCommandService(testContext).listVariables(false, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], "", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(3);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(fixedVariableManifests[0]));
@@ -134,7 +126,7 @@ describe("Config listVariables", () => {
     })
 
     it("Should export fixed variables for json response", async () => {
-        await new ConfigCommandService(testContext).listVariables(true, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], "", [], "");
+        await new ConfigCommandService(testContext).listVariables(true, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], "", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
@@ -150,7 +142,7 @@ describe("Config listVariables", () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(packageKeyAndVersionPairs));
 
-        await new ConfigCommandService(testContext).listVariables(false, [], "key_version_mapping.json", [], "");
+        await new ConfigCommandService(testContext).listVariables(false, [], "key_version_mapping.json", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(3);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(fixedVariableManifests[0]));
@@ -165,7 +157,7 @@ describe("Config listVariables", () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(packageKeyAndVersionPairs));
 
-        await new ConfigCommandService(testContext).listVariables(true, [], "key_version_mapping.json", [], "");
+        await new ConfigCommandService(testContext).listVariables(true, [], "key_version_mapping.json", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
@@ -179,7 +171,7 @@ describe("Config listVariables", () => {
 
     it("Should throw error if no mapping and no file path is provided", async () => {
         try {
-            await new ConfigCommandService(testContext).listVariables(true, [], "", [], "");
+            await new ConfigCommandService(testContext).listVariables(true, [], "", []);
         } catch (e) {
             expect(e.message).toEqual("Please provide keysByVersion mappings or file path!");
         }
@@ -208,7 +200,7 @@ describe("Config listVariables", () => {
             const url = stagingVariablesByPackageKeysBaseUrl;
             mockAxiosPost(url, batchResponse);
 
-            await new ConfigCommandService(testContext).listVariables(false, [], "", expectedPackageKeys, "");
+            await new ConfigCommandService(testContext).listVariables(false, [], "", expectedPackageKeys);
 
             expect(loggingTestTransport.logMessages.length).toBe(2);
             expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(batchResponse[0]));
@@ -219,13 +211,13 @@ describe("Config listVariables", () => {
         });
 
         it("Should export staging variables for json response", async () => {
-            const filtered: StagingVariableManifestTransport[] = [
-                { packageKey: "pkg-a", variables: [stagingVarsPkgA[0]] },
+            const pkgAOnlyResponse: StagingVariableManifestTransport[] = [
+                { packageKey: "pkg-a", variables: stagingVarsPkgA },
             ];
-            const url = withQueryString(stagingVariablesByPackageKeysBaseUrl, { variableType: "SINGLE_VALUE" });
-            mockAxiosPost(url, filtered);
+            const url = stagingVariablesByPackageKeysBaseUrl;
+            mockAxiosPost(url, pkgAOnlyResponse);
 
-            await new ConfigCommandService(testContext).listVariables(true, [], "", ["pkg-a"], "SINGLE_VALUE");
+            await new ConfigCommandService(testContext).listVariables(true, [], "", ["pkg-a"]);
 
             expect(loggingTestTransport.logMessages.length).toBe(1);
             expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
@@ -233,7 +225,7 @@ describe("Config listVariables", () => {
             const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
             expect(mockWriteFileSync).toHaveBeenCalledWith(
                 path.resolve(process.cwd(), expectedFileName),
-                JSON.stringify(filtered),
+                JSON.stringify(pkgAOnlyResponse),
                 {encoding: "utf-8"}
             );
 

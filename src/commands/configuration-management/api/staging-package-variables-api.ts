@@ -10,16 +10,8 @@ export class StagingPackageVariablesApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async findAllByPackageKeys(
-        packageKeys: string[],
-        variableType?: string
-    ): Promise<StagingVariableManifestTransport[]> {
-        const params = new URLSearchParams();
-        if (variableType) {
-            params.set("variableType", variableType);
-        }
-        const query = params.toString();
-        const path = `/pacman/api/core/staging/packages/variables/by-package-keys${query ? `?${query}` : ""}`;
+    public async findAllByPackageKeys(packageKeys: string[]): Promise<StagingVariableManifestTransport[]> {
+        const path = `/pacman/api/core/staging/packages/variables/by-package-keys`;
         return await this.httpClient()
             .post(path, packageKeys)
             .catch(e => {
