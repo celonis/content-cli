@@ -235,13 +235,13 @@ content-cli config versions get --packageKey <packageKey> --packageVersion <pack
 To create a new version for a package, use the following command:
 
 ```bash
-content-cli config versions create --packageKey <packageKey> --version <version>
+content-cli config versions create --packageKey <packageKey> --packageVersion <packageVersion>
 ```
 
 For example, to create version 1.2.0 with a summary of changes:
 
 ```bash
-content-cli config versions create --packageKey my-package --version 1.2.0 --summaryOfChanges "Added new analysis views"
+content-cli config versions create --packageKey my-package --packageVersion 1.2.0 --summaryOfChanges "Added new analysis views"
 ```
 
 The command will display the created version details in the console:
@@ -263,14 +263,16 @@ Instead of specifying an explicit version, you can use `--versionBumpOption PATC
 content-cli config versions create --packageKey my-package --versionBumpOption PATCH --summaryOfChanges "Bug fixes"
 ```
 
-When using `--versionBumpOption PATCH`, the `--version` option is ignored and the patch version is automatically incremented. The default value for `--versionBumpOption` is `NONE`, which requires the `--version` option to be provided.
+When using `--versionBumpOption PATCH`, the `--packageVersion` option is ignored and the patch version is automatically incremented. The default value for `--versionBumpOption` is `NONE`, which requires the `--packageVersion` option to be provided.
+
+Note: You must provide either `--packageVersion` or `--versionBumpOption PATCH`, but not both.
 
 #### Node Filter
 
 By default, all nodes in the package are included in the created version. To selectively include only specific nodes, use the `--nodeFilterKeys` option:
 
 ```bash
-content-cli config versions create --packageKey my-package --version 2.0.0 --nodeFilterKeys node-key-1 node-key-2
+content-cli config versions create --packageKey my-package --packageVersion 2.0.0 --nodeFilterKeys node-key-1 node-key-2
 ```
 
 #### Export Created Version as JSON
@@ -278,7 +280,7 @@ content-cli config versions create --packageKey my-package --version 2.0.0 --nod
 To export the created version response as a JSON file instead of displaying it in the console, use the `--json` option:
 
 ```bash
-content-cli config versions create --packageKey <packageKey> --version <version> --json
+content-cli config versions create --packageKey <packageKey> --packageVersion <packageVersion> --json
 ```
 
 ## Finding Nodes
