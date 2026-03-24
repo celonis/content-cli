@@ -43,9 +43,7 @@ export class ConfigCommandService {
             } else {
                 await this.variableService.listStagingVariables(packageKeys);
             }
-            return;
-        }
-        if (jsonResponse) {
+        } else if (jsonResponse) {
             await this.variableService.exportVariables(keysByVersion, keysByVersionFile);
         } else {
             await this.variableService.listVariables(keysByVersion, keysByVersionFile);
