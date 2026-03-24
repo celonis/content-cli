@@ -9,6 +9,7 @@ import { FatalError, logger } from "../utils/logger";
 import { Client, Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
+import { SecureSecretStorageService } from "./secret-storage.service";
 
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
@@ -26,6 +27,8 @@ export class ProfileService {
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
 
+    private secureSecretStorageService = new SecureSecretStorageService();
+
     public async findProfile(profileName: string): Promise<Profile> {
         return new Promise<Profile>((resolve, reject) => {
             try {
@@ -35,8 +38,27 @@ export class ProfileService {
                         { encoding: "utf-8" }
                     );
                     const profile : Profile = JSON.parse(file);
-                    this.refreshProfile(profile)
-                        .then(() => resolve(profile));
+
+                    if (profile.secretsStoredSecurely) {
+                        this.secureSecretStorageService.getSecrets(profileName)
+                            .then(profileSecureSecrets => {
+                                if (profileSecureSecrets) {
+                                    profile.apiToken = profileSecureSecrets.apiToken;
+                                    profile.refreshToken = profileSecureSecrets.refreshToken;
+                                    profile.clientSecret = profileSecureSecrets.clientSecret;
+                                    this.refreshProfile(profile)
+                                        .then(() => resolve(profile))
+                                        .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
+                                } else {
+                                    reject("Failed to read secrets from system keychain.");
+                                }
+                            })
+                            .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
+                    } else {
+                        this.refreshProfile(profile)
+                            .then(() => resolve(profile))
+                            .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
+                    }
                 } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
                     resolve(this.buildProfileFromEnvVariables());
                 } else if (process.env.CELONIS_URL && process.env.CELONIS_API_TOKEN) {
@@ -75,11 +97,25 @@ export class ProfileService {
         }
     }
 
-    public storeProfile(profile: Profile): void {
+    public async storeProfile(profile: Profile): Promise<void> {
         this.createProfileContainerIfNotExists();
         const newProfileFileName = this.constructProfileFileName(profile.name);
         profile.team = this.getBaseTeamUrl(profile.team);
-        fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profile), {
+
+        const secretsStoredInKeychain = await this.secureSecretStorageService.storeSecrets(profile);
+
+        const profileToStore: Profile = { ...profile };
+
+        if (secretsStoredInKeychain) {
+            profileToStore.secretsStoredSecurely = true;
+            delete profileToStore.apiToken;
+            delete profileToStore.refreshToken;
+            delete profileToStore.clientSecret;
+        } else {
+            profileToStore.secretsStoredSecurely = false;
+        }
+
+        fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profileToStore), {
             encoding: "utf-8",
         });
     }
@@ -258,7 +294,7 @@ export class ProfileService {
             }
         }
 
-        this.storeProfile(profile);
+        await this.storeProfile(profile);
     }
 
     private getProfileEnvVariables(): any {
@@ -401,4 +437,3 @@ export class ProfileService {
     }
 }
 
-export const profileService = new ProfileService();

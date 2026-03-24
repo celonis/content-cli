@@ -4,8 +4,20 @@ import * as os from "os";
 import { ProfileValidator } from "../../../src/core/profile/profile.validator";
 import { Profile, ProfileType, AuthenticationType } from "../../../src/core/profile/profile.interface";
 
+const mockHomedir = "/mock/home";
+
 jest.mock("os", () => ({
-    homedir: jest.fn(() => "/mock/home")
+    homedir: jest.fn(() => mockHomedir)
+}));
+
+const mockStoreSecrets = jest.fn();
+const mockGetSecrets = jest.fn();
+
+jest.mock("../../../src/core/profile/secret-storage.service", () => ({
+    SecureSecretStorageService: jest.fn().mockImplementation(() => ({
+        storeSecrets: mockStoreSecrets,
+        getSecrets: mockGetSecrets
+    }))
 }));
 
 const mockIssuerDiscover = jest.fn();
@@ -36,6 +48,10 @@ describe("ProfileService - mapCelonisEnvProfile", () => {
 
     beforeEach(() => {
         profileService = new ProfileService();
+        
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+        
         originalCelonisUrl = process.env.CELONIS_URL;
         originalCelonisApiToken = process.env.CELONIS_API_TOKEN;
         originalTeamUrl = process.env.TEAM_URL;
@@ -229,12 +245,15 @@ describe("ProfileService - findProfile", () => {
     let originalCelonisApiToken: string | undefined;
     let originalTeamUrl: string | undefined;
     let originalApiToken: string | undefined;
-    const mockHomedir = "/mock/home";
     const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
 
     beforeEach(() => {
         (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
         profileService = new ProfileService();
+        
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+        
         originalCelonisUrl = process.env.CELONIS_URL;
         originalCelonisApiToken = process.env.CELONIS_API_TOKEN;
         originalTeamUrl = process.env.TEAM_URL;
@@ -908,7 +927,7 @@ describe("ProfileService - storeProfile", () => {
         (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
     });
 
-    it("should create profile container if not exists and write profile with normalized team URL", () => {
+    it("should create profile container if not exists and write profile with normalized team URL", async () => {
         (fs.existsSync as jest.Mock).mockReturnValue(false);
 
         const profile: Profile = {
@@ -919,7 +938,7 @@ describe("ProfileService - storeProfile", () => {
             type: ProfileType.KEY,
         };
 
-        profileService.storeProfile(profile);
+        await profileService.storeProfile(profile);
 
         expect(fs.mkdirSync).toHaveBeenCalledWith(mockProfilePath);
         expect(fs.writeFileSync).toHaveBeenCalledWith(
@@ -930,7 +949,7 @@ describe("ProfileService - storeProfile", () => {
         expect(profile.team).toBe("https://example.celonis.cloud");
     });
 
-    it("should write profile with correct filename", () => {
+    it("should write profile with correct filename", async () => {
         const profile: Profile = {
             name: "my-profile",
             team: "https://team.celonis.cloud",
@@ -939,7 +958,7 @@ describe("ProfileService - storeProfile", () => {
             type: ProfileType.KEY,
         };
 
-        profileService.storeProfile(profile);
+        await profileService.storeProfile(profile);
 
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve(mockProfilePath, "my-profile.json"),
@@ -1122,7 +1141,7 @@ describe("ProfileService - refreshProfile", () => {
             clientAuthenticationMethod: "client_secret_basic",
             expiresAt: Math.floor(Date.now() / 1000) + 3600,
         };
-        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(() => {});
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
 
         await profileService.refreshProfile(profile);
 
@@ -1152,13 +1171,192 @@ describe("ProfileService - refreshProfile", () => {
                 grant: jest.fn().mockResolvedValue(newTokenSet),
             })),
         });
-        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(() => {});
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
 
         await profileService.refreshProfile(profile);
 
         expect(profile.apiToken).toBe("new-token");
         expect(profile.expiresAt).toBe(newTokenSet.expires_at);
         expect(storeSpy).toHaveBeenCalledWith(profile);
+    });
+});
+
+describe("Profile Service - Store Profile", () => {
+    let profileService: ProfileService;
+    const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+
+        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        (fs.mkdirSync as jest.Mock).mockImplementation(() => void 0);
+        (fs.writeFileSync as jest.Mock).mockImplementation(() => void 0);
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it("Should store secrets in plain text if keychain storage fails", async () => {
+        const profile: Profile = {
+            name: "plain-text-profile",
+            team: "https://test-team.celonis.cloud",
+            type: ProfileType.KEY,
+            apiToken: "test-token",
+            clientSecret: "client-secret",
+            refreshToken: "refresh-token",
+            authenticationType: AuthenticationType.BEARER,
+            secretsStoredSecurely: false
+        };
+
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        mockStoreSecrets.mockResolvedValue(false);
+
+        await profileService.storeProfile(profile);
+
+        const expectedProfile = {
+            ...profile,
+            team: "https://test-team.celonis.cloud"
+        };
+
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.resolve(mockProfilePath, "plain-text-profile.json"),
+            JSON.stringify(expectedProfile),
+            { encoding: "utf-8" }
+        );
+    });
+
+    it("Should remove all secrets from profile when stored securely", async () => {
+        const profile: Profile = {
+            name: "secure-profile",
+            team: "https://test-team.celonis.cloud",
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "test-client-id",
+            clientSecret: "test-client-secret",
+            apiToken: "test-token",
+            refreshToken: "test-refresh-token",
+            authenticationType: AuthenticationType.BEARER
+        };
+
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        mockStoreSecrets.mockResolvedValue(true);
+
+        await profileService.storeProfile(profile);
+
+        const writeCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
+        const storedProfile = JSON.parse(writeCall[1]);
+
+        expect(storedProfile.apiToken).toBeUndefined();
+        expect(storedProfile.clientSecret).toBeUndefined();
+        expect(storedProfile.refreshToken).toBeUndefined();
+        expect(storedProfile.secretsStoredSecurely).toBe(true);
+    });
+});
+
+describe("Profile Service - Find Profile", () => {
+    let profileService: ProfileService;
+    const mockProfilePath = path.resolve(mockHomedir, ".celonis-content-cli-profiles");
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+
+        mockStoreSecrets.mockClear();
+        mockGetSecrets.mockClear();
+
+        // Clear environment variables to avoid env-based profile resolution
+        delete process.env.TEAM_URL;
+        delete process.env.API_TOKEN;
+        delete process.env.CELONIS_URL;
+        delete process.env.CELONIS_API_TOKEN;
+
+        (fs.existsSync as jest.Mock).mockReturnValue(true);
+        (fs.readFileSync as jest.Mock).mockImplementation(() => "{}");
+
+        // Mock refreshProfile to avoid OAuth calls
+        jest.spyOn(ProfileService.prototype, "refreshProfile").mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+        jest.clearAllMocks();
+        delete process.env.TEAM_URL;
+        delete process.env.API_TOKEN;
+        delete process.env.CELONIS_URL;
+        delete process.env.CELONIS_API_TOKEN;
+    });
+
+    it("Should find profile with secrets stored securely", async () => {
+        const profileName = "secure-profile";
+        const storedProfile = {
+            name: profileName,
+            team: "https://test-team.celonis.cloud",
+            type: ProfileType.KEY,
+            authenticationType: AuthenticationType.BEARER,
+            secretsStoredSecurely: true
+        };
+
+        const secureSecrets = {
+            apiToken: "secure-api-token",
+            refreshToken: "secure-refresh-token",
+            clientSecret: "secure-client-secret"
+        };
+
+        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(storedProfile));
+        mockGetSecrets.mockResolvedValue(secureSecrets);
+
+        const profile = await profileService.findProfile(profileName);
+
+        expect(mockGetSecrets).toHaveBeenCalledWith(profileName);
+        expect(profile.name).toBe(profileName);
+        expect(profile.team).toBe("https://test-team.celonis.cloud");
+        expect(profile.apiToken).toBe(secureSecrets.apiToken);
+        expect(profile.refreshToken).toBe(secureSecrets.refreshToken);
+        expect(profile.clientSecret).toBe(secureSecrets.clientSecret);
+        expect(profile.secretsStoredSecurely).toBe(true);
+    });
+
+    it("Should find profile with secrets not stored securely", async () => {
+        const profileName = "plain-text-profile";
+        const storedProfile = {
+            name: profileName,
+            team: "https://test-team.celonis.cloud",
+            type: ProfileType.KEY,
+            authenticationType: AuthenticationType.BEARER,
+            apiToken: "plain-api-token",
+            refreshToken: "plain-refresh-token",
+            clientSecret: "plain-client-secret"
+        };
+
+        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(storedProfile));
+
+        const profile = await profileService.findProfile(profileName);
+
+        expect(mockGetSecrets).not.toHaveBeenCalled();
+        expect(profile.name).toBe(profileName);
+        expect(profile.team).toBe("https://test-team.celonis.cloud");
+        expect(profile.apiToken).toBe(storedProfile.apiToken);
+        expect(profile.refreshToken).toBe(storedProfile.refreshToken);
+        expect(profile.clientSecret).toBe(storedProfile.clientSecret);
+        expect(profile.secretsStoredSecurely).toBeUndefined();
+    });
+
+    it("Should throw error when secrets are stored securely but could not be retrieved", async () => {
+        const profileName = "secure-profile-fail";
+        const storedProfile = {
+            name: profileName,
+            team: "https://test-team.celonis.cloud",
+            type: ProfileType.KEY,
+            authenticationType: AuthenticationType.BEARER,
+            secretsStoredSecurely: true
+        };
+
+        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(storedProfile));
+        mockGetSecrets.mockResolvedValue(undefined);
+
+        await expect(profileService.findProfile(profileName)).rejects.toBe("Failed to read secrets from system keychain.");
+        expect(mockGetSecrets).toHaveBeenCalledWith(profileName);
     });
 });
 

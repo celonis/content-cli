@@ -159,4 +159,4 @@ You are free to adapt the structure based on complexity.
 
 ## Useful Examples
 
-Example group: [configuration-management](https://github.com/celonis/content-cli/tree/master/src/commands/configuration-management)
+Example group: [configuration-management](https://github.com/celonis/content-cli/tree/main/src/commands/configuration-management)

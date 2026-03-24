@@ -37,9 +37,9 @@ jobs:
           echo "Validating base branch: $BASE"
           echo "Requested bump type: $BUMP"
 
-          # Restrict workflow execution to master or release/*
-          if [[ ! "$BASE" =~ ^master$ ]] && [[ ! "$BASE" =~ ^release\/.+$ ]]; then
-            echo "ERROR: workflow may only be dispatched from 'master' or a 'release/*' branch. Selected: $BASE"
+          # Restrict workflow execution to main or release/*
+          if [[ ! "$BASE" =~ ^main$ ]] && [[ ! "$BASE" =~ ^release\/.+$ ]]; then
+            echo "ERROR: workflow may only be dispatched from 'main' or a 'release/*' branch. Selected: $BASE"
             exit 1
           fi
 

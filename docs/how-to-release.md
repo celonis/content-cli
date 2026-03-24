@@ -10,7 +10,7 @@ The Content CLI uses a **trunk-based workflow** with **semantic version bumps** 
 
 | **Branch Type** | **Purpose**                                                                        |
 |------------------|------------------------------------------------------------------------------------|
-| `master` | Main development branch; represents the development environment.                   |
+| `main` | Main development branch; represents the development environment.                   |
 | `release/*` | Release branches named using CalVer format (e.g., `release/20251009-091337_RC00`). |
 
 Publishing happens **only** when a version bump PR is merged.
@@ -19,28 +19,28 @@ Publishing happens **only** when a version bump PR is merged.
 
 ## Developing a New Feature
 
-1. Create a feature branch from `master`.
+1. Create a feature branch from `main`.
 2. Implement and test your feature.
-    - Testing should be done locally. Check this guide for [testing your local build of master](https://github.com/celonis/content-cli/blob/master/README.md#building-and-using-the-project-locally).
-3. Open a PR targeting `master`.
-4. After approval, merge your PR into `master`.
-    - Merging to `master` **does not** publish anything — it only updates the development state of the CLI.
+    - Testing should be done locally. Check this guide for [testing your local build of main](https://github.com/celonis/content-cli/blob/main/README.md#building-and-using-the-project-locally).
+3. Open a PR targeting `main`.
+4. After approval, merge your PR into `main`.
+    - Merging to `main` **does not** publish anything — it only updates the development state of the CLI.
 
 ---
 
 ## Creating a Release
 
-When the `master` branch is stable and ready for deployment, use the **Create Release** workflow.
+When the `main` branch is stable and ready for deployment, use the **Create Release** workflow.
 
 ### Steps
 
 1. Go to **Actions → Create Release → Run workflow**.
 2. Choose the bump type (`patch`, `minor`, or `major`).
 3. The workflow will:
-    - Validate that it’s running from `master` or a `release/*` branch.
+    - Validate that it’s running from `main` or a `release/*` branch.
     - Create an automation branch (`automation/release-bump-<timestamp>`).
     - Bump the version and push a commit like `[Release] Bump version to x.x.x`.
-    - Open a **PR to the same branch** from which it was triggered (to master or release branch).
+    - Open a **PR to the same branch** from which it was triggered (to main or release branch).
 
 4. When the PR is approved and merged:
     - The **Build / Publish** workflow detects the version bump commit.
@@ -69,7 +69,7 @@ When a bug is discovered in an existing published version:
 
 | **Workflow** | **Trigger** | **Purpose** |
 |---------------|-------------|--------------|
-| **Build Pull Request** | On PR to `master` | Builds and tests changes before merging. |
+| **Build Pull Request** | On PR to `main` | Builds and tests changes before merging. |
 | **Create Release** | Manual trigger (`workflow_dispatch`) | Creates a PR with a version bump on the current branch. |
-| **Build / Publish** | On merge to `master` or `release/*` | Detects version bumps → builds, tags, and publishes. |
+| **Build / Publish** | On merge to `main` or `release/*` | Detects version bumps → builds, tags, and publishes. |
 

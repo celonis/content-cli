@@ -1,6 +1,6 @@
 site_name: Content CLI
 repo_url: https://github.com/celonis/content-cli
-edit_uri: edit/master/docs/
+edit_uri: edit/main/docs/
 docs_dir: ./docs
 
 plugins:

@@ -3,7 +3,12 @@ import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 import { PackageVersionApi } from "./api/package-version-api";
-import { PackageVersionTransport } from "./interfaces/package-version.interfaces";
+import {
+    PackageVersionCreatedTransport,
+    PackageVersionTransport,
+    SavePackageVersionTransport,
+    VersionBumpOption,
+} from "./interfaces/package-version.interfaces";
 
 export class PackageVersionService {
     private packageVersionApi: PackageVersionApi;
@@ -23,6 +28,38 @@ export class PackageVersionService {
         }
     }
 
+    public async createPackageVersion(
+        packageKey: string,
+        version: string | undefined,
+        versionBumpOption: string,
+        summaryOfChanges: string | undefined,
+        nodeFilterKeys: string[] | undefined,
+        jsonResponse: boolean,
+    ): Promise<void> {
+        const request: SavePackageVersionTransport = {
+            version: version,
+            versionBumpOption: versionBumpOption as VersionBumpOption,
+            summaryOfChanges: summaryOfChanges,
+        };
+
+        if (nodeFilterKeys && nodeFilterKeys.length > 0) {
+            request.nodeFilter = {
+                filterType: "INCLUDE",
+                keys: nodeFilterKeys,
+            };
+        }
+
+        const created: PackageVersionCreatedTransport = await this.packageVersionApi.createVersion(packageKey, request);
+
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            fileService.writeToFileWithGivenName(JSON.stringify(created, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + filename);
+        } else {
+            this.printPackageVersionCreatedTransport(created);
+        }
+    }
+
     private printPackageVersionTransport(packageVersionTransport: PackageVersionTransport): void {
         logger.info(`Package Key: ${packageVersionTransport.packageKey}`);
         logger.info(`Version: ${packageVersionTransport.version}`);
@@ -32,5 +69,14 @@ export class PackageVersionService {
         logger.info(`Publish Message: ${packageVersionTransport.publishMessage}`);
         logger.info(`Deployed: ${packageVersionTransport.deployed}`);
         logger.info(`Published By: ${packageVersionTransport.publishedBy}`);
+    }
+
+    private printPackageVersionCreatedTransport(transport: PackageVersionCreatedTransport): void {
+        logger.info(`Successfully created version ${transport.version} for package ${transport.packageKey}`);
+        logger.info(`Version: ${transport.version}`);
+        logger.info(`Package Key: ${transport.packageKey}`);
+        logger.info(`Summary of Changes: ${transport.summaryOfChanges}`);
+        logger.info(`Creation Date: ${new Date(transport.creationDate).toISOString()}`);
+        logger.info(`Created By: ${transport.createdBy}`);
     }
 }

@@ -12,3 +12,5 @@
 /src/commands/cpm4/                               @celonis/cpm4
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
 /src/commands/studio/                             @celonis/astro
+/package.json                                     @celonis/astro @aocelo @siavash-celonis
+/yarn.lock                                        @celonis/astro @aocelo @siavash-celonis

@@ -73,6 +73,16 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.getPackageVersion)
 
+        configVersionCommand.command("create")
+            .description("Create a new version for a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .option("--version <version>", "Version string (required if versionBumpOption is NONE)")
+            .option("--versionBumpOption <versionBumpOption>", "Version bump option: NONE or PATCH", "NONE")
+            .option("--summaryOfChanges <summaryOfChanges>", "Summary of changes for this version")
+            .option("--nodeFilterKeys <nodeFilterKeys...>", "Node keys to include in the version. If omitted, all nodes of the package are included.")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.createPackageVersion);
+
         const variablesCommand = configCommand.command("variables")
             .description("Commands related to variable configs");
 
@@ -159,6 +169,27 @@ class Module extends IModule {
 
     private async getPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new PackageVersionCommandService(context).getPackageVersion(options.packageKey, options.packageVersion, options.json);
+    }
+
+    private async createPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const hasExplicitVersion = !!options.version;
+        const hasVersionBump = options.versionBumpOption && options.versionBumpOption !== "NONE";
+
+        if (hasExplicitVersion && hasVersionBump) {
+            throw new Error("Please provide either --version or --versionBumpOption, but not both.");
+        }
+        if (!hasExplicitVersion && !hasVersionBump) {
+            throw new Error("Please provide either --version or --versionBumpOption PATCH.");
+        }
+
+        await new PackageVersionCommandService(context).createPackageVersion(
+            options.packageKey,
+            options.version,
+            options.versionBumpOption,
+            options.summaryOfChanges,
+            options.nodeFilterKeys,
+            options.json,
+        );
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
