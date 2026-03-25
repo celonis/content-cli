@@ -4,7 +4,7 @@ import { HttpClient } from "../../../core/http/http-client";
 import { StagingVariableManifestTransport } from "../interfaces/package-export.interfaces";
 
 export class StagingPackageVariablesApi {
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

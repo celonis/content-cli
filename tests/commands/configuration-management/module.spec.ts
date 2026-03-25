@@ -453,7 +453,7 @@ describe("Configuration Management Module - Action Validations", () => {
             await expect(
                 (module as any).listVariables(testContext, mockCommand, options)
             ).rejects.toThrow(
-                "Please provide --packageKeys for staging variables, or --keysByVersion / --keysByVersionFile for versioned packages."
+                "Please provide --packageKeys for staging, or --keysByVersion / --keysByVersionFile for versioned packages."
             );
 
             expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();

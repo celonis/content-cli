@@ -215,7 +215,7 @@ class Module extends IModule {
         }
         if (!hasStagingKeys && !hasVersioned) {
             throw new Error(
-                "Please provide --packageKeys for staging variables, or --keysByVersion / --keysByVersionFile for versioned packages."
+                "Please provide --packageKeys for staging, or --keysByVersion / --keysByVersionFile for versioned packages."
             );
         }
 

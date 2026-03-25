@@ -13,7 +13,7 @@ export class VariableService {
 
     private batchImportExportApi: BatchImportExportApi;
     private variableAssignmentCandidatesApi: VariableAssignmentCandidatesApi;
-    private stagingPackageVariablesApi: StagingPackageVariablesApi;
+    private readonly stagingPackageVariablesApi: StagingPackageVariablesApi;
     private studioService: StudioService;
 
     constructor(context: Context) {
