@@ -147,11 +147,11 @@ info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 
 ### Listing Package Variables
 
-Variables can be read for **published package versions** (each package identified with a version) or for the **unpublished** configuration of packages (identified by package key only). Use either the published flow (`--keysByVersion` / `--keysByVersionFile`) or the unpublished flow (`--packageKeys`); combining them is not supported and the command will fail.
+Variables can be read for **versioned packages** or for the **unversioned** configuration of packages (identified by package key only). Use either the published flow (`--keysByVersion` / `--keysByVersionFile`) or the unversioned flow (`--packageKeys`); combining them is not supported and the command will fail.
 
-**Output (console and `--json`).** For both flows, each package is represented the same way: `packageKey`, `variables` (definitions and values), and—**only for published versions**—`version`. Without `--json`, each package is printed as one JSON object per line. With `--json`, the result is written to a file as a **JSON array** of those objects. For unpublished packages, `version` is simply omitted.
+**Output (console and `--json`).** For both flows, each package is represented the same way: `packageKey`, `variables` (definitions and values), and—**only for versioned packages**—`version`. Without `--json`, each package is printed as one JSON object per line. With `--json`, the result is written to a file as a **JSON array** of those objects. For unversioned packages, `version` is simply omitted.
 
-**Published versions** — `config variables list` with `--keysByVersion` or `--keysByVersionFile`:
+**Versioned packages** — `config variables list` with `--keysByVersion` or `--keysByVersionFile`:
 
 ```bash
 content-cli config variables list -p <sourceProfile> --keysByVersion key1:version1 ... keyN:versionN
