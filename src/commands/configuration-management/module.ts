@@ -87,7 +87,7 @@ class Module extends IModule {
             .description("Commands related to variable configs");
 
         variablesCommand.command("list")
-            .description("List package variables: use --packageKeys for staging (unpublished), or --keysByVersion / --keysByVersionFile for versioned packages")
+            .description("List package variables: use --packageKeys for staging, or --keysByVersion / --keysByVersionFile for versioned packages")
             .option("--json", "Return response as json type", "")
             .option("--packageKeys <packageKeys...>", "Package keys (staging variables only; mutually exclusive with versioned options)", [])
             .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", [])

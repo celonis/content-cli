@@ -68,10 +68,6 @@ export class VariableService {
     private async fetchStagingVariablesByPackageKeys(
         packageKeys: string[]
     ): Promise<StagingVariableManifestTransport[]> {
-        if (packageKeys.length === 0) {
-            throw new FatalError("Please provide at least one package key!");
-        }
-
         return await this.stagingPackageVariablesApi.findAllByPackageKeys(packageKeys);
     }
 
