@@ -3,6 +3,8 @@ import * as fs from "fs";
 import { parse } from "../../../src/core/utils/json";
 import {
     PackageKeyAndVersionPair,
+    StagingVariableManifestTransport,
+    VariableExportTransport,
     VariableManifestTransport,
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
 import { PackageManagerVariableType } from "../../../src/commands/studio/interfaces/package-manager.interfaces";
@@ -112,7 +114,7 @@ describe("Config listVariables", () => {
     })
 
     it("Should list fixed variables for non-json response", async () => {
-        await new ConfigCommandService(testContext).listVariables(false, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], null);
+        await new ConfigCommandService(testContext).listVariables(false, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], "", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(3);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(fixedVariableManifests[0]));
@@ -124,7 +126,7 @@ describe("Config listVariables", () => {
     })
 
     it("Should export fixed variables for json response", async () => {
-        await new ConfigCommandService(testContext).listVariables(true, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], null);
+        await new ConfigCommandService(testContext).listVariables(true, ["key-1:1.0.0", "key-2:1.0.0", "key-3:1.0.0"], "", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
@@ -140,7 +142,7 @@ describe("Config listVariables", () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(packageKeyAndVersionPairs));
 
-        await new ConfigCommandService(testContext).listVariables(false, [], "key_version_mapping.json");
+        await new ConfigCommandService(testContext).listVariables(false, [], "key_version_mapping.json", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(3);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(fixedVariableManifests[0]));
@@ -155,7 +157,7 @@ describe("Config listVariables", () => {
         (fs.existsSync as jest.Mock).mockReturnValue(true);
         (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(packageKeyAndVersionPairs));
 
-        await new ConfigCommandService(testContext).listVariables(true, [], "key_version_mapping.json");
+        await new ConfigCommandService(testContext).listVariables(true, [], "key_version_mapping.json", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
@@ -169,9 +171,66 @@ describe("Config listVariables", () => {
 
     it("Should throw error if no mapping and no file path is provided", async () => {
         try {
-            await new ConfigCommandService(testContext).listVariables(true, [], "");
+            await new ConfigCommandService(testContext).listVariables(true, [], "", []);
         } catch (e) {
             expect(e.message).toEqual("Please provide keysByVersion mappings or file path!");
         }
     })
-})
+
+    describe("staging variables via --packageKeys", () => {
+        const stagingVariablesByPackageKeysBaseUrl =
+            `${testContext.profile.team.replace(/\/$/, "")}/pacman/api/core/staging/packages/variables/by-package-keys`;
+
+        const stagingVarsPkgA: VariableExportTransport[] = [
+            { key: "DATA_POOL", type: "SINGLE_VALUE", value: "pool-id-1", metadata: {} },
+            { key: "OTHER", type: "CONNECTION", value: { connectionId: "c1" }, metadata: {} },
+        ];
+        const stagingVarsPkgB: VariableExportTransport[] = [
+            { key: "DATA_POOL", type: "SINGLE_VALUE", value: "pool-id-2", metadata: {} },
+        ];
+
+        const batchResponse: StagingVariableManifestTransport[] = [
+            { packageKey: "pkg-a", variables: stagingVarsPkgA },
+            { packageKey: "pkg-b", variables: stagingVarsPkgB },
+        ];
+
+        const expectedPackageKeys = ["pkg-a", "pkg-b"];
+
+        it("Should list staging variables for non-json response", async () => {
+            const url = stagingVariablesByPackageKeysBaseUrl;
+            mockAxiosPost(url, batchResponse);
+
+            await new ConfigCommandService(testContext).listVariables(false, [], "", expectedPackageKeys);
+
+            expect(loggingTestTransport.logMessages.length).toBe(2);
+            expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(batchResponse[0]));
+            expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(batchResponse[1]));
+
+            const postBody = parse<string[]>(mockedPostRequestBodyByUrl.get(url));
+            expect(postBody).toEqual(expectedPackageKeys);
+        });
+
+        it("Should export staging variables for json response", async () => {
+            const pkgAOnlyResponse: StagingVariableManifestTransport[] = [
+                { packageKey: "pkg-a", variables: stagingVarsPkgA },
+            ];
+            const url = stagingVariablesByPackageKeysBaseUrl;
+            mockAxiosPost(url, pkgAOnlyResponse);
+
+            await new ConfigCommandService(testContext).listVariables(true, [], "", ["pkg-a"]);
+
+            expect(loggingTestTransport.logMessages.length).toBe(1);
+            expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
+
+            const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+            expect(mockWriteFileSync).toHaveBeenCalledWith(
+                path.resolve(process.cwd(), expectedFileName),
+                JSON.stringify(pkgAOnlyResponse),
+                {encoding: "utf-8"}
+            );
+
+            const postBody = parse<string[]>(mockedPostRequestBodyByUrl.get(url));
+            expect(postBody).toEqual(["pkg-a"]);
+        });
+    });
+});

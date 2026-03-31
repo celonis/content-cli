@@ -3,20 +3,23 @@ import { Context } from "../../core/command/cli-context";
 import { FatalError, logger } from "../../core/utils/logger";
 import { StudioService } from "./studio.service";
 import { FileService, fileService } from "../../core/utils/file-service";
-import { PackageKeyAndVersionPair, VariableManifestTransport } from "./interfaces/package-export.interfaces";
+import { PackageKeyAndVersionPair, StagingVariableManifestTransport, VariableManifestTransport } from "./interfaces/package-export.interfaces";
 import { BatchImportExportApi } from "./api/batch-import-export-api";
 import { URLSearchParams } from "url";
 import { VariableAssignmentCandidatesApi } from "./api/variable-assignment-candidates-api";
+import { StagingPackageVariablesApi } from "./api/staging-package-variables-api";
 
 export class VariableService {
 
     private batchImportExportApi: BatchImportExportApi;
     private variableAssignmentCandidatesApi: VariableAssignmentCandidatesApi;
+    private readonly stagingPackageVariablesApi: StagingPackageVariablesApi;
     private studioService: StudioService;
 
     constructor(context: Context) {
         this.batchImportExportApi = new BatchImportExportApi(context);
         this.variableAssignmentCandidatesApi = new VariableAssignmentCandidatesApi(context);
+        this.stagingPackageVariablesApi = new StagingPackageVariablesApi(context);
         this.studioService = new StudioService(context);
     }
 
@@ -48,6 +51,24 @@ export class VariableService {
         const variableManifests = await this.getVersionedVariablesByKeyVersionPairs(keysByVersion, keysByVersionFile);
 
         this.exportToJson(variableManifests);
+    }
+
+    public async listStagingVariables(packageKeys: string[]): Promise<void> {
+        const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys);
+        byPackage.forEach(entry => {
+            logger.info(JSON.stringify(entry));
+        });
+    }
+
+    public async exportStagingVariables(packageKeys: string[]): Promise<void> {
+        const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys);
+        this.exportToJson(byPackage);
+    }
+
+    private async fetchStagingVariablesByPackageKeys(
+        packageKeys: string[]
+    ): Promise<StagingVariableManifestTransport[]> {
+        return await this.stagingPackageVariablesApi.findAllByPackageKeys(packageKeys);
     }
 
     private async getVersionedVariablesByKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<VariableManifestTransport[]> {

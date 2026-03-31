@@ -87,9 +87,10 @@ class Module extends IModule {
             .description("Commands related to variable configs");
 
         variablesCommand.command("list")
-            .description("Command to list versioned variables of packages")
+            .description("List package variables: use --packageKeys for unversioned, or --keysByVersion / --keysByVersionFile for versioned packages")
             .option("--json", "Return response as json type", "")
-            .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", "")
+            .option("--packageKeys <packageKeys...>", "Package keys (unversioned variables only; mutually exclusive with versioned options)", [])
+            .option("--keysByVersion <keysByVersion...>", "Mapping of package keys and versions", [])
             .option("--keysByVersionFile <keysByVersionFile>", "Package keys by version mappings file path.", "")
             .action(this.listVariables);
 
@@ -203,7 +204,27 @@ class Module extends IModule {
     }
 
     private async listVariables(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).listVariables(options.json, options.keysByVersion, options.keysByVersionFile);
+        const hasStagingKeys = options.packageKeys.length > 0;
+        const hasVersioned =
+            options.keysByVersion.length > 0 || options.keysByVersionFile !== "";
+
+        if (hasStagingKeys && hasVersioned) {
+            throw new Error(
+                "Please provide either --packageKeys or --keysByVersion/--keysByVersionFile, but not both."
+            );
+        }
+        if (!hasStagingKeys && !hasVersioned) {
+            throw new Error(
+                "Please provide --packageKeys for staging, or --keysByVersion / --keysByVersionFile for versioned packages."
+            );
+        }
+
+        await new ConfigCommandService(context).listVariables(
+            options.json,
+            options.keysByVersion,
+            options.keysByVersionFile,
+            options.packageKeys
+        );
     }
 
     private async listAssignments(context: Context, command: Command, options: OptionValues): Promise<void> {

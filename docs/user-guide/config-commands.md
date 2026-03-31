@@ -147,13 +147,17 @@ info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 
 ### Listing Package Variables
 
-Package variables (with assignments) can be listed with the following command:
+Variables can be read for **versioned packages** or for the **unversioned** configuration of packages (identified by package key only). Use either the published flow (`--keysByVersion` / `--keysByVersionFile`) or the unversioned flow (`--packageKeys`); combining them is not supported and the command will fail.
+
+**Output (console and `--json`).** For both flows, each package is represented the same way: `packageKey`, `variables` (definitions and values), and—**only for versioned packages**—`version`. Without `--json`, each package is printed as one JSON object per line. With `--json`, the result is written to a file as a **JSON array** of those objects. For unversioned packages, `version` is simply omitted.
+
+**Versioned packages** — `config variables list` with `--keysByVersion` or `--keysByVersionFile`:
 
 ```bash
 content-cli config variables list -p <sourceProfile> --keysByVersion key1:version1 ... keyN:versionN
 ```
 
-The --keysByVersion option should specify a list of key :(colon) version pairs. Alternatively, a json file path containing a list of key and version pairs can be used. The PackageKeyAndVersionPair for the file should have the following form:
+The `--keysByVersion` option should specify a list of `key:version` pairs. Alternatively, pass a JSON file path with `--keysByVersionFile`. Each entry in the file should match:
 
 ```typescript
 export interface PackageKeyAndVersionPair {
@@ -162,7 +166,13 @@ export interface PackageKeyAndVersionPair {
 }
 ```
 
-Similar to the other listing commands, the --json option can be used for exporting (saving) the result as a json file.
+**Unpublished configuration** — `config variables list` with `--packageKeys`:
+
+```bash
+content-cli config variables list -p <profile> --packageKeys <packageKey> [<packageKey> ...]
+```
+
+Use `--json` with either flow to export the array to a file (see **Output** above).
 
 ### Listing Assignments
 

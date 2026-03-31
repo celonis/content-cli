@@ -9,6 +9,13 @@ jest.mock("../../../src/commands/configuration-management/config-command.service
 jest.mock("../../../src/commands/configuration-management/node-dependency.service");
 jest.mock("../../../src/commands/configuration-management/package-version-command.service");
 
+/** Mirrors default values on `config variables list` Commander options (keep in sync with module.ts). */
+const variablesListOptionDefaults: OptionValues = {
+    packageKeys: [],
+    keysByVersion: [],
+    keysByVersionFile: "",
+};
+
 describe("Configuration Management Module - Action Validations", () => {
     let module: Module;
     let mockCommand: Command;
@@ -22,6 +29,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
         mockConfigCommandService = {
             listPackages: jest.fn().mockResolvedValue(undefined),
+            listVariables: jest.fn().mockResolvedValue(undefined),
             batchExportPackages: jest.fn().mockResolvedValue(undefined),
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
         } as any;
@@ -403,6 +411,86 @@ describe("Configuration Management Module - Action Validations", () => {
                     "feature-branch"
                 );
             });
+        });
+    });
+
+    describe("listVariables validation", () => {
+        it("should throw when --packageKeys and --keysByVersion are both provided", async () => {
+            const options: OptionValues = {
+                ...variablesListOptionDefaults,
+                packageKeys: ["pkg-a"],
+                keysByVersion: ["key-1:1.0.0"],
+            };
+
+            await expect(
+                (module as any).listVariables(testContext, mockCommand, options)
+            ).rejects.toThrow(
+                "Please provide either --packageKeys or --keysByVersion/--keysByVersionFile, but not both."
+            );
+
+            expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();
+        });
+
+        it("should throw when --packageKeys and --keysByVersionFile are both provided", async () => {
+            const options: OptionValues = {
+                ...variablesListOptionDefaults,
+                packageKeys: ["pkg-a"],
+                keysByVersionFile: "mapping.json",
+            };
+
+            await expect(
+                (module as any).listVariables(testContext, mockCommand, options)
+            ).rejects.toThrow(
+                "Please provide either --packageKeys or --keysByVersion/--keysByVersionFile, but not both."
+            );
+
+            expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();
+        });
+
+        it("should throw when neither staging nor versioned inputs are provided", async () => {
+            const options: OptionValues = {...variablesListOptionDefaults};
+
+            await expect(
+                (module as any).listVariables(testContext, mockCommand, options)
+            ).rejects.toThrow(
+                "Please provide --packageKeys for staging, or --keysByVersion / --keysByVersionFile for versioned packages."
+            );
+
+            expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();
+        });
+
+        it("should call listVariables for staging when only --packageKeys is provided", async () => {
+            const options: OptionValues = {
+                ...variablesListOptionDefaults,
+                packageKeys: ["pkg-a", "pkg-b"],
+                json: true,
+            };
+
+            await (module as any).listVariables(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.listVariables).toHaveBeenCalledWith(
+                true,
+                [],
+                "",
+                ["pkg-a", "pkg-b"]
+            );
+        });
+
+        it("should call listVariables for versioned when only --keysByVersion is provided", async () => {
+            const options: OptionValues = {
+                ...variablesListOptionDefaults,
+                keysByVersion: ["k:v"],
+                json: false,
+            };
+
+            await (module as any).listVariables(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.listVariables).toHaveBeenCalledWith(
+                false,
+                ["k:v"],
+                "",
+                []
+            );
         });
     });
 
