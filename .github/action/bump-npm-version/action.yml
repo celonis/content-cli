@@ -56,7 +56,6 @@ runs:
         npm version ${{ inputs.bump }} --no-git-tag-version
         version=$(node -p "require('./package.json').version")
         echo "tag=v${version}" >> $GITHUB_OUTPUT
-        npm install
-        git add -A
+        git add package.json
         git commit -m "[Release] Bump version to ${version}"
         git push origin HEAD
