@@ -40,7 +40,8 @@ When the `main` branch is stable and ready for deployment, use the **Create Rele
     - Validate that it’s running from `main` or a `release/*` branch.
     - Create an automation branch (`automation/release-bump-<timestamp>`).
     - Bump the version and push a commit like `[Release] Bump version to x.x.x`.
-    - Open a **PR to the same branch** from which it was triggered (to main or release branch).
+    - Generate a **release notes preview** (comparing the previous release tag to the current branch HEAD).
+    - Open a **PR to the same branch** from which it was triggered, with the release notes in the PR body.
 
 4. When the PR is approved and merged:
     - The **Build / Publish** workflow detects the version bump commit.
@@ -50,6 +51,7 @@ When the `main` branch is stable and ready for deployment, use the **Create Rele
         - GitHub Registry (`@celonis/content-cli`)
         - npm Registry (`@celonis/content-cli`)
     - Tags the release branch with the new semantic version (e.g., `v1.3.0`).
+    - Creates a **GitHub Release** with auto-generated release notes (compared to the previous release).
 
 ---
 

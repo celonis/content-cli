@@ -134,24 +134,38 @@ jobs:
           version=$(node -p "require('./package.json').version")
           tag="v${version}"
           echo "tag=${tag}" >> $GITHUB_OUTPUT
-          git fetch origin --tags || true
-          if ! git rev-parse "${tag}" >/dev/null 2>&1; then
-            git tag "${tag}"
-            git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "${tag}"
-          else
-            echo "Tag ${tag} already exists, skipping creation"
+          git tag "${tag}"
+          git push https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }} "${tag}"
+
+      - name: Find previous release tag
+        id: prev_tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prev=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+          echo "previous_tag=${prev}" >> $GITHUB_OUTPUT
+          echo "Previous release tag: ${prev:-none}"
+
+      - name: Create GitHub release with notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.tag.outputs.tag }}"
+          prev="${{ steps.prev_tag.outputs.previous_tag }}"
+
+          args=(
+            "$tag"
+            --repo "${{ github.repository }}"
+            --title "$tag"
+            --target "${{ github.sha }}"
+            --generate-notes
+          )
+
+          if [[ -n "$prev" ]]; then
+            args+=(--notes-start-tag "$prev")
           fi
 
-      - name: Generate release notes
-        uses: softprops/action-gh-release@v2.4.2
-        with:
-          tag_name: ${{ steps.tag.outputs.tag }}
-          name: ${{ steps.tag.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-          generate_release_notes: true
+          gh release create "${args[@]}"
 
       - name: Post-publish note
         run: echo "Release branch ${{ steps.calver.outputs.release_branch }} created, published, and tagged with version."

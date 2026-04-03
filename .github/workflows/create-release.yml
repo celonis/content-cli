@@ -60,6 +60,33 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
 
+      - name: Generate release notes preview
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.bump.outputs.tag }}"
+          prev=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null || echo "")
+
+          api_args=(
+            --method POST
+            -H "Accept: application/vnd.github+json"
+            "/repos/${{ github.repository }}/releases/generate-notes"
+            -f "tag_name=${tag}"
+            -f "target_commitish=${{ github.sha }}"
+            --jq '.body'
+          )
+          if [[ -n "$prev" ]]; then
+            api_args+=(-f "previous_tag_name=${prev}")
+          fi
+
+          notes=$(gh api "${api_args[@]}" 2>/dev/null || echo "_Could not generate release notes preview._")
+
+          {
+            echo "## Release Notes Preview (${prev:-'first release'} → ${tag})"
+            echo ""
+            echo "$notes"
+          } > /tmp/pr-body.md
+
       - name: Open PR from automation branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -69,4 +96,4 @@ jobs:
             --head "${{ steps.bump.outputs.auto_branch }}" \
             --base "${{ github.ref_name }}" \
             --title "[Release] Bump version - automated" \
-            --body "Automated version bump (created by Create Release workflow). Please review and merge."
+            --body-file /tmp/pr-body.md

@@ -15,6 +15,9 @@ outputs:
   auto_branch:
     description: 'The created automation branch name'
     value: ${{ steps.names.outputs.auto_branch }}
+  tag:
+    description: 'The version tag name for this bump (e.g. v1.8.0). Tag is NOT pushed; build-or-publish handles that.'
+    value: ${{ steps.bump_version.outputs.tag }}
 
 runs:
   using: composite
@@ -46,10 +49,14 @@ runs:
         echo "Creating automation branch: ${auto_branch}"
         git checkout -b "${auto_branch}"
 
-    - name: Run npm version bump
+    - name: Bump version, commit, and push branch
+      id: bump_version
       shell: bash
       run: |
-        npm version ${{ inputs.bump }} -m "[Release] Bump version to %s"
+        npm version ${{ inputs.bump }} --no-git-tag-version
+        version=$(node -p "require('./package.json').version")
+        echo "tag=v${version}" >> $GITHUB_OUTPUT
         npm install
+        git add -A
+        git commit -m "[Release] Bump version to ${version}"
         git push origin HEAD
-        git push origin --tags
