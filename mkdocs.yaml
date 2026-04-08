@@ -10,6 +10,7 @@ nav:
   - Overview: './index.md'
   - Getting Started: './getting-started.md'
   - User Guide:
+      - Overview: './user-guide/index.md'
       - Studio Commands: './user-guide/studio-commands.md'
       - Config Commands: './user-guide/config-commands.md'
       - Deployment Commands: './user-guide/deployment-commands.md'
