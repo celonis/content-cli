@@ -6,7 +6,6 @@ import { PackageValidationService } from "../../../src/commands/configuration-ma
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { SchemaValidationResponse } from "../../../src/commands/configuration-management/interfaces/package-validation.interfaces";
-import * as path from "path";
 
 describe("Config validate", () => {
 
@@ -82,12 +81,8 @@ describe("Config validate", () => {
 
         await new PackageValidationService(testContext).validatePackage("my-package", ["SCHEMA"], null, true);
 
-        const reportMessage = loggingTestTransport.logMessages.find(m => m.message.includes("Validation report file:"));
-        expect(reportMessage).toBeDefined();
-
-        const reportFileName = reportMessage.message.split("Validation report file: ")[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), reportFileName),
+            expect.stringMatching(/config_validate_report_.+\.json$/),
             JSON.stringify(response),
             { encoding: "utf-8" }
         );

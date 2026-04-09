@@ -14,8 +14,6 @@ export class PackageValidationService {
     }
 
     public async validatePackage(packageKey: string, layers: string[], nodeKeys: string[], jsonOutput: boolean): Promise<void> {
-        logger.info(`Validating package "${packageKey}" with layers: ${layers.join(", ")}...`);
-
         const request: PackageValidationRequest = { layers };
         if (nodeKeys && nodeKeys.length > 0) {
             request.nodeKeys = nodeKeys;
@@ -26,7 +24,6 @@ export class PackageValidationService {
         if (jsonOutput) {
             const reportFileName = "config_validate_report_" + uuidv4() + ".json";
             fileService.writeToFileWithGivenName(JSON.stringify(response), reportFileName);
-            logger.info("Validation report file: " + reportFileName);
         } else {
             this.printValidationResult(response);
         }
