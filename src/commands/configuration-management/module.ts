@@ -51,7 +51,7 @@ class Module extends IModule {
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
-            .option("--performValidation", "Validate node configurations before import", false)
+            .option("--validate", "Validate node configurations before import", false)
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
             .option("-f, --file <file>", "Exported packages file (relative path)")
@@ -206,7 +206,7 @@ class Module extends IModule {
         if (options.gitProfile && !options.gitBranch) {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
-        await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch, options.performValidation);
+        await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch, options.validate);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
