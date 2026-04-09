@@ -24,6 +24,7 @@ export class PackageValidationService {
         if (jsonOutput) {
             const reportFileName = "config_validate_report_" + uuidv4() + ".json";
             fileService.writeToFileWithGivenName(JSON.stringify(response), reportFileName);
+            logger.info("Validation report file: " + reportFileName);
         } else {
             this.printValidationResult(response);
         }
