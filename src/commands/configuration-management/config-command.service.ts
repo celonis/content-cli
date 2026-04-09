@@ -58,7 +58,7 @@ export class ConfigCommandService {
         return this.batchImportExportService.batchExportPackagesMetadata(packageKeys, jsonResponse);
     }
 
-    public batchImportPackages(file: string, directory: string, overwrite: boolean, gitBranch: string): Promise<void> {
+    public batchImportPackages(file: string, directory: string, overwrite: boolean, gitBranch: string, performValidation: boolean = false): Promise<void> {
         if ((directory || file) && gitBranch) {
             throw new Error("You cannot use both file/directory and gitBranch options at the same time. Only one import source can be defined.");
         }
@@ -75,7 +75,7 @@ export class ConfigCommandService {
             throw new Error("The directory option accepts only directories.");
         }
         const sourcePath = file ?? directory;
-        return this.batchImportExportService.batchImportPackages(sourcePath, overwrite, gitBranch);
+        return this.batchImportExportService.batchImportPackages(sourcePath, overwrite, gitBranch, performValidation);
     }
 
     public diffPackages(file: string, hasChanges: boolean, jsonResponse: boolean): Promise<void> {

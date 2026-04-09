@@ -92,11 +92,11 @@ export class BatchImportExportApi {
         })
     }
 
-    public async importPackages(data: FormData, overwrite: boolean): Promise<PostPackageImportData[]> {
+    public async importPackages(data: FormData, overwrite: boolean, performValidation: boolean): Promise<PostPackageImportData[]> {
         return this.httpClient().postFile(
             "/package-manager/api/core/packages/import/batch",
             data,
-            {overwrite}
+            {overwrite, performValidation}
         );
     }
 
