@@ -11,6 +11,7 @@ export class FileService {
     public writeToFileWithGivenName(data: any, filename: string): void {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
+            mode: "0600",
         });
     }
 
@@ -29,13 +30,13 @@ export class FileService {
 
     public extractExportedZipWithNestedZips(zipFile: AdmZip): string {
         const tempDir = path.join(os.tmpdir(), `${uuidv4()}`);
-        fs.mkdirSync(tempDir, { recursive: true });
 
         return this.extractExportedZipWithNestedZipsToDir(zipFile, tempDir);
     }
 
     public extractExportedZipWithNestedZipsToDir(zipFile: AdmZip, targetDir: string): string {
-        zipFile.extractAllTo(targetDir, true);
+        fs.mkdirSync(targetDir, { recursive: true, mode: 0o700 });
+        zipFile.extractAllTo(targetDir, true, true);
 
         const files = fs.readdirSync(targetDir);
         for (const file of files) {
@@ -44,8 +45,8 @@ export class FileService {
                 const nestedZip = new AdmZip(innerZipPath);
                 const nestedDir = innerZipPath.replace(/\.zip$/, "");
 
-                fs.mkdirSync(nestedDir, { recursive: true });
-                nestedZip.extractAllTo(nestedDir, true);
+                fs.mkdirSync(nestedDir, { recursive: true, mode: 0o700 });
+                nestedZip.extractAllTo(nestedDir, true, true);
                 fs.rmSync(innerZipPath); // Optionally remove the inner zip
             }
         }
@@ -73,17 +74,16 @@ export class FileService {
                 zip.addLocalFolder(fullPath);
                 const zippedBuffer = zip.toBuffer();
 
-                finalZip.addFile(`${file}.zip`, zippedBuffer);
+                finalZip.addFile(`${file}.zip`, zippedBuffer, "", 0x600);
             } else if (stat.isFile()) {
                 finalZip.addLocalFile(fullPath);
             }
         });
 
         const tempDir = path.join(os.tmpdir(), "content-cli-exports");
-        fs.mkdirSync(tempDir, { recursive: true });
-
+        fs.mkdirSync(tempDir, { recursive: true, mode: 0o700 });
         const zipFilePath = path.join(tempDir, `export_${uuidv4()}.zip`);
-        finalZip.writeZip(zipFilePath);
+        finalZip.writeZip(zipFilePath, () => fs.chmodSync(zipFilePath, 0o600));
 
         return zipFilePath;
     }

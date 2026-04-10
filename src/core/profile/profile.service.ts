@@ -117,6 +117,7 @@ export class ProfileService {
 
         fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profileToStore), {
             encoding: "utf-8",
+            mode: "0600",
         });
     }
 
@@ -134,12 +135,12 @@ export class ProfileService {
     }
 
     private storeConfig(config: Config): void {
-        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8" });
+        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8", mode: "0600" });
     }
 
     private createProfileContainerIfNotExists(): void {
         if (!fs.existsSync(this.profileContainerPath)) {
-            fs.mkdirSync(this.profileContainerPath);
+            fs.mkdirSync(this.profileContainerPath, 0o700);
         }
     }
 

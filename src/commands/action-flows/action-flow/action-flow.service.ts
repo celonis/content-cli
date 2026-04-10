@@ -30,7 +30,7 @@ export class ActionFlowService {
         }
 
         const fileName = "action-flows_export_" + uuidv4() + ".zip";
-        zip.writeZip(fileName);
+        zip.writeZip(fileName, () => fs.chmodSync(fileName, 0o600));
         logger.info(FileService.fileDownloadedMessage + fileName);
     }
 

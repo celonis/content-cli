@@ -103,13 +103,14 @@ export abstract class BaseManager {
 
     protected writeStreamToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
-        fs.writeFileSync(filename, data);
+        fs.writeFileSync(filename, data, { mode: "0600" });
         return filename;
     }
 
     protected writeToFileWithGivenName(data: any, filename: string): void {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
+            mode: "0600",
         });
     }
 

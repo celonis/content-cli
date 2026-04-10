@@ -37,7 +37,7 @@ const maxSizeBytes = maxLogSizeMB * 1024 * 1024; // 3 MB in bytes
 // --- Ensure log directory exists ---
 try {
     if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
+        fs.mkdirSync(logDir, { recursive: true, mode: 0o700 });
     }
 } catch (error) {
     console.error(`Error creating log directory: ${logDir}`, error);

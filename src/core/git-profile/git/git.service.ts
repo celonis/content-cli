@@ -20,7 +20,7 @@ export class GitService {
         const repoUrl = this.getRepoUrl();
 
         const targetDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
-        fs.mkdirSync(targetDir, { recursive: true });
+        fs.mkdirSync(targetDir, { recursive: true, mode: 0o700 });
 
         const git = simpleGit();
         try {
@@ -36,7 +36,7 @@ export class GitService {
         this.validateGitProfileExistence();
 
         const workingDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
-        fs.mkdirSync(workingDir, { recursive: true });
+        fs.mkdirSync(workingDir, { recursive: true, mode: 0o700 });
 
         const repoUrl = this.getRepoUrl();
         const git = simpleGit();

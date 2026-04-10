@@ -258,7 +258,7 @@ export class BatchImportExportService {
         } else {
             const fileDownloadedMessage = "File downloaded successfully. New filename: ";
             const filename = `export_${uuidv4()}.zip`;
-            exportedZip.writeZip(filename);
+            exportedZip.writeZip(filename, () => fs.chmodSync(filename, 0o600));
             logger.info(fileDownloadedMessage + filename);
         }
     }

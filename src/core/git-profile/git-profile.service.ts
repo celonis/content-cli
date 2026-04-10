@@ -63,6 +63,7 @@ export class GitProfileService {
         const newProfileFileName = this.constructProfileFileName(profile.name);
         fs.writeFileSync(path.resolve(this.gitProfileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
+            mode: "0600",
         });
     }
 
@@ -88,12 +89,12 @@ export class GitProfileService {
     }
 
     private storeConfig(config: GitConfig): void {
-        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8" });
+        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8", mode: "0600" });
     }
 
     private createProfileContainerIfNotExists(): void {
         if (!fs.existsSync(this.gitProfileContainerPath)) {
-            fs.mkdirSync(this.gitProfileContainerPath);
+            fs.mkdirSync(this.gitProfileContainerPath, 0o700);
         }
     }
 

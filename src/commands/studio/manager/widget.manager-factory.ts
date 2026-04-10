@@ -34,7 +34,7 @@ export class WidgetManagerFactory {
         const zip = new AdmZip();
         const zipFileName = path.resolve(process.cwd(), "output.zip");
         zip.addLocalFolder(path.resolve(process.cwd()));
-        zip.writeZip(zipFileName);
+        zip.writeZip(zipFileName, () => fs.chmodSync(zipFileName, 0o600));
         return fs.createReadStream(path.resolve(process.cwd(), "output.zip"));
     }
 
