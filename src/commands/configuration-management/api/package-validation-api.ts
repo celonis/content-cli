@@ -13,7 +13,7 @@ export class PackageValidationApi {
 
     public async validatePackage(packageKey: string, request: PackageValidationRequest): Promise<SchemaValidationResponse> {
         return this.httpClient().post(
-            `/package-manager/api/core/packages/${encodeURIComponent(packageKey)}/validate`,
+            `/pacman/api/core/packages/${packageKey}/validate`,
             request
         ).catch(e => {
             throw new FatalError(`Problem validating package "${packageKey}": ${e}`);

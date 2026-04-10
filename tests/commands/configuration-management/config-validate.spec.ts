@@ -9,7 +9,7 @@ import { SchemaValidationResponse } from "../../../src/commands/configuration-ma
 
 describe("Config validate", () => {
 
-    const VALIDATE_URL = "https://myTeam.celonis.cloud/package-manager/api/core/packages/my-package/validate";
+    const VALIDATE_URL = "https://myTeam.celonis.cloud/pacman/api/core/packages/my-package/validate";
 
     it("Should call validate API with correct body", async () => {
         const response: SchemaValidationResponse = {
