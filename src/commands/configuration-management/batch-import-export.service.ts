@@ -126,8 +126,10 @@ export class BatchImportExportService {
 
     public async batchImportPackages(sourcePath: string, overwrite: boolean, gitBranch: string, performValidation: boolean = false): Promise<void> {
         let sourceToBeImported: string;
+        let temporaryGitFolder: string;
         if (gitBranch) {
             sourceToBeImported = await this.gitService.pullFromBranch(gitBranch);
+            temporaryGitFolder = sourceToBeImported;
         } else {
             sourceToBeImported = sourcePath;
         }
@@ -147,8 +149,9 @@ export class BatchImportExportService {
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         if (gitBranch) {
-            fs.rmSync(sourceToBeImported);
+            fs.rmSync(temporaryGitFolder, { recursive: true });
         }
+        fs.rmSync(sourceToBeImported);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
         fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
