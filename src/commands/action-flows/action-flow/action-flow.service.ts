@@ -22,7 +22,7 @@ export class ActionFlowService {
 
         const zip = new AdmZip();
         tmpZip.getEntries().forEach(entry => {
-            zip.addFile(entry.entryName, entry.getData());
+            zip.addFile(entry.entryName, entry.getData(), "", 0o600);
         });
 
         if (metadataFilePath) {
@@ -74,6 +74,6 @@ export class ActionFlowService {
         fileName = fileName + (fileName.endsWith(".json") ? "" : ".json");
         const metadata = fileService.readFile(fileName);
 
-        zip.addFile(ActionFlowService.METADATA_FILE_NAME, Buffer.from(metadata));
+        zip.addFile(ActionFlowService.METADATA_FILE_NAME, Buffer.from(metadata), "", 0o600);
     }
 }

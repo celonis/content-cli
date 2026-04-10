@@ -12,12 +12,12 @@ export class ConfigUtils {
     public static buildBatchExportZipWithStudioManifest(manifest: PackageManifestTransport[], studioManifest: StudioPackageManifest[], packageZips: AdmZip[]): AdmZip {
 
         const zipExport = new AdmZip();
-        zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)));
-        zipExport.addFile("studio.json", Buffer.from(stringify(studioManifest)));
+        zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)), "", 0o600);
+        zipExport.addFile("studio.json", Buffer.from(stringify(studioManifest)), "", 0o600);
         packageZips.forEach(packageZip => {
             const fileName = `${packageZip.getZipComment()}.zip`
             packageZip.addZipComment("")
-            zipExport.addFile(fileName, packageZip.toBuffer());
+            zipExport.addFile(fileName, packageZip.toBuffer(), "", 0o600);
         })
 
         return zipExport;
@@ -25,11 +25,11 @@ export class ConfigUtils {
     public static buildBatchExportZip(manifest: PackageManifestTransport[], packageZips: AdmZip[]): AdmZip {
 
         const zipExport = new AdmZip();
-        zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)));
+        zipExport.addFile("manifest.json", Buffer.from(stringify(manifest)), "", 0o600);
         packageZips.forEach(packageZip => {
             const fileName = `${packageZip.getZipComment()}.zip`
             packageZip.addZipComment("")
-            zipExport.addFile(fileName, packageZip.toBuffer());
+            zipExport.addFile(fileName, packageZip.toBuffer(), "", 0o600);
         })
 
         return zipExport;
@@ -38,11 +38,11 @@ export class ConfigUtils {
     public static buildExportPackageZip(packageNode: NodeExportTransport, childNodes: NodeExportTransport[], version: string): AdmZip {
         const zipExport = new AdmZip();
 
-        zipExport.addFile("package.json", Buffer.from(stringify(packageNode)));
-        zipExport.addFile("nodes/", Buffer.alloc(0));
+        zipExport.addFile("package.json", Buffer.from(stringify(packageNode)), "", 0o600);
+        zipExport.addFile("nodes/", Buffer.alloc(0), "", 0o600);
 
         childNodes.forEach(child => {
-            zipExport.addFile(`nodes/${child.key}.json`, Buffer.from(stringify(child)));
+            zipExport.addFile(`nodes/${child.key}.json`, Buffer.from(stringify(child)), "", 0o600);
         });
 
        zipExport.addZipComment(`${packageNode.key}_${version}`);

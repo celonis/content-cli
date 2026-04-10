@@ -82,13 +82,13 @@ export class BatchImportExportService {
 
         let exportedVariables = await this.getVersionedVariablesForPackagesWithKeys(versionsByPackageKey);
         exportedVariables = this.studioService.fixConnectionVariables(exportedVariables);
-        exportedPackagesZip.addFile(BatchExportImportConstants.VARIABLES_FILE_NAME, Buffer.from(stringify(exportedVariables), "utf8"));
+        exportedPackagesZip.addFile(BatchExportImportConstants.VARIABLES_FILE_NAME, Buffer.from(stringify(exportedVariables), "utf8"), "", 0o600);
 
         const studioPackageKeys = manifest.filter(packageManifest => packageManifest.flavor === BatchExportImportConstants.STUDIO)
             .map(packageManifest => packageManifest.packageKey);
 
         const studioData = await this.studioService.getStudioPackageManifests(studioPackageKeys);
-        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioData), "utf8"));
+        exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioData), "utf8"), "", 0o600);
 
         exportedPackagesZip.getEntries().forEach(entry => {
             if (entry.name.endsWith(BatchExportImportConstants.ZIP_EXTENSION)) {
