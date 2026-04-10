@@ -50,6 +50,7 @@ export class FileService {
                 fs.rmSync(innerZipPath); // Optionally remove the inner zip
             }
         }
+        this.restrictFilePermissions(targetDir);
         return targetDir;
     }
 
@@ -91,6 +92,20 @@ export class FileService {
 
     private getSerializedFileContent(data: any): string {
         return data;
+    }
+
+    private restrictFilePermissions(targetDir: string): void {
+        const files = fs.readdirSync(targetDir);
+        for (const file of files) {
+            const filePath = path.join(targetDir, file);
+            const fileStats = fs.statSync(filePath);
+            if (fileStats.isDirectory()) {
+                fs.chmodSync(filePath, 0o700);
+                this.restrictFilePermissions(filePath);
+            } else {
+                fs.chmodSync(filePath, 0o600);
+            }
+        }
     }
 }
 
