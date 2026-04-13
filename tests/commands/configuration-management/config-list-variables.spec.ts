@@ -132,7 +132,7 @@ describe("Config listVariables", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(fixedVariableManifests), {encoding: "utf-8"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(fixedVariableManifests), {encoding: "utf-8", mode: "0600"});
 
         const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
         expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);
@@ -163,7 +163,7 @@ describe("Config listVariables", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(fixedVariableManifests), {encoding: "utf-8"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(fixedVariableManifests), {encoding: "utf-8", mode: "0600"});
 
         const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
         expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);
@@ -226,7 +226,7 @@ describe("Config listVariables", () => {
             expect(mockWriteFileSync).toHaveBeenCalledWith(
                 path.resolve(process.cwd(), expectedFileName),
                 JSON.stringify(pkgAOnlyResponse),
-                {encoding: "utf-8"}
+                {encoding: "utf-8", mode: "0600"}
             );
 
             const postBody = parse<string[]>(mockedPostRequestBodyByUrl.get(url));

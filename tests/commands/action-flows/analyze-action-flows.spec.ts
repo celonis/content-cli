@@ -64,7 +64,7 @@ describe("Analyze action-flows", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAnalyzeResponse, null, 4), { encoding: "utf-8" });
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAnalyzeResponse, null, 4), { encoding: "utf-8", mode: "0600" });
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(`https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/export/assets/analyze`, expect.anything());
     });
 });

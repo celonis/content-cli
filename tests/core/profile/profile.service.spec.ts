@@ -874,7 +874,7 @@ describe("ProfileService - makeDefaultProfile", () => {
         await profileService.makeDefaultProfile("my-profile");
 
         expect(profileService.findProfile).toHaveBeenCalledWith("my-profile");
-        expect(fs.writeFileSync).toHaveBeenCalledWith(configPath, JSON.stringify({ defaultProfile: "my-profile" }), { encoding: "utf-8" });
+        expect(fs.writeFileSync).toHaveBeenCalledWith(configPath, JSON.stringify({ defaultProfile: "my-profile" }), { encoding: "utf-8", mode: "0600" });
     });
 
     it("should reject when findProfile fails", async () => {
@@ -940,11 +940,11 @@ describe("ProfileService - storeProfile", () => {
 
         await profileService.storeProfile(profile);
 
-        expect(fs.mkdirSync).toHaveBeenCalledWith(mockProfilePath);
+        expect(fs.mkdirSync).toHaveBeenCalledWith(mockProfilePath, 0o700);
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve(mockProfilePath, "test-profile.json"),
             expect.stringContaining("https://example.celonis.cloud"),
-            { encoding: "utf-8" }
+            { encoding: "utf-8", mode: "0600" }
         );
         expect(profile.team).toBe("https://example.celonis.cloud");
     });
@@ -963,7 +963,7 @@ describe("ProfileService - storeProfile", () => {
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve(mockProfilePath, "my-profile.json"),
             expect.any(String),
-            { encoding: "utf-8" }
+            { encoding: "utf-8", mode: "0600" }
         );
     });
 });
@@ -1225,7 +1225,7 @@ describe("Profile Service - Store Profile", () => {
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve(mockProfilePath, "plain-text-profile.json"),
             JSON.stringify(expectedProfile),
-            { encoding: "utf-8" }
+            { encoding: "utf-8", mode: "0600" }
         );
     });
 

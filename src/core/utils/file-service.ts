@@ -98,8 +98,7 @@ export class FileService {
         const files = fs.readdirSync(targetDir);
         for (const file of files) {
             const filePath = path.join(targetDir, file);
-            const fileStats = fs.statSync(filePath);
-            if (fileStats.isDirectory()) {
+            if (fs.statSync(filePath)?.isDirectory()) {
                 fs.chmodSync(filePath, 0o700);
                 this.restrictFilePermissions(filePath);
             } else {
