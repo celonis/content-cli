@@ -132,6 +132,9 @@ describe("Config export", () => {
         const loggedResponse = loggingTestTransport.logMessages[0].message.trim();
 
         expect(loggedResponse).toEqual("Successfully exported packages to branch: my-branch");
+        expect(fs.chmodSync).toHaveBeenCalledWith(expect.stringMatching(/manifest\.json/), 0o600);
+        expect(fs.chmodSync).toHaveBeenCalledWith(expect.stringMatching(/studio\.json/), 0o600);
+        expect(fs.chmodSync).toHaveBeenCalledWith(expect.stringMatching(/variables\.json/), 0o600);
     })
 
     it("Should export studio file for studio packageKeys and versions", async () => {
