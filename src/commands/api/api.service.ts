@@ -5,10 +5,10 @@ import { fileService, FileService } from "../../core/utils/file-service";
 import { v4 as uuidv4 } from "uuid";
 
 export class ApiService {
-    private httpClient: HttpClient;
+    private httpClient: () => HttpClient;
 
     constructor(context: Context) {
-        this.httpClient = context.httpClient;
+        this.httpClient = () => context.httpClient;
     }
 
     public async request(path: string, method: string, body?: string, jsonFile?: boolean): Promise<void> {
@@ -48,13 +48,13 @@ export class ApiService {
         try {
             switch (method) {
                 case "GET":
-                    return await this.httpClient.get(path);
+                    return await this.httpClient().get(path);
                 case "POST":
-                    return await this.httpClient.post(path, body ?? {});
+                    return await this.httpClient().post(path, body ?? {});
                 case "PUT":
-                    return await this.httpClient.put(path, body ?? {});
+                    return await this.httpClient().put(path, body ?? {});
                 case "DELETE":
-                    return await this.httpClient.delete(path);
+                    return await this.httpClient().delete(path);
             }
         } catch (e) {
             throw new FatalError(`${method} ${path} failed: ${e}`);
