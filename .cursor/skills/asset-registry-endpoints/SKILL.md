@@ -130,7 +130,7 @@ by Pacman.
   "type": "BOARD_V2",
   "configuration": { ... },
   "schemaVersion": 2,
-  "dependenciesConfiguration": { "dependencies": [{ "key": "other-asset-key", "type": "BOARD_V2" }] },
+  "dependenciesConfiguration": { "dependencies": [{ "key": "other-asset-key", "type": "SEMANTIC_MODEL" }] },
   "spaceId": "b9a21c92-...",
   "nodeType": "ASSET",
   "assetType": "BOARD_V2",
