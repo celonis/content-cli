@@ -68,13 +68,15 @@ Add a new JSON file in the `nodes/` directory:
 
 Set `schemaVersion` to the value from the asset descriptor's `assetSchema.version` field (returned by `asset-registry get`). The `spaceId` is required — omitting it causes import errors.
 
-### 5. Import
+### 5. Validate and import
 
 ```bash
-content-cli config import -d <export_dir> --overwrite
+content-cli config import -d <export_dir> --validate --overwrite
 ```
 
-This creates a new version in staging (not deployed). To create a brand-new package instead of updating, omit `--overwrite`.
+The `--validate` option performs schema validations for the assets. If there are no schema validations, then the package and its assets are imported. Otherwise, the validation errors are returned and the package import isn't performed.
+
+This creates a new version in staging (not deployed) if there are no schema validation errors. To create a brand-new package instead of updating, omit `--overwrite`.
 
 To later export a staging version, use `--keysByVersion`:
 
