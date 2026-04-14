@@ -312,7 +312,8 @@ describe("Configuration Management Module - Action Validations", () => {
                     "export.zip",
                     undefined,
                     undefined,
-                    "main"
+                    "main",
+                    undefined
                 );
             });
 
@@ -328,7 +329,8 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     "./exported",
                     undefined,
-                    "develop"
+                    "develop",
+                    undefined
                 );
             });
 
@@ -341,6 +343,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
+                    undefined,
                     undefined,
                     undefined,
                     undefined
@@ -360,6 +363,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     "my-export.zip",
                     undefined,
                     undefined,
+                    undefined,
                     undefined
                 );
             });
@@ -374,6 +378,7 @@ describe("Configuration Management Module - Action Validations", () => {
                 expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
                     undefined,
                     "./my-exports",
+                    undefined,
                     undefined,
                     undefined
                 );
@@ -391,6 +396,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     "export.zip",
                     undefined,
                     true,
+                    undefined,
                     undefined
                 );
             });
@@ -408,7 +414,8 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     "./exports",
                     true,
-                    "feature-branch"
+                    "feature-branch",
+                    undefined
                 );
             });
         });

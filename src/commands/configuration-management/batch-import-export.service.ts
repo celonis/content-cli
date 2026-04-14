@@ -124,7 +124,7 @@ export class BatchImportExportService {
         }
     }
 
-    public async batchImportPackages(sourcePath: string, overwrite: boolean, gitBranch: string): Promise<void> {
+    public async batchImportPackages(sourcePath: string, overwrite: boolean, gitBranch: string, performValidation: boolean = false): Promise<void> {
         let sourceToBeImported: string;
         if (gitBranch) {
             sourceToBeImported = await this.gitService.pullFromBranch(gitBranch);
@@ -143,7 +143,7 @@ export class BatchImportExportService {
         const existingStudioPackages = await this.studioPackageApi.findAllPackages();
 
         const formData = this.buildBodyForImport(configs, sourceToBeImported, variablesManifests);
-        const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite);
+        const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite, performValidation);
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         if (gitBranch) {

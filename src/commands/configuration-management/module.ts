@@ -11,6 +11,7 @@ import { NodeService } from "./node.service";
 import { NodeDiffService } from "./node-diff.service";
 import { NodeDependencyService } from "./node-dependency.service";
 import { PackageVersionCommandService } from "./package-version-command.service";
+import { PackageValidationService } from "./package-validation.service";
 
 class Module extends IModule {
 
@@ -50,11 +51,20 @@ class Module extends IModule {
         configCommand.command("import")
             .description("Command to import package configs")
             .option("--overwrite", "Flag to allow overwriting of packages")
+            .option("--validate", "Validate node configurations before import", false)
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the exported file and import")
             .option("-f, --file <file>", "Exported packages file (relative path)")
             .option("-d, --directory <directory>", "Exported packages directory (relative path)")
             .action(this.batchImportPackages);
+
+        configCommand.command("validate")
+            .description("Validate package node configurations")
+            .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
+            .option("--layers <layers...>", "Validation layers to run", ["SCHEMA"])
+            .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.validatePackage);
 
         configCommand.command("diff")
             .description("Command to diff configs of packages")
@@ -196,11 +206,15 @@ class Module extends IModule {
         if (options.gitProfile && !options.gitBranch) {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
-        await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch);
+        await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch, options.validate);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new ConfigCommandService(context).diffPackages(options.file, options.hasChanges, options.json);
+    }
+
+    private async validatePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new PackageValidationService(context).validatePackage(options.packageKey, options.layers, options.nodeKeys, options.json);
     }
 
     private async listVariables(context: Context, command: Command, options: OptionValues): Promise<void> {

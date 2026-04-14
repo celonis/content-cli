@@ -420,4 +420,34 @@ describe("Config import", () => {
 
         expect(mockedPostRequestBodyByUrl.get(assignVariablesUrl)).toEqual(JSON.stringify([variableAssignment]));
     })
+
+    it("Should pass performValidation param when flag is set", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+
+        mockReadFileSync(exportedPackagesZip.toBuffer());
+        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
+
+        const importResponse: PostPackageImportData[] = [{
+            packageKey: "key-1",
+            importedVersions: [{
+                oldVersion: "1.0.2",
+                newVersion: "1.0.0"
+            }]
+        }];
+
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
+
+        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null, true);
+
+        expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
+            expect.stringContaining("/package-manager/api/core/packages/import/batch"),
+            expect.anything(),
+            expect.objectContaining({
+                params: expect.objectContaining({ performValidation: true })
+            })
+        );
+    })
 })
