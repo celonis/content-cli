@@ -130,7 +130,7 @@ by Pacman.
   "type": "BOARD_V2",
   "configuration": { ... },
   "schemaVersion": 2,
-  "dependenciesConfiguration": { "dependencies": [] },
+  "dependenciesConfiguration": { "dependencies": [{ "key": "other-asset-key", "type": "BOARD_V2" }] },
   "spaceId": "b9a21c92-...",
   "nodeType": "ASSET",
   "assetType": "BOARD_V2",
@@ -149,7 +149,7 @@ Field reference:
 | `type` | Asset type (e.g. `BOARD_V2`) — matches the asset registry | Yes |
 | `configuration` | **The actual asset content.** Schema root = this object | Yes |
 | `schemaVersion` | Use the version from the asset descriptor's `assetSchema.version` field (returned by `asset-registry get`). Do not invent a value | Yes |
-| `dependenciesConfiguration` | Dependencies to other assets in the package | Yes (can be empty) |
+| `dependenciesConfiguration` | Dependencies to other assets in the package. Each entry has `key` (target asset key) and `type` (target asset type). Use `{ "dependencies": [] }` when there are none | Yes |
 | `nodeType` | `ASSET` for all assets, `PACKAGE` for the package node | Yes |
 | `assetType` | Same as `type` — redundant resolver field | Yes |
 | `spaceId` | Space ID. Ask the user for this. Must match the package's space. Omitting causes 500 errors on import | Yes (for import) |

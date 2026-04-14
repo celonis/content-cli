@@ -1,17 +1,23 @@
 # Agentic Development Guide
 
-Use the Asset Registry to discover asset schemas and programmatically create assets via Content CLI.
+Use the Asset Registry to discover asset schemas and programmatically create assets via [Content CLI](https://github.com/celonis/content-cli). Share this guide with your AI coding agent to get started.
 
-## Agent instructions
+## For agents
 
-When using an AI coding agent, the repo contains a skill file at `.cursor/skills/asset-registry-endpoints/SKILL.md` with detailed, machine-readable instructions for this entire workflow. Point your agent at that file — it covers discovery, schema fetching, asset creation, import/export, and troubleshooting in a format optimized for agents.
+Fetch and follow the machine-readable skill file — it contains step-by-step instructions for the entire workflow (discovery, schema fetching, asset creation, import/export, and troubleshooting):
+
+```
+https://raw.githubusercontent.com/celonis/content-cli/main/.cursor/skills/asset-registry-endpoints/SKILL.md
+```
+
+If you have the Content CLI repo cloned locally, the skill is at `.cursor/skills/asset-registry-endpoints/SKILL.md`.
 
 ## Prerequisites
 
 - **Content CLI** installed or built locally (`yarn install && yarn build`)
 - A configured **CLI profile** (`content-cli profile create`)
 
-## Workflow
+## Workflow overview
 
 ### 1. Discover asset types
 
@@ -20,7 +26,7 @@ content-cli asset-registry list
 content-cli asset-registry get --assetType BOARD_V2
 ```
 
-The descriptor tells you the `basePath` and endpoint paths for schema, validate, methodology, and examples.
+The descriptor returns the `basePath` and endpoint paths for schema, validate, methodology, and examples.
 
 ### 2. Fetch the schema
 
@@ -30,7 +36,7 @@ Combine `basePath` + `endpoints.schema` and call it:
 content-cli api request --path "/blueprint/api/validation/schema/BOARD_V2" --json
 ```
 
-The schema describes the valid structure of the asset's `configuration` field. This is the only part of the asset governed by the schema — everything else is platform metadata.
+The schema describes the valid structure of the asset's `configuration` field. Everything outside `configuration` in a node JSON is platform metadata managed by Pacman.
 
 ### 3. Export the target package
 
@@ -60,7 +66,7 @@ Add a new JSON file in the `nodes/` directory:
 }
 ```
 
-The `configuration` object must conform to the schema from step 2. Set `schemaVersion` to the version from the asset descriptor (the `assetSchema.version` field returned by `asset-registry get`). The `spaceId` is required — omitting it causes import errors.
+Set `schemaVersion` to the value from the asset descriptor's `assetSchema.version` field (returned by `asset-registry get`). The `spaceId` is required — omitting it causes import errors.
 
 ### 5. Import
 
