@@ -36,7 +36,7 @@ Combine `basePath` + `endpoints.schema` and call it:
 content-cli api request --path "/blueprint/api/validation/schema/BOARD_V2" --json
 ```
 
-The schema describes the valid structure of the asset's `configuration` field. Everything outside `configuration` in a node JSON is platform metadata managed by Pacman.
+The schema describes the valid structure of the asset's `configuration` field. This is the only part of the asset governed by the schema — everything else is platform metadata.
 
 ### 3. Export the target package
 
