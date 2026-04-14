@@ -14,6 +14,7 @@ nav:
       - Studio Commands: './user-guide/studio-commands.md'
       - Config Commands: './user-guide/config-commands.md'
       - Deployment Commands: './user-guide/deployment-commands.md'
+      - Asset Registry Commands: './user-guide/asset-registry-commands.md'
       - Data Pool Commands: './user-guide/data-pool-commands.md'
       - Action Flow Commands: './user-guide/action-flow-commands.md'
   - Development:
