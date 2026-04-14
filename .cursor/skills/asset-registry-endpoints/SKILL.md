@@ -72,9 +72,12 @@ export_<uuid>/
 ### Importing packages
 
 ```bash
-$CLI config import -d <export_dir> --overwrite
+$CLI config import -d <export_dir> --validate --overwrite
 ```
 
+- `--validate` — performs schema validations before importing. If there are
+  validation errors the import is **not** performed and the errors are returned.
+  If there are no errors, the package and its assets are imported normally.
 - `--overwrite` — required when updating an existing package
 - Without `--overwrite` — creates a **new** package (use for first-time import)
 
@@ -279,8 +282,8 @@ $CLI config export --packageKeys <package-key> --unzip
 #    — configuration root must conform to the schema from step 2
 #    — set spaceId to the package's space (ask the user)
 
-# 5. Import back (--overwrite for existing package, omit for new)
-$CLI config import -d <export_dir> --overwrite
+# 5. Validate and import (--overwrite for existing package, omit for new)
+$CLI config import -d <export_dir> --validate --overwrite
 ```
 
 ## Quick reference
