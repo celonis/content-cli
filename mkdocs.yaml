@@ -17,6 +17,7 @@ nav:
       - Asset Registry Commands: './user-guide/asset-registry-commands.md'
       - Data Pool Commands: './user-guide/data-pool-commands.md'
       - Action Flow Commands: './user-guide/action-flow-commands.md'
+      - Agentic Development: './user-guide/agentic-development-guide.md'
   - Development:
       - Architecture: './internal-architecture.md'
       - How to Add a Command: './how-to-add-command.md'

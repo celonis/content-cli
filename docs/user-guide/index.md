@@ -10,3 +10,4 @@ Content CLI organizes its commands into groups by area. Each group covers a spec
 | [Asset Registry Commands](./asset-registry-commands.md) | Discover registered asset types and their service descriptors |
 | [Data Pool Commands](./data-pool-commands.md) | Export and import Data Pools with their dependencies                          |
 | [Action Flow Commands](./action-flow-commands.md) | Analyze and export/import Action Flows and their dependencies                 |
+| [Agentic Development](./agentic-development-guide.md) | Discover asset schemas and programmatically create assets using AI agents |
