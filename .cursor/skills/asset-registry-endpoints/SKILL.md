@@ -1,18 +1,18 @@
 ---
 name: asset-registry-endpoints
 description: >-
-  Call asset service endpoints (schema, validate, methodology, examples) for any
-  registered asset type using the asset registry descriptor and the content-cli
-  api command. Also covers exporting/importing/creating packages via config
-  commands. Use when the user asks for a schema, wants to validate an asset,
-  needs methodology/best-practices, wants example configurations for an asset
-  type, or needs to export/import/list/create packages.
+  Discover asset types, fetch schemas, examples, and methodology via
+  content-cli asset-registry commands. Also covers exporting/importing/creating
+  packages via config commands. Use when the user asks for a schema, wants to
+  validate an asset, needs methodology/best-practices, wants example
+  configurations for an asset type, or needs to export/import/list/create
+  packages.
 ---
 
 # Asset Registry Endpoint Caller
 
-Call any endpoint defined in an asset registry descriptor by combining the
-service `basePath` with the endpoint path, then hitting it via `content-cli api request`.
+Use `content-cli asset-registry` commands to discover asset types and fetch
+schemas, examples, and methodology for any registered asset type.
 
 ## Prerequisites
 
@@ -122,7 +122,7 @@ nothing above or around it. If the schema defines a `metadata` field inside
 `configuration`, that is the asset's own metadata, not a platform concept.
 
 Everything outside `configuration` is configuration-management metadata managed
-by Pacman.
+by the platform.
 
 ```json
 {
@@ -170,127 +170,116 @@ Field reference:
 | `variables` | Package variables (e.g. DATA_MODEL bindings) |
 | `dependencies` | Package-level dependencies |
 
-## Step 1 — Get the asset descriptor
+## Step 1 — Discover asset types
 
-```bash
-$CLI asset-registry get --assetType <ASSET_TYPE> -p <profile>
-```
-
-This returns a descriptor like:
-
-```json
-{
-  "assetType": "BOARD_V2",
-  "displayName": "View",
-  "service": { "basePath": "/blueprint/api" },
-  "endpoints": {
-    "schema": "/validation/schema/BOARD_V2",
-    "validate": "/validate/BOARD_V2",
-    "methodology": "/methodology/BOARD_V2",
-    "examples": "/examples/BOARD_V2"
-  }
-}
-```
-
-If you don't know which asset types exist, list them first:
+List all registered asset types:
 
 ```bash
 $CLI asset-registry list -p <profile>
 ```
 
-## Step 2 — Build the full path
+Get the full descriptor for a specific type (includes schema version, service
+info, and endpoint availability):
 
-Concatenate `service.basePath` + `endpoints.<endpoint>`:
+```bash
+$CLI asset-registry get --assetType <ASSET_TYPE> -p <profile>
+```
 
-| Want | Formula | Example |
-|------|---------|---------|
-| Schema | `basePath + endpoints.schema` | `/blueprint/api/validation/schema/BOARD_V2` |
-| Validate | `basePath + endpoints.validate` | `/blueprint/api/validate/BOARD_V2` |
-| Methodology | `basePath + endpoints.methodology` | `/blueprint/api/methodology/BOARD_V2` |
-| Examples | `basePath + endpoints.examples` | `/blueprint/api/examples/BOARD_V2` |
+## Step 2 — Fetch schema, examples, or methodology
 
-`methodology` and `examples` are optional — check if they exist in the
-descriptor before calling.
-
-**Not all endpoints may be available** for every asset type. Some services may
-not have deployed validate, methodology, or examples endpoints yet. If you get
-a 404, the endpoint is not implemented for that asset type — do not retry.
-
-## Step 3 — Call the endpoint
-
-> **Note on `api request`**: This command is **beta** and exists as a testing
-> mechanism. It hits Celonis APIs using the configured profile's auth — it is
-> not a general-purpose HTTP client. Do not use outside of testing.
+Use these commands to get asset authoring resources directly. Each proxies
+through the platform to the owning asset service — no manual path construction
+needed.
 
 ### Schema (GET)
 
 Returns the full JSON Schema for the asset type's `configuration` object.
 
 ```bash
-$CLI api request --path "<basePath><endpoints.schema>" -p <profile>
+$CLI asset-registry schema --assetType <ASSET_TYPE> -p <profile>
 ```
 
-### Validate (POST)
+Save to file:
 
 ```bash
-$CLI api request --path "<basePath><endpoints.validate>" --method POST \
-  --body '{"assetType":"<TYPE>","packageKey":"<PKG>","nodes":[{"key":"<KEY>","configuration":{...}}]}' \
-  -p <profile>
-```
-
-### Methodology (GET)
-
-```bash
-$CLI api request --path "<basePath><endpoints.methodology>" -p <profile>
+$CLI asset-registry schema --assetType <ASSET_TYPE> --json -p <profile>
 ```
 
 ### Examples (GET)
 
-```bash
-$CLI api request --path "<basePath><endpoints.examples>" -p <profile>
-```
-
-### Save response to file
+Returns example configurations for the asset type. Not all asset types provide
+examples — a 404 means the endpoint is not available.
 
 ```bash
-$CLI api request --path "<path>" --json -p <profile>
+$CLI asset-registry examples --assetType <ASSET_TYPE> -p <profile>
 ```
 
-## Troubleshooting: 403 on asset endpoints
+### Methodology (GET)
 
-If an asset service endpoint returns **403**, the endpoint is likely **not on
-the OAuth scope allowlist** for the token. The asset registry (Pacman) APIs may
-work, but downstream asset service APIs (e.g. `/blueprint/api/...`,
-`/llm-agent/api/...`) need their own allowlisting.
+Returns best-practices and methodology guidance. Not all asset types provide
+methodology — a 404 means the endpoint is not available.
 
-**Tip for asset teams**: if your endpoints return 403 via Content CLI or public
-APIs, request that they be added to the OAuth `studio` scope allowlist.
+```bash
+$CLI asset-registry methodology --assetType <ASSET_TYPE> -p <profile>
+```
+
+### Validate (POST — via config import)
+
+Use `config import --validate` to validate assets against their schema before
+importing:
+
+```bash
+$CLI config import -d <export_dir> --validate --overwrite -p <profile>
+```
+
+## Troubleshooting
+
+**404 on examples / methodology** — Not all asset services have deployed these
+endpoints. The schema endpoint is required for all registered types; the others
+are optional.
+
+**500 on proxy endpoints** — The platform proxies requests to the owning asset
+service. A 500 typically means the downstream service is unavailable or returned
+an unexpected response.
+
+**500 on import** — Ensure `spaceId` is set on every node and `schemaVersion`
+matches the descriptor's `assetSchema.version`.
 
 ## Full worked example
 
 ```bash
-# 1. Get descriptor
-$CLI asset-registry get --assetType BOARD_V2 --json
+# 1. Discover available asset types
+$CLI asset-registry list -p <profile>
 
-# 2. Fetch schema (beta command — testing only)
-$CLI api request --path "/blueprint/api/validation/schema/BOARD_V2" --json
+# 2. Get the descriptor (includes schema version)
+$CLI asset-registry get --assetType BOARD_V2 --json -p <profile>
 
-# 3. Export the target package
-$CLI config export --packageKeys <package-key> --unzip
+# 3. Fetch the schema
+$CLI asset-registry schema --assetType BOARD_V2 --json -p <profile>
 
-# 4. Create a new node JSON in the export's nodes/ directory
-#    — configuration root must conform to the schema from step 2
+# 4. (Optional) Fetch examples for reference
+$CLI asset-registry examples --assetType BOARD_V2 --json -p <profile>
+
+# 5. Export the target package
+$CLI config export --packageKeys <package-key> --unzip -p <profile>
+
+# 6. Create a new node JSON in the export's nodes/ directory
+#    — configuration root must conform to the schema from step 3
 #    — set spaceId to the package's space (ask the user)
 
-# 5. Validate and import (--overwrite for existing package, omit for new)
-$CLI config import -d <export_dir> --validate --overwrite
+# 7. Validate and import (--overwrite for existing package, omit for new)
+$CLI config import -d <export_dir> --validate --overwrite -p <profile>
 ```
 
 ## Quick reference
 
-| Endpoint | Method | Required | Notes |
-|----------|--------|----------|-------|
-| schema | GET | Yes | Returns full JSON Schema |
-| validate | POST | Yes | May not be deployed for all types yet |
-| methodology | GET | No | May not be deployed for all types yet |
-| examples | GET | No | May not be deployed for all types yet |
+| Command | Description |
+|---------|-------------|
+| `asset-registry list` | List all registered asset types |
+| `asset-registry get --assetType X` | Get the full descriptor for an asset type |
+| `asset-registry schema --assetType X` | Get the JSON Schema for the asset's configuration |
+| `asset-registry examples --assetType X` | Get example configurations (if available) |
+| `asset-registry methodology --assetType X` | Get methodology / best-practices (if available) |
+| `config list` | List packages |
+| `config export --packageKeys X --unzip` | Export packages |
+| `config import -d <dir> --validate --overwrite` | Validate and import packages |

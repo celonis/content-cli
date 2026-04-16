@@ -19,6 +19,24 @@ class Module extends IModule {
             .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
             .option("--json", "Return the response as a JSON file")
             .action(this.getType);
+
+        assetRegistryCommand.command("schema")
+            .description("Get the JSON schema for an asset type's configuration")
+            .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.getSchema);
+
+        assetRegistryCommand.command("examples")
+            .description("Get example configurations for an asset type")
+            .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.getExamples);
+
+        assetRegistryCommand.command("methodology")
+            .description("Get the methodology / best-practices guide for an asset type")
+            .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.getMethodology);
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -27,6 +45,18 @@ class Module extends IModule {
 
     private async getType(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getType(options.assetType, !!options.json);
+    }
+
+    private async getSchema(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).getSchema(options.assetType, !!options.json);
+    }
+
+    private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).getExamples(options.assetType, !!options.json);
+    }
+
+    private async getMethodology(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).getMethodology(options.assetType, !!options.json);
     }
 }
 

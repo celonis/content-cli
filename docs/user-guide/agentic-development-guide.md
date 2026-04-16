@@ -26,17 +26,22 @@ content-cli asset-registry list
 content-cli asset-registry get --assetType BOARD_V2
 ```
 
-The descriptor returns the `basePath` and endpoint paths for schema, validate, methodology, and examples.
+The descriptor returns metadata including the schema version needed for asset creation.
 
 ### 2. Fetch the schema
 
-Combine `basePath` + `endpoints.schema` and call it:
-
 ```bash
-content-cli api request --path "/blueprint/api/validation/schema/BOARD_V2" --json
+content-cli asset-registry schema --assetType BOARD_V2 --json
 ```
 
 The schema describes the valid structure of the asset's `configuration` field. This is the only part of the asset governed by the schema — everything else is platform metadata.
+
+You can also fetch examples and methodology when available:
+
+```bash
+content-cli asset-registry examples --assetType BOARD_V2 --json
+content-cli asset-registry methodology --assetType BOARD_V2 --json
+```
 
 ### 3. Export the target package
 
@@ -86,9 +91,9 @@ content-cli config export --keysByVersion <packageKey>_<version> --unzip
 
 ## Troubleshooting
 
-**403 on asset service endpoints** — The asset registry (Pacman) APIs and asset service endpoints use separate OAuth scopes. If schema/validate endpoints return 403, the service's endpoints may not be on the `studio` scope allowlist yet. Asset teams should request their endpoints be added to the allowlist.
+**404 on examples / methodology** — Not all asset services have deployed these endpoints. The schema endpoint is required for all registered types; the others are optional.
 
-**404 on validate / methodology / examples** — Not all services have deployed all endpoints. The schema endpoint is required; the others may not be available yet.
+**500 on proxy endpoints** — The platform proxies requests to the owning asset service. A 500 typically means the downstream service is unavailable or returned an unexpected response.
 
 **500 on import** — Ensure `spaceId` is set on every node and `schemaVersion` matches the descriptor's `assetSchema.version`.
 
