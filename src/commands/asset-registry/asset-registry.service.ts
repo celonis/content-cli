@@ -43,6 +43,31 @@ export class AssetRegistryService {
         }
     }
 
+    public async getSchema(assetType: string, jsonResponse: boolean): Promise<void> {
+        const data = await this.api.getSchema(assetType);
+        this.outputResponse(data, jsonResponse);
+    }
+
+    public async getExamples(assetType: string, jsonResponse: boolean): Promise<void> {
+        const data = await this.api.getExamples(assetType);
+        this.outputResponse(data, jsonResponse);
+    }
+
+    public async getMethodology(assetType: string, jsonResponse: boolean): Promise<void> {
+        const data = await this.api.getMethodology(assetType);
+        this.outputResponse(data, jsonResponse);
+    }
+
+    private outputResponse(data: any, jsonResponse: boolean): void {
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            fileService.writeToFileWithGivenName(JSON.stringify(data, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + filename);
+        } else {
+            logger.info(typeof data === "string" ? data : JSON.stringify(data, null, 2));
+        }
+    }
+
     private logDescriptorSummary(descriptor: AssetRegistryDescriptor): void {
         logger.info(
             `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}] (basePath: ${descriptor.service.basePath})`

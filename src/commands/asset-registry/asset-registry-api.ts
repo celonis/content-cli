@@ -25,4 +25,28 @@ export class AssetRegistryApi {
                 throw new FatalError(`Problem getting asset type '${assetType}': ${e}`);
             });
     }
+
+    public async getSchema(assetType: string): Promise<any> {
+        return this.httpClient()
+            .get(`/pacman/api/core/asset-registry/schemas/${encodeURIComponent(assetType)}`)
+            .catch((e) => {
+                throw new FatalError(`Problem getting schema for asset type '${assetType}': ${e}`);
+            });
+    }
+
+    public async getExamples(assetType: string): Promise<any> {
+        return this.httpClient()
+            .get(`/pacman/api/core/asset-registry/examples/${encodeURIComponent(assetType)}`)
+            .catch((e) => {
+                throw new FatalError(`Problem getting examples for asset type '${assetType}': ${e}`);
+            });
+    }
+
+    public async getMethodology(assetType: string): Promise<any> {
+        return this.httpClient()
+            .get(`/pacman/api/core/asset-registry/methodologies/${encodeURIComponent(assetType)}`)
+            .catch((e) => {
+                throw new FatalError(`Problem getting methodology for asset type '${assetType}': ${e}`);
+            });
+    }
 }
