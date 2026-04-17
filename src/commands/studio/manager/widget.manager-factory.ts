@@ -5,6 +5,7 @@ import { FatalError, logger } from "../../../core/utils/logger";
 import { Context } from "../../../core/command/cli-context";
 import * as AdmZip from "adm-zip";
 import { parse } from "../../../core/utils/yaml";
+import { FileConstants } from "../../../core/utils/file.constants";
 
 export class WidgetManagerFactory {
 
@@ -34,7 +35,7 @@ export class WidgetManagerFactory {
         const zip = new AdmZip();
         const zipFileName = path.resolve(process.cwd(), "output.zip");
         zip.addLocalFolder(path.resolve(process.cwd()));
-        zip.writeZip(zipFileName, () => fs.chmodSync(zipFileName, 0o600));
+        zip.writeZip(zipFileName, () => fs.chmodSync(zipFileName, FileConstants.DEFAULT_FILE_PERMISSIONS));
         return fs.createReadStream(path.resolve(process.cwd(), "output.zip"));
     }
 

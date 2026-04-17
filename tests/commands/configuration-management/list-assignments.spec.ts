@@ -39,7 +39,7 @@ describe("List assignments", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAssignmentValues), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAssignmentValues), {encoding: "utf-8", mode: 0o600});
     })
 
     it("Should contain url params in the url", async () => {

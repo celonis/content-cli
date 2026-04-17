@@ -4,6 +4,7 @@ import {FatalError, logger} from "./logger";
 import AdmZip = require("adm-zip");
 import { v4 as uuidv4 } from "uuid";
 import * as os from "node:os";
+import { FileConstants } from "./file.constants";
 
 export class FileService {
     public static readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
@@ -11,7 +12,7 @@ export class FileService {
     public writeToFileWithGivenName(data: any, filename: string): void {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
-            mode: "0600",
+            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
         });
     }
 
@@ -35,7 +36,7 @@ export class FileService {
     }
 
     public extractExportedZipWithNestedZipsToDir(zipFile: AdmZip, targetDir: string): string {
-        fs.mkdirSync(targetDir, { recursive: true, mode: 0o700 });
+        fs.mkdirSync(targetDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
         zipFile.extractAllTo(targetDir, true, true);
 
         const files = fs.readdirSync(targetDir);
@@ -45,7 +46,7 @@ export class FileService {
                 const nestedZip = new AdmZip(innerZipPath);
                 const nestedDir = innerZipPath.replace(/\.zip$/, "");
 
-                fs.mkdirSync(nestedDir, { recursive: true, mode: 0o700 });
+                fs.mkdirSync(nestedDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
                 nestedZip.extractAllTo(nestedDir, true, true);
                 fs.rmSync(innerZipPath); // Optionally remove the inner zip
             }
@@ -75,16 +76,16 @@ export class FileService {
                 zip.addLocalFolder(fullPath);
                 const zippedBuffer = zip.toBuffer();
 
-                finalZip.addFile(`${file}.zip`, zippedBuffer, "", 0x600);
+                finalZip.addFile(`${file}.zip`, zippedBuffer, "", FileConstants.DEFAULT_FILE_PERMISSIONS);
             } else if (stat.isFile()) {
                 finalZip.addLocalFile(fullPath);
             }
         });
 
         const tempDir = path.join(os.tmpdir(), "content-cli-exports");
-        fs.mkdirSync(tempDir, { recursive: true, mode: 0o700 });
+        fs.mkdirSync(tempDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
         const zipFilePath = path.join(tempDir, `export_${uuidv4()}.zip`);
-        finalZip.writeZip(zipFilePath, () => fs.chmodSync(zipFilePath, 0o600));
+        finalZip.writeZip(zipFilePath, () => fs.chmodSync(zipFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
 
         return zipFilePath;
     }
@@ -99,10 +100,10 @@ export class FileService {
         for (const file of files) {
             const filePath = path.join(targetDir, file);
             if (fs.statSync(filePath)?.isDirectory()) {
-                fs.chmodSync(filePath, 0o700);
+                fs.chmodSync(filePath, FileConstants.DEFAULT_FOLDER_PERMISSIONS);
                 this.restrictFilePermissions(filePath);
             } else {
-                fs.chmodSync(filePath, 0o600);
+                fs.chmodSync(filePath, FileConstants.DEFAULT_FILE_PERMISSIONS);
             }
         }
     }

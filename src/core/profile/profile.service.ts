@@ -10,6 +10,7 @@ import { Client, Issuer } from "openid-client";
 import axios from "axios";
 import os = require("os");
 import { SecureSecretStorageService } from "./secret-storage.service";
+import { FileConstants } from "../utils/file.constants";
 
 const homedir = os.homedir();
 // use 5 seconds buffer to avoid rare cases when accessToken is just about to expire before the command is sent
@@ -117,7 +118,7 @@ export class ProfileService {
 
         fs.writeFileSync(path.resolve(this.profileContainerPath, newProfileFileName), JSON.stringify(profileToStore), {
             encoding: "utf-8",
-            mode: "0600",
+            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
         });
     }
 
@@ -135,12 +136,12 @@ export class ProfileService {
     }
 
     private storeConfig(config: Config): void {
-        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8", mode: "0600" });
+        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8", mode: FileConstants.DEFAULT_FILE_PERMISSIONS });
     }
 
     private createProfileContainerIfNotExists(): void {
         if (!fs.existsSync(this.profileContainerPath)) {
-            fs.mkdirSync(this.profileContainerPath, 0o700);
+            fs.mkdirSync(this.profileContainerPath, FileConstants.DEFAULT_FOLDER_PERMISSIONS);
         }
     }
 

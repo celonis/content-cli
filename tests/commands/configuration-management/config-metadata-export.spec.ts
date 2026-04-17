@@ -53,7 +53,7 @@ describe("Config metadata export", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
         const exportedPackagesMetadataTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageMetadataExportTransport[];
         expect(exportedPackagesMetadataTransports.length).toBe(2);
 

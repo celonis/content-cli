@@ -42,7 +42,7 @@ describe("Deployment list active", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
 
         const deploymentTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as DeploymentTransport;
 
@@ -90,7 +90,7 @@ describe("Deployment list active", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
 
         const deploymentTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as DeploymentTransport[];
         expect(deploymentTransports.length).toBe(1);

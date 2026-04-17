@@ -74,7 +74,7 @@ describe("Git Profile - Create Profile", () => {
                 repository: repository,
                 authenticationType: AuthenticationType.HTTPS
             }),
-            { encoding: "utf-8", mode: "0600" }
+            { encoding: "utf-8", mode: 0o600 }
         );
 
         expect(mockQuestionClose).toHaveBeenCalled();
@@ -105,7 +105,7 @@ describe("Git Profile - Create Profile", () => {
                 repository: repository,
                 authenticationType: AuthenticationType.SSH
             }),
-            { encoding: "utf-8", mode: "0600" }
+            { encoding: "utf-8", mode: 0o600 }
         );
 
         const loggedMessage = loggingTestTransport.logMessages[0].message.trim();
@@ -136,14 +136,14 @@ describe("Git Profile - Create Profile", () => {
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve(mockProfilePath, `${profileName}.json`),
             expect.any(String),
-            { encoding: "utf-8", mode: "0600" }
+            { encoding: "utf-8", mode: 0o600 }
         );
 
         const configPath = path.resolve(mockProfilePath, "config.json");
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             configPath,
             JSON.stringify({ defaultProfile: profileName }),
-            { encoding: "utf-8", mode: "0600" }
+            { encoding: "utf-8", mode: 0o600 }
         );
 
         const successMessage = loggingTestTransport.logMessages[1].message.trim();

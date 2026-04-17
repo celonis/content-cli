@@ -57,7 +57,7 @@ describe("Node Dependencies", () => {
         expect(mockWriteFileSync).toHaveBeenCalledWith(
             path.resolve(process.cwd(), expectedFileName),
             expect.any(String),
-            { encoding: "utf-8", mode: "0600" }
+            { encoding: "utf-8", mode: 0o600 }
         );
 
         const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
@@ -94,7 +94,7 @@ describe("Node Dependencies", () => {
         expect(mockWriteFileSync).toHaveBeenCalledWith(
             path.resolve(process.cwd(), expectedFileName),
             expect.any(String),
-            { encoding: "utf-8", mode: "0600" }
+            { encoding: "utf-8", mode: 0o600 }
         );
 
         const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
@@ -152,7 +152,7 @@ describe("Node Dependencies", () => {
             expect(mockWriteFileSync).toHaveBeenCalledWith(
                 path.resolve(process.cwd(), expectedFileName),
                 expect.any(String),
-                { encoding: "utf-8", mode: "0600" }
+                { encoding: "utf-8", mode: 0o600 }
             );
 
             const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
@@ -189,7 +189,7 @@ describe("Node Dependencies", () => {
             expect(mockWriteFileSync).toHaveBeenCalledWith(
                 path.resolve(process.cwd(), expectedFileName),
                 expect.any(String),
-                { encoding: "utf-8", mode: "0600" }
+                { encoding: "utf-8", mode: 0o600 }
             );
 
             const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];

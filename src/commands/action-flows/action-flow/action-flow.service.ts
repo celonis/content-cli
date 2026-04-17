@@ -6,6 +6,7 @@ import { Context } from "../../../core/command/cli-context";
 import { ActionFlowApi } from "./action-flow-api";
 import { fileService, FileService } from "../../../core/utils/file-service";
 import { logger } from "../../../core/utils/logger";
+import { FileConstants } from "../../../core/utils/file.constants";
 
 export class ActionFlowService {
     public static readonly METADATA_FILE_NAME = "metadata.json";
@@ -22,7 +23,7 @@ export class ActionFlowService {
 
         const zip = new AdmZip();
         tmpZip.getEntries().forEach(entry => {
-            zip.addFile(entry.entryName, entry.getData(), "", 0o600);
+            zip.addFile(entry.entryName, entry.getData(), "", FileConstants.DEFAULT_FILE_PERMISSIONS);
         });
 
         if (metadataFilePath) {
@@ -30,7 +31,7 @@ export class ActionFlowService {
         }
 
         const fileName = "action-flows_export_" + uuidv4() + ".zip";
-        zip.writeZip(fileName, () => fs.chmodSync(fileName, 0o600));
+        zip.writeZip(fileName, () => fs.chmodSync(fileName, FileConstants.DEFAULT_FILE_PERMISSIONS));
         logger.info(FileService.fileDownloadedMessage + fileName);
     }
 
@@ -74,6 +75,6 @@ export class ActionFlowService {
         fileName = fileName + (fileName.endsWith(".json") ? "" : ".json");
         const metadata = fileService.readFile(fileName);
 
-        zip.addFile(ActionFlowService.METADATA_FILE_NAME, Buffer.from(metadata), "", 0o600);
+        zip.addFile(ActionFlowService.METADATA_FILE_NAME, Buffer.from(metadata), "", FileConstants.DEFAULT_FILE_PERMISSIONS);
     }
 }

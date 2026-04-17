@@ -65,7 +65,7 @@ describe("Config import", () => {
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, overwrite, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
     })
 
     it.each([
@@ -98,7 +98,7 @@ describe("Config import", () => {
         await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
     })
 
     it.each([
@@ -137,7 +137,7 @@ describe("Config import", () => {
             await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
 
             const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-            expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+            expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
         })
 
     it("Should batch import configs & map space ID as specified in manifest file for Studio Packages", async () => {
@@ -181,7 +181,7 @@ describe("Config import", () => {
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
     })
 
     it("Should fail to map space ID as the space id specified in manifest file cannot be found", async () => {
@@ -252,7 +252,7 @@ describe("Config import", () => {
 
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/spaceId", expect.anything(), expect.anything());
     })
 
@@ -290,7 +290,7 @@ describe("Config import", () => {
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
         expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
     })
 
@@ -337,7 +337,7 @@ describe("Config import", () => {
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
         expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
     })
 
@@ -416,7 +416,7 @@ describe("Config import", () => {
         await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: "0600"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
 
         expect(mockedPostRequestBodyByUrl.get(assignVariablesUrl)).toEqual(JSON.stringify([variableAssignment]));
     })

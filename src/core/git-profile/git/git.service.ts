@@ -6,6 +6,7 @@ import { Context } from "../../command/cli-context";
 import { v4 as uuid } from "uuid";
 import { SimpleGit } from "simple-git/dist/typings/simple-git";
 import { GitProfile } from "../git-profile.interface";
+import { FileConstants } from "../../utils/file.constants";
 
 export class GitService {
 
@@ -20,7 +21,7 @@ export class GitService {
         const repoUrl = this.getRepoUrl();
 
         const targetDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
-        fs.mkdirSync(targetDir, { recursive: true, mode: 0o700 });
+        fs.mkdirSync(targetDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
 
         const git = simpleGit();
         try {
@@ -36,7 +37,7 @@ export class GitService {
         this.validateGitProfileExistence();
 
         const workingDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
-        fs.mkdirSync(workingDir, { recursive: true, mode: 0o700 });
+        fs.mkdirSync(workingDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
 
         const repoUrl = this.getRepoUrl();
         const git = simpleGit();
