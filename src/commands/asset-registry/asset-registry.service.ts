@@ -2,8 +2,9 @@ import { AssetRegistryApi } from "./asset-registry-api";
 import { AssetRegistryDescriptor } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
-import { logger } from "../../core/utils/logger";
+import { FatalError, logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
+import * as fs from "fs";
 
 export class AssetRegistryService {
     private api: AssetRegistryApi;
@@ -58,6 +59,69 @@ export class AssetRegistryService {
         this.outputResponse(data, jsonResponse);
     }
 
+    public async validate(opts: ValidateOptions): Promise<void> {
+        const payload = this.buildValidatePayload(opts);
+        const data = await this.api.validate(opts.assetType, payload);
+        this.outputResponse(data, opts.json);
+    }
+
+    private buildValidatePayload(opts: ValidateOptions): any {
+        const hasNodeKey = !!opts.nodeKey;
+        const hasConfig = !!(opts.configuration || opts.configFile);
+        const hasFile = !!opts.file;
+
+        const modeCount = [hasNodeKey, hasConfig, hasFile].filter(Boolean).length;
+        if (modeCount === 0) {
+            throw new FatalError(
+                "Provide one of: --nodeKey (stored node), --configuration/-c (configuration JSON), or -f (full request file)."
+            );
+        }
+        if (modeCount > 1) {
+            throw new FatalError(
+                "Options --nodeKey, --configuration/-c, and -f are mutually exclusive."
+            );
+        }
+
+        if (hasFile) {
+            return this.parseJson(fs.readFileSync(opts.file!, "utf-8"), `-f ${opts.file}`);
+        }
+
+        if (!opts.packageKey) {
+            throw new FatalError("--packageKey is required when using --nodeKey or --configuration/-c.");
+        }
+
+        if (hasNodeKey) {
+            return {
+                assetType: opts.assetType,
+                packageKey: opts.packageKey,
+                nodeKeys: [opts.nodeKey],
+            };
+        }
+
+        if (opts.configuration && opts.configFile) {
+            throw new FatalError("Provide either --configuration or -c, not both.");
+        }
+
+        const configJson = this.parseJson(
+            opts.configFile ? fs.readFileSync(opts.configFile, "utf-8") : opts.configuration!,
+            opts.configFile ? `-c ${opts.configFile}` : "--configuration"
+        );
+
+        return {
+            assetType: opts.assetType,
+            packageKey: opts.packageKey,
+            nodes: [{ key: "validation-node", configuration: configJson }],
+        };
+    }
+
+    private parseJson(raw: string, source: string): any {
+        try {
+            return JSON.parse(raw);
+        } catch {
+            throw new FatalError(`Invalid JSON in ${source}.`);
+        }
+    }
+
     private outputResponse(data: any, jsonResponse: boolean): void {
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
@@ -93,4 +157,14 @@ export class AssetRegistryService {
             logger.info(`  examples:   ${descriptor.endpoints.examples}`);
         }
     }
+}
+
+export interface ValidateOptions {
+    assetType: string;
+    packageKey?: string;
+    nodeKey?: string;
+    configuration?: string;
+    configFile?: string;
+    file?: string;
+    json: boolean;
 }

@@ -32,6 +32,17 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.getExamples);
 
+        assetRegistryCommand.command("validate")
+            .description("Validate asset configuration against the asset service's validate endpoint.")
+            .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
+            .option("--packageKey <packageKey>", "Package key containing the node")
+            .option("--nodeKey <nodeKey>", "Key of an already-stored node to validate on the platform")
+            .option("--configuration <configuration>", "Inline JSON of the configuration to validate before import")
+            .option("-c, --configFile <configFile>", "Path to a JSON file containing the configuration to validate before import")
+            .option("-f, --file <file>", "Path to a JSON file containing a full ValidateRequest (alternative to all other options)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.validate);
+
         assetRegistryCommand.command("methodology")
             .description("Get the methodology / best-practices guide for an asset type")
             .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
@@ -49,6 +60,18 @@ class Module extends IModule {
 
     private async getSchema(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getSchema(options.assetType, !!options.json);
+    }
+
+    private async validate(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).validate({
+            assetType: options.assetType,
+            packageKey: options.packageKey,
+            nodeKey: options.nodeKey,
+            configuration: options.configuration,
+            configFile: options.configFile,
+            file: options.file,
+            json: !!options.json,
+        });
     }
 
     private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {

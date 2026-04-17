@@ -71,6 +71,51 @@ Options:
 - `--assetType <assetType>` (required) – The asset type identifier
 - `--json` – Write the schema to a JSON file in the working directory
 
+## Validate
+
+Validate asset configurations against the asset service's validation endpoint.
+
+### Validate a configuration before import
+
+Provide the configuration JSON inline or via a file. The CLI wraps it into the `ValidateRequest` envelope for you.
+
+```
+content-cli asset-registry validate --assetType BOARD_V2 \
+  --packageKey my-pkg --configuration '{"components":[{"type":"kpi"}]}'
+```
+
+```
+content-cli asset-registry validate --assetType BOARD_V2 \
+  --packageKey my-pkg -c config.json
+```
+
+### Validate an already-stored node
+
+```
+content-cli asset-registry validate --assetType BOARD_V2 \
+  --packageKey my-pkg --nodeKey my-view
+```
+
+### Full request from file
+
+For multi-node validation or other advanced use, provide a JSON file containing the entire `ValidateRequest` body.
+
+```
+content-cli asset-registry validate --assetType BOARD_V2 -f request.json
+```
+
+### Options
+
+- `--assetType <assetType>` (required) – The asset type identifier
+- `--packageKey <packageKey>` – Package key containing the node
+- `--nodeKey <nodeKey>` – Key of an already-stored node to validate on the platform
+- `--configuration <configuration>` – Inline JSON of the configuration to validate before import
+- `-c, --configFile <configFile>` – Path to a JSON file containing the configuration to validate before import
+- `-f, --file <file>` – Path to a JSON file containing a full ValidateRequest (alternative to all other options)
+- `--json` – Write the validation response to a JSON file in the working directory
+
+The options `--nodeKey`, `--configuration`/`-c`, and `-f` are mutually exclusive.
+
 ## Get Examples
 
 Fetch example configurations for an asset type. Not all asset types provide examples.
