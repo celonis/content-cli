@@ -51,7 +51,9 @@ $CLI config export --packageKeys <key1> [<key2> ...] --unzip
 Key options:
 - `--packageKeys <keys...>` — exports the latest **deployed** version only
 - `--keysByVersion <keys...>` — export a specific version (use this to export
-  non-deployed/staging versions that were just imported)
+  non-deployed/staging versions that were just imported). **Always wrap each
+  value in quotes** because the format contains dots, e.g.
+  `--keysByVersion "packageKey.1.0.0"`
 - `--unzip` — unzip the export into a directory (recommended for inspection)
 - `--withDependencies` — include variables and dependencies
 
@@ -114,6 +116,35 @@ The user must provide:
 - The **space ID** where the package should live (set `spaceId` on each node)
 - The **package key** they want to use
 
+## PIG (OCDM flavored) packages
+
+When the user refers to a **Pig** or **pi-graph**, they mean an **OCDM flavored
+package**. Prompts like "create me the Pig for <some context>" map to creating
+an OCDM flavored package — not a standalone asset type.
+
+OCDM flavored packages have specific requirements:
+
+- **`spaceId` is always `"pi-graphs"`** for every node in the package and for
+  the package itself. Do not ask the user for a space ID on PIG packages — use
+  `pi-graphs`.
+- **A data pool ID variable is always required.** The variable binds the PIG to
+  exactly one Data Pool. Every PIG is connected to a single Data Pool.
+  - If the user's initial prompt for PIG creation does **not** provide the
+    data pool ID, you **must** prompt the user for it as a required value
+    before proceeding. Do not invent or default it.
+  - The data pool ID goes into `package.json` under `variables` as a package
+    variable, and assets inside the PIG reference it through the variable
+    binding.
+
+Quick checklist when creating a PIG:
+
+1. Confirm the user provided a **data pool ID** — if not, ask for it before
+   doing anything else.
+2. Set `spaceId: "pi-graphs"` on the package and on every node.
+3. Add the data pool ID as a package variable in `package.json` and `variables.json`.
+4. Follow the normal "Creating a new package" flow for everything else
+   (structure, node JSONs, import).
+
 ## Node JSON structure
 
 The `configuration` property holds the actual asset content. The asset-type
@@ -149,13 +180,13 @@ Field reference:
 | `parentNodeKey` | Key of the parent asset. If directly under the package, use the package key | Yes |
 | `packageNodeKey` | Key of the package | Yes |
 | `name` | Display name shown in the UI | Yes |
-| `type` | Asset type (e.g. `BOARD_V2`) — matches the asset registry | Yes |
+| `type` | Asset type (e.g. `BOARD_V2`) — matches the asset registry. **Must be the exact `type` returned by the asset descriptor (`asset-registry get`).** The type determines which configuration schema applies — do not copy a type from an unrelated example or invent one | Yes |
 | `configuration` | **The actual asset content.** Schema root = this object | Yes |
-| `schemaVersion` | Use the version from the asset descriptor's `assetSchema.version` field (returned by `asset-registry get`). Do not invent a value | Yes |
+| `schemaVersion` | **Must be taken from the asset descriptor's `assetSchema.version` field (returned by `asset-registry get`).** Do not invent, guess, or copy from an unrelated example | Yes |
 | `dependenciesConfiguration` | Dependencies to other assets in the package. Each entry has `key` (target asset key) and `type` (target asset type). Use `{ "dependencies": [] }` when there are none | Yes |
 | `nodeType` | `ASSET` for all assets, `PACKAGE` for the package node | Yes |
-| `assetType` | Same as `type` — redundant resolver field | Yes |
-| `spaceId` | Space ID. Ask the user for this. Must match the package's space. Omitting causes 500 errors on import | Yes (for import) |
+| `assetType` | **Same as `type` — must also match the asset descriptor's type.** Do not set a random value | Yes |
+| `spaceId` | Space ID. Ask the user for this. Must match the package's space. Omitting causes 500 errors on import. **For PIG (OCDM flavored) packages, always use `"pi-graphs"`** — see the PIG section above | Yes (for import) |
 | `showInViewerMode` | Copy from example if available, otherwise `false` | No |
 | `order` | Display order in the UI tree | No |
 
