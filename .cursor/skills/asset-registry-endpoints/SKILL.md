@@ -248,7 +248,7 @@ are optional.
 service. A 500 typically means the downstream service is unavailable or returned
 an unexpected response.
 
-**Errors on import (400 / 500)** — Ensure `spaceId` is set on every node and
+**Errors on import (400)** — Ensure `spaceId` is set on every node and
 `schemaVersion` matches the descriptor's `assetSchema.version`.
 
 ## Full worked example
