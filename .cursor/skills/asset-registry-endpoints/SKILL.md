@@ -232,6 +232,12 @@ importing:
 $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 ```
 
+**Important**: If validation returns errors, do **not** proceed with the import.
+Instead, fix the schema violations in the node JSON and re-run the command. If
+you cannot resolve the errors automatically, present the validation results to
+the user and ask whether they want to continue importing with invalid
+configuration or stop to fix it manually.
+
 ## Troubleshooting
 
 **404 on examples / methodology** — Not all asset services have deployed these
@@ -242,8 +248,8 @@ are optional.
 service. A 500 typically means the downstream service is unavailable or returned
 an unexpected response.
 
-**500 on import** — Ensure `spaceId` is set on every node and `schemaVersion`
-matches the descriptor's `assetSchema.version`.
+**Errors on import (400 / 500)** — Ensure `spaceId` is set on every node and
+`schemaVersion` matches the descriptor's `assetSchema.version`.
 
 ## Full worked example
 

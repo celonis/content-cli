@@ -95,7 +95,7 @@ content-cli config export --keysByVersion <packageKey>_<version> --unzip
 
 **500 on proxy endpoints** — The platform proxies requests to the owning asset service. A 500 typically means the downstream service is unavailable or returned an unexpected response.
 
-**500 on import** — Ensure `spaceId` is set on every node and `schemaVersion` matches the descriptor's `assetSchema.version`.
+**Errors on import (400 / 500)** — Ensure `spaceId` is set on every node and `schemaVersion` matches the descriptor's `assetSchema.version`.
 
 ## Further reading
 
