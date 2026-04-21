@@ -1,6 +1,6 @@
 import { HttpClient } from "../../../core/http/http-client";
 import { Context } from "../../../core/command/cli-context";
-import { NodeTransport } from "../interfaces/node.interfaces";
+import { NodeTransport, SaveNodeTransport, UpdateNodeTransport } from "../interfaces/node.interfaces";
 import { FatalError } from "../../../core/utils/logger";
 
 export class NodeApi {
@@ -30,6 +30,37 @@ export class NodeApi {
             .get(`/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}?${queryParams.toString()}`)
             .catch((e) => {
                 throw new FatalError(`Problem finding node ${nodeKey} in package ${packageKey} for version ${version}: ${e}`);
+            });
+    }
+
+    public async createStagingNode(packageKey: string, transport: SaveNodeTransport, validateOnly: boolean): Promise<NodeTransport | void> {
+        const suffix = validateOnly ? "?validate=true" : "";
+
+        return this.httpClient()
+            .post(`/pacman/api/core/staging/packages/${packageKey}/nodes${suffix}`, transport)
+            .catch((e) => {
+                throw new FatalError(`Problem creating node in package ${packageKey}: ${e}`);
+            });
+    }
+
+    public async updateStagingNode(packageKey: string, nodeKey: string, transport: UpdateNodeTransport, validateOnly: boolean): Promise<NodeTransport | void> {
+        const suffix = validateOnly ? "?validate=true" : "";
+
+        return this.httpClient()
+            .put(`/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}${suffix}`, transport)
+            .catch((e) => {
+                throw new FatalError(`Problem updating node ${nodeKey} in package ${packageKey}: ${e}`);
+            });
+    }
+
+    public async archiveStagingNode(packageKey: string, nodeKey: string, force: boolean): Promise<void> {
+        const queryParams = new URLSearchParams();
+        queryParams.set("force", force.toString());
+
+        return this.httpClient()
+            .delete(`/pacman/api/core/staging/packages/${packageKey}/nodes/${nodeKey}/archive?${queryParams.toString()}`)
+            .catch((e) => {
+                throw new FatalError(`Problem archiving node ${nodeKey} in package ${packageKey}: ${e}`);
             });
     }
 

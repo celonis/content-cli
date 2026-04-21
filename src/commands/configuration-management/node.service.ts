@@ -3,7 +3,7 @@ import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
-import { NodeTransport } from "./interfaces/node.interfaces";
+import { NodeTransport, SaveNodeTransport, UpdateNodeTransport } from "./interfaces/node.interfaces";
 
 export class NodeService {
     private nodeApi: NodeApi;
@@ -38,6 +38,47 @@ export class NodeService {
                 logger.info(JSON.stringify(node))
             });
         }
+    }
+
+    public async createNode(packageKey: string, body: string, validateOnly: boolean, jsonResponse: boolean): Promise<void> {
+        const transport: SaveNodeTransport = JSON.parse(body);
+        const node = await this.nodeApi.createStagingNode(packageKey, transport, validateOnly);
+
+        if (validateOnly) {
+            logger.info(`Validation successful for node ${transport.key} in package ${packageKey}.`);
+            return;
+        }
+
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            fileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + filename);
+        } else {
+            this.printNode(node as NodeTransport);
+        }
+    }
+
+    public async updateNode(packageKey: string, nodeKey: string, body: string, validateOnly: boolean, jsonResponse: boolean): Promise<void> {
+        const transport: UpdateNodeTransport = JSON.parse(body);
+        const node = await this.nodeApi.updateStagingNode(packageKey, nodeKey, transport, validateOnly);
+
+        if (validateOnly) {
+            logger.info(`Validation successful for node ${nodeKey} in package ${packageKey}.`);
+            return;
+        }
+
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            fileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + filename);
+        } else {
+            this.printNode(node as NodeTransport);
+        }
+    }
+
+    public async archiveNode(packageKey: string, nodeKey: string, force: boolean): Promise<void> {
+        await this.nodeApi.archiveStagingNode(packageKey, nodeKey, force);
+        logger.info(`Node ${nodeKey} in package ${packageKey} archived successfully.`);
     }
 
     private printNode(node: NodeTransport): void {

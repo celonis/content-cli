@@ -7,6 +7,7 @@ const mockedAxiosInstance = {} as AxiosInstance;
 const mockedGetResponseByUrl = new Map<string, any>();
 const mockedPostResponseByUrl = new Map<string, any>();
 const mockedPostRequestBodyByUrl = new Map<string, any>();
+const mockedDeleteResponseByUrl = new Map<string, any>();
 
 const mockAxios = () : void => {
     AxiosInitializer.initializeAxios = jest.fn().mockReturnValue(mockedAxiosInstance);
@@ -14,6 +15,7 @@ const mockAxios = () : void => {
     mockedAxiosInstance.get = jest.fn();
     mockedAxiosInstance.post = jest.fn();
     mockedAxiosInstance.put = jest.fn();
+    mockedAxiosInstance.delete = jest.fn();
 }
 
 const mockAxiosGet = (url: string, responseData: any) => {
@@ -68,10 +70,22 @@ const mockAxiosPut = (url: string, responseData: any) => {
     })
 }
 
+const mockAxiosDelete = (url: string) => {
+    mockedDeleteResponseByUrl.set(url, undefined);
+    (mockedAxiosInstance.delete as jest.Mock).mockImplementation((requestUrl: string) => {
+        if (mockedDeleteResponseByUrl.has(requestUrl)) {
+            return Promise.resolve({ data: undefined, status: 204 });
+        } else {
+            fail("API call not mocked.")
+        }
+    })
+}
+
 afterEach(() => {
     mockedGetResponseByUrl.clear();
     mockedPostResponseByUrl.clear();
     mockedPostRequestBodyByUrl.clear();
+    mockedDeleteResponseByUrl.clear();
 })
 
 export {
@@ -80,5 +94,6 @@ export {
     mockAxiosGet,
     mockAxiosPost,
     mockAxiosPut,
+    mockAxiosDelete,
     mockedPostRequestBodyByUrl
 };

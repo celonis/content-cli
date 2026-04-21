@@ -20,3 +20,25 @@ export interface NodeTransport {
     schemaVersion: number;
     flavor?: string;
 }
+
+export interface SaveNodeTransport {
+    key: string;
+    name: string;
+    parentNodeKey: string;
+    type: string;
+    configuration?: NodeConfiguration;
+    invalidConfiguration?: string;
+    invalidContent?: boolean;
+    schemaVersion?: number;
+    [key: string]: any;
+}
+
+export interface UpdateNodeTransport {
+    name: string;
+    parentNodeKey: string;
+    configuration?: NodeConfiguration;
+    invalidConfiguration?: string;
+    invalidContent?: boolean;
+    schemaVersion?: number;
+    [key: string]: any;
+}

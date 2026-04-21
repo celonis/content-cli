@@ -12,6 +12,7 @@ import { NodeDiffService } from "./node-diff.service";
 import { NodeDependencyService } from "./node-dependency.service";
 import { PackageVersionCommandService } from "./package-version-command.service";
 import { PackageValidationService } from "./package-validation.service";
+import { fileService } from "../../core/utils/file-service";
 
 class Module extends IModule {
 
@@ -115,6 +116,32 @@ class Module extends IModule {
             .option("--withConfiguration", "Include node configuration in the response", false)
             .option("--json", "Return the response as a JSON file")
             .action(this.findNode);
+
+        nodesCommand.command("create")
+            .description("Create a new staging node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .option("--body <body>", "Node payload as JSON string")
+            .option("-f, --file <file>", "Path to a JSON file containing the node payload")
+            .option("--validate", "Only validate the payload without persisting. Returns success if valid.", false)
+            .option("--json", "Return the response as a JSON file")
+            .action(this.createNode);
+
+        nodesCommand.command("update")
+            .description("Update a staging node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .option("--body <body>", "Node payload as JSON string")
+            .option("-f, --file <file>", "Path to a JSON file containing the node payload")
+            .option("--validate", "Only validate the payload without persisting. Returns success if valid.", false)
+            .option("--json", "Return the response as a JSON file")
+            .action(this.updateNode);
+
+        nodesCommand.command("delete")
+            .description("Delete (archive) a staging node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .option("--force", "Force delete even if the node has dependants", false)
+            .action(this.archiveNode);
 
         nodesCommand.command("list")
             .description("List nodes in a specific package version")
@@ -247,6 +274,33 @@ class Module extends IModule {
 
     private async findNode(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.packageVersion ?? null, options.json);
+    }
+
+    private async createNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const body = Module.resolveBody(options.body, options.file);
+        await new NodeService(context).createNode(options.packageKey, body, options.validate, options.json);
+    }
+
+    private async updateNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const body = Module.resolveBody(options.body, options.file);
+        await new NodeService(context).updateNode(options.packageKey, options.nodeKey, body, options.validate, options.json);
+    }
+
+    private static resolveBody(body: string | undefined, file: string | undefined): string {
+        if (body && file) {
+            throw new Error("Please provide either --body or --file, but not both.");
+        }
+        if (!body && !file) {
+            throw new Error("Please provide either --body or --file.");
+        }
+        if (file) {
+            return fileService.readFile(file);
+        }
+        return body!;
+    }
+
+    private async archiveNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeService(context).archiveNode(options.packageKey, options.nodeKey, options.force);
     }
 
     private async listNodes(context: Context, command: Command, options: OptionValues): Promise<void> {
