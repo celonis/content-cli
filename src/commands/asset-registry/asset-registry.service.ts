@@ -70,7 +70,7 @@ export class AssetRegistryService {
 
     private logDescriptorSummary(descriptor: AssetRegistryDescriptor): void {
         logger.info(
-            `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}] (basePath: ${descriptor.service.basePath})`
+            `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`
         );
     }
 
