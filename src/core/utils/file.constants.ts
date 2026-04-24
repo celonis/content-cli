@@ -1,0 +1,4 @@
+export enum FileConstants {
+    DEFAULT_FILE_PERMISSIONS = 0o600,
+    DEFAULT_FOLDER_PERMISSIONS = 0o700
+}

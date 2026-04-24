@@ -16,11 +16,11 @@ describe("FileService", () => {
         fileService = new FileService();
 
         if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
+            fs.mkdirSync(tempDir, { recursive: true, mode: 0o700 });
         }
 
         if (!fs.existsSync(symLinkSourceTempDir)) {
-            fs.mkdirSync(symLinkSourceTempDir, { recursive: true });
+            fs.mkdirSync(symLinkSourceTempDir, { recursive: true, mode: 0o700 });
         }
 
         fileService = new FileService();
@@ -39,7 +39,7 @@ describe("FileService", () => {
     describe("zipDirectoryInBatchExportFormat", () => {
         test("Should throw error if sourceDir is a symlink", () => {
             const targetDir = path.join(tempDir, "realDir");
-            fs.mkdirSync(targetDir);
+            fs.mkdirSync(targetDir, 0o700);
 
             const symlinkDir = path.join(tempDir, "symlinkDir");
             fs.symlinkSync(targetDir, symlinkDir, "dir");
@@ -49,11 +49,11 @@ describe("FileService", () => {
 
         test("Should skip symlinked folder and only include real folder", () => {
             const realFolder = path.join(tempDir, "realFolder");
-            fs.mkdirSync(realFolder);
+            fs.mkdirSync(realFolder, 0o700);
             fs.writeFileSync(path.join(realFolder, "insideFile.txt"), "content");
 
             const symLinkTargetFolder = path.join(symLinkSourceTempDir, "targetFolder");
-            fs.mkdirSync(symLinkTargetFolder);
+            fs.mkdirSync(symLinkTargetFolder, 0o700);
             const folderSymlink = path.join(tempDir, "folderSymlink");
             fs.symlinkSync(symLinkTargetFolder, folderSymlink, "dir");
 

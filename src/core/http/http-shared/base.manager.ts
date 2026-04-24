@@ -4,6 +4,7 @@ import { FatalError, logger } from "../../utils/logger";
 import { ManagerConfig } from "./manager-config.interface";
 import { HttpClient } from "../http-client";
 import { Context } from "../../command/cli-context";
+import { FileConstants } from "../../utils/file.constants";
 
 export abstract class BaseManager {
     private httpClient: () => HttpClient;
@@ -103,13 +104,14 @@ export abstract class BaseManager {
 
     protected writeStreamToFile(data: any): string {
         const filename = this.getConfig().exportFileName;
-        fs.writeFileSync(filename, data);
+        fs.writeFileSync(filename, data, { mode: FileConstants.DEFAULT_FILE_PERMISSIONS });
         return filename;
     }
 
     protected writeToFileWithGivenName(data: any, filename: string): void {
         fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
             encoding: "utf-8",
+            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
         });
     }
 

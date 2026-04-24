@@ -4,6 +4,7 @@ import { Logger } from "winston";
 import os = require("os");
 import * as path from "path";
 import * as fs from "fs";
+import { FileConstants } from "./file.constants";
 
 class CustomTransport extends Transport {
     constructor(opts: any) {
@@ -37,7 +38,7 @@ const maxSizeBytes = maxLogSizeMB * 1024 * 1024; // 3 MB in bytes
 // --- Ensure log directory exists ---
 try {
     if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir, { recursive: true });
+        fs.mkdirSync(logDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
     }
 } catch (error) {
     console.error(`Error creating log directory: ${logDir}`, error);
