@@ -136,11 +136,11 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.updateNode);
 
-        nodesCommand.command("delete")
-            .description("Delete (archive) a staging node in a package")
+        nodesCommand.command("archive")
+            .description("Archive a staging node in a package")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
-            .option("--force", "Force delete even if the node has dependants", false)
+            .option("--force", "Force archive even if the node has dependants", false)
             .action(this.archiveNode);
 
         nodesCommand.command("list")
