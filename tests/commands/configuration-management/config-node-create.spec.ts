@@ -39,7 +39,7 @@ describe("Node create", () => {
     it("Should create node and print result", async () => {
         mockAxiosPost(apiUrl, createdNode);
 
-        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), false, false);
+        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, false, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(11);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${createdNode.id}`);
@@ -50,7 +50,7 @@ describe("Node create", () => {
     it("Should create node and return as JSON", async () => {
         mockAxiosPost(apiUrl, createdNode);
 
-        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), false, true);
+        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, false, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -64,7 +64,7 @@ describe("Node create", () => {
     it("Should send correct request body", async () => {
         mockAxiosPost(apiUrl, createdNode);
 
-        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), false, false);
+        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, false, false);
 
         const requestBody = JSON.parse(mockedPostRequestBodyByUrl.get(apiUrl));
         expect(requestBody.key).toBe(saveTransport.key);
@@ -76,7 +76,7 @@ describe("Node create", () => {
     it("Should call validate-only endpoint when validateOnly=true", async () => {
         mockAxiosPost(validateOnlyUrl, undefined);
 
-        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), true, false);
+        await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, true, false);
 
         expect(mockWriteFileSync).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages.length).toBe(1);

@@ -12,7 +12,6 @@ import { NodeDiffService } from "./node-diff.service";
 import { NodeDependencyService } from "./node-dependency.service";
 import { PackageVersionCommandService } from "./package-version-command.service";
 import { PackageValidationService } from "./package-validation.service";
-import { fileService } from "../../core/utils/file-service";
 
 class Module extends IModule {
 
@@ -277,26 +276,11 @@ class Module extends IModule {
     }
 
     private async createNode(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const body = Module.resolveBody(options.body, options.file);
-        await new NodeService(context).createNode(options.packageKey, body, options.validate, options.json);
+        await new NodeService(context).createNode(options.packageKey, options.body, options.file, options.validate, options.json);
     }
 
     private async updateNode(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const body = Module.resolveBody(options.body, options.file);
-        await new NodeService(context).updateNode(options.packageKey, options.nodeKey, body, options.validate, options.json);
-    }
-
-    private static resolveBody(body: string | undefined, file: string | undefined): string {
-        if (body && file) {
-            throw new Error("Please provide either --body or --file, but not both.");
-        }
-        if (!body && !file) {
-            throw new Error("Please provide either --body or --file.");
-        }
-        if (file) {
-            return fileService.readFile(file);
-        }
-        return body!;
+        await new NodeService(context).updateNode(options.packageKey, options.nodeKey, options.body, options.file, options.validate, options.json);
     }
 
     private async archiveNode(context: Context, command: Command, options: OptionValues): Promise<void> {

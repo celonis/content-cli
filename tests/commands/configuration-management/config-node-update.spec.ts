@@ -38,7 +38,7 @@ describe("Node update", () => {
     it("Should update node and print result", async () => {
         mockAxiosPut(apiUrl, updatedNode);
 
-        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), false, false);
+        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), undefined, false, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(11);
         expect(loggingTestTransport.logMessages[0].message).toContain(`ID: ${updatedNode.id}`);
@@ -49,7 +49,7 @@ describe("Node update", () => {
     it("Should update node and return as JSON", async () => {
         mockAxiosPut(apiUrl, updatedNode);
 
-        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), false, true);
+        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), undefined, false, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -63,7 +63,7 @@ describe("Node update", () => {
     it("Should send correct request body", async () => {
         mockAxiosPut(apiUrl, updatedNode);
 
-        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), false, false);
+        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), undefined, false, false);
 
         const requestBody = JSON.parse(mockedPostRequestBodyByUrl.get(apiUrl));
         expect(requestBody.name).toBe(updateTransport.name);
@@ -74,7 +74,7 @@ describe("Node update", () => {
     it("Should call validate-only endpoint when validateOnly=true", async () => {
         mockAxiosPut(validateOnlyUrl, undefined);
 
-        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), true, false);
+        await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), undefined, true, false);
 
         expect(mockWriteFileSync).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages.length).toBe(1);

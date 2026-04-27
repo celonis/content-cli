@@ -40,8 +40,8 @@ export class NodeService {
         }
     }
 
-    public async createNode(packageKey: string, body: string, validateOnly: boolean, jsonResponse: boolean): Promise<void> {
-        const transport: SaveNodeTransport = JSON.parse(body);
+    public async createNode(packageKey: string, body: string | undefined, file: string | undefined, validateOnly: boolean, jsonResponse: boolean): Promise<void> {
+        const transport: SaveNodeTransport = JSON.parse(NodeService.resolveBody(body, file));
         const node = await this.nodeApi.createStagingNode(packageKey, transport, validateOnly);
 
         if (validateOnly) {
@@ -58,8 +58,8 @@ export class NodeService {
         }
     }
 
-    public async updateNode(packageKey: string, nodeKey: string, body: string, validateOnly: boolean, jsonResponse: boolean): Promise<void> {
-        const transport: UpdateNodeTransport = JSON.parse(body);
+    public async updateNode(packageKey: string, nodeKey: string, body: string | undefined, file: string | undefined, validateOnly: boolean, jsonResponse: boolean): Promise<void> {
+        const transport: UpdateNodeTransport = JSON.parse(NodeService.resolveBody(body, file));
         const node = await this.nodeApi.updateStagingNode(packageKey, nodeKey, transport, validateOnly);
 
         if (validateOnly) {
@@ -79,6 +79,19 @@ export class NodeService {
     public async archiveNode(packageKey: string, nodeKey: string, force: boolean): Promise<void> {
         await this.nodeApi.archiveStagingNode(packageKey, nodeKey, force);
         logger.info(`Node ${nodeKey} in package ${packageKey} archived successfully.`);
+    }
+
+    private static resolveBody(body: string | undefined, file: string | undefined): string {
+        if (body && file) {
+            throw new Error("Please provide either --body or --file, but not both.");
+        }
+        if (!body && !file) {
+            throw new Error("Please provide either --body or --file.");
+        }
+        if (file) {
+            return fileService.readFile(file);
+        }
+        return body!;
     }
 
     private printNode(node: NodeTransport): void {
