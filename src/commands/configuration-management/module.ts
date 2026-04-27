@@ -116,6 +116,32 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.findNode);
 
+        nodesCommand.command("create")
+            .description("Create a new staging node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .option("--body <body>", "Node payload as JSON string")
+            .option("-f, --file <file>", "Path to a JSON file containing the node payload")
+            .option("--validate", "Only validate the payload without persisting. Returns success if valid.", false)
+            .option("--json", "Return the response as a JSON file")
+            .action(this.createNode);
+
+        nodesCommand.command("update")
+            .description("Update a staging node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .option("--body <body>", "Node payload as JSON string")
+            .option("-f, --file <file>", "Path to a JSON file containing the node payload")
+            .option("--validate", "Only validate the payload without persisting. Returns success if valid.", false)
+            .option("--json", "Return the response as a JSON file")
+            .action(this.updateNode);
+
+        nodesCommand.command("archive")
+            .description("Archive a staging node in a package")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package")
+            .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
+            .option("--force", "Force archive even if the node has dependants", false)
+            .action(this.archiveNode);
+
         nodesCommand.command("list")
             .description("List nodes in a specific package version")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
@@ -247,6 +273,18 @@ class Module extends IModule {
 
     private async findNode(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new NodeService(context).findNode(options.packageKey, options.nodeKey, options.withConfiguration, options.packageVersion ?? null, options.json);
+    }
+
+    private async createNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeService(context).createNode(options.packageKey, options.body, options.file, options.validate, options.json);
+    }
+
+    private async updateNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeService(context).updateNode(options.packageKey, options.nodeKey, options.body, options.file, options.validate, options.json);
+    }
+
+    private async archiveNode(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new NodeService(context).archiveNode(options.packageKey, options.nodeKey, options.force);
     }
 
     private async listNodes(context: Context, command: Command, options: OptionValues): Promise<void> {
