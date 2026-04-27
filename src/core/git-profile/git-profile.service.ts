@@ -4,6 +4,7 @@ import { FatalError, logger } from "../utils/logger";
 import os = require("os");
 import { AuthenticationType, GitProfile } from "./git-profile.interface";
 import { GitProfileValidator } from "./git-profile.validator";
+import { FileConstants } from "../utils/file.constants";
 
 export interface GitConfig {
     defaultProfile: string;
@@ -63,6 +64,7 @@ export class GitProfileService {
         const newProfileFileName = this.constructProfileFileName(profile.name);
         fs.writeFileSync(path.resolve(this.gitProfileContainerPath, newProfileFileName), JSON.stringify(profile), {
             encoding: "utf-8",
+            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
         });
     }
 
@@ -88,12 +90,12 @@ export class GitProfileService {
     }
 
     private storeConfig(config: GitConfig): void {
-        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8" });
+        fs.writeFileSync(this.configContainer, JSON.stringify(config), { encoding: "utf-8", mode: FileConstants.DEFAULT_FILE_PERMISSIONS });
     }
 
     private createProfileContainerIfNotExists(): void {
         if (!fs.existsSync(this.gitProfileContainerPath)) {
-            fs.mkdirSync(this.gitProfileContainerPath);
+            fs.mkdirSync(this.gitProfileContainerPath, FileConstants.DEFAULT_FOLDER_PERMISSIONS);
         }
     }
 

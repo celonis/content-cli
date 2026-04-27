@@ -84,7 +84,7 @@ describe("Config validate", () => {
         expect(mockWriteFileSync).toHaveBeenCalledWith(
             expect.stringMatching(/config_validate_report_.+\.json$/),
             JSON.stringify(response),
-            { encoding: "utf-8" }
+            { encoding: "utf-8", mode: 0o600 }
         );
     })
 

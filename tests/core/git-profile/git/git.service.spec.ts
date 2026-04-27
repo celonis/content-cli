@@ -196,7 +196,7 @@ describe("GitService", () => {
     });
 
     const assertDirectoryCreated = (directory: string) => {
-        expect(fs.mkdirSync).toHaveBeenCalledWith(directory, { recursive: true });
+        expect(fs.mkdirSync).toHaveBeenCalledWith(directory, { recursive: true, mode: 0o700 });
     };
 
     const assertGitDirectoryCleanup = (directory: string) => {

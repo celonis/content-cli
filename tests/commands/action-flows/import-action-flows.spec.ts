@@ -50,7 +50,7 @@ describe("Import action-flows", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockImportResponse, null, 4), { encoding: "utf-8" });
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockImportResponse, null, 4), { encoding: "utf-8", mode: 0o600 });
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(`https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/import/assets`, expect.anything(), expect.anything());
     });
 });

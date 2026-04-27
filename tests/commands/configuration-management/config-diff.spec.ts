@@ -138,7 +138,7 @@ describe("Config diff", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
         const exportedPackageDiffTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageDiffTransport[];
         expect(exportedPackageDiffTransport.length).toBe(1);
 
@@ -169,7 +169,7 @@ describe("Config diff", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8"});
+        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
         const exportedPackageDiffTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageDiffTransport[];
         expect(exportedPackageDiffTransport.length).toBe(1);
 
