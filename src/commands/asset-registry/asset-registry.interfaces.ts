@@ -33,3 +33,12 @@ export interface AssetContributions {
     dataPipelineEntityTypes: string[];
     actionTypes: string[];
 }
+
+export interface ValidateOptions {
+    assetType: string;
+    packageKey?: string;
+    nodeKey?: string;
+    configuration?: string;
+    file?: string;
+    json: boolean;
+}

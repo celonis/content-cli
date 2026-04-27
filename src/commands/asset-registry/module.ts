@@ -32,6 +32,16 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.getExamples);
 
+        assetRegistryCommand.command("validate")
+            .description("Validate asset configuration against the asset service's validate endpoint.")
+            .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
+            .option("--packageKey <packageKey>", "Package key. Required when validating with --nodeKey or --configuration.")
+            .option("--nodeKey <nodeKey>", "Key of an already-stored node to validate (use with --packageKey).")
+            .option("--configuration <configuration>", "Inline JSON of a configuration to validate (use with --packageKey).")
+            .option("-f, --file <file>", "Path to a JSON file containing a full ValidateRequest body. Mutually exclusive with the build-from-options flags.")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.validate);
+
         assetRegistryCommand.command("methodology")
             .description("Get the methodology / best-practices guide for an asset type")
             .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
@@ -49,6 +59,17 @@ class Module extends IModule {
 
     private async getSchema(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getSchema(options.assetType, !!options.json);
+    }
+
+    private async validate(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).validate({
+            assetType: options.assetType,
+            packageKey: options.packageKey,
+            nodeKey: options.nodeKey,
+            configuration: options.configuration,
+            file: options.file,
+            json: !!options.json,
+        });
     }
 
     private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {

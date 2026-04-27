@@ -19,6 +19,7 @@ describe("Asset Registry Module", () => {
             listTypes: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
+            validate: jest.fn().mockResolvedValue(undefined),
             getExamples: jest.fn().mockResolvedValue(undefined),
             getMethodology: jest.fn().mockResolvedValue(undefined),
         } as any;
@@ -31,6 +32,59 @@ describe("Asset Registry Module", () => {
         const options: OptionValues = { assetType: "BOARD_V2", json: true };
         await (module as any).getSchema(testContext, mockCommand, options);
         expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", true);
+    });
+
+    it("should call validate with --configuration sub-mode options", async () => {
+        const options: OptionValues = {
+            assetType: "BOARD_V2",
+            packageKey: "my-pkg",
+            configuration: '{"components":[]}',
+            json: true,
+        };
+        await (module as any).validate(testContext, mockCommand, options);
+        expect(mockService.validate).toHaveBeenCalledWith({
+            assetType: "BOARD_V2",
+            packageKey: "my-pkg",
+            nodeKey: undefined,
+            configuration: '{"components":[]}',
+            file: undefined,
+            json: true,
+        });
+    });
+
+    it("should call validate with --nodeKey sub-mode options", async () => {
+        const options: OptionValues = {
+            assetType: "BOARD_V2",
+            packageKey: "my-pkg",
+            nodeKey: "my-view",
+            json: "",
+        };
+        await (module as any).validate(testContext, mockCommand, options);
+        expect(mockService.validate).toHaveBeenCalledWith({
+            assetType: "BOARD_V2",
+            packageKey: "my-pkg",
+            nodeKey: "my-view",
+            configuration: undefined,
+            file: undefined,
+            json: false,
+        });
+    });
+
+    it("should call validate with file mode options", async () => {
+        const options: OptionValues = {
+            assetType: "BOARD_V2",
+            file: "request.json",
+            json: "",
+        };
+        await (module as any).validate(testContext, mockCommand, options);
+        expect(mockService.validate).toHaveBeenCalledWith({
+            assetType: "BOARD_V2",
+            packageKey: undefined,
+            nodeKey: undefined,
+            configuration: undefined,
+            file: "request.json",
+            json: false,
+        });
     });
 
     it("should call getExamples with correct parameters", async () => {

@@ -254,20 +254,49 @@ methodology — a 404 means the endpoint is not available.
 $CLI asset-registry methodology --assetType <ASSET_TYPE> -p <profile>
 ```
 
-### Validate (POST — via config import)
+### Validate
 
-Use `config import --validate` to validate assets against their schema before
-importing:
+Two top-level modes:
+
+**Build-from-options** — `--packageKey` plus exactly one of `--nodeKey` (stored
+node) or `--configuration` (raw configuration JSON). `--nodeKey` and
+`--configuration` are mutually exclusive.
+
+Validate an already-stored node:
+
+```bash
+$CLI asset-registry validate --assetType <ASSET_TYPE> \
+  --packageKey <pkg> --nodeKey <key> -p <profile>
+```
+
+Validate a raw configuration before import:
+
+```bash
+$CLI asset-registry validate --assetType <ASSET_TYPE> \
+  --packageKey <pkg> \
+  --configuration '<configuration-json>' -p <profile>
+```
+
+**`-f` / `--file` mode** — Provide a JSON file containing a full
+`ValidateRequest` body. Use this for multi-node validation or any case the
+build-from-options mode doesn't cover. Mutually exclusive with the
+build-from-options flags.
+
+```bash
+$CLI asset-registry validate --assetType <ASSET_TYPE> -f request.json -p <profile>
+```
+
+You can also validate during import with `config import --validate`:
 
 ```bash
 $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 ```
 
 **Important**: If validation returns errors, do **not** proceed with the import.
-Instead, fix the schema violations in the node JSON and re-run the command. If
-you cannot resolve the errors automatically, present the validation results to
-the user and ask whether they want to continue importing with invalid
-configuration or stop to fix it manually.
+Instead, fix the schema violations in the node JSON and re-validate. If you
+cannot resolve the errors automatically, present the validation results to the
+user and ask whether they want to continue importing with invalid configuration
+or stop to fix it manually.
 
 ## Troubleshooting
 
@@ -315,6 +344,9 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 | `asset-registry list` | List all registered asset types |
 | `asset-registry get --assetType X` | Get the full descriptor for an asset type |
 | `asset-registry schema --assetType X` | Get the JSON Schema for the asset's configuration |
+| `asset-registry validate --assetType X --packageKey P --nodeKey K` | Validate an already-stored node |
+| `asset-registry validate --assetType X --packageKey P --configuration '{}'` | Validate a raw configuration before import |
+| `asset-registry validate --assetType X -f request.json` | Validate using a full ValidateRequest file (multi-node, etc.) |
 | `asset-registry examples --assetType X` | Get example configurations (if available) |
 | `asset-registry methodology --assetType X` | Get methodology / best-practices (if available) |
 | `config list` | List packages |
