@@ -58,7 +58,7 @@ describe("Asset registry validate", () => {
             expect(mockWriteFileSync).toHaveBeenCalledWith(
                 path.resolve(process.cwd(), expectedFileName),
                 expect.any(String),
-                { encoding: "utf-8" }
+                expect.objectContaining({ encoding: "utf-8" })
             );
             const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
             expect(written.valid).toBe(false);
