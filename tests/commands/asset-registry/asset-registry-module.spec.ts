@@ -34,7 +34,7 @@ describe("Asset Registry Module", () => {
         expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", true);
     });
 
-    it("should call validate with configuration mode options", async () => {
+    it("should call validate with --configuration sub-mode options", async () => {
         const options: OptionValues = {
             assetType: "BOARD_V2",
             packageKey: "my-pkg",
@@ -47,13 +47,12 @@ describe("Asset Registry Module", () => {
             packageKey: "my-pkg",
             nodeKey: undefined,
             configuration: '{"components":[]}',
-            configFile: undefined,
             file: undefined,
             json: true,
         });
     });
 
-    it("should call validate with nodeKey mode options", async () => {
+    it("should call validate with --nodeKey sub-mode options", async () => {
         const options: OptionValues = {
             assetType: "BOARD_V2",
             packageKey: "my-pkg",
@@ -66,7 +65,6 @@ describe("Asset Registry Module", () => {
             packageKey: "my-pkg",
             nodeKey: "my-view",
             configuration: undefined,
-            configFile: undefined,
             file: undefined,
             json: false,
         });
@@ -84,7 +82,6 @@ describe("Asset Registry Module", () => {
             packageKey: undefined,
             nodeKey: undefined,
             configuration: undefined,
-            configFile: undefined,
             file: "request.json",
             json: false,
         });

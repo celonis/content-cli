@@ -35,11 +35,10 @@ class Module extends IModule {
         assetRegistryCommand.command("validate")
             .description("Validate asset configuration against the asset service's validate endpoint.")
             .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
-            .option("--packageKey <packageKey>", "Package key containing the node")
-            .option("--nodeKey <nodeKey>", "Key of an already-stored node to validate on the platform")
-            .option("--configuration <configuration>", "Inline JSON of the configuration to validate before import")
-            .option("-c, --configFile <configFile>", "Path to a JSON file containing the configuration to validate before import")
-            .option("-f, --file <file>", "Path to a JSON file containing a full ValidateRequest (alternative to all other options)")
+            .option("--packageKey <packageKey>", "Package key. Required when validating with --nodeKey or --configuration.")
+            .option("--nodeKey <nodeKey>", "Key of an already-stored node to validate (use with --packageKey).")
+            .option("--configuration <configuration>", "Inline JSON of a configuration to validate (use with --packageKey).")
+            .option("-f, --file <file>", "Path to a JSON file containing a full ValidateRequest body. Mutually exclusive with the build-from-options flags.")
             .option("--json", "Return the response as a JSON file")
             .action(this.validate);
 
@@ -68,7 +67,6 @@ class Module extends IModule {
             packageKey: options.packageKey,
             nodeKey: options.nodeKey,
             configuration: options.configuration,
-            configFile: options.configFile,
             file: options.file,
             json: !!options.json,
         });

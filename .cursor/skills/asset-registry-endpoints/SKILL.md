@@ -225,28 +225,31 @@ $CLI asset-registry methodology --assetType <ASSET_TYPE> -p <profile>
 
 ### Validate
 
-Validate a configuration before importing it:
+Two top-level modes:
 
-```bash
-$CLI asset-registry validate --assetType <ASSET_TYPE> \
-  --packageKey <pkg> --configuration '<configuration-json>' -p <profile>
-```
+**Build-from-options** — `--packageKey` plus exactly one of `--nodeKey` (stored
+node) or `--configuration` (raw configuration JSON). `--nodeKey` and
+`--configuration` are mutually exclusive.
 
-Or load configuration from a file:
-
-```bash
-$CLI asset-registry validate --assetType <ASSET_TYPE> \
-  --packageKey <pkg> -c config.json -p <profile>
-```
-
-Validate an already-stored node on the platform:
+Validate an already-stored node:
 
 ```bash
 $CLI asset-registry validate --assetType <ASSET_TYPE> \
   --packageKey <pkg> --nodeKey <key> -p <profile>
 ```
 
-For multi-node validation, provide a full `ValidateRequest` file:
+Validate a raw configuration before import:
+
+```bash
+$CLI asset-registry validate --assetType <ASSET_TYPE> \
+  --packageKey <pkg> \
+  --configuration '<configuration-json>' -p <profile>
+```
+
+**`-f` / `--file` mode** — Provide a JSON file containing a full
+`ValidateRequest` body. Use this for multi-node validation or any case the
+build-from-options mode doesn't cover. Mutually exclusive with the
+build-from-options flags.
 
 ```bash
 $CLI asset-registry validate --assetType <ASSET_TYPE> -f request.json -p <profile>
@@ -310,8 +313,9 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 | `asset-registry list` | List all registered asset types |
 | `asset-registry get --assetType X` | Get the full descriptor for an asset type |
 | `asset-registry schema --assetType X` | Get the JSON Schema for the asset's configuration |
-| `asset-registry validate --assetType X --packageKey P --configuration '{}'` | Validate a configuration before import |
-| `asset-registry validate --assetType X --packageKey P --nodeKey K` | Validate a stored node |
+| `asset-registry validate --assetType X --packageKey P --nodeKey K` | Validate an already-stored node |
+| `asset-registry validate --assetType X --packageKey P --configuration '{}'` | Validate a raw configuration before import |
+| `asset-registry validate --assetType X -f request.json` | Validate using a full ValidateRequest file (multi-node, etc.) |
 | `asset-registry examples --assetType X` | Get example configurations (if available) |
 | `asset-registry methodology --assetType X` | Get methodology / best-practices (if available) |
 | `config list` | List packages |

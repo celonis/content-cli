@@ -28,7 +28,7 @@ describe("Asset registry validate", () => {
 
     const mockUrl = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/validate/BOARD_V2";
 
-    describe("configuration mode (validate before import)", () => {
+    describe("--configuration sub-mode (validate a raw configuration)", () => {
         it("Should validate with inline --configuration and print result", async () => {
             mockAxiosPost(mockUrl, validateResponse);
 
@@ -64,22 +64,7 @@ describe("Asset registry validate", () => {
             expect(written.valid).toBe(false);
         });
 
-        it("Should validate with config from file (-c)", async () => {
-            (fs.readFileSync as jest.Mock).mockReturnValue('{"components":[{"type":"bad"}]}');
-            mockAxiosPost(mockUrl, validateResponse);
-
-            await new AssetRegistryService(testContext).validate({
-                assetType: "BOARD_V2",
-                packageKey: "my-pkg",
-                configFile: "config.json",
-                json: false,
-            });
-
-            expect(fs.readFileSync).toHaveBeenCalledWith("config.json", "utf-8");
-            expect(loggingTestTransport.logMessages[0].message).toContain("INVALID_ENUM_VALUE");
-        });
-
-        it("Should build the envelope with nodes[] containing the configuration", async () => {
+        it("Should build the envelope with nodes[] using a synthetic node key", async () => {
             mockAxiosPost(mockUrl, validateResponse);
 
             await new AssetRegistryService(testContext).validate({
@@ -96,18 +81,6 @@ describe("Asset registry validate", () => {
                 packageKey: "my-pkg",
                 nodes: [{ key: "validation-node", configuration: { components: [] } }],
             });
-        });
-
-        it("Should throw when both --configuration and -c are provided", async () => {
-            await expect(
-                new AssetRegistryService(testContext).validate({
-                    assetType: "BOARD_V2",
-                    packageKey: "my-pkg",
-                    configuration: "{}",
-                    configFile: "config.json",
-                    json: false,
-                })
-            ).rejects.toThrow("Provide either --configuration or -c, not both.");
         });
 
         it("Should throw when --configuration is not valid JSON", async () => {
@@ -132,7 +105,7 @@ describe("Asset registry validate", () => {
         });
     });
 
-    describe("nodeKey mode (validate stored node)", () => {
+    describe("--nodeKey sub-mode (validate an already-stored node)", () => {
         it("Should build the envelope with nodeKeys[]", async () => {
             mockAxiosPost(mockUrl, validateResponse);
 
@@ -163,7 +136,7 @@ describe("Asset registry validate", () => {
         });
     });
 
-    describe("file mode (full ValidateRequest from file)", () => {
+    describe("-f / --file mode (full ValidateRequest from file)", () => {
         const fullRequest = {
             assetType: "BOARD_V2",
             packageKey: "my-pkg",
@@ -184,6 +157,21 @@ describe("Asset registry validate", () => {
             expect(loggingTestTransport.logMessages[0].message).toContain("INVALID_ENUM_VALUE");
         });
 
+        it("Should send the file body as-is (no envelope wrapping)", async () => {
+            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(fullRequest));
+            mockAxiosPost(mockUrl, validateResponse);
+
+            await new AssetRegistryService(testContext).validate({
+                assetType: "BOARD_V2",
+                file: "request.json",
+                json: false,
+            });
+
+            const captured = mockedPostRequestBodyByUrl.get(mockUrl);
+            const parsed = typeof captured === "string" ? JSON.parse(captured) : captured;
+            expect(parsed).toEqual(fullRequest);
+        });
+
         it("Should throw when -f file contains invalid JSON", async () => {
             (fs.readFileSync as jest.Mock).mockReturnValue("not-json{");
 
@@ -197,7 +185,7 @@ describe("Asset registry validate", () => {
         });
     });
 
-    describe("mutual exclusivity", () => {
+    describe("mutual exclusivity and missing modes", () => {
         it("Should throw when --nodeKey and --configuration are both provided", async () => {
             await expect(
                 new AssetRegistryService(testContext).validate({
@@ -207,10 +195,21 @@ describe("Asset registry validate", () => {
                     configuration: "{}",
                     json: false,
                 })
-            ).rejects.toThrow("mutually exclusive");
+            ).rejects.toThrow("--nodeKey and --configuration are mutually exclusive");
         });
 
-        it("Should throw when --nodeKey and -f are both provided", async () => {
+        it("Should throw when -f is combined with --packageKey", async () => {
+            await expect(
+                new AssetRegistryService(testContext).validate({
+                    assetType: "BOARD_V2",
+                    packageKey: "my-pkg",
+                    file: "request.json",
+                    json: false,
+                })
+            ).rejects.toThrow("-f is mutually exclusive");
+        });
+
+        it("Should throw when -f is combined with --nodeKey", async () => {
             await expect(
                 new AssetRegistryService(testContext).validate({
                     assetType: "BOARD_V2",
@@ -218,19 +217,18 @@ describe("Asset registry validate", () => {
                     file: "request.json",
                     json: false,
                 })
-            ).rejects.toThrow("mutually exclusive");
+            ).rejects.toThrow("-f is mutually exclusive");
         });
 
-        it("Should throw when --configuration and -f are both provided", async () => {
+        it("Should throw when -f is combined with --configuration", async () => {
             await expect(
                 new AssetRegistryService(testContext).validate({
                     assetType: "BOARD_V2",
-                    packageKey: "my-pkg",
                     configuration: "{}",
                     file: "request.json",
                     json: false,
                 })
-            ).rejects.toThrow("mutually exclusive");
+            ).rejects.toThrow("-f is mutually exclusive");
         });
 
         it("Should throw when no mode options are provided", async () => {
@@ -239,7 +237,7 @@ describe("Asset registry validate", () => {
                     assetType: "BOARD_V2",
                     json: false,
                 })
-            ).rejects.toThrow("Provide one of");
+            ).rejects.toThrow("Provide --packageKey with one of --nodeKey");
         });
     });
 });
