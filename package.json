@@ -21,7 +21,7 @@
     "adm-zip": "0.5.14",
     "chalk": "4.1.2",
     "uuid": "9.0.1",
-    "axios": "1.13.5",
+    "axios": "1.15.0",
     "commander": "13.1.0",
     "form-data": "4.0.4",
     "openid-client": "5.6.1",
