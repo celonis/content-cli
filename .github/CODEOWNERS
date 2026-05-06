@@ -4,14 +4,18 @@
 /src                                              @celonis/studio-platform
 /src/core                                         @celonis/studio-platform
 /src/commands/configuration-management/           @celonis/astro
+/tests/commands/configuration-management/         @celonis/astro
 /src/commands/profile/                            @celonis/studio-platform
 /src/commands/asset-registry/                     @celonis/astro
+/tests/commands/asset-registry/                   @celonis/astro
 /src/commands/deployment/                         @celonis/astro
+/tests/commands/deployment/                       @celonis/astro
 /src/commands/action-flows/                       @celonis/process-automation
 /tests/commands/action-flows/                     @celonis/process-automation
 /src/commands/analysis/                           @celonis/process-analytics
 /src/commands/cpm4/                               @celonis/cpm4
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
 /src/commands/studio/                             @celonis/astro
+/tests/commands/studio/                           @celonis/astro
 /package.json                                     @celonis/studio-platform @aocelo @siavash-celonis
 /yarn.lock                                        @celonis/studio-platform @aocelo @siavash-celonis
