@@ -16,10 +16,11 @@ export class BatchImportExportApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async findAllActivePackages(flavors: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
+    public async findAllActivePackages(flavors: string[], withDependencies: boolean = false, includeBranches: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         queryParams.set("withDependencies", withDependencies.toString());
+        queryParams.set("includeBranches", includeBranches.toString());
         flavors.forEach(flavor => queryParams.append("flavors", flavor))
 
         return this.httpClient().get(`/package-manager/api/core/packages/export/list?${queryParams.toString()}`).catch(e => {
@@ -27,13 +28,14 @@ export class BatchImportExportApi {
         });
     }
 
-    public async findActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<PackageExportTransport[]> {
+    public async findActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         queryParams.set("variableValue", variableValue);
         if (variableType) {
             queryParams.set("variableType", variableType);
         }
+        queryParams.set("includeBranches", includeBranches.toString());
         flavors.forEach(flavor => queryParams.append("flavors", flavor))
 
         return this.httpClient().get(`/package-manager/api/core/packages/export/list-by-variable-value?${queryParams.toString()}`).catch(e => {
