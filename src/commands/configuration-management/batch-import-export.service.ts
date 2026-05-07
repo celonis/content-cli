@@ -35,14 +35,14 @@ export class BatchImportExportService {
         this.gitService = new GitService(context);
     }
 
-    public async listActivePackages(flavors: string[]): Promise<void> {
-        const activePackages = await this.batchImportExportApi.findAllActivePackages(flavors);
+    public async listActivePackages(flavors: string[], includeBranches: boolean): Promise<void> {
+        const activePackages = await this.batchImportExportApi.findAllActivePackages(flavors, false, includeBranches);
         activePackages.forEach(pkg => {
             logger.info(`${pkg.name} - Key: "${pkg.key}"`)
         });
     }
 
-    public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean): Promise<void> {
+    public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean, includeBranches: boolean): Promise<void> {
         let packagesToExport: PackageExportTransport[];
 
         if (keysByVersion.length) {
@@ -50,7 +50,7 @@ export class BatchImportExportService {
         } else if (packageKeys.length) {
             packagesToExport = await this.batchImportExportApi.findActivePackagesByKeys(packageKeys, withDependencies);
         } else {
-            packagesToExport = await this.batchImportExportApi.findAllActivePackages(flavors, withDependencies);
+            packagesToExport = await this.batchImportExportApi.findAllActivePackages(flavors, withDependencies, includeBranches);
         }
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, withDependencies);
@@ -159,16 +159,16 @@ export class BatchImportExportService {
         logger.info("Config import report file: " + reportFileName);
     }
 
-    public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<void>  {
-        let packagesToExport = await this.batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
+    public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean): Promise<void>  {
+        let packagesToExport = await this.batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType, includeBranches);
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, false);
 
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string) : Promise<void> {
-        const packagesByVariableValue = await this.batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
+    public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean) : Promise<void> {
+        const packagesByVariableValue = await this.batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType, includeBranches);
         packagesByVariableValue.forEach(pkg => {
             logger.info(`${pkg.name} - Key: "${pkg.key}"`)
         });
