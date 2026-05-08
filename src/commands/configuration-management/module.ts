@@ -187,16 +187,6 @@ class Module extends IModule {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
 
-        if (options.branches) {
-            if (options.packageKeys) {
-                throw new Error("Please provide either --packageKeys or --branches, but not both.");
-            }
-
-            if (options.keysByVersion) {
-                throw new Error("Please provide either --keysByVersion or --branches, but not both.");
-            }
-        }
-
         await new ConfigCommandService(context).listPackages(
             options.json,
             options.flavors,

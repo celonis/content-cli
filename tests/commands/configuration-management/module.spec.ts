@@ -57,32 +57,6 @@ describe("Configuration Management Module - Action Validations", () => {
                 expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
             });
 
-            it("should throw error when both packageKeys and branches are provided", async () => {
-                const options: OptionValues = {
-                    packageKeys: ["package1", "package2"],
-                    branches: true
-                };
-
-                await expect((module as any).listPackages(testContext, mockCommand, options)).rejects.toThrow(
-                    "Please provide either --packageKeys or --branches, but not both."
-                );
-
-                expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
-            });
-
-            it("should throw error when both keysByVersion and branches are provided", async () => {
-                const options: OptionValues = {
-                    keysByVersion: ["package3.1.0.0", "package4.1.0.0"],
-                    branches: true
-                };
-
-                await expect((module as any).listPackages(testContext, mockCommand, options)).rejects.toThrow(
-                    "Please provide either --keysByVersion or --branches, but not both."
-                );
-
-                expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
-            });
-
             it("should pass validation when only packageKeys is provided", async () => {
                 const options: OptionValues = {
                     packageKeys: ["package1", "package2"],
@@ -122,8 +96,9 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined
                 );
             });
-
-            it("should pass validation when only branches is provided", async () => {
+        });
+        describe("branches validation", () => {
+            it("should pass validation when branches is provided", async () => {
                 const options: OptionValues = {
                     branches: true,
                     json: true,
