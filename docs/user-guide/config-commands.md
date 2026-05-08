@@ -2,6 +2,28 @@
 
 The `config` command group allows you to list, batch export, import packages of different flavors such as Studio and OCDM packages.
 
+## Permissions
+
+All `config` commands run against the Pacman API and are subject to the same permission checks the platform applies in the UI. The required permission depends on the **flavor** of the target package:
+
+| Package flavor | Required permission |
+|---|---|
+| **Studio** (Studio packages and their assets) | **Edit package** permission on the package |
+| **OCDM** (OCDM packages and their assets) | **Edit** (admin) permission on the **data pool** the OCDM package is connected to |
+
+This applies to every command that reads or modifies a single package or its nodes, including:
+
+- `config nodes get`, `config nodes list`, `config nodes diff`, `config nodes dependencies list`
+- `config nodes create`, `config nodes update`, `config nodes archive`
+- `config variables list`
+- `config versions get`, `config versions create`
+- `config validate`, `config diff`
+- `config export`, `config import`, `config metadata export`
+
+If the authenticated profile does not have the required permission, the command fails with `Access is Denied`.
+
+`config list` is the one exception: instead of failing, it **filters out packages the profile does not have permission to access**. If a package you expect to see is missing from the list, the most likely cause is missing edit permission on the package (Studio) or on its connected data pool (OCDM).
+
 ## List Packages
 
 Packages can be listed using the following command:
@@ -362,6 +384,182 @@ You can combine options to export a versioned node with its configuration:
 ```bash
 content-cli config nodes get --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <packageVersion> --withConfiguration --json
 ```
+
+## Creating a Node
+
+The **config nodes create** command creates a new node in the **staging (draft) version** of a package. Use it to add a single asset (View, Knowledge Model, Skill, etc.) to an existing package without going through the full package import flow.
+
+This command requires **edit permission** on the target package (see [Permissions](#permissions)).
+
+### Create a Node from a JSON Payload
+
+The node payload can be provided either inline as a JSON string with `--body`, or as a path to a JSON file with `-f` / `--file`. Exactly one of these options must be provided.
+
+```bash
+content-cli config nodes create --packageKey <packageKey> -f <path-to-node.json>
+```
+
+```bash
+content-cli config nodes create --packageKey <packageKey> --body '{"key":"...","name":"...","parentNodeKey":"...","type":"...","configuration":{}}'
+```
+
+### Payload Format
+
+The payload must follow the `SaveNodeTransport` shape required by the Pacman public API:
+
+| Field | Required | Description |
+|---|---|---|
+| `key` | yes | Unique key of the new node within the package. Must not collide with any existing (including archived) node key in the same package. |
+| `name` | yes | Human-readable name of the node. |
+| `parentNodeKey` | yes | Key of the parent node. To attach the node directly under the package root, use the package key. |
+| `type` | yes | Node type (e.g. `VIEW`, `KNOWLEDGE_MODEL`, `SKILL`). Must match a node type that is valid for the package's flavor. |
+| `configuration` | no | Object containing the type-specific configuration of the node. |
+| `schemaVersion` | no | Schema version of the configuration. Required for node types that use schema-based validation. |
+| `invalidConfiguration` | no | Stringified configuration to store as-is when `invalidContent` is `true`. Reserved for special migration / recovery flows. |
+| `invalidContent` | no | Mark the node as having invalid content. Reserved for special migration / recovery flows. |
+
+A minimal example payload (`my-view.json`):
+
+```json
+{
+  "key": "my-new-view",
+  "name": "My New View",
+  "parentNodeKey": "my-package",
+  "type": "VIEW",
+  "configuration": {}
+}
+```
+
+On success, the command prints the created node's metadata to the console:
+
+```bash
+info:    ID: node-id-123
+info:    Key: my-new-view
+info:    Name: My New View
+info:    Type: VIEW
+info:    Package Node Key: my-package
+info:    Parent Node Key: my-package
+info:    Created By: user@celonis.com
+info:    Updated By: user@celonis.com
+info:    Creation Date: 2025-10-22T10:30:00.000Z
+info:    Change Date: 2025-10-22T10:30:00.000Z
+info:    Flavor: STUDIO
+```
+
+### Validate Without Persisting
+
+Use `--validate` to run the same validation the Pacman API applies on create, **without** persisting the node. This is useful in CI pipelines to check a payload before committing to the change.
+
+```bash
+content-cli config nodes create --packageKey <packageKey> -f <path-to-node.json> --validate
+```
+
+If validation succeeds, the command prints:
+
+```bash
+info:    Validation successful for node <key> in package <packageKey>.
+```
+
+If validation fails, the command exits with a non-zero status and prints the validation errors returned by Pacman.
+
+### Export Created Node as JSON
+
+To write the created node's metadata to a JSON file instead of printing it to the console, add `--json`:
+
+```bash
+content-cli config nodes create --packageKey <packageKey> -f <path-to-node.json> --json
+```
+
+## Updating a Node
+
+The **config nodes update** command updates an existing node in the **staging (draft) version** of a package. The update is a full replacement of the mutable node fields — the payload represents the desired state of the node, not a partial patch.
+
+This command requires **edit permission** on the target package (see [Permissions](#permissions)).
+
+### Update a Node from a JSON Payload
+
+As with create, the payload can be provided inline with `--body` or via a file with `-f` / `--file`. Exactly one of these options must be provided.
+
+```bash
+content-cli config nodes update --packageKey <packageKey> --nodeKey <nodeKey> -f <path-to-node.json>
+```
+
+### Payload Format
+
+The payload must follow the `UpdateNodeTransport` shape required by the Pacman public API:
+
+| Field | Required | Description |
+|---|---|---|
+| `name` | yes | Human-readable name of the node. |
+| `parentNodeKey` | yes | Key of the parent node. Use the package key to keep / move the node directly under the package root. |
+| `configuration` | no | Object containing the type-specific configuration of the node. |
+| `schemaVersion` | no | Schema version of the configuration. Required for node types that use schema-based validation. |
+| `invalidConfiguration` | no | Stringified configuration to store as-is when `invalidContent` is `true`. Reserved for special migration / recovery flows. |
+| `invalidContent` | no | Mark the node as having invalid content. Reserved for special migration / recovery flows. |
+
+Note that `key` and `type` are **not** part of the update payload. They are immutable for an existing node — to change them you must archive the node and create a new one.
+
+A minimal example payload:
+
+```json
+{
+  "name": "My Renamed View",
+  "parentNodeKey": "my-package",
+  "configuration": {}
+}
+```
+
+On success, the command prints the updated node's metadata in the same format as `config nodes create`.
+
+### Validate Without Persisting
+
+`--validate` runs the same validation the Pacman API applies on update, without persisting the change. Useful for pre-flight checks in CI:
+
+```bash
+content-cli config nodes update --packageKey <packageKey> --nodeKey <nodeKey> -f <path-to-node.json> --validate
+```
+
+If validation succeeds, the command prints:
+
+```bash
+info:    Validation successful for node <nodeKey> in package <packageKey>.
+```
+
+### Export Updated Node as JSON
+
+```bash
+content-cli config nodes update --packageKey <packageKey> --nodeKey <nodeKey> -f <path-to-node.json> --json
+```
+
+## Archiving a Node
+
+The **config nodes archive** command archives a node in the **staging (draft) version** of a package. Archiving is a soft-delete: the node is hidden from the active package state but its history is preserved, so previously published versions of the package that include the node are unaffected.
+
+This command requires **edit permission** on the target package (see [Permissions](#permissions)).
+
+### Archive a Node
+
+```bash
+content-cli config nodes archive --packageKey <packageKey> --nodeKey <nodeKey>
+```
+
+On success, the command prints:
+
+```bash
+info:    Node <nodeKey> in package <packageKey> archived successfully.
+```
+
+### Archive a Node That Has Dependants
+
+By default, archiving a node fails if other nodes still depend on it. This protects you from accidentally breaking references in the package.
+
+If you intentionally want to archive a node despite its dependants — for example because you are about to archive the dependants too, or because the references are known to be safe — use the `--force` flag:
+
+```bash
+content-cli config nodes archive --packageKey <packageKey> --nodeKey <nodeKey> --force
+```
+
+Use `--force` with care: dependants are not archived for you, and the package may temporarily contain broken references until you fix them.
 
 ## Listing Nodes
 
