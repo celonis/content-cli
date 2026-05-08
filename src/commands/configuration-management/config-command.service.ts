@@ -16,18 +16,18 @@ export class ConfigCommandService {
         this.diffService = new DiffService(context);
     }
 
-    public async listPackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys: string[], keysByVersion: string[], variableValue: string, variableType: string): Promise<void> {
+    public async listPackages(jsonResponse: boolean, flavors: string[], withDependencies: boolean, packageKeys: string[], keysByVersion: string[], variableValue: string, variableType: string, includeBranches: boolean): Promise<void> {
         if (variableValue) {
-            await this.listPackagesByVariableValue(jsonResponse, flavors, variableValue, variableType);
+            await this.listPackagesByVariableValue(jsonResponse, flavors, variableValue, variableType, includeBranches);
             return;
         }
 
         if (jsonResponse) {
-            await this.batchImportExportService.findAndExportListOfPackages(flavors ?? [], packageKeys ?? [], keysByVersion ?? [], withDependencies);
+            await this.batchImportExportService.findAndExportListOfPackages(flavors ?? [], packageKeys ?? [], keysByVersion ?? [], withDependencies, includeBranches);
         } else if (keysByVersion) {
             await this.batchImportExportService.listPackagesByKeysWithVersion(keysByVersion, withDependencies);
         } else {
-            await this.batchImportExportService.listActivePackages(flavors ?? []);
+            await this.batchImportExportService.listActivePackages(flavors ?? [], includeBranches);
         }
     }
 
@@ -82,11 +82,11 @@ export class ConfigCommandService {
         return this.diffService.diffPackages(file, hasChanges, jsonResponse);
     }
 
-    private async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue: string, variableType: string): Promise<void> {
+    private async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue: string, variableType: string, includeBranches: boolean): Promise<void> {
         if (jsonResponse) {
-            await this.batchImportExportService.findAndExportListOfActivePackagesByVariableValue(flavors ?? [], variableValue, variableType )
+            await this.batchImportExportService.findAndExportListOfActivePackagesByVariableValue(flavors ?? [], variableValue, variableType, includeBranches)
         } else {
-            await this.batchImportExportService.listActivePackagesByVariableValue(flavors ?? [], variableValue, variableType);
+            await this.batchImportExportService.listActivePackagesByVariableValue(flavors ?? [], variableValue, variableType, includeBranches);
         }
     }
 }

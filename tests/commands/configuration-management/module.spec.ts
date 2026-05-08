@@ -72,6 +72,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     ["package1", "package2"],
                     undefined,
                     undefined,
+                    undefined,
                     undefined
                 );
             });
@@ -91,7 +92,29 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     ["package3.1.0.0", "package4.1.0.0"],
                     undefined,
+                    undefined,
                     undefined
+                );
+            });
+        });
+        describe("branches validation", () => {
+            it("should pass validation when branches is provided", async () => {
+                const options: OptionValues = {
+                    branches: true,
+                    json: true,
+                };
+
+                await (module as any).listPackages(testContext, mockCommand, options);
+
+                expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
+                    true,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    true
                 );
             });
         });

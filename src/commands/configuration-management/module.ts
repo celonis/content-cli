@@ -26,6 +26,7 @@ class Module extends IModule {
             .option("--keysByVersion <keysByVersion...>", "Lists packages by given key and version [packageKey.version]")
             .option("--variableValue <variableValue>", "Variable value for filtering packages by.")
             .option("--variableType <variableType>", "Variable type for filtering packages by.")
+            .option("--branches", "Include branches", false)
             .action(this.listPackages);
 
         configCommand.command("export")
@@ -185,7 +186,16 @@ class Module extends IModule {
         if (options.packageKeys && options.keysByVersion) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
-        await new ConfigCommandService(context).listPackages(options.json, options.flavors, options.withDependencies, options.packageKeys, options.keysByVersion, options.variableValue, options.variableType);
+
+        await new ConfigCommandService(context).listPackages(
+            options.json,
+            options.flavors,
+            options.withDependencies,
+            options.packageKeys,
+            options.keysByVersion,
+            options.variableValue,
+            options.variableType,
+            options.branches);
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
