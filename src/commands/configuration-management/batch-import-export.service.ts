@@ -42,6 +42,17 @@ export class BatchImportExportService {
         });
     }
 
+    public async listStagingPackages(flavors: string[], includeBranches: boolean, jsonResponse: boolean): Promise<void> {
+        const stagingPackages = await this.batchImportExportApi.findAllStagingPackages(flavors, includeBranches);
+        if (jsonResponse) {
+            this.exportListOfPackages(stagingPackages);
+        } else {
+            stagingPackages.forEach(pkg => {
+                logger.info(`${pkg.name} - Key: "${pkg.key}"`);
+            });
+        }
+    }
+
     public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean, includeBranches: boolean): Promise<void> {
         let packagesToExport: PackageExportTransport[];
 
