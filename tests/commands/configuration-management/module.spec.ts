@@ -73,6 +73,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     undefined,
                     undefined,
+                    undefined,
                     undefined
                 );
             });
@@ -91,6 +92,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     undefined,
                     ["package3.1.0.0", "package4.1.0.0"],
+                    undefined,
                     undefined,
                     undefined,
                     undefined
@@ -114,7 +116,8 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     undefined,
                     undefined,
-                    true
+                    true,
+                    undefined
                 );
             });
         });
