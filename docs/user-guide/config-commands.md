@@ -28,7 +28,9 @@ The name of the file will be printed in the console with the following format:
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
-By using the --flavors option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
+By using the `--flavors` option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
+
+To list staging packages instead of deployed packages use the `--staging` option. Please note that this flag is not compatible with the below options.
 
 ### List Packages with Dependencies
 
@@ -44,7 +46,7 @@ content-cli config list -p <sourceProfile> --withDependencies
 
 ```bash
 content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN
-[optional] –withDependencies
+[optional] –-withDependencies
 ```
 
 ## Batch Export Packages
