@@ -293,6 +293,22 @@ describe("Config list", () => {
         expect(loggingTestTransport.logMessages[1].message).toContain(`${secondPackage.name} - Key: "${secondPackage.key}"`);
     })
 
+    it("Should list all staging packages by key for non-json response without flavors", async () => {
+        const firstPackage = PacmanApiUtils.buildPackageExportTransport("studio", "name-1");
+        const secondPackage = PacmanApiUtils.buildPackageExportTransport("ocdm", "name-2");
+
+        const urlParams = new URLSearchParams();
+        urlParams.set("includeBranches", "false");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
+
+        await new ConfigCommandService(testContext).listPackages(false, null, false, [], undefined, null, null, false, true);
+
+        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
+        expect(loggingTestTransport.logMessages[1].message).toContain(`${secondPackage.name} - Key: "${secondPackage.key}"`);
+    })
+
     it("Should list all staging packages by key for json response with flavors", async () => {
         const firstPackage = PacmanApiUtils.buildPackageExportTransport("studio", "name-1");
         const secondPackage = PacmanApiUtils.buildPackageExportTransport("ocdm", "name-2");
