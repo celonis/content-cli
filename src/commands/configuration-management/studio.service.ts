@@ -23,6 +23,7 @@ import { SpaceApi } from "../studio/api/space-api";
 import { StudioVariablesApi } from "../studio/api/studio-variables-api";
 import { SpaceService } from "../studio/service/space.service";
 import { StudioVariableService } from "../studio/service/studio-variable.service";
+import { BranchUtils } from "../../core/utils/branches";
 
 export class StudioService {
 
@@ -103,7 +104,7 @@ export class StudioService {
         }
         for (const  manifest of studioManifests) {
             const existingPackage = existingStudioPackages.find(existingPackage => existingPackage.key === manifest.packageKey);
-            if (existingPackage) {
+            if (existingPackage && !BranchUtils.isBranchPackageKey(existingPackage.key)) {
                 await this.studioPackageApi.movePackageToSpace(existingPackage.id, manifest.space.id);
             }
             await this.assignRuntimeVariables(manifest);
