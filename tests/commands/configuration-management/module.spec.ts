@@ -73,6 +73,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     undefined,
                     undefined,
+                    undefined,
                     undefined
                 );
             });
@@ -91,6 +92,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     undefined,
                     ["package3.1.0.0", "package4.1.0.0"],
+                    undefined,
                     undefined,
                     undefined,
                     undefined
@@ -114,9 +116,89 @@ describe("Configuration Management Module - Action Validations", () => {
                     undefined,
                     undefined,
                     undefined,
-                    true
+                    true,
+                    undefined
                 );
             });
+        });
+    });
+
+    describe("listStagingPackages validation", () => {
+        it("should pass validation when branches is provided", async () => {
+            const options: OptionValues = {
+                branches: true,
+                json: true,
+                staging: true,
+            };
+
+            await (module as any).listPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
+                true,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                true,
+                true
+            );
+        });
+
+        it("should throw error when packageKeys is provided", async () => {
+            const options: OptionValues = {
+                packageKeys: ["package1", "package2"],
+                staging: true,
+            };
+
+            await expect(
+                (module as any).listPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        });
+
+        it("should throw error when withDependencies is provided", async () => {
+            const options: OptionValues = {
+                withDependencies: true,
+                staging: true,
+            };
+
+            await expect(
+                (module as any).listPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        });
+
+        it("should throw error when keysByVersion is provided", async () => {
+            const options: OptionValues = {
+                keysByVersion: ["package3.1.0.0", "package4.1.0.0"],
+                staging: true,
+            };
+
+            await expect(
+                (module as any).listPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        });
+
+        it("should throw error when variableValue is provided", async () => {
+            const options: OptionValues = {
+                variableValue: "myValue",
+                staging: true,
+            };
+
+            await expect(
+                (module as any).listPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        });
+
+        it("should throw error when variableType is provided", async () => {
+            const options: OptionValues = {
+                variableType: "myType",
+                staging: true,
+            };
+
+            await expect(
+                (module as any).listPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
         });
     });
 

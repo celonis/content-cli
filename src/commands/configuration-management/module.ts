@@ -20,13 +20,14 @@ class Module extends IModule {
         configCommand.command("list")
             .description("Command to list packages")
             .option("--json", "Return response as json type", "")
-            .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
+            .option("--flavors <flavors...>", "Lists only packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only active versions of given package keys")
             .option("--keysByVersion <keysByVersion...>", "Lists packages by given key and version [packageKey.version]")
             .option("--variableValue <variableValue>", "Variable value for filtering packages by.")
             .option("--variableType <variableType>", "Variable type for filtering packages by.")
             .option("--branches", "Include branches", false)
+            .option("--staging", "List staging packages instead", false)
             .action(this.listPackages);
 
         configCommand.command("export")
@@ -183,6 +184,9 @@ class Module extends IModule {
     }
 
     private async listPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.staging && (options.withDependencies || options.packageKeys || options.keysByVersion || options.variableValue || options.variableType)) {
+            throw new Error("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        }
         if (options.packageKeys && options.keysByVersion) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
@@ -195,7 +199,8 @@ class Module extends IModule {
             options.keysByVersion,
             options.variableValue,
             options.variableType,
-            options.branches);
+            options.branches,
+            options.staging);
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
