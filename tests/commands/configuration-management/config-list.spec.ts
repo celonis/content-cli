@@ -284,7 +284,7 @@ describe("Config list", () => {
         urlParams.set("includeBranches", "false");
         urlParams.append("flavors", "STUDIO");
 
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
         await new ConfigCommandService(testContext).listPackages(false, ["STUDIO"], false, [], undefined, null, null, false, true);
 
@@ -300,7 +300,7 @@ describe("Config list", () => {
         const urlParams = new URLSearchParams();
         urlParams.set("includeBranches", "false");
 
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
         await new ConfigCommandService(testContext).listPackages(false, null, false, [], undefined, null, null, false, true);
 
@@ -317,7 +317,7 @@ describe("Config list", () => {
         urlParams.set("includeBranches", "false");
         urlParams.append("flavors", "STUDIO");
 
-        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
         await new ConfigCommandService(testContext).listPackages(true, ["STUDIO"], false, [], undefined, null, null, false, true);
 
