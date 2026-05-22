@@ -322,11 +322,6 @@ info:
 info:      ERROR   my-kpi-model (SEMANTIC_MODEL) - Data Model should not be empty [dataModelId.empty]
 ```
 
-There is a small race between `config import` and `config validate`: the
-newly-imported staging version may take ~2–3 seconds to become queryable.
-If a `config validate` run returns the previous version's results, wait a
-moment and retry.
-
 **Important**: If validation returns errors, do **not** proceed with the
 import. Instead, fix the schema or business-rule violations in the node JSON
 and re-validate. If you cannot resolve the errors automatically, present the
