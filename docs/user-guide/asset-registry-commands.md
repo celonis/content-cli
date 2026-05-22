@@ -160,3 +160,26 @@ Options:
 
 - `--assetType <assetType>` (required) – The asset type identifier
 - `--json` – Write the methodology to a JSON file in the working directory
+
+## List Skills
+
+List all available agent skills registered in the asset registry (name, description, and path).
+
+```
+content-cli asset-registry skills list
+```
+
+Example output:
+
+```
+skill-one (platform/skill-one) - First platform skill
+board-authoring (asset/BOARD_V2/board-authoring)
+```
+
+Each line is `<name> (<path>)` followed by ` - <description>` when the skill provides one.
+
+Use `--json` to write the full response to a file in the working directory:
+
+```
+content-cli asset-registry skills list --json
+```

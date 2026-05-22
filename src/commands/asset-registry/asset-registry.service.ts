@@ -1,5 +1,5 @@
 import { AssetRegistryApi } from "./asset-registry-api";
-import { AssetRegistryDescriptor, ValidateOptions } from "./asset-registry.interfaces";
+import { AgentSkill, AssetRegistryDescriptor, ValidateOptions } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
@@ -28,6 +28,24 @@ export class AssetRegistryService {
             }
             descriptors.forEach((descriptor) => {
                 this.logDescriptorSummary(descriptor);
+            });
+        }
+    }
+
+    public async listSkills(jsonResponse: boolean): Promise<void> {
+        const response = await this.api.listSkills();
+
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            fileService.writeToFileWithGivenName(JSON.stringify(response), filename);
+            logger.info(FileService.fileDownloadedMessage + filename);
+        } else {
+            if (response.skills.length === 0) {
+                logger.info("No agent skills registered.");
+                return;
+            }
+            response.skills.forEach((skill) => {
+                this.logSkillSummary(skill);
             });
         }
     }
@@ -134,6 +152,15 @@ export class AssetRegistryService {
         logger.info(
             `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`
         );
+    }
+
+    private logSkillSummary(skill: AgentSkill): void {
+        const base = `${skill.name} (${skill.path})`;
+        if (skill.description) {
+            logger.info(`${base} - ${skill.description}`);
+        } else {
+            logger.info(base);
+        }
     }
 
     private logDescriptorDetail(descriptor: AssetRegistryDescriptor): void {

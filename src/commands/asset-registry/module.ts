@@ -47,6 +47,14 @@ class Module extends IModule {
             .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
             .option("--json", "Return the response as a JSON file")
             .action(this.getMethodology);
+
+        const skillsCommand = assetRegistryCommand.command("skills")
+            .description("Discover agent skills exposed by the asset registry");
+
+        skillsCommand.command("list")
+            .description("List all available agent skills (name, description, path)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.listSkills);
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -78,6 +86,10 @@ class Module extends IModule {
 
     private async getMethodology(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getMethodology(options.assetType, !!options.json);
+    }
+
+    private async listSkills(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).listSkills(!!options.json);
     }
 }
 
