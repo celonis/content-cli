@@ -1,18 +1,17 @@
 ---
 name: asset-registry-endpoints
 description: >-
-  Discover asset types, fetch schemas, examples, and methodology via
-  content-cli asset-registry commands. Also covers exporting/importing/creating
-  packages via config commands. Use when the user asks for a schema, wants to
-  validate an asset, needs methodology/best-practices, wants example
-  configurations for an asset type, or needs to export/import/list/create
-  packages.
+  Discover asset types, fetch schemas, and examples via content-cli
+  asset-registry commands. Also covers exporting/importing/creating packages
+  via config commands. Use when the user asks for a schema, wants to validate
+  an asset, wants example configurations for an asset type, or needs to
+  export/import/list/create packages.
 ---
 
 # Asset Registry Endpoint Caller
 
 Use `content-cli asset-registry` commands to discover asset types and fetch
-schemas, examples, and methodology for any registered asset type.
+schemas and examples for any registered asset type.
 
 ## Prerequisites
 
@@ -216,7 +215,7 @@ info, and endpoint availability):
 $CLI asset-registry get --assetType <ASSET_TYPE> -p <profile>
 ```
 
-## Step 2 — Fetch schema, examples, or methodology
+## Step 2 — Fetch schema or examples
 
 Use these commands to get asset authoring resources directly. Each proxies
 through the platform to the owning asset service — no manual path construction
@@ -243,15 +242,6 @@ examples — a 404 means the endpoint is not available.
 
 ```bash
 $CLI asset-registry examples --assetType <ASSET_TYPE> -p <profile>
-```
-
-### Methodology (GET)
-
-Returns best-practices and methodology guidance. Not all asset types provide
-methodology — a 404 means the endpoint is not available.
-
-```bash
-$CLI asset-registry methodology --assetType <ASSET_TYPE> -p <profile>
 ```
 
 ### Validate
@@ -300,8 +290,8 @@ or stop to fix it manually.
 
 ## Troubleshooting
 
-**404 on examples / methodology** — Not all asset services have deployed these
-endpoints. The schema endpoint is required for all registered types; the others
+**404 on examples** — Not all asset services have deployed the examples
+endpoint. The schema endpoint is required for all registered types; examples
 are optional.
 
 **500 on proxy endpoints** — The platform proxies requests to the owning asset
@@ -348,7 +338,6 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 | `asset-registry validate --assetType X --packageKey P --configuration '{}'` | Validate a raw configuration before import |
 | `asset-registry validate --assetType X -f request.json` | Validate using a full ValidateRequest file (multi-node, etc.) |
 | `asset-registry examples --assetType X` | Get example configurations (if available) |
-| `asset-registry methodology --assetType X` | Get methodology / best-practices (if available) |
 | `config list` | List packages |
 | `config export --packageKeys X --unzip` | Export packages |
 | `config import -d <dir> --validate --overwrite` | Validate and import packages |
