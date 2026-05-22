@@ -167,6 +167,103 @@ Finally, the result of this command will be a list of PostPackageImportData expo
 info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
+### Validate During Import
+
+Add `--validate` to `config import` to run validation against each node **before** the import is committed:
+
+```bash
+content-cli config import -p <sourceProfile> -d <export_dir> --validate --overwrite
+```
+
+`config import --validate` runs the **SCHEMA** layer only. It does **not** run BUSINESS-layer checks (PQL parsing, data-model availability, KPI uniqueness, etc.). To run business validation, use [`config validate`](#validate-package-configurations) after the import.
+
+## Validate Package Configurations
+
+The `config validate` command validates the **staging (draft) version** of a package by sending its nodes through one or more validation layers. The command runs against the Pacman validate API and returns a structured report of errors, warnings, and info findings.
+
+This command requires **edit permission** on the target package (see [Permissions](#permissions)).
+
+```bash
+content-cli config validate --packageKey <packageKey>
+```
+
+By default, only the `SCHEMA` layer is run. The console output looks like:
+
+```bash
+info:    Validation result: VALID
+info:    Errors: 0 | Warnings: 0 | Info: 0
+```
+
+If there are findings, each one is printed on its own line with the severity, node key, asset type, message, and code:
+
+```bash
+info:    Validation result: INVALID
+info:    Errors: 1 | Warnings: 0 | Info: 0
+info:
+info:      ERROR   my-knowledge-model (SEMANTIC_MODEL) - $.requiredField: is missing but it is required [REQUIRED_PROPERTY_MISSING]
+```
+
+### Validation Layers
+
+The `--layers` option selects which validation layers to run. Multiple layers can be passed and are executed in a single request; their findings are merged into one report.
+
+| Layer | What it checks | Owner |
+|---|---|---|
+| `SCHEMA` | Asset-schema conformance of each node's `configuration` field — required properties, enum values, type checks, conditional schemas. | Asset registry |
+| `BUSINESS` | Asset-type-specific business rules — for `SEMANTIC_MODEL`, e.g. PQL parsing, data-model availability, KPI uniqueness. Rules live in the owning asset service. | Owning asset service (e.g. `cloud-semantic-layer` for Knowledge Models) |
+
+Currently `SCHEMA` and `BUSINESS` are the only layers accepted by the Pacman API. Other values are rejected with a `400 layers.unsupported` error.
+
+To run both layers:
+
+```bash
+content-cli config validate --packageKey <packageKey> --layers SCHEMA BUSINESS
+```
+
+### Validate Specific Nodes
+
+By default, every node in the package's staging version is validated. To restrict the scope to a subset of nodes, use `--nodeKeys`:
+
+```bash
+content-cli config validate --packageKey <packageKey> --nodeKeys node-key-1 node-key-2
+```
+
+### Export Validation Report as JSON
+
+Use `--json` to write the full validation report to a JSON file in the current working directory instead of printing it to the console:
+
+```bash
+content-cli config validate --packageKey <packageKey> --layers SCHEMA BUSINESS --json
+```
+
+The filename is printed on success:
+
+```bash
+info:    Validation report file: config_validate_report_9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
+
+The JSON report has the shape:
+
+```typescript
+interface ValidationReport {
+    packageKey: string;
+    valid: boolean;
+    summary: { errors: number; warnings: number; info: number };
+    results: ValidationResult[];
+}
+
+interface ValidationResult {
+    layer: "SCHEMA" | "BUSINESS";
+    severity: "ERROR" | "WARNING" | "INFO";
+    nodeKey: string;
+    assetType: string;
+    path: string;
+    code: string;
+    message: string;
+    suggestion?: string;
+}
+```
+
 ## Listing & Mapping Variables
 
 ### Listing Package Variables

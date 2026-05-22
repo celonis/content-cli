@@ -63,7 +63,11 @@ class Module extends IModule {
         configCommand.command("validate")
             .description("Validate package node configurations")
             .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
-            .option("--layers <layers...>", "Validation layers to run", ["SCHEMA"])
+            .option(
+                "--layers <layers...>",
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS (can be combined, e.g. --layers SCHEMA BUSINESS). Defaults to SCHEMA.",
+                ["SCHEMA"]
+            )
             .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
             .option("--json", "Return the response as a JSON file")
             .action(this.validatePackage);
