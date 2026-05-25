@@ -17,7 +17,6 @@ describe("Asset registry get", () => {
         endpoints: {
             schema: "/schema/board_v2",
             validate: "/validate/board_v2",
-            methodology: "/methodology/board_v2",
             examples: "/examples/board_v2",
         },
         contributions: { pigEntityTypes: [], dataPipelineEntityTypes: [], actionTypes: [] },
@@ -67,7 +66,6 @@ describe("Asset registry get", () => {
         const messages = loggingTestTransport.logMessages.map((m) => m.message);
         expect(messages).toEqual(
             expect.arrayContaining([
-                expect.stringContaining("/methodology/board_v2"),
                 expect.stringContaining("/examples/board_v2"),
             ])
         );
@@ -86,7 +84,6 @@ describe("Asset registry get", () => {
         await new AssetRegistryService(testContext).getType("BOARD_V2", false);
 
         const messages = loggingTestTransport.logMessages.map((m) => m.message).join("\n");
-        expect(messages).not.toContain("methodology");
         expect(messages).not.toContain("examples");
     });
 });
