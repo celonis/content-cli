@@ -17,6 +17,7 @@ describe("Asset Registry Module", () => {
 
         mockService = {
             listTypes: jest.fn().mockResolvedValue(undefined),
+            listSkills: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
             validate: jest.fn().mockResolvedValue(undefined),
@@ -96,6 +97,17 @@ describe("Asset Registry Module", () => {
         const options: OptionValues = { json: true };
         await (module as any).listTypes(testContext, mockCommand, options);
         expect(mockService.listTypes).toHaveBeenCalledWith(true);
+    });
+
+    it("should call listSkills", async () => {
+        const options: OptionValues = { json: true };
+        await (module as any).listSkills(testContext, mockCommand, options);
+        expect(mockService.listSkills).toHaveBeenCalledWith(true);
+
+        jest.clearAllMocks();
+        const optionsNoJson: OptionValues = { json: "" };
+        await (module as any).listSkills(testContext, mockCommand, optionsNoJson);
+        expect(mockService.listSkills).toHaveBeenCalledWith(false);
     });
 
     it("should call getType", async () => {

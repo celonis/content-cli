@@ -41,6 +41,14 @@ class Module extends IModule {
             .option("-f, --file <file>", "Path to a JSON file containing a full ValidateRequest body. Mutually exclusive with the build-from-options flags.")
             .option("--json", "Return the response as a JSON file")
             .action(this.validate);
+
+        const skillsCommand = assetRegistryCommand.command("skills")
+            .description("Discover agent skills exposed by the asset registry");
+
+        skillsCommand.command("list")
+            .description("List all available agent skills (name, description, path)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.listSkills);
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -68,6 +76,10 @@ class Module extends IModule {
 
     private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getExamples(options.assetType, !!options.json);
+    }
+
+    private async listSkills(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).listSkills(!!options.json);
     }
 }
 

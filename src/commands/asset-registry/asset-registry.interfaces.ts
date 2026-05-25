@@ -41,3 +41,18 @@ export interface ValidateOptions {
     file?: string;
     json: boolean;
 }
+
+export interface AgentSkillMetadata {
+    version: string;
+}
+
+export interface AgentSkill {
+    name: string;
+    description: string;
+    path: string;
+    metadata: AgentSkillMetadata;
+}
+
+export interface AgentSkillsResponse {
+    skills: AgentSkill[];
+}
