@@ -82,10 +82,16 @@ content-cli asset-registry validate --assetType <ASSET_TYPE> \
   --packageKey <package-key> --configuration '{ ... }'
 ```
 
-Or validate during import with the `--validate` flag:
+Or validate during import with the `--validate` flag — note that this runs the `SCHEMA` layer only:
 
 ```bash
 content-cli config import -d <export_dir> --validate --overwrite
+```
+
+To also run business-layer rules (PQL parsing, data-model availability, KPI uniqueness, …), run `config validate` against the just-imported staging version:
+
+```bash
+content-cli config validate --packageKey <package-key> --layers SCHEMA BUSINESS
 ```
 
 If validation returns errors, fix the issues before importing.
