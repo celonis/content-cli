@@ -42,22 +42,44 @@ describe("Asset registry list", () => {
         },
     };
 
-    it("Should list all asset types with description when present", async () => {
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types", metadata);
+    it("Should render the description when it is present", async () => {
+        const withDescription: AssetRegistryMetadata = {
+            types: {
+                SEMANTIC_MODEL: metadata.types.SEMANTIC_MODEL,
+            },
+        };
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types",
+            withDescription
+        );
 
         await new AssetRegistryService(testContext).listTypes(false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(
+            "SEMANTIC_MODEL - Knowledge Model [DATA_AND_PROCESS_MODELING] - Defines KPIs, records, filters, and data bindings for analytics"
+        );
+    });
 
+    it("Should omit the description when it is not present", async () => {
+        const withoutDescription: AssetRegistryMetadata = {
+            types: {
+                BOARD_V2: metadata.types.BOARD_V2
+            },
+        };
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types",
+            withoutDescription
+        );
+
+        await new AssetRegistryService(testContext).listTypes(false);
+
+        expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
             "BOARD_V2 - View [DASHBOARDS]"
         );
         expect(loggingTestTransport.logMessages[0].message).not.toContain(" - null");
         expect(loggingTestTransport.logMessages[0].message).not.toMatch(/\] - /);
-
-        expect(loggingTestTransport.logMessages[1].message).toContain(
-            "SEMANTIC_MODEL - Knowledge Model [DATA_AND_PROCESS_MODELING] - Defines KPIs, records, filters, and data bindings for analytics"
-        );
     });
 
     it("Should list all asset types as JSON", async () => {
