@@ -14,9 +14,11 @@ content-cli asset-registry list
 Example output:
 
 ```
-BOARD_V2 - View [DASHBOARDS] (basePath: /blueprint/api)
-SEMANTIC_MODEL - Knowledge Model [DATA_AND_PROCESS_MODELING] (basePath: /semantic-layer/api)
+BOARD_V2 - View [DASHBOARDS]
+SEMANTIC_MODEL - Knowledge Model [DATA_AND_PROCESS_MODELING] - Defines KPIs, records, filters, and data bindings for analytics
 ```
+
+Each line is `<assetType> - <displayName> [<group>]` followed by ` - <description>` when the asset type provides one.
 
 It is also possible to use the `--json` option for writing the full response to a file that gets created in the working directory.
 

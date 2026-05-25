@@ -126,9 +126,12 @@ export class AssetRegistryService {
     }
 
     private logDescriptorSummary(descriptor: AssetRegistryDescriptor): void {
-        logger.info(
-            `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`
-        );
+        const base = `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`;
+        if (descriptor.description) {
+            logger.info(`${base} - ${descriptor.description}`);
+        } else {
+            logger.info(base);
+        }
     }
 
     private logDescriptorDetail(descriptor: AssetRegistryDescriptor): void {
