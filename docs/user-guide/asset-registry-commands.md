@@ -1,7 +1,7 @@
 # Asset Registry Commands
 
-The **asset-registry** command group allows you to discover registered asset types, fetch their schemas, examples, and methodology from the Asset Registry.
-This is useful for understanding which asset types are available on the platform, their configuration structure, and best practices for authoring assets.
+The **asset-registry** command group allows you to discover registered asset types, fetch their schemas, and examples from the Asset Registry.
+This is useful for understanding which asset types are available on the platform, their configuration structure, and example configurations to author assets against.
 
 ## List Asset Types
 
@@ -43,7 +43,6 @@ Base Path:    /blueprint/api
 Endpoints:
   schema:     /validation/schema/board_v2
   validate:   /validate
-  methodology: /methodology/board_v2
   examples:   /examples/board_v2
 ```
 
@@ -147,39 +146,3 @@ Options:
 
 - `--assetType <assetType>` (required) – The asset type identifier
 - `--json` – Write the examples to a JSON file in the working directory
-
-## Get Methodology
-
-Fetch methodology and best-practices guidance for an asset type. Not all asset types provide methodology.
-
-```
-content-cli asset-registry methodology --assetType BOARD_V2
-```
-
-Options:
-
-- `--assetType <assetType>` (required) – The asset type identifier
-- `--json` – Write the methodology to a JSON file in the working directory
-
-## List Skills
-
-List all available agent skills registered in the asset registry (name, description, and path).
-
-```
-content-cli asset-registry skills list
-```
-
-Example output:
-
-```
-skill-one (platform/skill-one) - First platform skill
-board-authoring (asset/BOARD_V2/board-authoring)
-```
-
-Each line is `<name> (<path>)` followed by ` - <description>` when the skill provides one.
-
-Use `--json` to write the full response to a file in the working directory:
-
-```
-content-cli asset-registry skills list --json
-```

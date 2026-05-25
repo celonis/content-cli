@@ -54,14 +54,6 @@ export class AssetRegistryApi {
             });
     }
 
-    public async getMethodology(assetType: string): Promise<any> {
-        return this.httpClient()
-            .get(`/pacman/api/core/asset-registry/methodologies/${encodeURIComponent(assetType)}`)
-            .catch((e) => {
-                throw new FatalError(`Problem getting methodology for asset type '${assetType}': ${e}`);
-            });
-    }
-
     public async validate(assetType: string, body: any): Promise<any> {
         return this.httpClient()
             .post(`/pacman/api/core/asset-registry/validate/${encodeURIComponent(assetType)}`, body)

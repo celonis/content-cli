@@ -22,7 +22,6 @@ describe("Asset Registry Module", () => {
             getSchema: jest.fn().mockResolvedValue(undefined),
             validate: jest.fn().mockResolvedValue(undefined),
             getExamples: jest.fn().mockResolvedValue(undefined),
-            getMethodology: jest.fn().mockResolvedValue(undefined),
         } as any;
 
         (AssetRegistryService as jest.MockedClass<typeof AssetRegistryService>)
@@ -92,12 +91,6 @@ describe("Asset Registry Module", () => {
         const options: OptionValues = { assetType: "BOARD_V2", json: "" };
         await (module as any).getExamples(testContext, mockCommand, options);
         expect(mockService.getExamples).toHaveBeenCalledWith("BOARD_V2", false);
-    });
-
-    it("should call getMethodology with correct parameters", async () => {
-        const options: OptionValues = { assetType: "SEMANTIC_MODEL" };
-        await (module as any).getMethodology(testContext, mockCommand, options);
-        expect(mockService.getMethodology).toHaveBeenCalledWith("SEMANTIC_MODEL", false);
     });
 
     it("should call listTypes", async () => {

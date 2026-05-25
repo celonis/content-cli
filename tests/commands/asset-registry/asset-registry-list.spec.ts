@@ -19,7 +19,6 @@ describe("Asset registry list", () => {
                 endpoints: {
                     schema: "/schema/board_v2",
                     validate: "/validate/board_v2",
-                    methodology: "/methodology/board_v2",
                     examples: "/examples/board_v2",
                 },
                 contributions: { pigEntityTypes: [], dataPipelineEntityTypes: [], actionTypes: [] },
@@ -34,7 +33,6 @@ describe("Asset registry list", () => {
                 endpoints: {
                     schema: "/schema",
                     validate: "/validate",
-                    methodology: "/methodology",
                     examples: "/examples",
                 },
                 contributions: { pigEntityTypes: [], dataPipelineEntityTypes: [], actionTypes: [] },

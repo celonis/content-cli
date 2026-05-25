@@ -24,7 +24,6 @@ export interface AssetService {
 export interface AssetEndpoints {
     schema: string;
     validate: string;
-    methodology?: string;
     examples?: string;
 }
 

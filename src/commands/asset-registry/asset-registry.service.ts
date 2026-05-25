@@ -72,11 +72,6 @@ export class AssetRegistryService {
         this.outputResponse(data, jsonResponse);
     }
 
-    public async getMethodology(assetType: string, jsonResponse: boolean): Promise<void> {
-        const data = await this.api.getMethodology(assetType);
-        this.outputResponse(data, jsonResponse);
-    }
-
     public async validate(opts: ValidateOptions): Promise<void> {
         const payload = this.buildValidatePayload(opts);
         const data = await this.api.validate(opts.assetType, payload);
@@ -175,9 +170,6 @@ export class AssetRegistryService {
         logger.info(`Endpoints:`);
         logger.info(`  schema:     ${descriptor.endpoints.schema}`);
         logger.info(`  validate:   ${descriptor.endpoints.validate}`);
-        if (descriptor.endpoints.methodology) {
-            logger.info(`  methodology: ${descriptor.endpoints.methodology}`);
-        }
         if (descriptor.endpoints.examples) {
             logger.info(`  examples:   ${descriptor.endpoints.examples}`);
         }
