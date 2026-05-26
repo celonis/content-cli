@@ -80,9 +80,11 @@ $CLI config import -d <export_dir> --validate --overwrite
   importing. If there are validation errors the import is **not** performed and
   the errors are returned. If there are no errors, the package and its assets
   are imported normally. To also run **BUSINESS-layer** rules (e.g. PQL
-  parsing, data-model availability, KPI uniqueness for Knowledge Models), run
-  `config validate --layers SCHEMA BUSINESS` against the imported staging
-  version — see *Validating an imported package* below.
+  parsing, data-model availability, KPI uniqueness for Knowledge Models) and
+  **PACKAGE_SETTINGS** checks (dependencies, variables, and flavor-specific
+  package settings), run
+  `config validate --layers SCHEMA BUSINESS PACKAGE_SETTINGS` against the
+  imported staging version — see *Validating an imported package* below.
 - `--overwrite` — required when updating an existing package
 - Without `--overwrite` — creates a **new** package (use for first-time import)
 
@@ -289,16 +291,19 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 
 ### Validating an imported package
 
-To run **business-layer** rules against the staging version of a package (e.g.
-PQL parsing, data-model availability, KPI uniqueness for `SEMANTIC_MODEL`),
-use `config validate`:
+To run **business-layer** rules and **package-settings** checks against the
+staging version of a package, use `config validate`:
 
 ```bash
-$CLI config validate --packageKey <pkg> --layers SCHEMA BUSINESS -p <profile>
+$CLI config validate --packageKey <pkg> --layers SCHEMA BUSINESS PACKAGE_SETTINGS -p <profile>
 ```
 
-- `--layers SCHEMA BUSINESS` runs both layers in a single request. Supported
-  values today are `SCHEMA` and `BUSINESS`.
+- `--layers SCHEMA BUSINESS PACKAGE_SETTINGS` runs all validation layers in a
+  single request. Supported values today are `SCHEMA`, `BUSINESS`, and
+  `PACKAGE_SETTINGS`.
+- `PACKAGE_SETTINGS` validates package dependencies, package variable
+  definitions, variable assignments such as Studio data models, and
+  flavor-specific package settings for Studio/OCDM packages.
 - `--nodeKeys <key1> <key2>` (optional) restricts validation to specific nodes.
 - `--json` writes the full structured report to a file in the current working
   directory instead of printing to the console.
@@ -371,4 +376,4 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 | `config list` | List packages |
 | `config export --packageKeys X --unzip` | Export packages |
 | `config import -d <dir> --validate --overwrite` | Validate (SCHEMA only) and import packages |
-| `config validate --packageKey P --layers SCHEMA BUSINESS` | Validate a package's staging version against the SCHEMA and/or BUSINESS layers |
+| `config validate --packageKey P --layers SCHEMA BUSINESS PACKAGE_SETTINGS` | Validate a package's staging version against the SCHEMA, BUSINESS, and/or PACKAGE_SETTINGS layers |

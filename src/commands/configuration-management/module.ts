@@ -65,7 +65,7 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
             .option(
                 "--layers <layers...>",
-                "Validation layers to run. Allowed values: SCHEMA, BUSINESS (can be combined, e.g. --layers SCHEMA BUSINESS). Defaults to SCHEMA.",
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS (can be combined, e.g. --layers SCHEMA BUSINESS PACKAGE_SETTINGS). Defaults to SCHEMA.",
                 ["SCHEMA"]
             )
             .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
