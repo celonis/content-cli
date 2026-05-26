@@ -16,11 +16,11 @@ export class DiffService {
         this.diffApi = new DiffApi(context);
     }
 
-    public async diffPackages(file: string, hasChanges: boolean, jsonResponse: boolean): Promise<void> {
+    public async diffPackages(file: string, hasChanges: boolean, baseVersion: string, jsonResponse: boolean): Promise<void> {
         if (hasChanges) {
             await this.hasChanges(file, jsonResponse);
         } else {
-            await this.diffPackagesAndReturnDiff(file, jsonResponse);
+            await this.diffPackagesAndReturnDiff(baseVersion, file, jsonResponse);
         }
     }
 
@@ -36,10 +36,10 @@ export class DiffService {
         }
     }
 
-    private async diffPackagesAndReturnDiff(file: string, jsonResponse: boolean): Promise<void> {
+    private async diffPackagesAndReturnDiff(baseVersion: string, file: string, jsonResponse: boolean): Promise<void> {
         const packages = new AdmZip(file);
         const formData = this.buildBodyForDiff(packages);
-        const returnedHasChangesData = await this.diffApi.diffPackages(formData);
+        const returnedHasChangesData = await this.diffApi.diffPackages(baseVersion, formData);
 
         if (jsonResponse) {
             this.exportListOfPackageDiffs(returnedHasChangesData);

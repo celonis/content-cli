@@ -11,9 +11,10 @@ export class DiffApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async diffPackages(data: FormData): Promise<PackageDiffTransport[]> {
+    public async diffPackages(baseVersion: string, data: FormData): Promise<PackageDiffTransport[]> {
+        const paramString = baseVersion ? "?" + new URLSearchParams({"baseVersion": baseVersion}).toString() : "";
         return this.httpClient().postFile(
-            "/package-manager/api/core/packages/diff/configuration",
+            `/package-manager/api/core/packages/diff/configuration${paramString}`,
             data
         );
     }
