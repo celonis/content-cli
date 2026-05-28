@@ -163,8 +163,8 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
             .requiredOption("--baseVersion <baseVersion>", "Base version of the node")
-            .option("--compareVersion <compareVersion>", "Compare version of the node. Mutually exclusive with --file (exactly one required).")
-            .option("-f, --file <file>", "Local node JSON file to diff against the base version. Mutually exclusive with --compareVersion (exactly one required).")
+            .option("--compareVersion <compareVersion>", "Compare version of the node, mutually exclusive with --file (exactly one required)")
+            .option("-f, --file <file>", "Local node JSON file to diff against the base version, mutually exclusive with --compareVersion (exactly one required)")
             .option("--json", "Return the response as a JSON file")
             .action(this.diffNode);
 
