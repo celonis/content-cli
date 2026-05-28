@@ -298,6 +298,12 @@ staging version of a package, use `config validate`:
 $CLI config validate --packageKey <pkg> --layers SCHEMA BUSINESS PACKAGE_SETTINGS -p <profile>
 ```
 
+To validate only package settings without asset business rules:
+
+```bash
+$CLI config validate --packageKey <pkg> --layers SCHEMA PACKAGE_SETTINGS -p <profile>
+```
+
 - `--layers SCHEMA BUSINESS PACKAGE_SETTINGS` runs all validation layers in a
   single request. Supported values today are `SCHEMA`, `BUSINESS`, and
   `PACKAGE_SETTINGS`.
