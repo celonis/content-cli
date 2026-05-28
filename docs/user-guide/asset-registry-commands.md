@@ -151,7 +151,7 @@ Options:
 
 ## Troubleshooting
 
-If the asset registry is disabled on your team (feature flag `pacman.asset-registry` is off), commands fail with:
+If the asset registry is disabled on your team, commands fail with:
 
 ```
 Asset registry is not enabled for this team. Contact your administrator to enable the feature.
