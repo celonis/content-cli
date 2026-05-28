@@ -1,3 +1,4 @@
+import { ReadStream } from "fs";
 import { ConfigurationChangeTransport, NodeConfigurationChangeType } from "./diff-package.interfaces";
 
 export interface GetNodeDiffRequest {
@@ -5,6 +6,13 @@ export interface GetNodeDiffRequest {
     nodeKey: string;
     baseVersion: string;
     compareVersion: string;
+}
+
+export interface GetNodeDiffWithFileRequest {
+    packageKey: string;
+    nodeKey: string;
+    baseVersion: string;
+    file: ReadStream;
 }
 
 export interface NodeConfigurationDiffTransport {

@@ -1,10 +1,11 @@
 import { NodeConfigurationDiffTransport } from "../../../src/commands/configuration-management/interfaces/node-diff.interfaces";
 import { NodeConfigurationChangeType } from "../../../src/commands/configuration-management/interfaces/diff-package.interfaces";
-import { mockAxiosGet } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosPost } from "../../utls/http-requests-mock";
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
+import { mockCreateReadStream } from "../../utls/fs-mock-utils";
 import * as path from "path";
 
 describe("Node diff", () => {
@@ -289,5 +290,78 @@ describe("Node diff", () => {
 
         const changeDateLog = loggingTestTransport.logMessages.find(log => log.message.includes("Change Date:"));
         expect(changeDateLog.message).toContain(specificDate);
+    });
+
+    describe("With file", () => {
+        const file = "./node.json";
+        const nodeJsonContent = Buffer.from(JSON.stringify({ key: nodeKey, configuration: { foo: "bar" } }));
+
+        beforeEach(() => {
+            mockCreateReadStream(nodeJsonContent);
+        });
+
+        it("Should diff a node file against STAGING and log all fields", async () => {
+            const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration/with-file?baseVersion=STAGING`;
+            mockAxiosPost(url, nodeDiff);
+
+            await new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, "STAGING", file, false);
+
+            expect(loggingTestTransport.logMessages.length).toBe(11);
+            expect(loggingTestTransport.logMessages[0].message.trim()).toEqual(`Package Key: ${nodeDiff.packageKey}`);
+            expect(loggingTestTransport.logMessages[1].message.trim()).toEqual(`Node Key: ${nodeDiff.nodeKey}`);
+            expect(loggingTestTransport.logMessages[2].message.trim()).toEqual(`Name: ${nodeDiff.name}`);
+            expect(loggingTestTransport.logMessages[3].message.trim()).toEqual(`Type: ${nodeDiff.type}`);
+            expect(loggingTestTransport.logMessages[4].message.trim()).toEqual(
+                `Is invalid configuration: ${nodeDiff.invalidContent}`
+            );
+            expect(loggingTestTransport.logMessages[5].message.trim()).toEqual(
+                `Parent Node Key: ${nodeDiff.parentNodeKey}`
+            );
+            expect(loggingTestTransport.logMessages[6].message.trim()).toEqual(`Change Date: ${nodeDiff.changeDate}`);
+            expect(loggingTestTransport.logMessages[7].message.trim()).toEqual(`Updated By: ${nodeDiff.updatedBy}`);
+            expect(loggingTestTransport.logMessages[8].message.trim()).toEqual(`Change Type: ${nodeDiff.changeType}`);
+            expect(loggingTestTransport.logMessages[9].message.trim()).toEqual(
+                `Changes: ${JSON.stringify(nodeDiff.changes)}`
+            );
+            expect(loggingTestTransport.logMessages[10].message.trim()).toEqual(
+                `Metadata Changes: ${JSON.stringify(nodeDiff.metadataChanges)}`
+            );
+        });
+
+        it("Should diff a node file against STAGING and return as JSON", async () => {
+            const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration/with-file?baseVersion=STAGING`;
+            mockAxiosPost(url, nodeDiff);
+
+            await new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, "STAGING", file, true);
+
+            const expectedFileName = loggingTestTransport.logMessages[0].message.split(
+                FileService.fileDownloadedMessage
+            )[1];
+
+            expect(mockWriteFileSync).toHaveBeenCalledWith(
+                path.resolve(process.cwd(), expectedFileName),
+                expect.any(String),
+                { encoding: "utf-8" }
+            );
+
+            const savedDiff = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeConfigurationDiffTransport;
+
+            expect(savedDiff.packageKey).toEqual(nodeDiff.packageKey);
+            expect(savedDiff.nodeKey).toEqual(nodeDiff.nodeKey);
+            expect(savedDiff.changeType).toEqual(nodeDiff.changeType);
+            expect(savedDiff.changes).toEqual(nodeDiff.changes);
+            expect(savedDiff.metadataChanges).toEqual(nodeDiff.metadataChanges);
+        });
+
+        it("Should diff a node file against a specific base version", async () => {
+            const specificBaseVersion = "1.0.0";
+            const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration/with-file?baseVersion=${specificBaseVersion}`;
+            mockAxiosPost(url, nodeDiff);
+
+            await new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, specificBaseVersion, file, false);
+
+            expect(loggingTestTransport.logMessages.length).toBe(11);
+            expect(loggingTestTransport.logMessages[0].message.trim()).toEqual(`Package Key: ${nodeDiff.packageKey}`);
+        });
     });
 });

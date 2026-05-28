@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../../core/utils/logger";
 import { fileService, FileService } from "../../core/utils/file-service";
@@ -26,6 +27,27 @@ export class NodeDiffService {
             compareVersion,
         });
 
+        this.renderDiff(nodeDiff, jsonResponse);
+    }
+
+    public async diffWithFile(
+        packageKey: string,
+        nodeKey: string,
+        baseVersion: string,
+        file: string,
+        jsonResponse: boolean
+    ): Promise<void> {
+        const nodeDiff: NodeConfigurationDiffTransport = await this.nodeDiffApi.diffWithFile({
+            packageKey,
+            nodeKey,
+            baseVersion,
+            file: fs.createReadStream(file),
+        });
+
+        this.renderDiff(nodeDiff, jsonResponse);
+    }
+
+    private renderDiff(nodeDiff: NodeConfigurationDiffTransport, jsonResponse: boolean): void {
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
             fileService.writeToFileWithGivenName(JSON.stringify(nodeDiff, null, 2), filename);
