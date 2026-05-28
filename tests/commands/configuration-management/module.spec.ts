@@ -823,17 +823,18 @@ describe("Configuration Management Module - Action Validations", () => {
             );
         });
 
-        it("should throw error when hasChanges and baseVersion are used together", async () => {
+        it("should pass both parameters when hasChanges and baseVersion are used together", async () => {
             const options: OptionValues = {
                 file: "package.zip",
                 hasChanges: true,
                 baseVersion: "STAGING"
             };
 
-            await expect(
-                (module as any).diffPackages(testContext, mockCommand, options)
-            ).rejects.toThrow("You cannot use hasChanges and baseVersion at the same time.");
+            await (module as any).diffPackages(testContext, mockCommand, options);
 
+            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+                "package.zip", true, "STAGING", undefined
+            );
         });
     });
 });

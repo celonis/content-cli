@@ -18,16 +18,16 @@ export class DiffService {
 
     public async diffPackages(file: string, hasChanges: boolean, baseVersion: string, jsonResponse: boolean): Promise<void> {
         if (hasChanges) {
-            await this.hasChanges(file, jsonResponse);
+            await this.hasChanges(baseVersion, file, jsonResponse);
         } else {
             await this.diffPackagesAndReturnDiff(baseVersion, file, jsonResponse);
         }
     }
 
-    private async hasChanges(file: string, jsonResponse: boolean): Promise<void> {
+    private async hasChanges(baseVersion: string, file: string, jsonResponse: boolean): Promise<void> {
         const packages = new AdmZip(file);
         const formData = this.buildBodyForDiff(packages);
-        const returnedHasChangesData = await this.diffApi.hasChanges(formData);
+        const returnedHasChangesData = await this.diffApi.hasChanges(baseVersion, formData);
 
         if (jsonResponse) {
             this.exportListOfPackageDiffMetadata(returnedHasChangesData);

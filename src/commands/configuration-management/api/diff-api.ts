@@ -19,9 +19,10 @@ export class DiffApi {
         );
     }
 
-    public async hasChanges(data: FormData): Promise<PackageDiffMetadata[]> {
+    public async hasChanges(baseVersion: string, data: FormData): Promise<PackageDiffMetadata[]> {
+        const paramString = baseVersion ? "?" + new URLSearchParams({"baseVersion": baseVersion}).toString() : "";
         return this.httpClient().postFile(
-            "/package-manager/api/core/packages/diff/configuration/has-changes",
+            `/package-manager/api/core/packages/diff/configuration/has-changes${paramString}`,
             data
         );
     }

@@ -252,9 +252,6 @@ class Module extends IModule {
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        if (options.hasChanges && options.baseVersion) {
-            throw new Error("You cannot use hasChanges and baseVersion at the same time.");
-        }
         await new ConfigCommandService(context).diffPackages(options.file, options.hasChanges, options.baseVersion, options.json);
     }
 
