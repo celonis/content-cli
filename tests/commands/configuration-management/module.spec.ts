@@ -4,6 +4,7 @@ import { ConfigCommandService } from "../../../src/commands/configuration-manage
 import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
 import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
 import { testContext } from "../../utls/test-context";
+import { createMockConfigurator } from "../../utls/configurator-mock";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
 jest.mock("../../../src/commands/configuration-management/node-dependency.service");
@@ -693,6 +694,32 @@ describe("Configuration Management Module - Action Validations", () => {
                 undefined,
                 undefined,
             );
+        });
+    });
+
+    describe("register", () => {
+        it("registers all expected top-level command groups without throwing", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            expect(() => new Module().register(testContext, mockConfigurator)).not.toThrow();
+
+            // Top-level groups attached to the root configurator
+            expect(mockConfigurator.command).toHaveBeenCalledWith("config");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("list");
+        });
+
+        it("wires an action handler for every leaf subcommand", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            new Module().register(testContext, mockConfigurator);
+
+            // Each leaf command terminates the fluent chain with .action(handler).
+            // Keep this count in sync when adding or removing commands in module.ts.
+            const expectedLeafCommands = 17;
+            expect(mockConfigurator.action).toHaveBeenCalledTimes(expectedLeafCommands);
+            for (const call of mockConfigurator.action.mock.calls) {
+                expect(typeof call[0]).toBe("function");
+            }
         });
     });
 
