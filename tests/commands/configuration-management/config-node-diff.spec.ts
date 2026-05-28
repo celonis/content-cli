@@ -341,7 +341,7 @@ describe("Node diff", () => {
             expect(mockWriteFileSync).toHaveBeenCalledWith(
                 path.resolve(process.cwd(), expectedFileName),
                 expect.any(String),
-                { encoding: "utf-8" }
+                { encoding: "utf-8", mode: 0o600 }
             );
 
             const savedDiff = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeConfigurationDiffTransport;
