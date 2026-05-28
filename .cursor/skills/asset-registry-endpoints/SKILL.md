@@ -382,4 +382,5 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 | `config list` | List packages |
 | `config export --packageKeys X --unzip` | Export packages |
 | `config import -d <dir> --validate --overwrite` | Validate (SCHEMA only) and import packages |
+| `config validate --packageKey P --layers SCHEMA PACKAGE_SETTINGS` | Validate schema and package settings without running BUSINESS-layer rules |
 | `config validate --packageKey P --layers SCHEMA BUSINESS PACKAGE_SETTINGS` | Validate a package's staging version against the SCHEMA, BUSINESS, and/or PACKAGE_SETTINGS layers |
