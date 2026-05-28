@@ -18,11 +18,17 @@ const config: Config.InitialOptions = {
         "<rootDir>/tests/jest.setup.ts",
     ],
     // Coverage configuration
+    // Keep the negation list in sync with sonar.coverage.exclusions in sonar-project.properties
+    // so local `jest --coverage` matches what SonarCloud counts.
     collectCoverageFrom: [
         "src/**/*.{ts,tsx}",
         "!src/**/*.d.ts",
         "!src/**/*.spec.ts",
-        "!src/**/index.ts"
+        "!src/**/index.ts",
+        "!src/**/*.interface.ts",
+        "!src/**/*.interfaces.ts",
+        "!src/**/*.constants.ts",
+        "!src/content-cli.ts",
     ],
     coverageDirectory: "coverage",
     coverageReporters: ["text", "lcov", "html"],
