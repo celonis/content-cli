@@ -2,6 +2,7 @@ import Module = require("../../../src/commands/asset-registry/module");
 import { Command, OptionValues } from "commander";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
+import { createMockConfigurator } from "../../utls/configurator-mock";
 
 jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
@@ -114,5 +115,35 @@ describe("Asset Registry Module", () => {
         const options: OptionValues = { assetType: "BOARD_V2", json: "" };
         await (module as any).getType(testContext, mockCommand, options);
         expect(mockService.getType).toHaveBeenCalledWith("BOARD_V2", false);
+    });
+
+    describe("register", () => {
+        it("registers all expected command groups without throwing", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            expect(() => new Module().register(testContext, mockConfigurator)).not.toThrow();
+
+            expect(mockConfigurator.command).toHaveBeenCalledWith("asset-registry");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("skills");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("list");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("get");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("schema");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("examples");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("validate");
+        });
+
+        it("wires an action handler for every leaf subcommand", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            new Module().register(testContext, mockConfigurator);
+
+            // Each leaf command terminates the fluent chain with .action(handler).
+            // Keep this count in sync when adding or removing commands in module.ts.
+            const expectedLeafCommands = 6;
+            expect(mockConfigurator.action).toHaveBeenCalledTimes(expectedLeafCommands);
+            for (const call of mockConfigurator.action.mock.calls) {
+                expect(typeof call[0]).toBe("function");
+            }
+        });
     });
 });
