@@ -176,5 +176,8 @@ export class AssetRegistryService {
         if (descriptor.endpoints.examples) {
             logger.info(`  examples:   ${descriptor.endpoints.examples}`);
         }
+        if (descriptor.endpoints.skills) {
+            logger.info(`  skills:     ${descriptor.endpoints.skills}`);
+        }
     }
 }

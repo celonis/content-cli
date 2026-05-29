@@ -25,6 +25,7 @@ export interface AssetEndpoints {
     schema: string;
     validate: string;
     examples?: string;
+    skills?: string;
 }
 
 export interface AssetContributions {
