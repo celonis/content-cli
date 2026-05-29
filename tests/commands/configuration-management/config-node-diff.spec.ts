@@ -1,11 +1,17 @@
 import { NodeConfigurationDiffTransport } from "../../../src/commands/configuration-management/interfaces/node-diff.interfaces";
 import { NodeConfigurationChangeType } from "../../../src/commands/configuration-management/interfaces/diff-package.interfaces";
-import { mockAxiosGet, mockAxiosPost } from "../../utls/http-requests-mock";
+import {
+    mockAxiosGet,
+    mockAxiosPost,
+    mockedAxiosInstance,
+    mockedPostRequestBodyByUrl,
+} from "../../utls/http-requests-mock";
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { mockCreateReadStream } from "../../utls/fs-mock-utils";
+import * as FormData from "form-data";
 import * as path from "path";
 
 describe("Node diff", () => {
@@ -292,6 +298,27 @@ describe("Node diff", () => {
         expect(changeDateLog.message).toContain(specificDate);
     });
 
+    it("Should throw a FatalError when the diff API call fails", async () => {
+        (mockedAxiosInstance.get as jest.Mock).mockRejectedValueOnce(new Error("network down"));
+
+        await expect(
+            new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false)
+        ).rejects.toThrow(/Problem getting the node diff/);
+
+        expect(mockWriteFileSync).not.toHaveBeenCalled();
+    });
+
+    it("Should request the diff with both baseVersion and compareVersion query parameters", async () => {
+        const expectedUrl = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration?baseVersion=${baseVersion}&compareVersion=${compareVersion}`;
+        mockAxiosGet(expectedUrl, nodeDiff);
+
+        await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false);
+
+        expect(mockedAxiosInstance.get as jest.Mock).toHaveBeenCalledTimes(1);
+        const calledUrl = (mockedAxiosInstance.get as jest.Mock).mock.calls[0][0];
+        expect(calledUrl).toBe(expectedUrl);
+    });
+
     describe("With file", () => {
         const file = "./node.json";
         const nodeJsonContent = Buffer.from(JSON.stringify({ key: nodeKey, configuration: { foo: "bar" } }));
@@ -362,6 +389,38 @@ describe("Node diff", () => {
 
             expect(loggingTestTransport.logMessages.length).toBe(11);
             expect(loggingTestTransport.logMessages[0].message.trim()).toEqual(`Package Key: ${nodeDiff.packageKey}`);
+        });
+
+        it("Should send the node file as multipart/form-data with a 'file' field", async () => {
+            const url = `https://myTeam.celonis.cloud/pacman/api/core/packages/${packageKey}/nodes/${nodeKey}/diff/configuration/with-file?baseVersion=STAGING`;
+            mockAxiosPost(url, nodeDiff);
+
+            await new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, "STAGING", file, false);
+
+            const sentBody = mockedPostRequestBodyByUrl.get(url);
+            expect(sentBody).toBeInstanceOf(FormData);
+
+            const headers = (sentBody as FormData).getHeaders();
+            expect(headers["content-type"]).toMatch(/^multipart\/form-data; boundary=/);
+
+            // form-data keeps the registered parts in its internal `_streams` array. Each form
+            // field is represented by a header string followed by the value; assert that the
+            // header chunk for the 'file' field is present.
+            const streams: unknown[] = ((sentBody as unknown) as { _streams: unknown[] })._streams;
+            const fileFieldHeader = streams.find(
+                chunk => typeof chunk === "string" && chunk.includes('name="file"')
+            );
+            expect(fileFieldHeader).toBeDefined();
+        });
+
+        it("Should throw a FatalError when the diff-with-file API call fails", async () => {
+            (mockedAxiosInstance.post as jest.Mock).mockRejectedValueOnce(new Error("upload failed"));
+
+            await expect(
+                new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, "STAGING", file, false)
+            ).rejects.toThrow(/Problem getting the node diff/);
+
+            expect(mockWriteFileSync).not.toHaveBeenCalled();
         });
     });
 });
