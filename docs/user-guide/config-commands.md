@@ -717,7 +717,9 @@ content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --l
 
 ## Diffing Node Configurations
 
-The **config nodes diff** command allows you to compare two versions of a node's configuration within a package.
+The **config nodes diff** command allows you to compare two versions of a node's configuration within a package, or to compare a local node JSON file against a remote version.
+
+Exactly one of `--compareVersion` or `--file` must be provided; the two options are mutually exclusive.
 
 ### Diff Two Versions of a Node
 
@@ -763,6 +765,18 @@ The `changes` field contains configuration changes in JSON Patch format with the
 - **fromValue** - The original value before the change
 
 The `metadataChanges` field follows the same structure but represents changes to node metadata rather than configuration.
+
+### Diff a Local Node File Against a Database Version
+
+To diff a local node JSON file (the compare side) against a version of the node stored remotely (the base side), use the `--file` option instead of `--compareVersion`:
+
+```bash
+content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --baseVersion <STAGING|version> --file <node.json>
+```
+
+The file must follow the `NodeExportTransport` shape — the format produced by `config export --unzip` under `<packageKey>_<version>/nodes/<nodeKey>.json`. `--baseVersion` accepts either `STAGING` or a specific package version. `--file` and `--compareVersion` are mutually exclusive; exactly one must be provided.
+
+If no node with the given key exists for the resolved base version, the file is diffed against an empty configuration `{}`.
 
 ### Export Node Diff as JSON
 

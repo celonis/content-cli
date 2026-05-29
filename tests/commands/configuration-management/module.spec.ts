@@ -3,11 +3,13 @@ import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
 import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
+import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { testContext } from "../../utls/test-context";
 import { createMockConfigurator } from "../../utls/configurator-mock";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
 jest.mock("../../../src/commands/configuration-management/node-dependency.service");
+jest.mock("../../../src/commands/configuration-management/node-diff.service");
 jest.mock("../../../src/commands/configuration-management/package-version-command.service");
 
 /** Mirrors default values on `config variables list` Commander options (keep in sync with module.ts). */
@@ -22,6 +24,7 @@ describe("Configuration Management Module - Action Validations", () => {
     let mockCommand: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
     let mockNodeDependencyService: jest.Mocked<NodeDependencyService>;
+    let mockNodeDiffService: jest.Mocked<NodeDiffService>;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -39,8 +42,14 @@ describe("Configuration Management Module - Action Validations", () => {
             listNodeDependencies: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockNodeDiffService = {
+            diff: jest.fn().mockResolvedValue(undefined),
+            diffWithFile: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (NodeDependencyService as jest.MockedClass<typeof NodeDependencyService>).mockImplementation(() => mockNodeDependencyService);
+        (NodeDiffService as jest.MockedClass<typeof NodeDiffService>).mockImplementation(() => mockNodeDiffService);
     });
 
     describe("listActivePackages validation", () => {
@@ -794,6 +803,81 @@ describe("Configuration Management Module - Action Validations", () => {
                 "1.2.3",
                 true
             );
+        });
+    });
+
+    describe("diffNode validation", () => {
+        it("should throw when both --file and --compareVersion are provided", async () => {
+            const options: OptionValues = {
+                packageKey: "test-package",
+                nodeKey: "test-node",
+                baseVersion: "STAGING",
+                compareVersion: "1.0.0",
+                file: "./node.json",
+            };
+
+            await expect(
+                (module as any).diffNode(testContext, mockCommand, options)
+            ).rejects.toThrow("Please provide either --compareVersion or --file, but not both.");
+
+            expect(mockNodeDiffService.diff).not.toHaveBeenCalled();
+            expect(mockNodeDiffService.diffWithFile).not.toHaveBeenCalled();
+        });
+
+        it("should throw when neither --file nor --compareVersion is provided", async () => {
+            const options: OptionValues = {
+                packageKey: "test-package",
+                nodeKey: "test-node",
+                baseVersion: "STAGING",
+            };
+
+            await expect(
+                (module as any).diffNode(testContext, mockCommand, options)
+            ).rejects.toThrow("Please provide either --compareVersion or --file, but not both.");
+
+            expect(mockNodeDiffService.diff).not.toHaveBeenCalled();
+            expect(mockNodeDiffService.diffWithFile).not.toHaveBeenCalled();
+        });
+
+        it("should call diff when only --compareVersion is provided", async () => {
+            const options: OptionValues = {
+                packageKey: "test-package",
+                nodeKey: "test-node",
+                baseVersion: "STAGING",
+                compareVersion: "1.0.0",
+                json: true,
+            };
+
+            await (module as any).diffNode(testContext, mockCommand, options);
+
+            expect(mockNodeDiffService.diff).toHaveBeenCalledWith(
+                "test-package",
+                "test-node",
+                "STAGING",
+                "1.0.0",
+                true
+            );
+            expect(mockNodeDiffService.diffWithFile).not.toHaveBeenCalled();
+        });
+
+        it("should call diffWithFile when only --file is provided", async () => {
+            const options: OptionValues = {
+                packageKey: "test-package",
+                nodeKey: "test-node",
+                baseVersion: "STAGING",
+                file: "./node.json",
+            };
+
+            await (module as any).diffNode(testContext, mockCommand, options);
+
+            expect(mockNodeDiffService.diffWithFile).toHaveBeenCalledWith(
+                "test-package",
+                "test-node",
+                "STAGING",
+                "./node.json",
+                undefined
+            );
+            expect(mockNodeDiffService.diff).not.toHaveBeenCalled();
         });
     });
 });
