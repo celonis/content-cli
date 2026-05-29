@@ -38,6 +38,7 @@ describe("Asset registry get", () => {
                 expect.stringContaining("/validate/board_v2"),
             ])
         );
+        expect(messages.join("\n")).not.toContain("skills:");
     });
 
     it("Should get a specific asset type as JSON", async () => {
@@ -67,6 +68,26 @@ describe("Asset registry get", () => {
         expect(messages).toEqual(
             expect.arrayContaining([
                 expect.stringContaining("/examples/board_v2"),
+            ])
+        );
+    });
+
+    it("Should include the skills endpoint when present", async () => {
+        const descriptorWithSkillsEndpoint: AssetRegistryDescriptor = {
+            ...boardDescriptor,
+            endpoints: {
+                ...boardDescriptor.endpoints,
+                skills: "/skills/board_v2",
+            },
+        };
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types/BOARD_V2", descriptorWithSkillsEndpoint);
+
+        await new AssetRegistryService(testContext).getType("BOARD_V2", false);
+
+        const messages = loggingTestTransport.logMessages.map((m) => m.message);
+        expect(messages).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining("/skills/board_v2"),
             ])
         );
     });
