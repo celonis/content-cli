@@ -148,3 +148,13 @@ Options:
 
 - `--assetType <assetType>` (required) – The asset type identifier
 - `--json` – Write the examples to a JSON file in the working directory
+
+## Troubleshooting
+
+If the asset registry is disabled on your team, commands fail with:
+
+```
+Asset registry is not enabled for this team. Contact your administrator to enable the feature.
+```
+
+This replaces the raw API error and indicates the feature is turned off server-side, not a permissions or connectivity issue on your CLI profile.
