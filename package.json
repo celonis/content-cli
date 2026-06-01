@@ -28,7 +28,7 @@
     "hpagent": "1.2.0",
     "@github/keytar": "7.10.6",
     "semver": "7.6.3",
-    "simple-git": "3.32.3",
+    "simple-git": "3.36.0",
     "valid-url": "1.0.9",
     "winston": "3.17.0",
     "yaml": "2.8.3"
