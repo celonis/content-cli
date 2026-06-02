@@ -71,7 +71,7 @@ class Module extends IModule {
         configCommand.command("diff")
             .description("Command to diff configs of packages")
             .option("--hasChanges", "Flag to return only the information if the package has changes without the actual changes")
-            .option("--baseVersion <version>", "Compare against a given version or STAGING, not compatible with --hasChanges")
+            .option("--baseVersion <version>", "Compare against a given version or STAGING")
             .option("--json", "Return the response as a JSON file")
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
             .action(this.diffPackages);
