@@ -75,6 +75,7 @@ class Module extends IModule {
         configCommand.command("diff")
             .description("Command to diff configs of packages")
             .option("--hasChanges", "Flag to return only the information if the package has changes without the actual changes")
+            .option("--baseVersion <version>", "Compare against a given version or STAGING")
             .option("--json", "Return the response as a JSON file")
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
             .action(this.diffPackages);
@@ -256,7 +257,7 @@ class Module extends IModule {
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).diffPackages(options.file, options.hasChanges, options.json);
+        await new ConfigCommandService(context).diffPackages(options.file, options.hasChanges, options.baseVersion, options.json);
     }
 
     private async validatePackage(context: Context, command: Command, options: OptionValues): Promise<void> {

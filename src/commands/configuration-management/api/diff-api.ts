@@ -11,16 +11,18 @@ export class DiffApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async diffPackages(data: FormData): Promise<PackageDiffTransport[]> {
+    public async diffPackages(baseVersion: string, data: FormData): Promise<PackageDiffTransport[]> {
+        const paramString = baseVersion ? "?" + new URLSearchParams({"baseVersion": baseVersion}).toString() : "";
         return this.httpClient().postFile(
-            "/package-manager/api/core/packages/diff/configuration",
+            `/package-manager/api/core/packages/diff/configuration${paramString}`,
             data
         );
     }
 
-    public async hasChanges(data: FormData): Promise<PackageDiffMetadata[]> {
+    public async hasChanges(baseVersion: string, data: FormData): Promise<PackageDiffMetadata[]> {
+        const paramString = baseVersion ? "?" + new URLSearchParams({"baseVersion": baseVersion}).toString() : "";
         return this.httpClient().postFile(
-            "/package-manager/api/core/packages/diff/configuration/has-changes",
+            `/package-manager/api/core/packages/diff/configuration/has-changes${paramString}`,
             data
         );
     }

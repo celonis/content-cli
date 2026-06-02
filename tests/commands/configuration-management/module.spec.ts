@@ -36,6 +36,7 @@ describe("Configuration Management Module - Action Validations", () => {
             listVariables: jest.fn().mockResolvedValue(undefined),
             batchExportPackages: jest.fn().mockResolvedValue(undefined),
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
+            diffPackages: jest.fn().mockResolvedValue(undefined),
         } as any;
 
         mockNodeDependencyService = {
@@ -802,6 +803,73 @@ describe("Configuration Management Module - Action Validations", () => {
                 "my-node",
                 "1.2.3",
                 true
+            );
+        });
+    });
+
+    describe("diffPackages", () => {
+        it("should call diffPackages using minimal parameters", async () => {
+            const options: OptionValues = {
+                file: "package.zip",
+            };
+
+            await (module as any).diffPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+                "package.zip", undefined, undefined, undefined
+            );
+        });
+
+        it("should pass json parameter", async () => {
+            const options: OptionValues = {
+                file: "package.zip",
+                json: true,
+            };
+
+            await (module as any).diffPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+                "package.zip", undefined, undefined, true
+            );
+        });
+
+        it("should pass hasChanges parameter", async () => {
+            const options: OptionValues = {
+                file: "package.zip",
+                hasChanges: true,
+            };
+
+            await (module as any).diffPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+                "package.zip", true, undefined, undefined
+            );
+        });
+
+        it("should pass baseVersion parameter", async () => {
+            const options: OptionValues = {
+                file: "package.zip",
+                baseVersion: "1.0.0",
+            };
+
+            await (module as any).diffPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+                "package.zip", undefined, "1.0.0", undefined
+            );
+        });
+
+        it("should pass both parameters when hasChanges and baseVersion are used together", async () => {
+            const options: OptionValues = {
+                file: "package.zip",
+                hasChanges: true,
+                baseVersion: "STAGING"
+            };
+
+            await (module as any).diffPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+                "package.zip", true, "STAGING", undefined
             );
         });
     });

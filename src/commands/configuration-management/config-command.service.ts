@@ -86,8 +86,8 @@ export class ConfigCommandService {
         return this.batchImportExportService.batchImportPackages(sourcePath, overwrite, gitBranch, performValidation);
     }
 
-    public diffPackages(file: string, hasChanges: boolean, jsonResponse: boolean): Promise<void> {
-        return this.diffService.diffPackages(file, hasChanges, jsonResponse);
+    public diffPackages(file: string, hasChanges: boolean, baseVersion: string, jsonResponse: boolean): Promise<void> {
+        return this.diffService.diffPackages(file, hasChanges, baseVersion, jsonResponse);
     }
 
     private async listPackagesByVariableValue(jsonResponse: boolean, flavors: string[], variableValue: string, variableType: string, includeBranches: boolean): Promise<void> {

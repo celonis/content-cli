@@ -829,3 +829,24 @@ To export the node dependencies as a JSON file, use the `--json` option:
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --packageVersion <version> --json
 content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <nodeKey> --json
 ```
+
+## Diff local zip with deployed version/specific version/staging
+
+To compare local zipped packages with online packages use:
+```bash
+content-cli config diff --file <file>
+```
+
+As with other commands, use `--json` to export the diff to a file.
+To diff against a specific version use the `--baseVersion` parameter. When omitted it will diff against the current deployed version.
+To diff against staging use `--baseVersion STAGING`.
+
+```bash
+content-cli config diff --file <file> --baseVersion <version>
+```
+
+To diff against the current deployed version and only return whether there are any changes, use the `--hasChanges` flag.
+
+```bash
+content-cli config diff --file <file> --hasChanges
+```
