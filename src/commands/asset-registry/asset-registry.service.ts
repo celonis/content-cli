@@ -1,5 +1,5 @@
 import { AssetRegistryApi } from "./asset-registry-api";
-import { AssetRegistryDescriptor, ValidateOptions } from "./asset-registry.interfaces";
+import { AgentSkill, AssetRegistryDescriptor, ValidateOptions } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
@@ -32,6 +32,24 @@ export class AssetRegistryService {
         }
     }
 
+    public async listSkills(jsonResponse: boolean): Promise<void> {
+        const response = await this.api.listSkills();
+
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            fileService.writeToFileWithGivenName(JSON.stringify(response), filename);
+            logger.info(FileService.fileDownloadedMessage + filename);
+        } else {
+            if (response.skills.length === 0) {
+                logger.info("No agent skills registered.");
+                return;
+            }
+            response.skills.forEach((skill) => {
+                this.logSkillSummary(skill);
+            });
+        }
+    }
+
     public async getType(assetType: string, jsonResponse: boolean): Promise<void> {
         const descriptor = await this.api.getType(assetType);
 
@@ -51,11 +69,6 @@ export class AssetRegistryService {
 
     public async getExamples(assetType: string, jsonResponse: boolean): Promise<void> {
         const data = await this.api.getExamples(assetType);
-        this.outputResponse(data, jsonResponse);
-    }
-
-    public async getMethodology(assetType: string, jsonResponse: boolean): Promise<void> {
-        const data = await this.api.getMethodology(assetType);
         this.outputResponse(data, jsonResponse);
     }
 
@@ -131,9 +144,21 @@ export class AssetRegistryService {
     }
 
     private logDescriptorSummary(descriptor: AssetRegistryDescriptor): void {
-        logger.info(
-            `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`
-        );
+        const base = `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`;
+        if (descriptor.description) {
+            logger.info(`${base} - ${descriptor.description}`);
+        } else {
+            logger.info(base);
+        }
+    }
+
+    private logSkillSummary(skill: AgentSkill): void {
+        const base = `${skill.name} (${skill.path})`;
+        if (skill.description) {
+            logger.info(`${base} - ${skill.description}`);
+        } else {
+            logger.info(base);
+        }
     }
 
     private logDescriptorDetail(descriptor: AssetRegistryDescriptor): void {
@@ -148,11 +173,11 @@ export class AssetRegistryService {
         logger.info(`Endpoints:`);
         logger.info(`  schema:     ${descriptor.endpoints.schema}`);
         logger.info(`  validate:   ${descriptor.endpoints.validate}`);
-        if (descriptor.endpoints.methodology) {
-            logger.info(`  methodology: ${descriptor.endpoints.methodology}`);
-        }
         if (descriptor.endpoints.examples) {
             logger.info(`  examples:   ${descriptor.endpoints.examples}`);
+        }
+        if (descriptor.endpoints.skills) {
+            logger.info(`  skills:     ${descriptor.endpoints.skills}`);
         }
     }
 }

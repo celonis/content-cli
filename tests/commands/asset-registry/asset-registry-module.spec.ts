@@ -2,6 +2,7 @@ import Module = require("../../../src/commands/asset-registry/module");
 import { Command, OptionValues } from "commander";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
+import { createMockConfigurator } from "../../utls/configurator-mock";
 
 jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
@@ -17,11 +18,11 @@ describe("Asset Registry Module", () => {
 
         mockService = {
             listTypes: jest.fn().mockResolvedValue(undefined),
+            listSkills: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
             validate: jest.fn().mockResolvedValue(undefined),
             getExamples: jest.fn().mockResolvedValue(undefined),
-            getMethodology: jest.fn().mockResolvedValue(undefined),
         } as any;
 
         (AssetRegistryService as jest.MockedClass<typeof AssetRegistryService>)
@@ -93,21 +94,56 @@ describe("Asset Registry Module", () => {
         expect(mockService.getExamples).toHaveBeenCalledWith("BOARD_V2", false);
     });
 
-    it("should call getMethodology with correct parameters", async () => {
-        const options: OptionValues = { assetType: "SEMANTIC_MODEL" };
-        await (module as any).getMethodology(testContext, mockCommand, options);
-        expect(mockService.getMethodology).toHaveBeenCalledWith("SEMANTIC_MODEL", false);
-    });
-
     it("should call listTypes", async () => {
         const options: OptionValues = { json: true };
         await (module as any).listTypes(testContext, mockCommand, options);
         expect(mockService.listTypes).toHaveBeenCalledWith(true);
     });
 
+    it("should call listSkills", async () => {
+        const options: OptionValues = { json: true };
+        await (module as any).listSkills(testContext, mockCommand, options);
+        expect(mockService.listSkills).toHaveBeenCalledWith(true);
+
+        jest.clearAllMocks();
+        const optionsNoJson: OptionValues = { json: "" };
+        await (module as any).listSkills(testContext, mockCommand, optionsNoJson);
+        expect(mockService.listSkills).toHaveBeenCalledWith(false);
+    });
+
     it("should call getType", async () => {
         const options: OptionValues = { assetType: "BOARD_V2", json: "" };
         await (module as any).getType(testContext, mockCommand, options);
         expect(mockService.getType).toHaveBeenCalledWith("BOARD_V2", false);
+    });
+
+    describe("register", () => {
+        it("registers all expected command groups without throwing", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            expect(() => new Module().register(testContext, mockConfigurator)).not.toThrow();
+
+            expect(mockConfigurator.command).toHaveBeenCalledWith("asset-registry");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("skills");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("list");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("get");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("schema");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("examples");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("validate");
+        });
+
+        it("wires an action handler for every leaf subcommand", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            new Module().register(testContext, mockConfigurator);
+
+            // Each leaf command terminates the fluent chain with .action(handler).
+            // Keep this count in sync when adding or removing commands in module.ts.
+            const expectedLeafCommands = 6;
+            expect(mockConfigurator.action).toHaveBeenCalledTimes(expectedLeafCommands);
+            for (const call of mockConfigurator.action.mock.calls) {
+                expect(typeof call[0]).toBe("function");
+            }
+        });
     });
 });

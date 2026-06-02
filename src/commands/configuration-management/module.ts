@@ -63,7 +63,11 @@ class Module extends IModule {
         configCommand.command("validate")
             .description("Validate package node configurations")
             .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
-            .option("--layers <layers...>", "Validation layers to run", ["SCHEMA"])
+            .option(
+                "--layers <layers...>",
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS (can be combined, e.g. --layers SCHEMA BUSINESS PACKAGE_SETTINGS). Defaults to SCHEMA.",
+                ["SCHEMA"]
+            )
             .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
             .option("--json", "Return the response as a JSON file")
             .action(this.validatePackage);
@@ -160,7 +164,8 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
             .requiredOption("--baseVersion <baseVersion>", "Base version of the node")
-            .requiredOption("--compareVersion <compareVersion>", "Compare version of the node")
+            .option("--compareVersion <compareVersion>", "Compare version of the node, mutually exclusive with --file (exactly one required)")
+            .option("-f, --file <file>", "Local node JSON file to diff against the base version, mutually exclusive with --compareVersion (exactly one required)")
             .option("--json", "Return the response as a JSON file")
             .action(this.diffNode);
 
@@ -308,7 +313,14 @@ class Module extends IModule {
     }
 
     private async diffNode(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new NodeDiffService(context).diff(options.packageKey, options.nodeKey, options.baseVersion, options.compareVersion, options.json);
+        if ((options.file && options.compareVersion) || (!options.file && !options.compareVersion)) {
+            throw new Error("Please provide either --compareVersion or --file, but not both.");
+        }
+        if (options.file) {
+            await new NodeDiffService(context).diffWithFile(options.packageKey, options.nodeKey, options.baseVersion, options.file, options.json);
+        } else {
+            await new NodeDiffService(context).diff(options.packageKey, options.nodeKey, options.baseVersion, options.compareVersion, options.json);
+        }
     }
 
     private async listNodeDependencies(context: Context, command: Command, options: OptionValues): Promise<void> {

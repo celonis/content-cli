@@ -1,18 +1,17 @@
 ---
 name: asset-registry-endpoints
 description: >-
-  Discover asset types, fetch schemas, examples, and methodology via
-  content-cli asset-registry commands. Also covers exporting/importing/creating
-  packages via config commands. Use when the user asks for a schema, wants to
-  validate an asset, needs methodology/best-practices, wants example
-  configurations for an asset type, or needs to export/import/list/create
-  packages.
+  Discover asset types, fetch schemas, and examples via content-cli
+  asset-registry commands. Also covers exporting/importing/creating packages
+  via config commands. Use when the user asks for a schema, wants to validate
+  an asset, wants example configurations for an asset type, or needs to
+  export/import/list/create packages.
 ---
 
 # Asset Registry Endpoint Caller
 
 Use `content-cli asset-registry` commands to discover asset types and fetch
-schemas, examples, and methodology for any registered asset type.
+schemas and examples for any registered asset type.
 
 ## Prerequisites
 
@@ -77,9 +76,15 @@ export_<uuid>/
 $CLI config import -d <export_dir> --validate --overwrite
 ```
 
-- `--validate` — performs schema validations before importing. If there are
-  validation errors the import is **not** performed and the errors are returned.
-  If there are no errors, the package and its assets are imported normally.
+- `--validate` — performs **SCHEMA-layer** validation on each node before
+  importing. If there are validation errors the import is **not** performed and
+  the errors are returned. If there are no errors, the package and its assets
+  are imported normally. To also run **BUSINESS-layer** rules (e.g. PQL
+  parsing, data-model availability, KPI uniqueness for Knowledge Models) and
+  **PACKAGE_SETTINGS** checks (dependencies, variables, and flavor-specific
+  package settings), run
+  `config validate --layers SCHEMA BUSINESS PACKAGE_SETTINGS` against the
+  imported staging version — see *Validating an imported package* below.
 - `--overwrite` — required when updating an existing package
 - Without `--overwrite` — creates a **new** package (use for first-time import)
 
@@ -216,7 +221,7 @@ info, and endpoint availability):
 $CLI asset-registry get --assetType <ASSET_TYPE> -p <profile>
 ```
 
-## Step 2 — Fetch schema, examples, or methodology
+## Step 2 — Fetch schema or examples
 
 Use these commands to get asset authoring resources directly. Each proxies
 through the platform to the owning asset service — no manual path construction
@@ -243,15 +248,6 @@ examples — a 404 means the endpoint is not available.
 
 ```bash
 $CLI asset-registry examples --assetType <ASSET_TYPE> -p <profile>
-```
-
-### Methodology (GET)
-
-Returns best-practices and methodology guidance. Not all asset types provide
-methodology — a 404 means the endpoint is not available.
-
-```bash
-$CLI asset-registry methodology --assetType <ASSET_TYPE> -p <profile>
 ```
 
 ### Validate
@@ -286,22 +282,57 @@ build-from-options flags.
 $CLI asset-registry validate --assetType <ASSET_TYPE> -f request.json -p <profile>
 ```
 
-You can also validate during import with `config import --validate`:
+You can also validate during import with `config import --validate` — this
+runs the SCHEMA layer only:
 
 ```bash
 $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 ```
 
-**Important**: If validation returns errors, do **not** proceed with the import.
-Instead, fix the schema violations in the node JSON and re-validate. If you
-cannot resolve the errors automatically, present the validation results to the
-user and ask whether they want to continue importing with invalid configuration
-or stop to fix it manually.
+### Validating an imported package
+
+To run **business-layer** rules and **package-settings** checks against the
+staging version of a package, use `config validate`:
+
+```bash
+$CLI config validate --packageKey <pkg> --layers SCHEMA BUSINESS PACKAGE_SETTINGS -p <profile>
+```
+
+To validate only package settings without asset business rules:
+
+```bash
+$CLI config validate --packageKey <pkg> --layers SCHEMA PACKAGE_SETTINGS -p <profile>
+```
+
+- `--layers SCHEMA BUSINESS PACKAGE_SETTINGS` runs all validation layers in a
+  single request. Supported values today are `SCHEMA`, `BUSINESS`, and
+  `PACKAGE_SETTINGS`.
+- `PACKAGE_SETTINGS` validates package dependencies, package variable
+  definitions, variable assignments such as Studio data models, and
+  flavor-specific package settings for Studio/OCDM packages.
+- `--nodeKeys <key1> <key2>` (optional) restricts validation to specific nodes.
+- `--json` writes the full structured report to a file in the current working
+  directory instead of printing to the console.
+
+The console output prints a summary plus one line per finding:
+
+```
+info:    Validation result: INVALID
+info:    Errors: 1 | Warnings: 0 | Info: 0
+info:
+info:      ERROR   my-kpi-model (SEMANTIC_MODEL) - Data Model should not be empty [dataModelId.empty]
+```
+
+**Important**: If validation returns errors, do **not** proceed with the
+import. Instead, fix the schema or business-rule violations in the node JSON
+and re-validate. If you cannot resolve the errors automatically, present the
+validation results to the user and ask whether they want to continue importing
+with invalid configuration or stop to fix it manually.
 
 ## Troubleshooting
 
-**404 on examples / methodology** — Not all asset services have deployed these
-endpoints. The schema endpoint is required for all registered types; the others
+**404 on examples** — Not all asset services have deployed the examples
+endpoint. The schema endpoint is required for all registered types; examples
 are optional.
 
 **500 on proxy endpoints** — The platform proxies requests to the owning asset
@@ -348,7 +379,8 @@ $CLI config import -d <export_dir> --validate --overwrite -p <profile>
 | `asset-registry validate --assetType X --packageKey P --configuration '{}'` | Validate a raw configuration before import |
 | `asset-registry validate --assetType X -f request.json` | Validate using a full ValidateRequest file (multi-node, etc.) |
 | `asset-registry examples --assetType X` | Get example configurations (if available) |
-| `asset-registry methodology --assetType X` | Get methodology / best-practices (if available) |
 | `config list` | List packages |
 | `config export --packageKeys X --unzip` | Export packages |
-| `config import -d <dir> --validate --overwrite` | Validate and import packages |
+| `config import -d <dir> --validate --overwrite` | Validate (SCHEMA only) and import packages |
+| `config validate --packageKey P --layers SCHEMA PACKAGE_SETTINGS` | Validate schema and package settings without running BUSINESS-layer rules |
+| `config validate --packageKey P --layers SCHEMA BUSINESS PACKAGE_SETTINGS` | Validate a package's staging version against the SCHEMA, BUSINESS, and/or PACKAGE_SETTINGS layers |

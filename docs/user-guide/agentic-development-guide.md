@@ -36,11 +36,10 @@ content-cli asset-registry schema --assetType BOARD_V2 --json
 
 The schema describes the valid structure of the asset's `configuration` field. This is the only part of the asset governed by the schema — everything else is platform metadata.
 
-You can also fetch examples and methodology when available:
+You can also fetch examples when available:
 
 ```bash
 content-cli asset-registry examples --assetType BOARD_V2 --json
-content-cli asset-registry methodology --assetType BOARD_V2 --json
 ```
 
 ### 3. Export the target package
@@ -82,10 +81,16 @@ content-cli asset-registry validate --assetType <ASSET_TYPE> \
   --packageKey <package-key> --configuration '{ ... }'
 ```
 
-Or validate during import with the `--validate` flag:
+Or validate during import with the `--validate` flag — note that this runs the `SCHEMA` layer only:
 
 ```bash
 content-cli config import -d <export_dir> --validate --overwrite
+```
+
+To also run business-layer rules (PQL parsing, data-model availability, KPI uniqueness, …) and package-settings checks (dependencies, variables, and flavor-specific package settings), run `config validate` against the just-imported staging version:
+
+```bash
+content-cli config validate --packageKey <package-key> --layers SCHEMA BUSINESS PACKAGE_SETTINGS
 ```
 
 If validation returns errors, fix the issues before importing.
@@ -106,7 +111,7 @@ content-cli config export --keysByVersion <packageKey>_<version> --unzip
 
 ## Troubleshooting
 
-**404 on examples / methodology** — Not all asset services have deployed these endpoints. The schema endpoint is required for all registered types; the others are optional.
+**404 on examples** — Not all asset services have deployed the examples endpoint. The schema endpoint is required for all registered types; examples are optional.
 
 **500 on proxy endpoints** — The platform proxies requests to the owning asset service. A 500 typically means the downstream service is unavailable or returned an unexpected response.
 

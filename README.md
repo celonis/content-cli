@@ -168,5 +168,5 @@ For details on command development, refer to the [How to Add a Command](https://
 
 Copyright (c) 2021 Celonis SE
 
-This project is licensed under the MIT License - 
+This project is licensed under the MIT License -
 see [LICENSE](https://github.com/celonis/content-cli/blob/main/LICENSE) file for details.

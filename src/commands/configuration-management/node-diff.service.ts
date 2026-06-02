@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../../core/utils/logger";
 import { fileService, FileService } from "../../core/utils/file-service";
@@ -27,23 +28,52 @@ export class NodeDiffService {
         });
 
         if (jsonResponse) {
-            const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(nodeDiff, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            this.exportDiffAsJson(nodeDiff);
         } else {
-            logger.info(`Package Key: ${nodeDiff.packageKey}`);
-            logger.info(`Node Key: ${nodeDiff.nodeKey}`);
-            logger.info(`Name: ${nodeDiff.name}`);
-            logger.info(`Type: ${nodeDiff.type}`);
-            logger.info(`Is invalid configuration: ${nodeDiff.invalidContent}`);
-            if (nodeDiff.parentNodeKey) {
-                logger.info(`Parent Node Key: ${nodeDiff.parentNodeKey}`);
-            }
-            logger.info(`Change Date: ${new Date(nodeDiff.changeDate).toISOString()}`);
-            logger.info(`Updated By: ${nodeDiff.updatedBy}`);
-            logger.info(`Change Type: ${nodeDiff.changeType}`);
-            logger.info(`Changes: ${JSON.stringify(nodeDiff.changes)}`);
-            logger.info(`Metadata Changes: ${JSON.stringify(nodeDiff.metadataChanges)}`);
+            this.logDiff(nodeDiff);
         }
+    }
+
+    public async diffWithFile(
+        packageKey: string,
+        nodeKey: string,
+        baseVersion: string,
+        file: string,
+        jsonResponse: boolean
+    ): Promise<void> {
+        const nodeDiff: NodeConfigurationDiffTransport = await this.nodeDiffApi.diffWithFile({
+            packageKey,
+            nodeKey,
+            baseVersion,
+            file: fs.createReadStream(file),
+        });
+
+        if (jsonResponse) {
+            this.exportDiffAsJson(nodeDiff);
+        } else {
+            this.logDiff(nodeDiff);
+        }
+    }
+
+    private exportDiffAsJson(nodeDiff: NodeConfigurationDiffTransport): void {
+        const filename = uuidv4() + ".json";
+        fileService.writeToFileWithGivenName(JSON.stringify(nodeDiff, null, 2), filename);
+        logger.info(FileService.fileDownloadedMessage + filename);
+    }
+
+    private logDiff(nodeDiff: NodeConfigurationDiffTransport): void {
+        logger.info(`Package Key: ${nodeDiff.packageKey}`);
+        logger.info(`Node Key: ${nodeDiff.nodeKey}`);
+        logger.info(`Name: ${nodeDiff.name}`);
+        logger.info(`Type: ${nodeDiff.type}`);
+        logger.info(`Is invalid configuration: ${nodeDiff.invalidContent}`);
+        if (nodeDiff.parentNodeKey) {
+            logger.info(`Parent Node Key: ${nodeDiff.parentNodeKey}`);
+        }
+        logger.info(`Change Date: ${new Date(nodeDiff.changeDate).toISOString()}`);
+        logger.info(`Updated By: ${nodeDiff.updatedBy}`);
+        logger.info(`Change Type: ${nodeDiff.changeType}`);
+        logger.info(`Changes: ${JSON.stringify(nodeDiff.changes)}`);
+        logger.info(`Metadata Changes: ${JSON.stringify(nodeDiff.metadataChanges)}`);
     }
 }
