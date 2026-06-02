@@ -871,6 +871,7 @@ describe("Configuration Management Module - Action Validations", () => {
             expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
                 "package.zip", true, "STAGING", undefined
             );
+        });
     });
 
     describe("diffNode validation", () => {
