@@ -82,4 +82,31 @@ describe("FileService", () => {
             expect(entries).not.toContain("fileSymlink.txt");
         });
     });
+
+    describe("zipDirectoryAsSinglePackage", () => {
+        test("Should throw error if sourceDir is a symlink", () => {
+            const targetDir = path.join(tempDir, "realPackageDir");
+            fs.mkdirSync(targetDir, 0o700);
+
+            const symlinkDir = path.join(tempDir, "symlinkPackageDir");
+            fs.symlinkSync(targetDir, symlinkDir, "dir");
+
+            expect(() => fileService.zipDirectoryAsSinglePackage(symlinkDir)).toThrow(FatalError);
+        });
+
+        test("Should create a flat zip preserving the single package structure", () => {
+            fs.writeFileSync(path.join(tempDir, "package.json"), JSON.stringify({ key: "pkg-1" }));
+            const nodesDir = path.join(tempDir, "nodes");
+            fs.mkdirSync(nodesDir, 0o700);
+            fs.writeFileSync(path.join(nodesDir, "node-1.json"), JSON.stringify({ key: "node-1" }));
+
+            const zipPath = fileService.zipDirectoryAsSinglePackage(tempDir);
+            const zip = new AdmZip(zipPath);
+            const entries = zip.getEntries().map(e => e.entryName);
+
+            expect(entries).toContain("package.json");
+            expect(entries).toContain("nodes/node-1.json");
+            expect(entries.some(name => name.endsWith(".zip"))).toBe(false);
+        });
+    });
 });

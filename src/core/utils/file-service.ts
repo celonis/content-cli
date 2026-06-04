@@ -90,6 +90,22 @@ export class FileService {
         return zipFilePath;
     }
 
+    public zipDirectoryAsSinglePackage(sourceDir: string): string {
+        if (fs.lstatSync(sourceDir).isSymbolicLink()) {
+            throw new FatalError("Source directory cannot be a symbolic link.");
+        }
+
+        const zip = new AdmZip();
+        zip.addLocalFolder(sourceDir);
+
+        const tempDir = path.join(os.tmpdir(), "content-cli-imports");
+        fs.mkdirSync(tempDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
+        const zipFilePath = path.join(tempDir, `single_package_${uuidv4()}.zip`);
+        zip.writeZip(zipFilePath, () => fs.chmodSync(zipFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
+
+        return zipFilePath;
+    }
+
 
     private getSerializedFileContent(data: any): string {
         return data;
