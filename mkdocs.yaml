@@ -13,6 +13,7 @@ nav:
       - Overview: './user-guide/index.md'
       - Studio Commands: './user-guide/studio-commands.md'
       - Config Commands: './user-guide/config-commands.md'
+      - T2TC Commands: './user-guide/t2tc-commands.md'
       - Deployment Commands: './user-guide/deployment-commands.md'
       - Asset Registry Commands: './user-guide/asset-registry-commands.md'
       - Data Pool Commands: './user-guide/data-pool-commands.md'

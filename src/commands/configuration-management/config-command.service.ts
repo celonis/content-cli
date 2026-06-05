@@ -39,6 +39,10 @@ export class ConfigCommandService {
         }
     }
 
+    public listStagingPackages(jsonResponse: boolean, flavors: string[]): Promise<void> {
+        return this.batchImportExportService.listStagingPackages(flavors ?? [], false, jsonResponse);
+    }
+
     public async listVariables(
         jsonResponse: boolean,
         keysByVersion: string[],

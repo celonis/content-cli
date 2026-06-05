@@ -36,6 +36,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
         mockConfigCommandService = {
             listPackages: jest.fn().mockResolvedValue(undefined),
+            listStagingPackages: jest.fn().mockResolvedValue(undefined),
             listVariables: jest.fn().mockResolvedValue(undefined),
             batchExportPackages: jest.fn().mockResolvedValue(undefined),
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
@@ -218,6 +219,38 @@ describe("Configuration Management Module - Action Validations", () => {
             await expect(
                 (module as any).listPackages(testContext, mockCommand, options)
             ).rejects.toThrow("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        });
+    });
+
+    describe("config package list handler", () => {
+        it("should list staging packages with json and flavors", async () => {
+            const options: OptionValues = {
+                json: true,
+                flavors: ["APP"],
+            };
+
+            await (module as any).listStagingPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.listStagingPackages).toHaveBeenCalledWith(true, ["APP"]);
+        });
+
+        it("should default json and flavors to undefined when not provided", async () => {
+            const options: OptionValues = {};
+
+            await (module as any).listStagingPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.listStagingPackages).toHaveBeenCalledWith(undefined, undefined);
+        });
+
+        it("should not pass legacy listPackages options", async () => {
+            const options: OptionValues = {
+                flavors: ["APP", "ANALYSIS"],
+            };
+
+            await (module as any).listStagingPackages(testContext, mockCommand, options);
+
+            expect(mockConfigCommandService.listStagingPackages).toHaveBeenCalledWith(undefined, ["APP", "ANALYSIS"]);
+            expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
         });
     });
 
@@ -773,6 +806,8 @@ describe("Configuration Management Module - Action Validations", () => {
             // Top-level groups attached to the root configurator
             expect(mockConfigurator.command).toHaveBeenCalledWith("config");
             expect(mockConfigurator.command).toHaveBeenCalledWith("list");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("t2tc");
+            expect(mockConfigurator.command).toHaveBeenCalledWith("package");
         });
 
         it("wires an action handler for every leaf subcommand", () => {
@@ -782,10 +817,24 @@ describe("Configuration Management Module - Action Validations", () => {
 
             // Each leaf command terminates the fluent chain with .action(handler).
             // Keep this count in sync when adding or removing commands in module.ts.
-            const expectedLeafCommands = 18;
+            const expectedLeafCommands = 24;
             expect(mockConfigurator.action).toHaveBeenCalledTimes(expectedLeafCommands);
             for (const call of mockConfigurator.action.mock.calls) {
                 expect(typeof call[0]).toBe("function");
+            }
+        });
+
+        it("marks the moved config commands as deprecated", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            new Module().register(testContext, mockConfigurator);
+
+            // config list/export/import/diff/validate are duplicated under t2tc package /
+            // config package and the originals carry a deprecation notice.
+            const expectedDeprecatedCommands = 5;
+            expect(mockConfigurator.deprecationNotice).toHaveBeenCalledTimes(expectedDeprecatedCommands);
+            for (const call of mockConfigurator.deprecationNotice.mock.calls) {
+                expect(typeof call[0]).toBe("string");
             }
         });
     });
