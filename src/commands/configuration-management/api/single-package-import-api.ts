@@ -5,7 +5,7 @@ import { SinglePackageImportResult } from "../interfaces/single-package-import.i
 
 export class SinglePackageImportApi {
 
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

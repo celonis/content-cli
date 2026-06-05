@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
 import * as FormData from "form-data";
-import { Readable } from "stream";
+import { Readable } from "node:stream";
 import * as AdmZip from "adm-zip";
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
@@ -13,7 +13,7 @@ export class SinglePackageImportService {
 
     private static readonly MAX_UNCOMPRESSED_ZIP_SIZE = 4 * 1024 * 1024 * 1024;
 
-    private singlePackageImportApi: SinglePackageImportApi;
+    private readonly singlePackageImportApi: SinglePackageImportApi;
 
     constructor(context: Context) {
         this.singlePackageImportApi = new SinglePackageImportApi(context);

@@ -1,7 +1,12 @@
 import * as path from "path";
-import * as fs from "fs";
+import * as fs from "node:fs";
 import AdmZip = require("adm-zip");
 import { mockCreateReadStream, mockExistsSync, mockReadFileSync } from "../../utls/fs-mock-utils";
+
+// The service imports `node:fs`; the global jest.mock("fs") in jest.setup only
+// covers the bare "fs" specifier, so mock the prefixed module explicitly to
+// intercept the temp-file cleanup (fs.rmSync).
+jest.mock("node:fs");
 
 jest.mock("adm-zip", () => {
     const realAdmZip = jest.requireActual("adm-zip");
