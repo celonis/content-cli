@@ -15,9 +15,9 @@ The `config` command group manages a package and its resources — importing a s
 - **Team-to-Team Copy (batch) commands** — bulk multi-package transport, now under [`t2tc package`](./t2tc-commands.md):
     - [`t2tc package list`](./t2tc-commands.md#list-packages), [`t2tc package export`](./t2tc-commands.md#export-packages), [`t2tc package import`](./t2tc-commands.md#import-packages), [`t2tc package diff`](./t2tc-commands.md#diff-local-zip-with-deployed-versionspecific-versionstaging)
 
-## Package vs. batch archive format
+## Package vs. batch artifact format
 
-`config package import` works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The Team-to-Team Copy commands instead use a multi-package **batch archive** (a top-level `manifest.json`, `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package). The two formats are **not interchangeable**:
+`config package import` works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The Team-to-Team Copy commands instead use a multi-package **batch artifact** (a top-level `manifest.json`, `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package). The two formats are **not interchangeable**:
 
 - An archive from `t2tc package export` can be imported with `t2tc package import` or inspected with `t2tc package diff` — but **not** with `config package import`.
 - A package zip used by `config package import` **cannot** be imported with `t2tc package import` or diffed with `t2tc package diff`.
@@ -90,17 +90,17 @@ content-cli config package list -p <sourceProfile> --flavors STUDIO
 > | `config import` | [`t2tc package import`](./t2tc-commands.md#import-packages) |
 > | `config diff` | [`t2tc package diff`](./t2tc-commands.md#diff-local-zip-with-deployed-versionspecific-versionstaging) |
 >
-> The flags and behaviour are unchanged — only the command path moved. The old commands still work but print a deprecation notice. See [T2TC Commands](./t2tc-commands.md) for the full reference (batch archive format, Git integration, validation during import, and more). To import a **single** package from a package zip, use [`config package import`](#package-commands-config-package).
+> The flags and behaviour are unchanged — only the command path moved. The old commands still work but print a deprecation notice. See [T2TC Commands](./t2tc-commands.md) for the full reference (batch artifact format, Git integration, validation during import, and more). To import a **single** package from a package zip, use [`config package import`](#package-commands-config-package).
 
 ## Package Commands (`config package`)
 
-The `config package` command group works with a package and its contents. It uses the plain package format described below, which is not interchangeable with the batch archive used by the Team-to-Team Copy commands (see [Package vs. batch archive format](#package-vs-batch-archive-format)).
+The `config package` command group works with a package and its contents. It uses the plain package format described below, which is not interchangeable with the batch artifact used by the Team-to-Team Copy commands (see [Package vs. batch artifact format](#package-vs-batch-artifact-format)).
 
 ### Import a Package
 
-`config package import` imports a package from a package zip (or directory). Unlike [`t2tc package import`](./t2tc-commands.md#import-packages) — which performs a **batch** import and expects the multi-package batch archive (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
+`config package import` imports a package from a package zip (or directory). Unlike [`t2tc package import`](./t2tc-commands.md#import-packages) — which performs a **batch** import and expects the multi-package batch artifact (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
 
-> A zip produced by `t2tc package export` is a **batch archive** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `t2tc package import`. Use the command that matches how the artifact was produced.
+> A zip produced by `t2tc package export` is a **batch artifact** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `t2tc package import`. Use the command that matches how the artifact was produced.
 
 ```bash
 content-cli config package import -p <sourceProfile> -f <package zip file path>
@@ -132,7 +132,7 @@ package/
 - `package.json` is the **source of truth for variable declarations**. Every assignment in `variables.json` must reference a variable declared in `package.json`, otherwise the import is rejected.
 - `variables.json` is optional. If you do not want to import variable assignments, simply omit the file.
 
-This is intentionally different from the batch archive: there is no `manifest.json`, no `studio.json`, and no nested per-package zips — just the one package's files at the top level.
+This is intentionally different from the batch artifact: there is no `manifest.json`, no `studio.json`, and no nested per-package zips — just the one package's files at the top level.
 
 #### Overwriting an Existing Package
 
@@ -142,7 +142,7 @@ By default the import fails if a package with the same key already exists. Use `
 content-cli config package import -p <sourceProfile> -f <file path> --overwrite
 ```
 
-When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are pruned, keeping declarations and assignments consistent.
+When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are ignored, keeping declarations and assignments consistent.
 
 #### Output
 
