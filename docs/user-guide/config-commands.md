@@ -15,7 +15,7 @@ The batch commands are **batch-specific**: they use their own archive format tha
 
 ## Two command families
 
-The batch commands are a **self-contained, batch-specific set**. `config export` produces a multi-package **batch archive** — a top-level `manifest.json`, `variables.json`, `studio.json`, and one nested `<packageKey>_<version>.zip` per package — that is produced and consumed **only** by other batch commands. `config package import`, by contrast, works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The two formats are **not interchangeable**:
+The batch commands are a **self-contained, batch-specific set**. `config export` produces a multi-package **batch artifact** — a top-level `manifest.json`, `variables.json`, `studio.json`, and one nested `<packageKey>_<version>.zip` per package — that is produced and consumed **only** by other batch commands. `config package import`, by contrast, works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The two formats are **not interchangeable**:
 
 - An archive from `config export` can be imported with `config import` or inspected with `config diff` — but **not** with `config package import`.
 - A package zip used by `config package import` **cannot** be imported with `config import` or diffed with `config diff`.
@@ -105,7 +105,7 @@ content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN
 
 ## Batch Export Packages
 
-> **Batch command.** Part of the [batch family](#two-command-families). It produces a multi-package **batch archive** that can only be re-imported with [`config import`](#batch-import-packages) or inspected with [`config diff`](#diff-local-zip-with-deployed-versionspecific-versionstaging) — **not** with `config package import`. To work with one package, use [`config package import`](#package-commands-config-package).
+> **Batch command.** Part of the [batch family](#two-command-families). It produces a multi-package **batch artifact** that can only be re-imported with [`config import`](#batch-import-packages) or inspected with [`config diff`](#diff-local-zip-with-deployed-versionspecific-versionstaging) — **not** with `config package import`. To work with one package, use [`config package import`](#package-commands-config-package).
 
 Packages can be exported using the following command:
 
@@ -161,7 +161,7 @@ Inside the nodes directory, a file for each node will be present:
 
 ## Batch Import Packages
 
-> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch archive** produced by [`config export`](#batch-export-packages). To import one package from a package zip, use [`config package import`](#package-commands-config-package) instead.
+> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch artifact** produced by [`config export`](#batch-export-packages). To import one package from a package zip, use [`config package import`](#package-commands-config-package) instead.
 
 Packages can be imported using the following commands, if importing from a zip file:
 
@@ -215,13 +215,13 @@ content-cli config import -p <sourceProfile> -d <export_dir> --validate --overwr
 
 ## Package Commands (`config package`)
 
-The `config package` command group works with a package and its contents. It is **not** part of the batch-specific set — it uses the plain package format described below, which is not interchangeable with the batch archive (see [Two command families](#two-command-families)).
+The `config package` command group works with a package and its contents. It is **not** part of the batch-specific set — it uses the plain package format described below, which is not interchangeable with the batch artifact (see [Two command families](#two-command-families)).
 
 ### Import a Package
 
-`config package import` imports a package from a package zip (or directory). Unlike [`config import`](#batch-import-packages) — which performs a **batch** import and expects the multi-package batch archive (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
+`config package import` imports a package from a package zip (or directory). Unlike [`config import`](#batch-import-packages) — which performs a **batch** import and expects the multi-package batch artifact (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
 
-> A zip produced by `config export` is a **batch archive** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `config import`. Use the command that matches how the artifact was produced.
+> A zip produced by `config export` is a **batch artifact** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `config import`. Use the command that matches how the artifact was produced.
 
 ```bash
 content-cli config package import -p <sourceProfile> -f <package zip file path>
@@ -253,7 +253,7 @@ package/
 - `package.json` is the **source of truth for variable declarations**. Every assignment in `variables.json` must reference a variable declared in `package.json`, otherwise the import is rejected.
 - `variables.json` is optional. If you do not want to import variable assignments, simply omit the file.
 
-This is intentionally different from the batch archive: there is no `manifest.json`, no `studio.json`, and no nested per-package zips — just the one package's files at the top level.
+This is intentionally different from the batch artifact: there is no `manifest.json`, no `studio.json`, and no nested per-package zips — just the one package's files at the top level.
 
 #### Overwriting an Existing Package
 
@@ -263,7 +263,7 @@ By default the import fails if a package with the same key already exists. Use `
 content-cli config package import -p <sourceProfile> -f <file path> --overwrite
 ```
 
-When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are pruned, keeping declarations and assignments consistent.
+When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are ignored, keeping declarations and assignments consistent.
 
 #### Output
 
@@ -943,7 +943,7 @@ content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <
 
 ## Diff local zip with deployed version/specific version/staging
 
-> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch archive** produced by [`config export`](#batch-export-packages); a package zip is not supported here.
+> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch artifact** produced by [`config export`](#batch-export-packages); a package zip is not supported here.
 
 To compare local zipped packages with online packages use:
 ```bash

@@ -63,7 +63,7 @@ class Module extends IModule {
             .action(this.batchImportPackages);
 
         const packageCommand = configCommand.command("package")
-            .description("Commands for working with a package.");
+            .description("Commands for working with a single package.");
 
         packageCommand.command("import")
             .description("Import a package from a zip file or directory. Uses the package format, which is not interchangeable with the batch 'config export' / 'config import' archive.")
