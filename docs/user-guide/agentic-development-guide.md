@@ -45,7 +45,7 @@ content-cli asset-registry examples --assetType BOARD_V2 --json
 ### 3. Export the target package
 
 ```bash
-content-cli t2tc package export --packageKeys <package-key> --unzip
+content-cli config export --packageKeys <package-key> --unzip
 ```
 
 This gives you the directory structure with `package.json`, `manifest.json`, and existing node JSONs to use as reference.
@@ -84,7 +84,7 @@ content-cli asset-registry validate --assetType <ASSET_TYPE> \
 Or validate during import with the `--validate` flag — note that this runs the `SCHEMA` layer only:
 
 ```bash
-content-cli t2tc package import -d <export_dir> --validate --overwrite
+content-cli config import -d <export_dir> --validate --overwrite
 ```
 
 To also run business-layer rules (PQL parsing, data-model availability, KPI uniqueness, …) and package-settings checks (dependencies, variables, and flavor-specific package settings), run `config package validate` against the just-imported staging version:
@@ -98,7 +98,7 @@ If validation returns errors, fix the issues before importing.
 ### 6. Import
 
 ```bash
-content-cli t2tc package import -d <export_dir> --overwrite
+content-cli config import -d <export_dir> --overwrite
 ```
 
 This creates a new version in staging (not deployed). To create a brand-new package instead of updating, omit `--overwrite`.
@@ -106,7 +106,7 @@ This creates a new version in staging (not deployed). To create a brand-new pack
 To later export a staging version, use `--keysByVersion`:
 
 ```bash
-content-cli t2tc package export --keysByVersion <packageKey>_<version> --unzip
+content-cli config export --keysByVersion <packageKey>_<version> --unzip
 ```
 
 ## Troubleshooting
