@@ -1,7 +1,7 @@
 import * as path from "path";
 import { PacmanApiUtils } from "../../utls/pacman-api.utils";
 import { mockAxiosGet } from "../../utls/http-requests-mock";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import {
@@ -33,7 +33,7 @@ describe("Config list", () => {
 
             mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
-            await new ConfigCommandService(testContext).listPackages(false, flavorsArray, false, [], undefined, null, null, false, false);
+            await new T2tcCommandService(testContext).listPackages(false, flavorsArray, false, [], undefined, null, null, false, false);
 
             expect(loggingTestTransport.logMessages.length).toBe(2);
             expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -50,7 +50,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false&includeBranches=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new ConfigCommandService(testContext).listPackages(true, [], false, [], undefined, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(true, [], false, [], undefined, null, null, false, false);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -96,7 +96,7 @@ describe("Config list", () => {
         };
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/compute-pools/data-models/details", [dataModelDetailResponse]);
 
-        await new ConfigCommandService(testContext).listPackages(true, [], true, [], undefined, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(true, [], true, [], undefined, null, null, false, false);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -121,7 +121,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-keys?packageKeys=key-1&packageKeys=key-2&withDependencies=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new ConfigCommandService(testContext).listPackages(true, [], false, [firstPackage.key, secondPackage.key], undefined, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(true, [], false, [firstPackage.key, secondPackage.key], undefined, null, null, false, false);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -167,7 +167,7 @@ describe("Config list", () => {
         };
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/compute-pools/data-models/details", [dataModelDetailResponse]);
 
-        await new ConfigCommandService(testContext).listPackages(true, [], true, [firstPackage.key, secondPackage.key], undefined, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(true, [], true, [firstPackage.key, secondPackage.key], undefined, null, null, false, false);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -191,7 +191,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-variable-value?variableValue=1&includeBranches=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
 
-        await new ConfigCommandService(testContext).listPackages(false, [], false, [], undefined, "1", null, false, false);
+        await new T2tcCommandService(testContext).listPackages(false, [], false, [], undefined, "1", null, false, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -205,7 +205,7 @@ describe("Config list", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-by-variable-value?variableValue=1&includeBranches=false", [{...firstPackage}, {...secondPackage}]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
 
-        await new ConfigCommandService(testContext).listPackages(true, [], false, [], undefined, "1", null, false, false);
+        await new T2tcCommandService(testContext).listPackages(true, [], false, [], undefined, "1", null, false, false);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -225,7 +225,7 @@ describe("Config list", () => {
             [firstPackage, secondPackage]
         );
 
-        await new ConfigCommandService(testContext).listPackages(false, [], false, undefined, keysByVersion, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(false, [], false, undefined, keysByVersion, null, null, false, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -242,7 +242,7 @@ describe("Config list", () => {
             [firstPackage, secondPackage]
         );
 
-        await new ConfigCommandService(testContext).listPackages(false, [], true, undefined, keysByVersion, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(false, [], true, undefined, keysByVersion, null, null, false, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
     })
@@ -260,7 +260,7 @@ describe("Config list", () => {
         );
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioPackage]);
 
-        await new ConfigCommandService(testContext).listPackages(true, [], false, [], keysByVersion, null, null, false, false);
+        await new T2tcCommandService(testContext).listPackages(true, [], false, [], keysByVersion, null, null, false, false);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -286,7 +286,7 @@ describe("Config list", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
-        await new ConfigCommandService(testContext).listPackages(false, ["STUDIO"], false, [], undefined, null, null, false, true);
+        await new T2tcCommandService(testContext).listPackages(false, ["STUDIO"], false, [], undefined, null, null, false, true);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -302,7 +302,7 @@ describe("Config list", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
-        await new ConfigCommandService(testContext).listPackages(false, null, false, [], undefined, null, null, false, true);
+        await new T2tcCommandService(testContext).listPackages(false, null, false, [], undefined, null, null, false, true);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${firstPackage.name} - Key: "${firstPackage.key}"`);
@@ -319,7 +319,7 @@ describe("Config list", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?" + urlParams.toString(), [firstPackage, secondPackage]);
 
-        await new ConfigCommandService(testContext).listPackages(true, ["STUDIO"], false, [], undefined, null, null, false, true);
+        await new T2tcCommandService(testContext).listPackages(true, ["STUDIO"], false, [], undefined, null, null, false, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 

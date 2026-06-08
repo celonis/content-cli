@@ -9,7 +9,7 @@ import {
     PackageDiffTransport,
 } from "../../../src/commands/configuration-management/interfaces/diff-package.interfaces";
 import { mockAxiosPost } from "../../utls/http-requests-mock";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
@@ -81,7 +81,7 @@ describe("Config diff", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
 
-        await new ConfigCommandService(testContext).diffPackages("./packages.zip", true, null, false);
+        await new T2tcCommandService(testContext).diffPackages("./packages.zip", true, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -92,7 +92,7 @@ describe("Config diff", () => {
     it("Should show diff on terminal with hasChanges set to false and jsonResponse false", async () => {
         const diffResponse = mockZipDiff("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration");
 
-        await new ConfigCommandService(testContext).diffPackages("./packages.zip", false, null, false);
+        await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -103,7 +103,7 @@ describe("Config diff", () => {
     it("Should compare with specified version", async () => {
         const diffResponse = mockZipDiff("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration?baseVersion=1.0.0");
 
-        await new ConfigCommandService(testContext).diffPackages("./packages.zip", false, "1.0.0", false);
+        await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, "1.0.0", false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -114,7 +114,7 @@ describe("Config diff", () => {
     it("Should generate a json file with diff info when hasChanges is set to false and jsonResponse is set to true", async () => {
         const diffResponse = mockZipDiff("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration");
 
-        await new ConfigCommandService(testContext).diffPackages("./packages.zip", false, null, true);
+        await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, null, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
@@ -145,7 +145,7 @@ describe("Config diff", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
 
-        await new ConfigCommandService(testContext).diffPackages("./packages.zip", true, null, true);
+        await new T2tcCommandService(testContext).diffPackages("./packages.zip", true, null, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 

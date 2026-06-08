@@ -6,13 +6,13 @@ import {
     PackageExportTransport, PackageKeyAndVersionPair,
     StudioPackageManifest, VariableExportTransport,
     VariableManifestTransport,
-} from "./interfaces/package-export.interfaces";
+} from "../configuration-management/interfaces/package-export.interfaces";
 import {
     ContentNodeTransport,
     PackageManagerVariableType,
     PackageWithVariableAssignments, StudioComputeNodeDescriptor,
 } from "../studio/interfaces/package-manager.interfaces";
-import { BatchExportImportConstants } from "./interfaces/batch-export-import.constants";
+import { BatchExportImportConstants } from "./batch-export-import.constants";
 import { SpaceTransport } from "../studio/interfaces/space.interface";
 import { parse, stringify } from "../../core/utils/json";
 import { Context } from "../../core/command/cli-context";
@@ -58,19 +58,6 @@ export class StudioService {
         }
 
         return packagesToExport;
-    }
-
-    public fixConnectionVariables(variables: VariableManifestTransport[]): VariableManifestTransport[] {
-        return variables.map(variableManifest => ({
-            ...variableManifest,
-            variables: variableManifest.variables.map(variable => {
-                if (variable.type !== PackageManagerVariableType.CONNECTION) {
-                    return variable;
-                }
-
-                return this.fixConnectionVariable(variable);
-            })
-        }));
     }
 
     public async getStudioPackageManifests(studioPackageKeys: string[]): Promise<StudioPackageManifest[]> {
@@ -140,20 +127,6 @@ export class StudioService {
                             }))
             } : pkg;
         });
-    }
-
-    private fixConnectionVariable(variable: VariableExportTransport): VariableExportTransport {
-        if (!variable.value?.appName) {
-            return variable;
-        }
-
-        return {
-            ...variable,
-            metadata: {
-                ...variable.metadata,
-                appName: variable.value.appName
-            }
-        }
     }
 
     private deleteScenarioAssets(packageZip: AdmZip): void {

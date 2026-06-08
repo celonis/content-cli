@@ -1,6 +1,9 @@
 import Module = require("../../../src/commands/configuration-management/module");
 import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { StagingPackageService } from "../../../src/commands/configuration-management/staging-package.service";
+import { MetadataService } from "../../../src/commands/configuration-management/metadata.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
 import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
@@ -9,6 +12,9 @@ import { testContext } from "../../utls/test-context";
 import { createMockConfigurator } from "../../utls/configurator-mock";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
+jest.mock("../../../src/commands/configuration-management/staging-package.service");
+jest.mock("../../../src/commands/configuration-management/metadata.service");
+jest.mock("../../../src/commands/t2tc/t2tc-command.service");
 jest.mock("../../../src/commands/configuration-management/node-dependency.service");
 jest.mock("../../../src/commands/configuration-management/node-diff.service");
 jest.mock("../../../src/commands/configuration-management/package-version-command.service");
@@ -25,6 +31,9 @@ describe("Configuration Management Module - Action Validations", () => {
     let module: Module;
     let mockCommand: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
+    let mockStagingPackageService: jest.Mocked<StagingPackageService>;
+    let mockMetadataService: jest.Mocked<MetadataService>;
+    let mockT2tcCommandService: jest.Mocked<T2tcCommandService>;
     let mockNodeDependencyService: jest.Mocked<NodeDependencyService>;
     let mockNodeDiffService: jest.Mocked<NodeDiffService>;
     let mockSinglePackageImportService: jest.Mocked<SinglePackageImportService>;
@@ -35,9 +44,19 @@ describe("Configuration Management Module - Action Validations", () => {
         mockCommand = {} as Command;
 
         mockConfigCommandService = {
-            listPackages: jest.fn().mockResolvedValue(undefined),
-            listStagingPackages: jest.fn().mockResolvedValue(undefined),
             listVariables: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
+        mockStagingPackageService = {
+            listStagingPackages: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
+        mockMetadataService = {
+            exportPackagesMetadata: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
+        mockT2tcCommandService = {
+            listPackages: jest.fn().mockResolvedValue(undefined),
             batchExportPackages: jest.fn().mockResolvedValue(undefined),
             batchImportPackages: jest.fn().mockResolvedValue(undefined),
             diffPackages: jest.fn().mockResolvedValue(undefined),
@@ -57,6 +76,9 @@ describe("Configuration Management Module - Action Validations", () => {
         } as any;
 
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
+        (StagingPackageService as jest.MockedClass<typeof StagingPackageService>).mockImplementation(() => mockStagingPackageService);
+        (MetadataService as jest.MockedClass<typeof MetadataService>).mockImplementation(() => mockMetadataService);
+        (T2tcCommandService as jest.MockedClass<typeof T2tcCommandService>).mockImplementation(() => mockT2tcCommandService);
         (NodeDependencyService as jest.MockedClass<typeof NodeDependencyService>).mockImplementation(() => mockNodeDependencyService);
         (NodeDiffService as jest.MockedClass<typeof NodeDiffService>).mockImplementation(() => mockNodeDiffService);
         (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
@@ -74,7 +96,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).listPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
+                expect(mockT2tcCommandService.listPackages).not.toHaveBeenCalled();
             });
 
             it("should pass validation when only packageKeys is provided", async () => {
@@ -85,7 +107,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).listPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.listPackages).toHaveBeenCalledWith(
                     true,
                     undefined,
                     undefined,
@@ -106,7 +128,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).listPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.listPackages).toHaveBeenCalledWith(
                     true,
                     undefined,
                     undefined,
@@ -128,7 +150,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).listPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.listPackages).toHaveBeenCalledWith(
                     true,
                     undefined,
                     undefined,
@@ -153,7 +175,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).listPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.listPackages).toHaveBeenCalledWith(
+            expect(mockT2tcCommandService.listPackages).toHaveBeenCalledWith(
                 true,
                 undefined,
                 undefined,
@@ -231,15 +253,15 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).listStagingPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.listStagingPackages).toHaveBeenCalledWith(true, ["APP"]);
+            expect(mockStagingPackageService.listStagingPackages).toHaveBeenCalledWith(["APP"], false, true);
         });
 
-        it("should default json and flavors to undefined when not provided", async () => {
+        it("should default flavors to an empty list and json to undefined when not provided", async () => {
             const options: OptionValues = {};
 
             await (module as any).listStagingPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.listStagingPackages).toHaveBeenCalledWith(undefined, undefined);
+            expect(mockStagingPackageService.listStagingPackages).toHaveBeenCalledWith([], false, undefined);
         });
 
         it("should not pass legacy listPackages options", async () => {
@@ -249,8 +271,8 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).listStagingPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.listStagingPackages).toHaveBeenCalledWith(undefined, ["APP", "ANALYSIS"]);
-            expect(mockConfigCommandService.listPackages).not.toHaveBeenCalled();
+            expect(mockStagingPackageService.listStagingPackages).toHaveBeenCalledWith(["APP", "ANALYSIS"], false, undefined);
+            expect(mockT2tcCommandService.listPackages).not.toHaveBeenCalled();
         });
     });
 
@@ -266,7 +288,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
+                expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
             it("should throw error when neither packageKeys nor keysByVersion are provided", async () => {
@@ -276,7 +298,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
+                expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
             it("should pass validation when only packageKeys is provided", async () => {
@@ -286,7 +308,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1", "package2"],
                     undefined,
                     false,
@@ -302,7 +324,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     undefined,
                     ["package3:v1", "package4:v2"],
                     false,
@@ -323,7 +345,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
 
-                expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
+                expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
 
             it("should pass validation when gitProfile provided with gitBranch option", async () => {
@@ -335,7 +357,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
                     false,
@@ -352,7 +374,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
                     false,
@@ -368,7 +390,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalled();
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalled();
             });
         });
 
@@ -380,7 +402,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
                     false,
@@ -397,7 +419,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
                     true,
@@ -414,7 +436,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchExportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchExportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
                     ["package1"],
                     undefined,
                     false,
@@ -436,7 +458,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchExportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please provide either --packageKeys or --keysByVersion, but not both.");
 
-                expect(mockConfigCommandService.batchExportPackages).not.toHaveBeenCalled();
+                expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
             });
         });
     });
@@ -453,7 +475,7 @@ describe("Configuration Management Module - Action Validations", () => {
                     (module as any).batchImportPackages(testContext, mockCommand, options)
                 ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
 
-                expect(mockConfigCommandService.batchImportPackages).not.toHaveBeenCalled();
+                expect(mockT2tcCommandService.batchImportPackages).not.toHaveBeenCalled();
             });
 
             it("should pass validation when gitProfile is provided with gitBranch option", async () => {
@@ -465,7 +487,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
                     undefined,
                     undefined,
@@ -482,7 +504,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     undefined,
                     "./exported",
                     undefined,
@@ -498,7 +520,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
                     undefined,
                     undefined,
@@ -516,7 +538,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "my-export.zip",
                     undefined,
                     undefined,
@@ -532,7 +554,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     undefined,
                     "./my-exports",
                     undefined,
@@ -549,7 +571,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     "export.zip",
                     undefined,
                     true,
@@ -567,7 +589,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
                 await (module as any).batchImportPackages(testContext, mockCommand, options);
 
-                expect(mockConfigCommandService.batchImportPackages).toHaveBeenCalledWith(
+                expect(mockT2tcCommandService.batchImportPackages).toHaveBeenCalledWith(
                     undefined,
                     "./exports",
                     true,
@@ -803,10 +825,10 @@ describe("Configuration Management Module - Action Validations", () => {
 
             expect(() => new Module().register(testContext, mockConfigurator)).not.toThrow();
 
-            // Top-level groups attached to the root configurator
+            // Top-level groups attached to the root configurator. The 't2tc' group
+            // lives in its own module (tests/commands/t2tc/module.spec.ts).
             expect(mockConfigurator.command).toHaveBeenCalledWith("config");
             expect(mockConfigurator.command).toHaveBeenCalledWith("list");
-            expect(mockConfigurator.command).toHaveBeenCalledWith("t2tc");
             expect(mockConfigurator.command).toHaveBeenCalledWith("package");
         });
 
@@ -817,7 +839,8 @@ describe("Configuration Management Module - Action Validations", () => {
 
             // Each leaf command terminates the fluent chain with .action(handler).
             // Keep this count in sync when adding or removing commands in module.ts.
-            const expectedLeafCommands = 24;
+            // The 4 't2tc package' leaf commands moved to their own module.
+            const expectedLeafCommands = 20;
             expect(mockConfigurator.action).toHaveBeenCalledTimes(expectedLeafCommands);
             for (const call of mockConfigurator.action.mock.calls) {
                 expect(typeof call[0]).toBe("function");
@@ -921,7 +944,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).diffPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+            expect(mockT2tcCommandService.diffPackages).toHaveBeenCalledWith(
                 "package.zip", undefined, undefined, undefined
             );
         });
@@ -934,7 +957,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).diffPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+            expect(mockT2tcCommandService.diffPackages).toHaveBeenCalledWith(
                 "package.zip", undefined, undefined, true
             );
         });
@@ -947,7 +970,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).diffPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+            expect(mockT2tcCommandService.diffPackages).toHaveBeenCalledWith(
                 "package.zip", true, undefined, undefined
             );
         });
@@ -960,7 +983,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).diffPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+            expect(mockT2tcCommandService.diffPackages).toHaveBeenCalledWith(
                 "package.zip", undefined, "1.0.0", undefined
             );
         });
@@ -974,7 +997,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             await (module as any).diffPackages(testContext, mockCommand, options);
 
-            expect(mockConfigCommandService.diffPackages).toHaveBeenCalledWith(
+            expect(mockT2tcCommandService.diffPackages).toHaveBeenCalledWith(
                 "package.zip", true, "STAGING", undefined
             );
         });
