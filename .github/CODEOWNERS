@@ -5,6 +5,8 @@
 /src/core                                         @celonis/studio-platform
 /src/commands/configuration-management/           @celonis/astro
 /tests/commands/configuration-management/         @celonis/astro
+/src/commands/t2tc/                               @celonis/studio-platform
+/tests/commands/t2tc/                             @celonis/studio-platform
 /src/commands/profile/                            @celonis/studio-platform
 /src/commands/asset-registry/                     @celonis/astro
 /tests/commands/asset-registry/                   @celonis/astro

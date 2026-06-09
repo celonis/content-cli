@@ -5,7 +5,7 @@ import {v4 as uuidv4} from "uuid";
 import { logger } from "../../core/utils/logger";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { Context } from "../../core/command/cli-context";
-import { PackageDiffMetadata, PackageDiffTransport } from "./interfaces/diff-package.interfaces";
+import { PackageDiffMetadata, PackageDiffTransport } from "../configuration-management/interfaces/diff-package.interfaces";
 import { DiffApi } from "./api/diff-api";
 
 export class DiffService {

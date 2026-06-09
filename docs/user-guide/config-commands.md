@@ -1,40 +1,32 @@
 # Configuration Management Commands
 
-The `config` command group manages package configurations. Most of its commands work with a package and its resources — importing a package, working with nodes, versions, or variables, and validating configurations. Separately, it includes a set of **batch commands** built for specific bulk use-cases, such as moving many packages at once between teams and realms.
+The `config` command group manages a package and its resources — importing a single package, working with nodes, versions, or variables, reading metadata, and validating configurations.
 
-The batch commands are **batch-specific**: they use their own archive format that only the batch commands understand, so their artifacts are **not interchangeable** with the package commands (see [Two command families](#two-command-families)).
+> **Bulk Team-to-Team Copy commands have moved.** `config list`, `config export`, `config import`, and `config diff` are **deprecated** and now live under the [`t2tc package`](./t2tc-commands.md) command group. `config validate` is deprecated too and has moved to [`config package validate`](#validate-package-configurations-config-package-validate). The deprecated commands still work for now but print a deprecation notice — switch to the new commands at your earliest convenience.
 
-- **Package commands** — work with a package and its resources:
-    - [`config package import`](#package-commands-config-package) — import a package
+- **Package & resource commands** — work with a package and its contents:
+    - [`config package import`](#package-commands-config-package) — import a single package
+    - [`config package validate`](#validate-package-configurations-config-package-validate) — validate a package's staging version
+    - [`config package list`](#list-packages-config-package-list) — list packages (staging by default)
     - [`config nodes …`](#finding-nodes) — work with individual nodes
     - [`config versions …`](#package-version) — read and create package versions
     - [`config variables list`](#listing--mapping-variables) — read package variables
-    - [`config validate`](#validate-package-configurations) — validate a package's staging version
-- **Batch commands** — bulk multi-package transport for specific use-cases:
-    - [`config list`](#list-packages), [`config export`](#batch-export-packages), [`config import`](#batch-import-packages), [`config diff`](#diff-local-zip-with-deployed-versionspecific-versionstaging), [`config metadata export`](#batch-export-packages)
+    - `config metadata export` — check whether packages have unpublished changes
+- **Team-to-Team Copy (batch) commands** — bulk multi-package transport, now under [`t2tc package`](./t2tc-commands.md):
+    - [`t2tc package list`](./t2tc-commands.md#list-packages), [`t2tc package export`](./t2tc-commands.md#export-packages), [`t2tc package import`](./t2tc-commands.md#import-packages), [`t2tc package diff`](./t2tc-commands.md#diff-local-zip-with-deployed-versionspecific-versionstaging)
 
-## Two command families
+## Package vs. batch artifact format
 
-The batch commands are a **self-contained, batch-specific set**. `config export` produces a multi-package **batch artifact** — a top-level `manifest.json`, `variables.json`, `studio.json`, and one nested `<packageKey>_<version>.zip` per package — that is produced and consumed **only** by other batch commands. `config package import`, by contrast, works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The two formats are **not interchangeable**:
+`config package import` works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The Team-to-Team Copy commands instead use a multi-package **batch artifact** (a top-level `manifest.json`, `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package). The two formats are **not interchangeable**:
 
-- An archive from `config export` can be imported with `config import` or inspected with `config diff` — but **not** with `config package import`.
-- A package zip used by `config package import` **cannot** be imported with `config import` or diffed with `config diff`.
+- An archive from `t2tc package export` can be imported with `t2tc package import` or inspected with `t2tc package diff` — but **not** with `config package import`.
+- A package zip used by `config package import` **cannot** be imported with `t2tc package import` or diffed with `t2tc package diff`.
 
-| Command | Group | Artifact it reads / writes |
-|---|---|---|
-| `config package import` | Package commands | Package zip/dir (`package.json`, optional `variables.json`, `nodes/`) |
-| `config nodes …` | Package commands | Node JSON payload |
-| `config validate`, `config versions …`, `config variables list` | Package commands | — (operate directly on the platform) |
-| `config export` | Batch commands | Batch archive (multi-package) |
-| `config import` | Batch commands | Batch archive (multi-package) |
-| `config diff` | Batch commands | Batch archive (multi-package) |
-| `config list`, `config metadata export` | Batch commands | — (JSON list output) |
-
-**Which should I use?** Reach for the batch commands only for their specific bulk use-cases — moving a set of packages together (for example, a migration between teams). For everything else, use the package commands.
+For the full Team-to-Team Copy reference, see [T2TC Commands](./t2tc-commands.md).
 
 ## Permissions
 
-All `config` commands run against the Pacman API and are subject to the same permission checks the platform applies in the UI. The required permission depends on the **flavor** of the target package:
+All `config` commands run against the Pacman API and are subject to the same permission checks the platform applies in the UI. The same permissions apply to the [`t2tc package`](./t2tc-commands.md) commands. The required permission depends on the **flavor** of the target package:
 
 | Package flavor | Required permission |
 |---|---|
@@ -47,181 +39,68 @@ This applies to every command that reads or modifies a single package or its nod
 - `config nodes create`, `config nodes update`, `config nodes archive`
 - `config variables list`
 - `config versions get`, `config versions create`
-- `config validate`, `config diff`
-- `config export`, `config import`, `config package import`, `config metadata export`
+- `config package validate`, `config package import`, `config metadata export`
+- `t2tc package export`, `t2tc package import`, `t2tc package diff`
 
 If the authenticated profile does not have the required permission, the command fails with `Access is Denied`.
 
-`config list` is the one exception: instead of failing, it **filters out packages the profile does not have permission to access**. If a package you expect to see is missing from the list, the most likely cause is missing edit permission on the package (Studio) or on its connected data pool (OCDM).
+The listing commands (`config package list` and `t2tc package list`) are the one exception: instead of failing, they **filter out packages the profile does not have permission to access**. If a package you expect to see is missing from the list, the most likely cause is missing edit permission on the package (Studio) or on its connected data pool (OCDM).
 
-## List Packages
+## List Packages (`config package list`)
 
-> **Batch command.** Part of the [batch family](#two-command-families) — a bulk listing utility typically used to discover packages before a `config export`.
+> The deprecated `config list` command has moved to [`t2tc package list`](./t2tc-commands.md#list-packages) (bulk listing for the Team-to-Team Copy workflow, with `--withDependencies` / `--packageKeys` / `--keysByVersion` filtering). For day-to-day listing, use `config package list` below. `config list` still works but prints a deprecation notice.
 
-Packages can be listed using the following command:
+`config package list` lists packages in the target team. **By default it lists staging packages.**
 
 ```bash
-content-cli config list -p <sourceProfile>
+content-cli config package list -p <sourceProfile>
 ```
 
-The result will be printed in the console containing only the package name and key:
+The result is printed in the console containing the package name and key:
 
 ```bash
 info:    Package1 - Key: "package-1"
 ```
 
-By using the `--json` option, packages can be exported (saved) in an extended form as a json file in the current working directory.
+Use `--json` to export the list as a JSON file in the current working directory:
 
 ```bash
-content-cli config list -p <sourceProfile> --json
+content-cli config package list -p <sourceProfile> --json
 ```
-
-The name of the file will be printed in the console with the following format:
 
 ```bash
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
-By using the `--flavors` option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
-
-To list staging packages instead of deployed packages use the `--staging` option. Please note that this flag is not compatible with the below options.
-
-### List Packages with Dependencies
-
-When using the listing command with the `--json` option, two additional options are available:
-
--  **--withDependencies**: This option will include the dependencies of the packages in the output.
+Use `--flavors` to filter which packages to list. The available flavors are **STUDIO** and **OCDM**:
 
 ```bash
-content-cli config list -p <sourceProfile> --withDependencies
+content-cli config package list -p <sourceProfile> --flavors STUDIO
 ```
 
-- **--packageKeys**: This option allows you to filter the packages by their keys. You can specify multiple package keys separated by spaces.
+> Need active (deployed) versions, dependency expansion, or `--packageKeys` / `--keysByVersion` filtering? Those belong to the bulk copy workflow — use [`t2tc package list`](./t2tc-commands.md#list-packages).
 
-```bash
-content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN
-[optional] –-withDependencies
-```
+## Bulk Export / Import / Diff (moved to `t2tc package`)
 
-## Batch Export Packages
-
-> **Batch command.** Part of the [batch family](#two-command-families). It produces a multi-package **batch artifact** that can only be re-imported with [`config import`](#batch-import-packages) or inspected with [`config diff`](#diff-local-zip-with-deployed-versionspecific-versionstaging) — **not** with `config package import`. To work with one package, use [`config package import`](#package-commands-config-package).
-
-Packages can be exported using the following command:
-
-```bash
-content-cli config export -p <sourceProfile> --packageKeys key1 ... keyN
-```
-
-The `--keysByVersion` option can be used to export packages by specific version. You can specify multiple packages with version separated by spaces, in the format of 'packageKey.version'.
-The `--withDependencies` option can be used to also export dependencies of the given packages.
-The `--unzip` option can be used to unzip the exported packages into the current working directory.
-
-Depending on the `--unzip` option used, a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
-
-```bash
-exported_package_random_uuid/
-├─ manifest.json
-├─ variable.json
-├─ studio.json
-├─ package_key1-version.zip
-├─ ...
-├─ package_keyN-version.zip
-```
-
-### Git Integration for Export
-
-The following **Git options** are available:
-
-- `--gitProfile <gitProfileName>` – specifies the Git profile to use for exporting directly to a repository.
-  If not specified, the default profile will be used.
-- `--gitBranch <branchName>` – specifies the branch in the Github repository where the export will be pushed.
-
-Example exporting to Git:
-
-```bash
-content-cli config export -p <sourceProfile> --packageKeys key1 key2 --gitProfile myGitProfile --gitBranch feature-branch
-```
-
-### Export Directory Structure
-
-- manifest.json - File which contains the metadata of the exported packages.
-- studio.json - File which contains the metadata of the exported packages in a format compatible with Studio.
-- variables.json - File which contains the variables of the exported packages.
-- exported packages directories - Directories containing the exported package files, each directory is named after the package key and the version.
-
-Inside each exported package directory, the following files will be present:
-
-- package.json - File which contains the configuration of the exported package.
-- nodes/ - Directory containing the nodes of the exported package.
-
-Inside the nodes directory, a file for each node will be present:
-
-- node_key.json - File which contains the configuration of the exported node.
-
-## Batch Import Packages
-
-> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch artifact** produced by [`config export`](#batch-export-packages). To import one package from a package zip, use [`config package import`](#package-commands-config-package) instead.
-
-Packages can be imported using the following commands, if importing from a zip file:
-
-```bash
-content-cli config import -p <sourceProfile> -f <relative exported zip file path>
-```
-
-Where `-f` is the short hand operation for `--file`.
-If importing from a directory containing the exported packages, the following command can be used:
-
-```bash
-content-cli config import -p <sourceProfile> -d <relative exported directory file path>
-```
-
-Where `-d` is the shorthand operation for `--directory`.
-When packages with the same keys exist in the target team, the --overwrite option can be used for allowing overwriting of those packages. If the package in target environment contains unpublished changes, they are automatically saved under a new version. This allows you to audit, compare, or roll back to your previous state via the version history if needed.
-
-```bash
-content-cli config import -p <sourceProfile> -f <file path> --overwrite
-```
-
-### Git Integration for Import
-
-The following **Git options** are available:
-
-- `--gitProfile <gitProfileName>` – specifies the Git profile to use for importing directly from a repository.
-  If not specified, the default profile will be used.
-- `--gitBranch <branchName>` – specifies the branch in the Github repository from which to import.
-
-Example importing from Git:
-
-```bash
-content-cli config import -p <sourceProfile> --gitProfile myGitProfile --gitBranch feature-branch
-```
-
-Finally, the result of this command will be a list of PostPackageImportData exported as a json file. The file name will be printed with the following message format:
-
-```bash
-info:    Config import report file: 9560f81f-f746-4117-83ee-dd1f614ad624.json
-```
-
-### Validate During Import
-
-Add `--validate` to `config import` to run validation against each node **before** the import is committed:
-
-```bash
-content-cli config import -p <sourceProfile> -d <export_dir> --validate --overwrite
-```
-
-`config import --validate` runs the **SCHEMA** layer only. It does **not** run BUSINESS-layer checks (PQL parsing, data-model availability, KPI uniqueness, etc.) or PACKAGE_SETTINGS checks (package dependencies, variables, and flavor-specific package settings). To run those validations, use [`config validate`](#validate-package-configurations) after the import.
+> **Deprecated and moved.** The bulk multi-package commands have moved to the [`t2tc package`](./t2tc-commands.md) group:
+>
+> | Old (deprecated) | New |
+> |---|---|
+> | `config export` | [`t2tc package export`](./t2tc-commands.md#export-packages) |
+> | `config import` | [`t2tc package import`](./t2tc-commands.md#import-packages) |
+> | `config diff` | [`t2tc package diff`](./t2tc-commands.md#diff-local-zip-with-deployed-versionspecific-versionstaging) |
+>
+> The flags and behaviour are unchanged — only the command path moved. The old commands still work but print a deprecation notice. See [T2TC Commands](./t2tc-commands.md) for the full reference (batch artifact format, Git integration, validation during import, and more). To import a **single** package from a package zip, use [`config package import`](#package-commands-config-package).
 
 ## Package Commands (`config package`)
 
-The `config package` command group works with a package and its contents. It is **not** part of the batch-specific set — it uses the plain package format described below, which is not interchangeable with the batch artifact (see [Two command families](#two-command-families)).
+The `config package` command group works with a package and its contents. It uses the plain package format described below, which is not interchangeable with the batch artifact used by the Team-to-Team Copy commands (see [Package vs. batch artifact format](#package-vs-batch-artifact-format)).
 
 ### Import a Package
 
-`config package import` imports a package from a package zip (or directory). Unlike [`config import`](#batch-import-packages) — which performs a **batch** import and expects the multi-package batch artifact (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
+`config package import` imports a package from a package zip (or directory). Unlike [`t2tc package import`](./t2tc-commands.md#import-packages) — which performs a **batch** import and expects the multi-package batch artifact (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
 
-> A zip produced by `config export` is a **batch artifact** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `config import`. Use the command that matches how the artifact was produced.
+> A zip produced by `t2tc package export` is a **batch artifact** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `t2tc package import`. Use the command that matches how the artifact was produced.
 
 ```bash
 content-cli config package import -p <sourceProfile> -f <package zip file path>
@@ -288,14 +167,16 @@ content-cli config package import -p <sourceProfile> -f <file path> --json
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
-## Validate Package Configurations
+## Validate Package Configurations (`config package validate`)
 
-The `config validate` command validates the **staging (draft) version** of a package by sending its nodes through one or more validation layers. The command runs against the Pacman validate API and returns a structured report of errors, warnings, and info findings.
+> **Renamed.** This command moved from `config validate` to `config package validate`. The old `config validate` still works but prints a deprecation notice; switch to `config package validate`.
+
+The `config package validate` command validates the **staging (draft) version** of a package by sending its nodes through one or more validation layers. The command runs against the Pacman validate API and returns a structured report of errors, warnings, and info findings.
 
 This command requires **edit permission** on the target package (see [Permissions](#permissions)).
 
 ```bash
-content-cli config validate --packageKey <packageKey>
+content-cli config package validate --packageKey <packageKey>
 ```
 
 By default, only the `SCHEMA` layer is run. The console output looks like:
@@ -329,7 +210,7 @@ Currently `SCHEMA`, `BUSINESS`, and `PACKAGE_SETTINGS` are the layers accepted b
 To run all layers:
 
 ```bash
-content-cli config validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS
+content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS
 ```
 
 Use `PACKAGE_SETTINGS` when you need to verify that the package's own settings are usable in the destination team before continuing authoring or import work. It reports issues such as missing dependency versions, duplicate dependency or variable keys, blank variable keys/types, missing Studio data model assignments, and OCDM package-settings problems when the corresponding backend validation is enabled.
@@ -339,7 +220,7 @@ Use `PACKAGE_SETTINGS` when you need to verify that the package's own settings a
 By default, every node in the package's staging version is validated. To restrict the scope to a subset of nodes, use `--nodeKeys`:
 
 ```bash
-content-cli config validate --packageKey <packageKey> --nodeKeys node-key-1 node-key-2
+content-cli config package validate --packageKey <packageKey> --nodeKeys node-key-1 node-key-2
 ```
 
 ### Export Validation Report as JSON
@@ -347,7 +228,7 @@ content-cli config validate --packageKey <packageKey> --nodeKeys node-key-1 node
 Use `--json` to write the full validation report to a JSON file in the current working directory instead of printing it to the console:
 
 ```bash
-content-cli config validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS --json
+content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS --json
 ```
 
 The filename is printed on success:
@@ -885,7 +766,7 @@ To diff a local node JSON file (the compare side) against a version of the node 
 content-cli config nodes diff --packageKey <packageKey> --nodeKey <nodeKey> --baseVersion <STAGING|version> --file <node.json>
 ```
 
-The file must follow the `NodeExportTransport` shape — the format produced by `config export --unzip` under `<packageKey>_<version>/nodes/<nodeKey>.json`. `--baseVersion` accepts either `STAGING` or a specific package version. `--file` and `--compareVersion` are mutually exclusive; exactly one must be provided.
+The file must follow the `NodeExportTransport` shape — the format produced by `t2tc package export --unzip` under `<packageKey>_<version>/nodes/<nodeKey>.json`. `--baseVersion` accepts either `STAGING` or a specific package version. `--file` and `--compareVersion` are mutually exclusive; exactly one must be provided.
 
 If no node with the given key exists for the resolved base version, the file is diffed against an empty configuration `{}`.
 
@@ -943,23 +824,4 @@ content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <
 
 ## Diff local zip with deployed version/specific version/staging
 
-> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch artifact** produced by [`config export`](#batch-export-packages); a package zip is not supported here.
-
-To compare local zipped packages with online packages use:
-```bash
-content-cli config diff --file <file>
-```
-
-As with other commands, use `--json` to export the diff to a file.
-To diff against a specific version use the `--baseVersion` parameter. When omitted it will diff against the current deployed version.
-To diff against staging use `--baseVersion STAGING`.
-
-```bash
-content-cli config diff --file <file> --baseVersion <version>
-```
-
-To diff against the current deployed version and only return whether there are any changes, use the `--hasChanges` flag.
-
-```bash
-content-cli config diff --file <file> --hasChanges
-```
+> **Deprecated and moved.** `config diff` has moved to [`t2tc package diff`](./t2tc-commands.md#diff-local-zip-with-deployed-versionspecific-versionstaging). The flags and behaviour are unchanged — only the command path moved. The old command still works but prints a deprecation notice. See [T2TC Commands](./t2tc-commands.md#diff-local-zip-with-deployed-versionspecific-versionstaging) for the full reference.

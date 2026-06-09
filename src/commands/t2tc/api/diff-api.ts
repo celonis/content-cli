@@ -1,11 +1,11 @@
 import * as FormData from "form-data";
 import { HttpClient } from "../../../core/http/http-client";
 import { Context } from "../../../core/command/cli-context";
-import { PackageDiffMetadata, PackageDiffTransport } from "../interfaces/diff-package.interfaces";
+import { PackageDiffMetadata, PackageDiffTransport } from "../../configuration-management/interfaces/diff-package.interfaces";
 
 export class DiffApi {
 
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

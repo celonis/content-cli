@@ -3,7 +3,7 @@ import AdmZip = require("adm-zip");
 import { mockAxiosGet, mockAxiosPost, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import {
     BatchExportImportConstants
-} from "../../../src/commands/configuration-management/interfaces/batch-export-import.constants";
+} from "../../../src/commands/t2tc/batch-export-import.constants";
 import {
     DependencyTransport, NodeConfiguration, NodeExportTransport,
     PackageManifestTransport, StudioPackageManifest, VariableManifestTransport,
@@ -15,7 +15,7 @@ import {
 import { loggingTestTransport, mockWriteSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { parse, stringify } from "../../../src/core/utils/json";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
 import { ConfigUtils } from "../../utls/config-utils";
 import { PacmanApiUtils } from "../../utls/pacman-api.utils";
@@ -60,7 +60,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, [firstPackageRuntimeVariable]);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -122,7 +122,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, []);
 
         const branchName = "my-branch";
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, branchName, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, branchName, null);
 
         expect(mockGitServicePushToBranch).toHaveBeenCalledTimes(1);
         expect(mockGitServicePushToBranch).toHaveBeenCalledWith(
@@ -160,7 +160,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, [firstPackageRuntimeVariable]);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondStudioPackage.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.1", "key-2.1.0.4", "key-3.1.2.0"], true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.1", "key-2.1.0.4", "key-3.1.2.0"], true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -286,7 +286,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -450,7 +450,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -611,7 +611,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.2", "key-2.1.0.3"], true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.2", "key-2.1.0.3"], true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -703,7 +703,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -745,7 +745,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.2", "key-2.1.0.3"], true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.2", "key-2.1.0.3"], true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -861,7 +861,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -1002,7 +1002,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${secondPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.4", "key-2.1.0.5"], true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.4", "key-2.1.0.5"], true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -1110,7 +1110,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key_with_underscores_1"], undefined, true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key_with_underscores_1"], undefined, true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -1209,7 +1209,7 @@ describe("Config export", () => {
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/${firstPackageNode.key}/${firstPackageNode.key}`, {...firstPackageNode, spaceId: "space-1"});
         mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/by-package-key/${firstPackageNode.key}/variables/runtime-values?appMode=VIEWER`, []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(undefined, ["key_with_underscores_1.1.0.6"], true, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key_with_underscores_1.1.0.6"], true, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -1252,7 +1252,7 @@ describe("Config export", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&packageKeys=key-3&withDependencies=false", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, false, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, false, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
@@ -1268,7 +1268,7 @@ describe("Config export", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/versions/export/batch?packageKeysWithVersion=key-1.1.0.3&packageKeysWithVersion=key-2.1.0.4&packageKeysWithVersion=key-3.1.0.5&withDependencies=false", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
 
-        await new ConfigCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.3", "key-2.1.0.4", "key-3.1.0.5"], false, null, null);
+        await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.3", "key-2.1.0.4", "key-3.1.0.5"], false, null, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
         expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());

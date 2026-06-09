@@ -16,7 +16,7 @@ import {
     mockedAxiosInstance,
     mockedPostRequestBodyByUrl,
 } from "../../utls/http-requests-mock";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { SpaceTransport } from "../../../src/commands/studio/interfaces/space.interface";
@@ -26,7 +26,7 @@ import {
 } from "../../../src/commands/studio/interfaces/package-manager.interfaces";
 import {
     BatchExportImportConstants
-} from "../../../src/commands/configuration-management/interfaces/batch-export-import.constants";
+} from "../../../src/commands/t2tc/batch-export-import.constants";
 import { ConfigUtils } from "../../utls/config-utils";
 import { stringify } from "../../../src/core/utils/json";
 import { GitService } from "../../../src/core/git-profile/git/git.service";
@@ -62,7 +62,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, overwrite, null);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, overwrite, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -95,7 +95,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
+        await new T2tcCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -134,7 +134,7 @@ describe("Config import", () => {
 
             mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-            await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
+            await new T2tcCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
 
             const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
             expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -178,7 +178,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -207,7 +207,7 @@ describe("Config import", () => {
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
 
         await expect(
-            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null)
+            new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null)
         ).rejects.toThrow("Provided space ID does not exist.");
     })
 
@@ -250,7 +250,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/spaceId", expect.anything(), expect.anything());
@@ -287,7 +287,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -334,7 +334,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -358,7 +358,7 @@ describe("Config import", () => {
         });
 
         await expect(
-            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null)
+            new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null)
         ).rejects.toThrow('Failed to handle zip file "./export_file.zip": uncompressed size 5.00 GB exceeds the 4 GB limit.');
     })
 
@@ -413,7 +413,7 @@ describe("Config import", () => {
         mockAxiosPost(assignVariablesUrl, {});
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", [node]);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
         expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
@@ -440,7 +440,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null, true);
+        await new T2tcCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null, true);
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             expect.stringContaining("/package-manager/api/core/packages/import/batch"),

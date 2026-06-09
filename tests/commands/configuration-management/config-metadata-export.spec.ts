@@ -3,7 +3,7 @@ import { mockAxiosGet } from "../../utls/http-requests-mock";
 import {
     PackageMetadataExportTransport
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { MetadataService } from "../../../src/commands/configuration-management/metadata.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
@@ -28,7 +28,7 @@ describe("Config metadata export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/metadata/export?packageKeys=package-key-1&packageKeys=package-key-2", response);
 
-        await new ConfigCommandService(testContext).batchExportPackagesMetadata(packageKeys, false);
+        await new MetadataService(testContext).exportPackagesMetadata(packageKeys, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -49,7 +49,7 @@ describe("Config metadata export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/metadata/export?packageKeys=package-key-1&packageKeys=package-key-2", response);
 
-        await new ConfigCommandService(testContext).batchExportPackagesMetadata(packageKeys, true);
+        await new MetadataService(testContext).exportPackagesMetadata(packageKeys, true);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 

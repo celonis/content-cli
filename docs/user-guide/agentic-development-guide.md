@@ -87,10 +87,10 @@ Or validate during import with the `--validate` flag — note that this runs the
 content-cli config import -d <export_dir> --validate --overwrite
 ```
 
-To also run business-layer rules (PQL parsing, data-model availability, KPI uniqueness, …) and package-settings checks (dependencies, variables, and flavor-specific package settings), run `config validate` against the just-imported staging version:
+To also run business-layer rules (PQL parsing, data-model availability, KPI uniqueness, …) and package-settings checks (dependencies, variables, and flavor-specific package settings), run `config package validate` against the just-imported staging version:
 
 ```bash
-content-cli config validate --packageKey <package-key> --layers SCHEMA BUSINESS PACKAGE_SETTINGS
+content-cli config package validate --packageKey <package-key> --layers SCHEMA BUSINESS PACKAGE_SETTINGS
 ```
 
 If validation returns errors, fix the issues before importing.
