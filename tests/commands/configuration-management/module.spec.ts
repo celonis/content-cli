@@ -4,6 +4,7 @@ import { ConfigCommandService } from "../../../src/commands/configuration-manage
 import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
 import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
+import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { testContext } from "../../utls/test-context";
 import { createMockConfigurator } from "../../utls/configurator-mock";
 
@@ -11,6 +12,7 @@ jest.mock("../../../src/commands/configuration-management/config-command.service
 jest.mock("../../../src/commands/configuration-management/node-dependency.service");
 jest.mock("../../../src/commands/configuration-management/node-diff.service");
 jest.mock("../../../src/commands/configuration-management/package-version-command.service");
+jest.mock("../../../src/commands/configuration-management/single-package-import.service");
 
 /** Mirrors default values on `config variables list` Commander options (keep in sync with module.ts). */
 const variablesListOptionDefaults: OptionValues = {
@@ -25,6 +27,7 @@ describe("Configuration Management Module - Action Validations", () => {
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
     let mockNodeDependencyService: jest.Mocked<NodeDependencyService>;
     let mockNodeDiffService: jest.Mocked<NodeDiffService>;
+    let mockSinglePackageImportService: jest.Mocked<SinglePackageImportService>;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -48,9 +51,14 @@ describe("Configuration Management Module - Action Validations", () => {
             diffWithFile: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockSinglePackageImportService = {
+            importPackage: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (NodeDependencyService as jest.MockedClass<typeof NodeDependencyService>).mockImplementation(() => mockNodeDependencyService);
         (NodeDiffService as jest.MockedClass<typeof NodeDiffService>).mockImplementation(() => mockNodeDiffService);
+        (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
     });
 
     describe("listActivePackages validation", () => {
@@ -537,6 +545,55 @@ describe("Configuration Management Module - Action Validations", () => {
         });
     });
 
+    describe("importSinglePackage", () => {
+        it("should pass file option correctly", async () => {
+            const options: OptionValues = {
+                file: "single-package.zip",
+            };
+
+            await (module as any).importSinglePackage(testContext, mockCommand, options);
+
+            expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
+                "single-package.zip",
+                undefined,
+                undefined,
+                undefined
+            );
+        });
+
+        it("should pass directory option correctly", async () => {
+            const options: OptionValues = {
+                directory: "./single-package-dir",
+            };
+
+            await (module as any).importSinglePackage(testContext, mockCommand, options);
+
+            expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
+                undefined,
+                "./single-package-dir",
+                undefined,
+                undefined
+            );
+        });
+
+        it("should pass overwrite and json options correctly", async () => {
+            const options: OptionValues = {
+                file: "single-package.zip",
+                overwrite: true,
+                json: true,
+            };
+
+            await (module as any).importSinglePackage(testContext, mockCommand, options);
+
+            expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
+                "single-package.zip",
+                undefined,
+                true,
+                true
+            );
+        });
+    });
+
     describe("listVariables validation", () => {
         it("should throw when --packageKeys and --keysByVersion are both provided", async () => {
             const options: OptionValues = {
@@ -725,7 +782,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             // Each leaf command terminates the fluent chain with .action(handler).
             // Keep this count in sync when adding or removing commands in module.ts.
-            const expectedLeafCommands = 17;
+            const expectedLeafCommands = 18;
             expect(mockConfigurator.action).toHaveBeenCalledTimes(expectedLeafCommands);
             for (const call of mockConfigurator.action.mock.calls) {
                 expect(typeof call[0]).toBe("function");

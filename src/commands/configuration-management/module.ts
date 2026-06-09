@@ -12,13 +12,15 @@ import { NodeDiffService } from "./node-diff.service";
 import { NodeDependencyService } from "./node-dependency.service";
 import { PackageVersionCommandService } from "./package-version-command.service";
 import { PackageValidationService } from "./package-validation.service";
+import { SinglePackageImportService } from "./single-package-import.service";
 
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
-        const configCommand = configurator.command("config");
+        const configCommand = configurator.command("config")
+            .description("Manage package configurations. Most commands work with a package and its resources. The batch commands (list, export, import, diff, metadata) are a separate, batch-specific set for bulk multi-package transport: their archive format is only understood by other batch commands and is not interchangeable with the package commands.");
         configCommand.command("list")
-            .description("Command to list packages")
+            .description("[Batch] List packages in the target team. Part of the batch export/import workflow.")
             .option("--json", "Return response as json type", "")
             .option("--flavors <flavors...>", "Lists only packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
@@ -31,7 +33,7 @@ class Module extends IModule {
             .action(this.listPackages);
 
         configCommand.command("export")
-            .description("Command to export package configs")
+            .description("[Batch] Export one or more packages into a batch archive. The archive only works with the batch commands ('config import' / 'config diff') and cannot be imported with 'config package import'.")
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
@@ -45,13 +47,13 @@ class Module extends IModule {
 
         metadataCommand
             .command("export")
-            .description("Command to show whether packages have unpublished changes")
+            .description("[Batch] Show whether multiple packages have unpublished changes (bulk metadata export).")
             .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to find the metadata of")
             .option("--json", "Return response as json type", "")
             .action(this.batchExportPackagesMetadata);
 
         configCommand.command("import")
-            .description("Command to import package configs")
+            .description("[Batch] Import packages from a batch archive produced by 'config export'. To import one package, use 'config package import' instead.")
             .option("--overwrite", "Flag to allow overwriting of packages")
             .option("--validate", "Validate node configurations before import", false)
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
@@ -59,6 +61,17 @@ class Module extends IModule {
             .option("-f, --file <file>", "Exported packages file (relative path)")
             .option("-d, --directory <directory>", "Exported packages directory (relative path)")
             .action(this.batchImportPackages);
+
+        const packageCommand = configCommand.command("package")
+            .description("Commands for working with a single package.");
+
+        packageCommand.command("import")
+            .description("Import a package from a zip file or directory. Uses the package format, which is not interchangeable with the batch 'config export' / 'config import' archive.")
+            .option("-f, --file <file>", "Package zip file (relative path)")
+            .option("-d, --directory <directory>", "Package directory (relative path)")
+            .option("--overwrite", "Flag to allow overwriting an existing package with the same key")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.importSinglePackage);
 
         configCommand.command("validate")
             .description("Validate package node configurations")
@@ -73,7 +86,7 @@ class Module extends IModule {
             .action(this.validatePackage);
 
         configCommand.command("diff")
-            .description("Command to diff configs of packages")
+            .description("[Batch] Diff a local batch archive (from 'config export') against deployed or staging packages.")
             .option("--hasChanges", "Flag to return only the information if the package has changes without the actual changes")
             .option("--baseVersion <version>", "Compare against a given version or STAGING")
             .option("--json", "Return the response as a JSON file")
@@ -254,6 +267,10 @@ class Module extends IModule {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
         await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch, options.validate);
+    }
+
+    private async importSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new SinglePackageImportService(context).importPackage(options.file, options.directory, options.overwrite, options.json);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

@@ -1,6 +1,36 @@
 # Configuration Management Commands
 
-The `config` command group allows you to list, batch export, import packages of different flavors such as Studio and OCDM packages.
+The `config` command group manages package configurations. Most of its commands work with a package and its resources — importing a package, working with nodes, versions, or variables, and validating configurations. Separately, it includes a set of **batch commands** built for specific bulk use-cases, such as moving many packages at once between teams and realms.
+
+The batch commands are **batch-specific**: they use their own archive format that only the batch commands understand, so their artifacts are **not interchangeable** with the package commands (see [Two command families](#two-command-families)).
+
+- **Package commands** — work with a package and its resources:
+    - [`config package import`](#package-commands-config-package) — import a package
+    - [`config nodes …`](#finding-nodes) — work with individual nodes
+    - [`config versions …`](#package-version) — read and create package versions
+    - [`config variables list`](#listing--mapping-variables) — read package variables
+    - [`config validate`](#validate-package-configurations) — validate a package's staging version
+- **Batch commands** — bulk multi-package transport for specific use-cases:
+    - [`config list`](#list-packages), [`config export`](#batch-export-packages), [`config import`](#batch-import-packages), [`config diff`](#diff-local-zip-with-deployed-versionspecific-versionstaging), [`config metadata export`](#batch-export-packages)
+
+## Two command families
+
+The batch commands are a **self-contained, batch-specific set**. `config export` produces a multi-package **batch artifact** — a top-level `manifest.json`, `variables.json`, `studio.json`, and one nested `<packageKey>_<version>.zip` per package — that is produced and consumed **only** by other batch commands. `config package import`, by contrast, works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The two formats are **not interchangeable**:
+
+- An archive from `config export` can be imported with `config import` or inspected with `config diff` — but **not** with `config package import`.
+- A package zip used by `config package import` **cannot** be imported with `config import` or diffed with `config diff`.
+
+| Command | Group | Artifact it reads / writes |
+|---|---|---|
+| `config package import` | Package commands | Package zip/dir (`package.json`, optional `variables.json`, `nodes/`) |
+| `config nodes …` | Package commands | Node JSON payload |
+| `config validate`, `config versions …`, `config variables list` | Package commands | — (operate directly on the platform) |
+| `config export` | Batch commands | Batch archive (multi-package) |
+| `config import` | Batch commands | Batch archive (multi-package) |
+| `config diff` | Batch commands | Batch archive (multi-package) |
+| `config list`, `config metadata export` | Batch commands | — (JSON list output) |
+
+**Which should I use?** Reach for the batch commands only for their specific bulk use-cases — moving a set of packages together (for example, a migration between teams). For everything else, use the package commands.
 
 ## Permissions
 
@@ -18,13 +48,15 @@ This applies to every command that reads or modifies a single package or its nod
 - `config variables list`
 - `config versions get`, `config versions create`
 - `config validate`, `config diff`
-- `config export`, `config import`, `config metadata export`
+- `config export`, `config import`, `config package import`, `config metadata export`
 
 If the authenticated profile does not have the required permission, the command fails with `Access is Denied`.
 
 `config list` is the one exception: instead of failing, it **filters out packages the profile does not have permission to access**. If a package you expect to see is missing from the list, the most likely cause is missing edit permission on the package (Studio) or on its connected data pool (OCDM).
 
 ## List Packages
+
+> **Batch command.** Part of the [batch family](#two-command-families) — a bulk listing utility typically used to discover packages before a `config export`.
 
 Packages can be listed using the following command:
 
@@ -72,6 +104,8 @@ content-cli config list -p <sourceProfile> --packageKeys key1 ... keyN
 ```
 
 ## Batch Export Packages
+
+> **Batch command.** Part of the [batch family](#two-command-families). It produces a multi-package **batch artifact** that can only be re-imported with [`config import`](#batch-import-packages) or inspected with [`config diff`](#diff-local-zip-with-deployed-versionspecific-versionstaging) — **not** with `config package import`. To work with one package, use [`config package import`](#package-commands-config-package).
 
 Packages can be exported using the following command:
 
@@ -127,6 +161,8 @@ Inside the nodes directory, a file for each node will be present:
 
 ## Batch Import Packages
 
+> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch artifact** produced by [`config export`](#batch-export-packages). To import one package from a package zip, use [`config package import`](#package-commands-config-package) instead.
+
 Packages can be imported using the following commands, if importing from a zip file:
 
 ```bash
@@ -176,6 +212,81 @@ content-cli config import -p <sourceProfile> -d <export_dir> --validate --overwr
 ```
 
 `config import --validate` runs the **SCHEMA** layer only. It does **not** run BUSINESS-layer checks (PQL parsing, data-model availability, KPI uniqueness, etc.) or PACKAGE_SETTINGS checks (package dependencies, variables, and flavor-specific package settings). To run those validations, use [`config validate`](#validate-package-configurations) after the import.
+
+## Package Commands (`config package`)
+
+The `config package` command group works with a package and its contents. It is **not** part of the batch-specific set — it uses the plain package format described below, which is not interchangeable with the batch artifact (see [Two command families](#two-command-families)).
+
+### Import a Package
+
+`config package import` imports a package from a package zip (or directory). Unlike [`config import`](#batch-import-packages) — which performs a **batch** import and expects the multi-package batch artifact (`manifest.json`, a top-level `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package) — `config package import` takes a plain, flat package layout and imports it on its own.
+
+> A zip produced by `config export` is a **batch artifact** and cannot be imported with `config package import`. Likewise, a package zip cannot be imported with `config import`. Use the command that matches how the artifact was produced.
+
+```bash
+content-cli config package import -p <sourceProfile> -f <package zip file path>
+```
+
+Where `-f` is the shorthand for `--file`. You can also point at an unzipped directory with `-d` / `--directory`, in which case the CLI zips it for you before uploading:
+
+```bash
+content-cli config package import -p <sourceProfile> -d <package directory path>
+```
+
+`--file` and `--directory` are mutually exclusive — provide exactly one.
+
+This command requires **edit permission** on the target package, or **create** permission when the package does not yet exist (see [Permissions](#permissions)).
+
+#### Package Zip Format
+
+The zip (or directory) must contain a package in the following flat layout:
+
+```bash
+package/
+├─ package.json        # package metadata and configuration (key, name, type, flavor, configuration)
+├─ variables.json      # optional — variable assignments for the package
+├─ nodes/
+│  ├─ <nodeKey>.json   # one file per node
+│  ├─ ...
+```
+
+- `package.json` is the **source of truth for variable declarations**. Every assignment in `variables.json` must reference a variable declared in `package.json`, otherwise the import is rejected.
+- `variables.json` is optional. If you do not want to import variable assignments, simply omit the file.
+
+This is intentionally different from the batch artifact: there is no `manifest.json`, no `studio.json`, and no nested per-package zips — just the one package's files at the top level.
+
+#### Overwriting an Existing Package
+
+By default the import fails if a package with the same key already exists. Use `--overwrite` to replace it:
+
+```bash
+content-cli config package import -p <sourceProfile> -f <file path> --overwrite
+```
+
+When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are ignored, keeping declarations and assignments consistent.
+
+#### Output
+
+On success, the command prints a summary of the imported package and its nodes to the console:
+
+```bash
+info:    Successfully imported package: my-package
+info:    Name: My Package
+info:    Flavor: STUDIO
+info:    Imported 2 node(s).
+info:      - my-view (VIEW)
+info:      - my-knowledge-model (KNOWLEDGE_MODEL)
+```
+
+Use `--json` to write the full import result (imported package and nodes) to a JSON file in the current working directory instead:
+
+```bash
+content-cli config package import -p <sourceProfile> -f <file path> --json
+```
+
+```bash
+info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
+```
 
 ## Validate Package Configurations
 
@@ -831,6 +942,8 @@ content-cli config nodes dependencies list --packageKey <packageKey> --nodeKey <
 ```
 
 ## Diff local zip with deployed version/specific version/staging
+
+> **Batch command.** Part of the [batch family](#two-command-families). It expects a multi-package **batch artifact** produced by [`config export`](#batch-export-packages); a package zip is not supported here.
 
 To compare local zipped packages with online packages use:
 ```bash
