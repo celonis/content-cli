@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { mockAxiosGet, mockAxiosPost, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { mockCreateReadStream, mockExistsSync } from "../../utls/fs-mock-utils";
 import { ViewBookmarksCommandService } from "../../../src/commands/view/view-bookmarks-command.service";
