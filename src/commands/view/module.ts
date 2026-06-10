@@ -11,17 +11,19 @@ class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
         const pullCommand = configurator.command("pull");
-        pullCommand.command("view-bookmarks")
-            .description("Command to pull a view bookmarks")
-            .option("--type <type>", "Pull SHARED/ALL View Bookmarks, else by default get USER bookmarks")
-            .requiredOption("--id <id>", "Id of the view (board) you want to pull")
+        pullCommand
+            .command("view-bookmarks")
+            .description("Command to pull view bookmarks")
+            .option("--type <type>", "Type of view bookmarks to pull: USER (default), SHARED, or ALL")
+            .requiredOption("--id <id>", "ID of the view (board) to pull bookmarks from")
             .action(this.pullViewBookmarks);
 
         const pushCommand = configurator.command("push");
-        pushCommand.command("view-bookmarks")
-            .description("Command to push a view bookmarks to a board")
-            .requiredOption("--id <id>", "Id of the view (board) to which you want to push the view bookmarks")
-            .requiredOption("-f, --file <file>", "The file you want to push")
+        pushCommand
+            .command("view-bookmarks")
+            .description("Command to push view bookmarks to a board")
+            .requiredOption("--id <id>", "ID of the view (board) to push bookmarks into")
+            .requiredOption("-f, --file <file>", "The file to push")
             .action(this.pushViewBookmarks);
     }
 

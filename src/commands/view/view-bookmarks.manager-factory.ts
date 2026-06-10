@@ -19,9 +19,7 @@ export class ViewBookmarksManagerFactory {
     ): ViewBookmarksManager {
         const viewBookmarksManager = new ViewBookmarksManager(this.context);
         viewBookmarksManager.boardId = boardId;
-        if (type === undefined || type === null) {
-            type = "USER";
-        }
+        type = (type ?? "USER").toUpperCase();
 
         viewBookmarksManager.type = type;
         if (filename !== null) {

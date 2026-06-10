@@ -8,7 +8,7 @@ export class ViewBookmarksCommandService {
         this.viewBookmarksManagerFactory = new ViewBookmarksManagerFactory(context);
     }
 
-    public async pullViewBookmarks(boardId: string, type: string): Promise<void> {
+    public async pullViewBookmarks(boardId: string, type?: string): Promise<void> {
         await this.viewBookmarksManagerFactory.createViewBookmarksManager(null, boardId, type).pull();
     }
 

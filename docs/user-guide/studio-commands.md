@@ -220,7 +220,7 @@ content-cli pull view-bookmarks --profile my-profile-name --id 73d39112-73ae-4bb
 ```
 
 After you have pulled your view bookmarks with the --type option,
-it's time to push them inside a view in a different package. You can accomplish this using
+it's time to push them inside a view in a different team. You can accomplish this using
 the same command as with pushing other assets to Studio:
 
 ```

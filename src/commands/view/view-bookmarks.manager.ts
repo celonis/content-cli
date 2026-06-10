@@ -41,13 +41,12 @@ export class ViewBookmarksManager extends BaseManager {
     }
 
     public getConfig(): ManagerConfig {
-        const pullUrl = `${ViewBookmarksManager.BASE_URL}/export?boardId=${this.boardId}&type=${this.type}`;
         return {
-            pushUrl: `${ViewBookmarksManager.BASE_URL}/import?boardId=${this.boardId}`,
-            pullUrl: pullUrl,
+            pushUrl: `${ViewBookmarksManager.BASE_URL}/import?boardId=${encodeURIComponent(this.boardId)}`,
+            pullUrl: `${ViewBookmarksManager.BASE_URL}/export?boardId=${encodeURIComponent(this.boardId)}&type=${encodeURIComponent(this.type)}`,
             exportFileName: `${ViewBookmarksManager.VIEW_BOOKMARKS_FILE_PREFIX}${this.boardId}.json`,
             onPushSuccessMessage: (): string => {
-                return "View Bookmarks was pushed successfully.";
+                return "View Bookmarks were pushed successfully.";
             },
         };
     }
