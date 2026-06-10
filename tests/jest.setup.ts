@@ -6,8 +6,6 @@ import { logger } from "../src/core/utils/logger";
 
 mockAxios();
 jest.mock("fs");
-// Route "node:fs" imports to the same mock instance as "fs" so that helpers
-// operating on "fs" (e.g. mockExistsSync) also affect modules importing "node:fs".
 jest.mock("node:fs", () => require("fs"));
 
 const mockWriteFileSync = jest.fn();
