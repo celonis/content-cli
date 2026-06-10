@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { ViewBookmarksManager } from "./view-bookmarks.manager";
 import { FatalError, logger } from "../../core/utils/logger";
 import { Context } from "../../core/command/cli-context";

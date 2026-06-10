@@ -2,7 +2,7 @@ import { ViewBookmarksManagerFactory } from "./view-bookmarks.manager-factory";
 import { Context } from "../../core/command/cli-context";
 
 export class ViewBookmarksCommandService {
-    private viewBookmarksManagerFactory: ViewBookmarksManagerFactory;
+    private readonly viewBookmarksManagerFactory: ViewBookmarksManagerFactory;
 
     constructor(context: Context) {
         this.viewBookmarksManagerFactory = new ViewBookmarksManagerFactory(context);

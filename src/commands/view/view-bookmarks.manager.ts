@@ -1,12 +1,12 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 import * as FormData from "form-data";
 import { Context } from "../../core/command/cli-context";
 import { BaseManager } from "../../core/http/http-shared/base.manager";
 import { ManagerConfig } from "../../core/http/http-shared/manager-config.interface";
 
 export class ViewBookmarksManager extends BaseManager {
-    private static BASE_URL = "/blueprint/api/bookmarks";
-    private static VIEW_BOOKMARKS_FILE_PREFIX = "studio_view_bookmarks_";
+    private static readonly BASE_URL = "/blueprint/api/bookmarks";
+    private static readonly VIEW_BOOKMARKS_FILE_PREFIX = "studio_view_bookmarks_";
 
     private _boardId: string;
     private _fileName: string;
