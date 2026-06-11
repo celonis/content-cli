@@ -22,10 +22,6 @@ export interface CreateProgramOptions {
      * skips automatic, filesystem-based module discovery.
      */
     modules?: IModuleConstructor[];
-    /**
-     * Force development mode for module discovery (looks up `module.ts`
-     * instead of `module.js`). Defaults to `program.opts().dev`.
-     */
     devMode?: boolean;
 }
 
