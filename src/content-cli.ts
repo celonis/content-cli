@@ -16,12 +16,6 @@ import { ContentCLIHelp } from "./core/command/CustomHelp";
 
 const requiredVersion = ">=10.10.0";
 
-function configureRootCommands(configurator: Configurator): void {
-    configurator.command("list")
-        .description("Commands to list content.")
-        .alias("ls");
-}
-
 export interface CreateProgramOptions {
     /**
      * Explicit list of module classes to register. When provided, the factory
@@ -76,6 +70,10 @@ export function createProgram(context: Context, opts: CreateProgramOptions = {})
     }
 
     return program;
+}
+
+function configureRootCommands(configurator: Configurator): void {
+    configurator.command("list").description("Commands to list content.").alias("ls");
 }
 
 async function run(): Promise<void> {
