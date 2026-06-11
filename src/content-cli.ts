@@ -19,15 +19,9 @@ const requiredVersion = ">=10.10.0";
 export interface CreateProgramOptions {
     /**
      * Explicit list of module classes to register. When provided, the factory
-     * skips filesystem-based module discovery — useful for tests that want to
-     * exercise a single module against the real Commander parser.
+     * skips automatic, filesystem-based module discovery.
      */
     modules?: IModuleConstructor[];
-    /**
-     * Override the root path used for filesystem-based module discovery.
-     * Defaults to the directory of this file (i.e. `dist/` at runtime).
-     */
-    rootPath?: string;
     /**
      * Force development mode for module discovery (looks up `module.ts`
      * instead of `module.js`). Defaults to `program.opts().dev`.
@@ -61,7 +55,7 @@ export function createProgram(context: Context, opts: CreateProgramOptions = {})
             moduleInstance.register(context, moduleHandler.configurator);
         }
     } else {
-        const rootPath = opts.rootPath ?? __dirname;
+        const rootPath = __dirname;
         const devMode = opts.devMode ?? !!program.opts().dev;
         moduleHandler.discoverAndRegisterModules(rootPath, devMode);
     }
