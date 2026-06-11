@@ -1,24 +1,24 @@
-import Module = require("../../../../src/commands/configuration-management/module");
+import Module = require("../../../src/commands/configuration-management/module");
 import { Command } from "commander";
-import { ConfigCommandService } from "../../../../src/commands/configuration-management/config-command.service";
-import { StagingPackageService } from "../../../../src/commands/configuration-management/staging-package.service";
-import { MetadataService } from "../../../../src/commands/configuration-management/metadata.service";
-import { T2tcCommandService } from "../../../../src/commands/t2tc/t2tc-command.service";
-import { NodeDependencyService } from "../../../../src/commands/configuration-management/node-dependency.service";
-import { PackageVersionCommandService } from "../../../../src/commands/configuration-management/package-version-command.service";
-import { NodeDiffService } from "../../../../src/commands/configuration-management/node-diff.service";
-import { SinglePackageImportService } from "../../../../src/commands/configuration-management/single-package-import.service";
-import { buildTestProgram } from "../../../utls/cli-program";
-import { loggingTestTransport } from "../../../jest.setup";
+import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { StagingPackageService } from "../../../src/commands/configuration-management/staging-package.service";
+import { MetadataService } from "../../../src/commands/configuration-management/metadata.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
+import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
+import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
+import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
+import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
+import { buildTestProgram } from "../../utls/cli-program";
+import { loggingTestTransport } from "../../jest.setup";
 
-jest.mock("../../../../src/commands/configuration-management/config-command.service");
-jest.mock("../../../../src/commands/configuration-management/staging-package.service");
-jest.mock("../../../../src/commands/configuration-management/metadata.service");
-jest.mock("../../../../src/commands/t2tc/t2tc-command.service");
-jest.mock("../../../../src/commands/configuration-management/node-dependency.service");
-jest.mock("../../../../src/commands/configuration-management/node-diff.service");
-jest.mock("../../../../src/commands/configuration-management/package-version-command.service");
-jest.mock("../../../../src/commands/configuration-management/single-package-import.service");
+jest.mock("../../../src/commands/configuration-management/config-command.service");
+jest.mock("../../../src/commands/configuration-management/staging-package.service");
+jest.mock("../../../src/commands/configuration-management/metadata.service");
+jest.mock("../../../src/commands/t2tc/t2tc-command.service");
+jest.mock("../../../src/commands/configuration-management/node-dependency.service");
+jest.mock("../../../src/commands/configuration-management/node-diff.service");
+jest.mock("../../../src/commands/configuration-management/package-version-command.service");
+jest.mock("../../../src/commands/configuration-management/single-package-import.service");
 
 describe("configuration-management command integration", () => {
     let program: Command;

@@ -1,9 +1,9 @@
-import Module = require("../../../../src/commands/asset-registry/module");
+import Module = require("../../../src/commands/asset-registry/module");
 import { Command } from "commander";
-import { AssetRegistryService } from "../../../../src/commands/asset-registry/asset-registry.service";
-import { buildTestProgram } from "../../../utls/cli-program";
+import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
+import { buildTestProgram } from "../../utls/cli-program";
 
-jest.mock("../../../../src/commands/asset-registry/asset-registry.service");
+jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
 describe("asset-registry command integration", () => {
     let program: Command;
