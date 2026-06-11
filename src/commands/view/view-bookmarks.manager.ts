@@ -9,19 +9,19 @@ export class ViewBookmarksManager extends BaseManager {
     private static readonly VIEW_BOOKMARKS_FILE_PREFIX = "studio_view_bookmarks_";
 
     private _boardId: string;
-    private _fileName: string;
+    private _filePath: string;
     private _type: string;
 
     constructor(context: Context) {
         super(context);
     }
 
-    public get fileName(): string {
-        return this._fileName;
+    public get filePath(): string {
+        return this._filePath;
     }
 
-    public set fileName(value: string) {
-        this._fileName = value;
+    public set filePath(value: string) {
+        this._filePath = value;
     }
 
     public get boardId(): string {
@@ -53,7 +53,7 @@ export class ViewBookmarksManager extends BaseManager {
 
     public getBody(): any {
         const formData = new FormData();
-        formData.append("file", fs.createReadStream(this.fileName));
+        formData.append("file", fs.createReadStream(this.filePath));
         return formData;
     }
 

@@ -18,7 +18,7 @@ export class ViewBookmarksManagerFactory {
 
         viewBookmarksManager.type = type;
         if (filename !== null) {
-            viewBookmarksManager.fileName = this.resolveFilePath(filename);
+            viewBookmarksManager.filePath = this.resolveFilePath(filename);
         }
         return viewBookmarksManager;
     }
