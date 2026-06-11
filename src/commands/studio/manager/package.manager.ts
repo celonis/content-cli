@@ -126,7 +126,7 @@ export class PackageManager extends BaseManager {
             logger.error(
                 "You cannot overwrite a package and set a new key at the same time. Please use only one of the options."
             );
-            process.exit();
+            process.exit(1);
         }
     }
 
