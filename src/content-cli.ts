@@ -36,10 +36,7 @@ export interface CreateProgramOptions {
 }
 
 /**
- * Build a fully-configured Commander program without parsing argv. The bin
- * entry uses this with auto-discovery; tests pass `{ modules: [...] }` to
- * register only the modules under test and avoid the filesystem walk (which
- * conflicts with the `jest.mock("fs")` setup).
+ * Build a fully-configured Commander program without parsing argv
  */
 export function createProgram(context: Context, opts: CreateProgramOptions = {}): Command {
     const program = new Command();
