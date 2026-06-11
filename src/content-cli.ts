@@ -72,6 +72,10 @@ export function createProgram(context: Context, opts: CreateProgramOptions = {})
     return program;
 }
 
+/**
+ * To support the legacy command structure, we have to configure some root commands
+ * that the individual modules will extend.
+ */
 function configureRootCommands(configurator: Configurator): void {
     configurator.command("list").description("Commands to list content.").alias("ls");
 }
