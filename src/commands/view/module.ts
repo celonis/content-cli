@@ -4,8 +4,18 @@
 
 import { Configurator, IModule } from "../../core/command/module-handler";
 import { Context } from "../../core/command/cli-context";
-import { Command, OptionValues } from "commander";
+import { Command, InvalidArgumentError, OptionValues } from "commander";
 import { ViewBookmarksCommandService } from "./view-bookmarks-command.service";
+
+const VIEW_BOOKMARK_TYPES = ["USER", "SHARED", "ALL"];
+
+function parseViewBookmarkType(value: string): string {
+    const normalized = value.toUpperCase();
+    if (!VIEW_BOOKMARK_TYPES.includes(normalized)) {
+        throw new InvalidArgumentError(`Allowed values are: ${VIEW_BOOKMARK_TYPES.join(", ")}.`);
+    }
+    return normalized;
+}
 
 class Module extends IModule {
 
@@ -14,7 +24,7 @@ class Module extends IModule {
         pullCommand
             .command("view-bookmarks")
             .description("Command to pull view bookmarks")
-            .option("--type <type>", "Type of view bookmarks to pull: USER (default), SHARED, or ALL")
+            .option("--type <type>", "Type of view bookmarks to pull: USER (default), SHARED, or ALL", parseViewBookmarkType)
             .requiredOption("--id <id>", "ID of the view (board) to pull bookmarks from")
             .action(this.pullViewBookmarks);
 
