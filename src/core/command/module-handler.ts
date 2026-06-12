@@ -181,8 +181,14 @@ export class CommandConfig {
         return this;
     }
 
-    public option(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig {
-        this.cmd.option(flags, description, defaultValue);
+    public option(flags: string, description?: string, defaultValue?: string | boolean | string[]): CommandConfig;
+    public option(flags: string, description: string, parseArg: (value: string, previous: unknown) => unknown, defaultValue?: string | boolean | string[]): CommandConfig;
+    public option(flags: string, description?: string, parseArgOrDefault?: ((value: string, previous: unknown) => unknown) | string | boolean | string[], defaultValue?: string | boolean | string[]): CommandConfig {
+        if (typeof parseArgOrDefault === "function") {
+            this.cmd.option(flags, description, parseArgOrDefault, defaultValue);
+        } else {
+            this.cmd.option(flags, description, parseArgOrDefault);
+        }
         return this;
     }
 
