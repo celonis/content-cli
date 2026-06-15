@@ -6,6 +6,7 @@ import { logger } from "../src/core/utils/logger";
 
 mockAxios();
 jest.mock("fs");
+jest.mock("node:fs", () => require("fs"));
 
 const mockWriteFileSync = jest.fn();
 (fs.writeFileSync as jest.Mock).mockImplementation(mockWriteFileSync);

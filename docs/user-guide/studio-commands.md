@@ -208,3 +208,22 @@ that analysis. Use the ***--help*** flag to see all options for a specific comma
 content-cli pull analysis --help
 content-cli push analysis --help
 ```
+
+## Pull and Push View Bookmarks
+
+Enable users to pull and push view (board) bookmarks using content-cli. For pulling view bookmarks
+you can specify --type (SHARED/ALL/USER), and by default it fetches USER bookmarks:
+
+```
+// Pull view bookmarks
+content-cli pull view-bookmarks --profile my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --type SHARED
+```
+
+After you have pulled your view bookmarks,
+it's time to push them inside a view in a different team. You can accomplish this using
+the same command as with pushing other assets in Studio:
+
+```
+// Push view bookmarks to Studio
+content-cli push view-bookmarks -p my-profile-name --id 73d39112-73ae-4bbe-8051-3c0f14e065ec --file studio_view_bookmarks_39c5bb7b-b486-4230-ab01-854a17ddbff2.json
+```
