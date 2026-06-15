@@ -16,7 +16,7 @@ export class FileService {
         });
     }
 
-    public async readFileToJson<T>(fileName: string): Promise<T> {
+    public readFileToJson<T>(fileName: string): Promise<T> {
         const fileContent = this.readFile(fileName);
 
         return JSON.parse(fileContent);

@@ -2,9 +2,8 @@ import { NodeTransport } from "../../../src/commands/configuration-management/in
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { NodeService } from "../../../src/commands/configuration-management/node.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Node list", () => {
     const createNode = (id: string, key: string, name: string, parentNodeKey?: string): NodeTransport => ({
@@ -143,11 +142,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const nodes = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport[];
+        const nodes = getJsonFromDownloadedFile() as NodeTransport[];
 
         expect(nodes).toEqual([node1, node2]);
         expect(nodes.length).toBe(2);
@@ -185,11 +180,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, true, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const nodes = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport[];
+        const nodes = getJsonFromDownloadedFile() as NodeTransport[];
 
         expect(nodes).toEqual([node1, node2]);
         expect(nodes[0].configuration).toEqual(node1.configuration);
@@ -246,11 +237,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, packageVersion, limit, offset, false, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const nodes = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport[];
+        const nodes = getJsonFromDownloadedFile() as NodeTransport[];
 
         expect(nodes).toEqual([node1, node2]);
         expect(nodes[0].invalidConfiguration).toEqual(invalidConfigMessage);

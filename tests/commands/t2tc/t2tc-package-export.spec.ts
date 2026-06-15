@@ -12,8 +12,7 @@ import {
     PackageManagerVariableType, VariableDefinition,
     VariablesAssignments,
 } from "../../../src/commands/studio/interfaces/package-manager.interfaces";
-import { loggingTestTransport, mockWriteSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
+import { loggingTestTransport } from "../../jest.setup";
 import { parse, stringify } from "../../../src/core/utils/json";
 import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
@@ -21,6 +20,7 @@ import { ConfigUtils } from "../../utls/config-utils";
 import { PacmanApiUtils } from "../../utls/pacman-api.utils";
 import { mockReadDirSync } from "../../utls/fs-mock-utils";
 import { GitService } from "../../../src/core/git-profile/git/git.service";
+import { getDownloadedFileName } from "../../utls/fs-utils";
 
 describe("Config export", () => {
 
@@ -30,7 +30,6 @@ describe("Config export", () => {
     let mockGitServicePushToBranch: jest.SpyInstance;
 
     beforeEach(() => {
-        (fs.openSync as jest.Mock).mockReturnValue(100);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-1", {...firstSpace});
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces/space-2", {...secondSpace});
 
@@ -62,12 +61,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const studioManifest: StudioPackageManifest[] = parse(actualZip.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
         expect(studioManifest).toHaveLength(2);
@@ -107,12 +101,8 @@ describe("Config export", () => {
 
         mockReadDirSync(["manifest.json", "studio.json", "variables.json"]);
 
-        (fs.mkdirSync as jest.Mock).mockImplementation(() => {
-            // Mock implementation for mkdirSync
-        });
-        (fs.rmSync as jest.Mock).mockImplementation(() => {
-            // Mock implementation for rmSync
-        });
+        jest.spyOn(fs, "rmSync").mockImplementation(() => {});
+        jest.spyOn(fs, "chmodSync").mockImplementation(() => {});
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch?packageKeys=key-1&packageKeys=key-2&packageKeys=key-3&withDependencies=true", exportedPackagesZip.toBuffer());
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", []);
@@ -162,12 +152,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.1", "key-2.1.0.4", "key-3.1.2.0"], true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const studioManifest: StudioPackageManifest[] = parse(actualZip.getEntry(BatchExportImportConstants.STUDIO_FILE_NAME).getData().toString());
         expect(studioManifest).toHaveLength(2);
@@ -288,12 +273,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const exportedVariablesFileContent: VariableManifestTransport[] = parse(actualZip.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString());
         expect(exportedVariablesFileContent).toHaveLength(2);
@@ -452,12 +432,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const exportedVariablesFileContent: VariableManifestTransport[] = parse(actualZip.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString());
         expect(exportedVariablesFileContent).toHaveLength(2);
@@ -613,12 +588,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.2", "key-2.1.0.3"], true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const exportedVariablesFileContent: VariableManifestTransport[] = parse(actualZip.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString());
         expect(exportedVariablesFileContent).toHaveLength(2);
@@ -705,12 +675,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.0.zip").getData());
         expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.json")).toBeNull();
@@ -747,12 +712,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.2", "key-2.1.0.3"], true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.2.zip").getData());
         expect(firstPackageExportedZip.getEntry("nodes/child-1-scenario.json")).toBeNull();
@@ -863,12 +823,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2"], undefined, true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.0.zip").getData());
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.json").getData().toString());
@@ -1004,12 +959,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.4", "key-2.1.0.5"], true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key-1_1.0.4.zip").getData());
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.json").getData().toString());
@@ -1112,12 +1062,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key_with_underscores_1"], undefined, true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key_with_underscores_1_1.0.0.zip").getData());
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.json").getData().toString());
@@ -1211,12 +1156,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key_with_underscores_1.1.0.6"], true, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const actualZip = new AdmZip(fileBuffer);
+        const actualZip = new AdmZip(getDownloadedFileName());
 
         const firstPackageExportedZip = new AdmZip(actualZip.getEntry("key_with_underscores_1_1.0.6.zip").getData());
         const firstPackageExportedNode: NodeExportTransport = parse(firstPackageExportedZip.getEntry("package.json").getData().toString());
@@ -1254,9 +1194,7 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(["key-1", "key-2", "key-3"], undefined, false, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
+        expect(getDownloadedFileName()).not.toBeNull();
     })
 
     it("Should export by packageKeys without dependencies when packages are sent with keys and versions", async () => {
@@ -1270,8 +1208,6 @@ describe("Config export", () => {
 
         await new T2tcCommandService(testContext).batchExportPackages(undefined, ["key-1.1.0.3", "key-2.1.0.4", "key-3.1.0.5"], false, null, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
+        expect(getDownloadedFileName()).not.toBeNull();
     })
 })

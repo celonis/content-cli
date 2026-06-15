@@ -1,5 +1,3 @@
-import * as path from "path";
-import { mockCreateReadStream, mockExistsSync, mockReadFileSync } from "../../utls/fs-mock-utils";
 import {
     PackageManifestTransport
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
@@ -11,9 +9,9 @@ import {
 import { mockAxiosPost } from "../../utls/http-requests-mock";
 import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
+import { loggingTestTransport } from "../../jest.setup";
 import { ConfigUtils } from "../../utls/config-utils";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 function mockZipDiff(expectedUrl: string): PackageDiffTransport[] {
     const manifest: PackageManifestTransport[] = [];
@@ -23,9 +21,7 @@ function mockZipDiff(expectedUrl: string): PackageDiffTransport[] {
     const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
     const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
     const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
-
-    mockReadFileSync(exportedPackagesZip.toBuffer());
-    mockCreateReadStream(exportedPackagesZip.toBuffer());
+    exportedPackagesZip.writeZip("packages.zip");
 
     const diffResponse: PackageDiffTransport[] = [{
         packageKey: "package-key",
@@ -58,10 +54,6 @@ function mockZipDiff(expectedUrl: string): PackageDiffTransport[] {
 
 describe("Config diff", () => {
 
-    beforeEach(() => {
-        mockExistsSync();
-    });
-
     it("Should show on terminal if packages have changes with hasChanges set to true and jsonResponse false", async () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
@@ -70,9 +62,7 @@ describe("Config diff", () => {
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
-
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        exportedPackagesZip.writeZip("packages.zip");
 
         const diffResponse: PackageDiffMetadata[] = [{
             packageKey: "package-key",
@@ -116,10 +106,7 @@ describe("Config diff", () => {
 
         await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-        const exportedPackageDiffTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageDiffTransport[];
+        const exportedPackageDiffTransport = getJsonFromDownloadedFile() as PackageDiffTransport[];
         expect(exportedPackageDiffTransport.length).toBe(1);
 
         const exportedFirstPackageDiffTransport = exportedPackageDiffTransport.filter(diffTransport => diffTransport.packageKey === "package-key");
@@ -134,9 +121,7 @@ describe("Config diff", () => {
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
-
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        exportedPackagesZip.writeZip("packages.zip");
 
         const diffResponse: PackageDiffMetadata[] = [{
             packageKey: "package-key",
@@ -147,10 +132,7 @@ describe("Config diff", () => {
 
         await new T2tcCommandService(testContext).diffPackages("./packages.zip", true, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-        const exportedPackageDiffTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageDiffTransport[];
+        const exportedPackageDiffTransport = getJsonFromDownloadedFile() as PackageDiffTransport[];
         expect(exportedPackageDiffTransport.length).toBe(1);
 
         const exportedFirstPackageDiffTransport = exportedPackageDiffTransport.filter(diffTransport => diffTransport.packageKey === firstPackageNode.key);

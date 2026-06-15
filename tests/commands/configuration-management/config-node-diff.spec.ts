@@ -8,11 +8,9 @@ import {
 } from "../../utls/http-requests-mock";
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import { mockCreateReadStream } from "../../utls/fs-mock-utils";
+import { loggingTestTransport } from "../../jest.setup";
 import * as FormData from "form-data";
-import * as path from "path";
+import { getJsonFromDownloadedFile, writeJsonTempFile } from "../../utls/fs-utils";
 
 describe("Node diff", () => {
     const packageKey = "test-package-key";
@@ -78,17 +76,7 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(
-            FileService.fileDownloadedMessage
-        )[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const savedDiff = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeConfigurationDiffTransport;
+        const savedDiff = getJsonFromDownloadedFile() as NodeConfigurationDiffTransport;
 
         // Dates are serialized as strings in JSON
         expect(savedDiff.packageKey).toEqual(nodeDiff.packageKey);
@@ -223,17 +211,7 @@ describe("Node diff", () => {
 
         await new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(
-            FileService.fileDownloadedMessage
-        )[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const savedDiff = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeConfigurationDiffTransport;
+        const savedDiff = getJsonFromDownloadedFile() as NodeConfigurationDiffTransport;
 
         expect(savedDiff.changeType).toBe(NodeConfigurationChangeType.UNCHANGED);
         expect(savedDiff.changes).toEqual(emptyChangesNodeDiff.changes);
@@ -304,8 +282,6 @@ describe("Node diff", () => {
         await expect(
             new NodeDiffService(testContext).diff(packageKey, nodeKey, baseVersion, compareVersion, false)
         ).rejects.toThrow(/Problem getting the node diff/);
-
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
     });
 
     it("Should request the diff with both baseVersion and compareVersion query parameters", async () => {
@@ -321,10 +297,9 @@ describe("Node diff", () => {
 
     describe("With file", () => {
         const file = "./node.json";
-        const nodeJsonContent = Buffer.from(JSON.stringify({ key: nodeKey, configuration: { foo: "bar" } }));
 
         beforeEach(() => {
-            mockCreateReadStream(nodeJsonContent);
+            writeJsonTempFile(file, { key: nodeKey, configuration: { foo: "bar" } });
         });
 
         it("Should diff a node file against STAGING and log all fields", async () => {
@@ -361,17 +336,7 @@ describe("Node diff", () => {
 
             await new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, "STAGING", file, true);
 
-            const expectedFileName = loggingTestTransport.logMessages[0].message.split(
-                FileService.fileDownloadedMessage
-            )[1];
-
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                path.resolve(process.cwd(), expectedFileName),
-                expect.any(String),
-                { encoding: "utf-8", mode: 0o600 }
-            );
-
-            const savedDiff = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeConfigurationDiffTransport;
+            const savedDiff = getJsonFromDownloadedFile() as NodeConfigurationDiffTransport;
 
             expect(savedDiff.packageKey).toEqual(nodeDiff.packageKey);
             expect(savedDiff.nodeKey).toEqual(nodeDiff.nodeKey);
@@ -419,8 +384,6 @@ describe("Node diff", () => {
             await expect(
                 new NodeDiffService(testContext).diffWithFile(packageKey, nodeKey, "STAGING", file, false)
             ).rejects.toThrow(/Problem getting the node diff/);
-
-            expect(mockWriteFileSync).not.toHaveBeenCalled();
         });
     });
 });

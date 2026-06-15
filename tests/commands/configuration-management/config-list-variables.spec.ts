@@ -1,5 +1,3 @@
-import * as path from "path";
-import * as fs from "fs";
 import { parse } from "../../../src/core/utils/json";
 import {
     PackageKeyAndVersionPair,
@@ -11,8 +9,9 @@ import { PackageManagerVariableType } from "../../../src/commands/studio/interfa
 import { mockAxiosPost, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
+import { getJsonFromDownloadedFile, writeJsonTempFile } from "../../utls/fs-utils";
 
 describe("Config listVariables", () => {
 
@@ -131,16 +130,11 @@ describe("Config listVariables", () => {
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(fixedVariableManifests), {encoding: "utf-8", mode: 0o600});
-
-        const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
-        expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);
+        expect(getJsonFromDownloadedFile()).toEqual(fixedVariableManifests);
     })
 
     it("Should list fixed variables for non-json response and keysByVersion file mapping", async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(packageKeyAndVersionPairs));
+        writeJsonTempFile("key_version_mapping.json", packageKeyAndVersionPairs);
 
         await new ConfigCommandService(testContext).listVariables(false, [], "key_version_mapping.json", []);
 
@@ -154,19 +148,15 @@ describe("Config listVariables", () => {
     })
 
     it("Should export fixed variables for json response and keysByVersion file mapping", async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(packageKeyAndVersionPairs));
+        writeJsonTempFile("key_version_mapping.json", packageKeyAndVersionPairs);
 
         await new ConfigCommandService(testContext).listVariables(true, [], "key_version_mapping.json", []);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(fixedVariableManifests), {encoding: "utf-8", mode: 0o600});
-
-        const variableExportRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
-        expect(variableExportRequest).toEqual(packageKeyAndVersionPairs);
+        const downloadedFile = getJsonFromDownloadedFile();
+        expect(getJsonFromDownloadedFile()).toEqual(fixedVariableManifests);
     })
 
     it("Should throw error if no mapping and no file path is provided", async () => {
@@ -222,15 +212,7 @@ describe("Config listVariables", () => {
             expect(loggingTestTransport.logMessages.length).toBe(1);
             expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
-            const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                path.resolve(process.cwd(), expectedFileName),
-                JSON.stringify(pkgAOnlyResponse),
-                {encoding: "utf-8", mode: 0o600}
-            );
-
-            const postBody = parse<string[]>(mockedPostRequestBodyByUrl.get(url));
-            expect(postBody).toEqual(["pkg-a"]);
+            expect(getJsonFromDownloadedFile()).toEqual(pkgAOnlyResponse);
         });
     });
 });

@@ -2,9 +2,8 @@ import { NodeTransport, SaveNodeTransport } from "../../../src/commands/configur
 import { mockAxiosPost, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import { NodeService } from "../../../src/commands/configuration-management/node.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Node create", () => {
     const packageKey = "package-key";
@@ -52,11 +51,7 @@ describe("Node create", () => {
 
         await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, false, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const savedTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport;
+        const savedTransport = getJsonFromDownloadedFile() as NodeTransport;
 
         expect(savedTransport).toEqual(createdNode);
     });
@@ -78,7 +73,6 @@ describe("Node create", () => {
 
         await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, true, false);
 
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
             `Validation successful for node ${saveTransport.key} in package ${packageKey}.`

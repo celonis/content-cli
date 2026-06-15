@@ -2,12 +2,11 @@ import { PackageVersionTransport } from "../../../src/commands/configuration-man
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { PackageVersionService } from "../../../src/commands/configuration-management/package-version.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
 import {
     PackageVersionCommandService
 } from "../../../src/commands/configuration-management/package-version-command.service";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Package Version get", () => {
     const packageVersion: PackageVersionTransport = {
@@ -46,12 +45,7 @@ describe("Package Version get", () => {
 
         await new PackageVersionService(testContext).findPackageVersion(packageKey, version, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const packageVersionTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageVersionTransport;
-
+        const packageVersionTransport = getJsonFromDownloadedFile() as PackageVersionTransport;
         expect(packageVersionTransport).toEqual(packageVersion);
     });
 

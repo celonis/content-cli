@@ -2,9 +2,8 @@ import { NodeDependencyTransport } from "../../../src/commands/configuration-man
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { NodeDependencyService } from "../../../src/commands/configuration-management/node-dependency.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Node Dependencies", () => {
     const packageKey = "test-package-key";
@@ -52,16 +51,7 @@ describe("Node Dependencies", () => {
 
         await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, version, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
-
+        const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
         expect(dependenciesTransport).toEqual(dependencies);
     });
 
@@ -89,16 +79,7 @@ describe("Node Dependencies", () => {
 
         await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, version, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
-
+        const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
         expect(dependenciesTransport).toEqual([]);
     });
 
@@ -147,16 +128,7 @@ describe("Node Dependencies", () => {
 
             await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, null, true);
 
-            const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                path.resolve(process.cwd(), expectedFileName),
-                expect.any(String),
-                { encoding: "utf-8", mode: 0o600 }
-            );
-
-            const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
-
+            const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
             expect(dependenciesTransport).toEqual(dependencies);
         });
 
@@ -184,16 +156,7 @@ describe("Node Dependencies", () => {
 
             await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, null, true);
 
-            const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                path.resolve(process.cwd(), expectedFileName),
-                expect.any(String),
-                { encoding: "utf-8", mode: 0o600 }
-            );
-
-            const dependenciesTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeDependencyTransport[];
-
+            const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
             expect(dependenciesTransport).toEqual([]);
         });
 

@@ -2,9 +2,8 @@ import { DeploymentStatus, DeploymentTransport } from "../../../src/commands/dep
 import { mockAxiosPost } from "../../utls/http-requests-mock";
 import { DeploymentService } from "../../../src/commands/deployment/deployment.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Deployment create", () => {
     const deployment: DeploymentTransport = {
@@ -37,11 +36,7 @@ describe("Deployment create", () => {
 
         await new DeploymentService(testContext).createDeployment(deployment.packageKey, deployment.packageVersion, deployment.deployableType, deployment.target.id, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const deploymentTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as DeploymentTransport;
+        const deploymentTransport = getJsonFromDownloadedFile() as DeploymentTransport;
 
         expect(deploymentTransport).toEqual(deployment);
     });

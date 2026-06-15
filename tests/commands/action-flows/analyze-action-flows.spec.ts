@@ -1,9 +1,10 @@
 import * as path from "path";
 import { mockedAxiosInstance } from "../../utls/http-requests-mock";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { ActionFlowCommandService } from "../../../src/commands/action-flows/action-flow/action-flow-command.service";
 import { testContext } from "../../utls/test-context";
+import { getJsonFromDownloadedFile, getJsonFromFile } from "../../utls/fs-utils";
 
 describe("Analyze action-flows", () => {
 
@@ -62,9 +63,8 @@ describe("Analyze action-flows", () => {
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAnalyzeResponse, null, 4), { encoding: "utf-8", mode: 0o600 });
+        expect(getJsonFromDownloadedFile()).toEqual(mockAnalyzeResponse);
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(`https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/export/assets/analyze`, expect.anything());
     });
 });

@@ -1,9 +1,8 @@
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Asset registry schema", () => {
     const schemaResponse = {
@@ -33,14 +32,7 @@ describe("Asset registry schema", () => {
 
         await new AssetRegistryService(testContext).getSchema("BOARD_V2", true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
+        const written = getJsonFromDownloadedFile();
         expect(written.$schema).toBe("http://json-schema.org/draft-07/schema#");
         expect(written.title).toBe("Board");
     });

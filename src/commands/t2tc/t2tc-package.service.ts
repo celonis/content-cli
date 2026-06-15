@@ -142,7 +142,7 @@ export class T2tcPackageService {
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         if (gitBranch) {
-            fs.rmSync(temporaryGitFolder, { recursive: true });
+            fs.rmSync(temporaryGitFolder, { recursive: true, force: true });
         }
         fs.rmSync(sourceToBeImported);
 

@@ -1,17 +1,16 @@
-import * as path from "path";
 import { PacmanApiUtils } from "../../utls/pacman-api.utils";
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import {
     ContentNodeTransport,
     PackageWithVariableAssignments, StudioComputeNodeDescriptor,
 } from "../../../src/commands/studio/interfaces/package-manager.interfaces";
-import { FileService } from "../../../src/core/utils/file-service";
 import {
     PackageExportTransport
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Config list", () => {
 
@@ -52,11 +51,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, [], false, [], undefined, null, null, false, false);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
 
         const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
@@ -98,11 +93,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, [], true, [], undefined, null, null, false, false);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
 
         const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
@@ -123,11 +114,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, [], false, [firstPackage.key, secondPackage.key], undefined, null, null, false, false);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
 
         const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
@@ -169,11 +156,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, [], true, [firstPackage.key, secondPackage.key], undefined, null, null, false, false);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
 
         const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
@@ -207,11 +190,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, [], false, [], undefined, "1", null, false, false);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
     })
 
@@ -262,11 +241,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, [], false, [], keysByVersion, null, null, false, false);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
 
         const exportedFirstPackage = exportedTransports.filter(transport => transport.key === firstPackage.key)[0];
@@ -321,11 +296,7 @@ describe("Config list", () => {
 
         await new T2tcCommandService(testContext).listPackages(true, ["STUDIO"], false, [], undefined, null, null, false, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const exportedTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageExportTransport[];
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
         expect(exportedTransports.length).toBe(2);
 
         const exportedFirstPackage = exportedTransports.find(transport => transport.key === firstPackage.key);
