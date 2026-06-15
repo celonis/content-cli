@@ -31,7 +31,7 @@ These commands are a **self-contained, batch-specific set**. `t2tc package expor
 - An archive from `t2tc package export` can be imported with `t2tc package import` or inspected with `t2tc package diff` — but **not** with `config package import`.
 - A package zip used by `config package import` **cannot** be imported with `t2tc package import` or diffed with `t2tc package diff`.
 
-Reach for `t2tc package` only for its specific bulk use-case — moving a set of packages together (for example, a migration between teams). To work with a single package, use [`config package import`](./config-commands.md#package-commands-config-package).
+Reach for `t2tc package` only for its specific bulk use-case — moving a set of packages together (for example, a migration between teams). To work with a single package, use [`config package import`](./config-commands.md#package-commands-config-package) or [`config package export`](./config-commands.md#export-a-package).
 
 ## List Packages
 

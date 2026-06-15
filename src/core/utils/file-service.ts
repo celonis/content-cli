@@ -16,6 +16,19 @@ export class FileService {
         });
     }
 
+    public writeBufferToFileWithGivenName(data: Buffer, filename: string): void {
+        fs.writeFileSync(path.resolve(process.cwd(), filename), data, {
+            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
+        });
+    }
+
+    public extractZipBufferToDirectory(data: Buffer, targetDir: string): void {
+        const targetPath = path.resolve(process.cwd(), targetDir);
+        fs.mkdirSync(targetPath, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
+        new AdmZip(data).extractAllTo(targetPath, true, true);
+        this.restrictFilePermissions(targetPath);
+    }
+
     public async readFileToJson<T>(fileName: string): Promise<T> {
         const fileContent = this.readFile(fileName);
 

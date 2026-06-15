@@ -109,4 +109,32 @@ describe("FileService", () => {
             expect(entries.some(name => name.endsWith(".zip"))).toBe(false);
         });
     });
+
+    describe("writeBufferToFileWithGivenName", () => {
+        test("Should write the raw buffer to disk byte-for-byte", () => {
+            const targetFile = path.join(tempDir, "export.zip");
+            const data = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x01, 0x02]);
+
+            fileService.writeBufferToFileWithGivenName(data, targetFile);
+
+            expect(fs.existsSync(targetFile)).toBe(true);
+            expect(fs.readFileSync(targetFile).equals(data)).toBe(true);
+        });
+    });
+
+    describe("extractZipBufferToDirectory", () => {
+        test("Should extract the package zip buffer into the target directory", () => {
+            const zip = new AdmZip();
+            zip.addFile("package.json", Buffer.from(JSON.stringify({ key: "pkg-1" })));
+            zip.addFile("nodes/node-1.json", Buffer.from(JSON.stringify({ key: "node-1" })));
+            const zipBuffer = zip.toBuffer();
+
+            const targetDir = path.join(tempDir, "extracted");
+            fileService.extractZipBufferToDirectory(zipBuffer, targetDir);
+
+            expect(fs.existsSync(path.join(targetDir, "package.json"))).toBe(true);
+            expect(fs.existsSync(path.join(targetDir, "nodes", "node-1.json"))).toBe(true);
+            expect(JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"))).toEqual({ key: "pkg-1" });
+        });
+    });
 });

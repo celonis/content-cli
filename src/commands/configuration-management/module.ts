@@ -16,6 +16,7 @@ import { NodeDependencyService } from "./node-dependency.service";
 import { PackageVersionCommandService } from "./package-version-command.service";
 import { PackageValidationService } from "./package-validation.service";
 import { SinglePackageImportService } from "./single-package-import.service";
+import { SinglePackageExportService } from "./single-package-export.service";
 
 class Module extends IModule {
 
@@ -78,6 +79,12 @@ class Module extends IModule {
             .option("--overwrite", "Flag to allow overwriting an existing package with the same key")
             .option("--json", "Return the response as a JSON file")
             .action(this.importSinglePackage);
+
+        packageCommand.command("export")
+            .description("Export a single package's staging (draft) version to an unzipped directory (or a single zip with --zip). Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
+            .requiredOption("--packageKey <packageKey>", "Key of the package to export")
+            .option("--zip", "Export the package as a single <packageKey>.zip file instead of an unzipped <packageKey> directory", false)
+            .action(this.exportSinglePackage);
 
         packageCommand.command("validate")
             .description("Validate package node configurations")
@@ -301,6 +308,10 @@ class Module extends IModule {
 
     private async importSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new SinglePackageImportService(context).importPackage(options.file, options.directory, options.overwrite, options.json);
+    }
+
+    private async exportSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new SinglePackageExportService(context).exportPackage(options.packageKey, options.zip);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
