@@ -28,7 +28,7 @@ export function writeTempFile(filename: string, contents: any): void {
     writeFileSync(fullPath, contents);
 }
 export function makeTempDir(): string {
-    const folder= uuid();
+    const folder = uuid();
     return makeTempDirWithName(folder);
 }
 export function makeTempDirWithName(folder: string): string {
