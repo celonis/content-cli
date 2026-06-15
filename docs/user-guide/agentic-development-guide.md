@@ -2,16 +2,6 @@
 
 Use the Asset Registry to discover asset schemas and programmatically create assets via [Content CLI](https://github.com/celonis/content-cli). Share this guide with your AI coding agent to get started.
 
-## For agents
-
-Fetch and follow the machine-readable skill file — it contains step-by-step instructions for the entire workflow (discovery, schema fetching, asset creation, import/export, and troubleshooting):
-
-```
-https://raw.githubusercontent.com/celonis/content-cli/main/.cursor/skills/asset-registry-endpoints/SKILL.md
-```
-
-If you have the Content CLI repo cloned locally, the skill is at `.cursor/skills/asset-registry-endpoints/SKILL.md`.
-
 ## Prerequisites
 
 - **Content CLI** installed or built locally (`yarn install && yarn build`)
