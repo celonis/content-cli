@@ -26,6 +26,7 @@ afterEach(() => {
 
 afterAll(() => {
     if (tempDir !== null) {
+        logger.info(`Removing tempdir: ${tempDir}`);
         fs.rmSync(tempDir, { recursive: true, force: true });
     }
 });
