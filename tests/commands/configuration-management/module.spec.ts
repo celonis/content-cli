@@ -620,6 +620,7 @@ describe("Configuration Management Module - Action Validations", () => {
                 "single-package.zip",
                 undefined,
                 undefined,
+                undefined,
                 undefined
             );
         });
@@ -634,6 +635,7 @@ describe("Configuration Management Module - Action Validations", () => {
             expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
                 undefined,
                 "./single-package-dir",
+                undefined,
                 undefined,
                 undefined
             );
@@ -652,8 +654,39 @@ describe("Configuration Management Module - Action Validations", () => {
                 "single-package.zip",
                 undefined,
                 true,
-                true
+                true,
+                undefined
             );
+        });
+
+        it("should pass the gitBranch option correctly", async () => {
+            const options: OptionValues = {
+                gitBranch: "feature-branch",
+                gitProfile: "myProfile",
+            };
+
+            await (module as any).importSinglePackage(testContext, mockCommand, options);
+
+            expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                "feature-branch"
+            );
+        });
+
+        it("should throw when gitProfile is provided without gitBranch", async () => {
+            const options: OptionValues = {
+                file: "single-package.zip",
+                gitProfile: "myProfile",
+            };
+
+            await expect(
+                (module as any).importSinglePackage(testContext, mockCommand, options)
+            ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
+
+            expect(mockSinglePackageImportService.importPackage).not.toHaveBeenCalled();
         });
     });
 
@@ -667,6 +700,7 @@ describe("Configuration Management Module - Action Validations", () => {
 
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
+                undefined,
                 undefined
             );
         });
@@ -681,8 +715,38 @@ describe("Configuration Management Module - Action Validations", () => {
 
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
-                true
+                true,
+                undefined
             );
+        });
+
+        it("should pass the gitBranch option correctly", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                gitBranch: "feature-branch",
+                gitProfile: "myProfile",
+            };
+
+            await (module as any).exportSinglePackage(testContext, mockCommand, options);
+
+            expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
+                "my-package",
+                undefined,
+                "feature-branch"
+            );
+        });
+
+        it("should throw when gitProfile is provided without gitBranch", async () => {
+            const options: OptionValues = {
+                packageKey: "my-package",
+                gitProfile: "myProfile",
+            };
+
+            await expect(
+                (module as any).exportSinglePackage(testContext, mockCommand, options)
+            ).rejects.toThrow("Please specify a branch using --gitBranch when using a Git profile.");
+
+            expect(mockSinglePackageExportService.exportPackage).not.toHaveBeenCalled();
         });
     });
 
