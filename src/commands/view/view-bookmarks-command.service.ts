@@ -14,6 +14,7 @@ export class ViewBookmarksCommandService {
     public async pullViewBookmarks(boardId: string, type?: string): Promise<void> {
         if (type !== undefined && !ALLOWED_VIEW_BOOKMARK_TYPES.includes(type.toUpperCase())) {
             logger.error(new FatalError(`Invalid type "${type}". Allowed values are: ${ALLOWED_VIEW_BOOKMARK_TYPES.join(", ")}.`));
+            return;
         }
         await this.viewBookmarksManagerFactory.createViewBookmarksManager(null, boardId, type).pull();
     }
