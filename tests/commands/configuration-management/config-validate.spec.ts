@@ -104,4 +104,80 @@ describe("Config validate", () => {
         expect(allMessages).toContain("Validation result: VALID");
         expect(allMessages).toContain("Errors: 0");
     })
+
+    it("Should send PLATFORM_SERVICE layer in request body when combined with other layers", async () => {
+        const response: SchemaValidationResponse = {
+            packageKey: "my-package",
+            valid: true,
+            summary: { errors: 0, warnings: 0, info: 0 },
+            results: []
+        };
+
+        mockAxiosPost(VALIDATE_URL, response);
+
+        await new PackageValidationService(testContext).validatePackage(
+            "my-package",
+            ["SCHEMA", "BUSINESS", "PACKAGE_SETTINGS", "PLATFORM_SERVICE"],
+            null,
+            false
+        );
+
+        expect(mockedPostRequestBodyByUrl.get(VALIDATE_URL)).toEqual(
+            JSON.stringify({ layers: ["SCHEMA", "BUSINESS", "PACKAGE_SETTINGS", "PLATFORM_SERVICE"] })
+        );
+    })
+
+    it("Should render PLATFORM_SERVICE findings in human-readable output", async () => {
+        const response: SchemaValidationResponse = {
+            packageKey: "my-package",
+            valid: false,
+            summary: { errors: 0, warnings: 1, info: 0 },
+            results: [{
+                layer: "PLATFORM_SERVICE",
+                severity: "WARNING",
+                nodeKey: "my-knowledge-model",
+                assetType: "SEMANTIC_MODEL",
+                path: "$.dataModel",
+                code: "DATA_MODEL_NOT_FOUND",
+                message: "Referenced data model is not available in the target team"
+            }]
+        };
+
+        mockAxiosPost(VALIDATE_URL, response);
+
+        await new PackageValidationService(testContext).validatePackage("my-package", ["PLATFORM_SERVICE"], null, false);
+
+        const allMessages = loggingTestTransport.logMessages.map(m => m.message).join("\n");
+        expect(allMessages).toContain("Validation result: INVALID");
+        expect(allMessages).toContain("Warnings: 1");
+        expect(allMessages).toContain("my-knowledge-model (SEMANTIC_MODEL)");
+        expect(allMessages).toContain("DATA_MODEL_NOT_FOUND");
+    })
+
+    it("Should write PLATFORM_SERVICE findings to the JSON report when json flag is set", async () => {
+        const response: SchemaValidationResponse = {
+            packageKey: "my-package",
+            valid: false,
+            summary: { errors: 1, warnings: 0, info: 0 },
+            results: [{
+                layer: "PLATFORM_SERVICE",
+                severity: "ERROR",
+                nodeKey: "my-knowledge-model",
+                assetType: "SEMANTIC_MODEL",
+                path: "$.dataModel",
+                code: "DATA_MODEL_NOT_FOUND",
+                message: "Referenced data model is not available in the target team"
+            }]
+        };
+
+        mockAxiosPost(VALIDATE_URL, response);
+
+        await new PackageValidationService(testContext).validatePackage("my-package", ["PLATFORM_SERVICE"], null, true);
+
+        expect(mockWriteFileSync).toHaveBeenCalledWith(
+            expect.stringMatching(/config_validate_report_.+\.json$/),
+            JSON.stringify(response),
+            { encoding: "utf-8", mode: 0o600 }
+        );
+    })
 })

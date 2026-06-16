@@ -204,16 +204,19 @@ The `--layers` option selects which validation layers to run. Multiple layers ca
 | `SCHEMA` | Asset-schema conformance of each node's `configuration` field — required properties, enum values, type checks, conditional schemas. | Asset registry |
 | `BUSINESS` | Asset-type-specific business rules — for `SEMANTIC_MODEL`, e.g. PQL parsing, data-model availability, KPI uniqueness. Rules live in the owning asset service. | Owning asset service (e.g. `cloud-semantic-layer` for Knowledge Models) |
 | `PACKAGE_SETTINGS` | Package-level configuration rules — package dependencies, package variable definitions, variable assignments such as Studio data models, and flavor-specific package settings for Studio/OCDM packages. | Pacman plus flavor-specific services |
+| `PLATFORM_SERVICE` | Platform-service-owned validation — each participating platform service checks the assets it owns against its live service (for example Semantic Layer "list-problems" checks), surfacing platform-level problems that only the running service can detect. Which services take part, and how their findings map to severities, is declared by platform-service descriptors. | Owning platform services (e.g. `cloud-semantic-layer`), coordinated by Pacman |
 
-Currently `SCHEMA`, `BUSINESS`, and `PACKAGE_SETTINGS` are the layers accepted by the Pacman API. Other values are rejected with a `400 layers.unsupported` error.
+`SCHEMA`, `BUSINESS`, and `PACKAGE_SETTINGS` are accepted by the Pacman API today. `PLATFORM_SERVICE` is the newest layer and is only accepted once platform-service validation is enabled on the validate endpoint. Any value the endpoint does not (yet) support is rejected with a `400 layers.unsupported` error.
 
 To run all layers:
 
 ```bash
-content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS
+content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PLATFORM_SERVICE
 ```
 
 Use `PACKAGE_SETTINGS` when you need to verify that the package's own settings are usable in the destination team before continuing authoring or import work. It reports issues such as missing dependency versions, duplicate dependency or variable keys, blank variable keys/types, missing Studio data model assignments, and OCDM package-settings problems when the corresponding backend validation is enabled.
+
+Use `PLATFORM_SERVICE` to additionally validate the package against the live platform services that own its assets — for example Semantic Layer problem checks for Knowledge Models. The set of services that take part, and how their findings map to severities, is declared by platform-service descriptors, so new services can join the layer without CLI changes. Because it runs against the owning services, `PLATFORM_SERVICE` is only accepted once platform-service validation is enabled on the validate endpoint; until then the request is rejected with `400 layers.unsupported`.
 
 ### Validate Specific Nodes
 
@@ -228,7 +231,7 @@ content-cli config package validate --packageKey <packageKey> --nodeKeys node-ke
 Use `--json` to write the full validation report to a JSON file in the current working directory instead of printing it to the console:
 
 ```bash
-content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS --json
+content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PLATFORM_SERVICE --json
 ```
 
 The filename is printed on success:
@@ -248,7 +251,7 @@ interface ValidationReport {
 }
 
 interface ValidationResult {
-    layer: "SCHEMA" | "BUSINESS" | "PACKAGE_SETTINGS";
+    layer: "SCHEMA" | "BUSINESS" | "PACKAGE_SETTINGS" | "PLATFORM_SERVICE";
     severity: "ERROR" | "WARNING" | "INFO";
     nodeKey: string;
     assetType: string;
