@@ -1,5 +1,5 @@
 // Mock the modules using Jest
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { mockAxios } from "./utls/http-requests-mock";
 import { LoggingTestTransport } from "./utls/logging-test-transport";
 import { logger } from "../src/core/utils/logger";
