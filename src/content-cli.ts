@@ -25,6 +25,14 @@ export interface CreateProgramOptions {
     devMode?: boolean;
 }
 
+function addDefaultOptions(program: Command): void {
+    program.option("-q, --quietmode", "Reduce output to a minimum", false);
+    program.option("-p, --profile [profile]");
+    program.option("--gitProfile [gitProfile]", "Git profile to use");
+    program.option("--debug", "Print debug messages", false);
+    program.option("--dev", "Development Mode", false);
+}
+
 /**
  * Build a fully-configured Commander program without parsing argv
  */
@@ -36,11 +44,7 @@ export function createProgram(context: Context, opts: CreateProgramOptions = {})
         optionTerm: opt => new ContentCLIHelp().optionTerm(opt),
     });
     program.version(VersionUtils.getCurrentCliVersion());
-    program.option("-q, --quietmode", "Reduce output to a minimum", false);
-    program.option("-p, --profile [profile]");
-    program.option("--gitProfile [gitProfile]", "Git profile to use");
-    program.option("--debug", "Print debug messages", false);
-    program.option("--dev", "Development Mode", false);
+    addDefaultOptions(program);
 
     const moduleHandler = new ModuleHandler(program, context);
     configureRootCommands(moduleHandler.configurator);
@@ -78,11 +82,7 @@ async function run(): Promise<void> {
     // Parse global options up-front so banner/debug-level decisions can use
     // them before module discovery runs.
     const bootstrapProgram = new Command();
-    bootstrapProgram.option("-q, --quietmode", "Reduce output to a minimum", false);
-    bootstrapProgram.option("-p, --profile [profile]");
-    bootstrapProgram.option("--gitProfile [gitProfile]", "Git profile to use");
-    bootstrapProgram.option("--debug", "Print debug messages", false);
-    bootstrapProgram.option("--dev", "Development Mode", false);
+    addDefaultOptions(bootstrapProgram);
     bootstrapProgram.allowUnknownOption(true);
     bootstrapProgram.parseOptions(process.argv);
     const globalOpts = bootstrapProgram.opts();
