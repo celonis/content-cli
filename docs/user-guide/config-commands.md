@@ -206,7 +206,7 @@ The `--layers` option selects which validation layers to run. Multiple layers ca
 | `PACKAGE_SETTINGS` | Package-level configuration rules — package dependencies, package variable definitions, variable assignments such as Studio data models, and flavor-specific package settings for Studio/OCDM packages. | Pacman plus flavor-specific services |
 | `PLATFORM_SERVICE` | Platform-service-owned validation — each participating platform service checks the assets it owns against its live service (for example Semantic Layer "list-problems" checks), surfacing platform-level problems that only the running service can detect. Which services take part, and how their findings map to severities, is declared by platform-service descriptors. | Owning platform services (e.g. `cloud-semantic-layer`), coordinated by Pacman |
 
-`SCHEMA`, `BUSINESS`, and `PACKAGE_SETTINGS` are accepted by the Pacman API today. `PLATFORM_SERVICE` is the newest layer and is only accepted once platform-service validation is enabled on the validate endpoint. Any value the endpoint does not (yet) support is rejected with a `400 layers.unsupported` error.
+`SCHEMA`, `BUSINESS`, and `PACKAGE_SETTINGS` are accepted by the Pacman API. `PLATFORM_SERVICE` is accepted once platform-service validation is enabled on the validate endpoint. Any value the endpoint does not support is rejected with a `400 layers.unsupported` error.
 
 To run all layers:
 
@@ -216,7 +216,7 @@ content-cli config package validate --packageKey <packageKey> --layers SCHEMA BU
 
 Use `PACKAGE_SETTINGS` when you need to verify that the package's own settings are usable in the destination team before continuing authoring or import work. It reports issues such as missing dependency versions, duplicate dependency or variable keys, blank variable keys/types, missing Studio data model assignments, and OCDM package-settings problems when the corresponding backend validation is enabled.
 
-Use `PLATFORM_SERVICE` to additionally validate the package against the live platform services that own its assets — for example Semantic Layer problem checks for Knowledge Models. The set of services that take part, and how their findings map to severities, is declared by platform-service descriptors, so new services can join the layer without CLI changes. Because it runs against the owning services, `PLATFORM_SERVICE` is only accepted once platform-service validation is enabled on the validate endpoint; until then the request is rejected with `400 layers.unsupported`.
+Use `PLATFORM_SERVICE` to additionally validate the package against the live platform services that own its assets — for example Semantic Layer problem checks for Knowledge Models. The set of services that take part, and how their findings map to severities, is declared by platform-service descriptors, so additional services can join the layer without CLI changes. Because it runs against the owning services, `PLATFORM_SERVICE` is only accepted once platform-service validation is enabled on the validate endpoint.
 
 ### Validate Specific Nodes
 
