@@ -4,7 +4,7 @@ import { ActionFlowCommandService } from "../../../src/commands/action-flows/act
 import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { testContext } from "../../utls/test-context";
-import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
+import { getJsonFromDownloadedFile, zipToTempFolder } from "../../utls/fs-utils";
 
 describe("Import action-flows", () => {
 
@@ -27,9 +27,9 @@ describe("Import action-flows", () => {
         const resp = { data: mockImportResponse };
         (mockedAxiosInstance.post as jest.Mock).mockResolvedValue(resp);
         const zip = new AdmZip();
-        zip.writeZip("tmp.zip");
+        const zipPath = zipToTempFolder(zip);
 
-        await new ActionFlowCommandService(testContext).importActionFlows(packageId, "tmp", true, false);
+        await new ActionFlowCommandService(testContext).importActionFlows(packageId, zipPath, true, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(mockImportResponse, null, 4));
@@ -41,9 +41,9 @@ describe("Import action-flows", () => {
         const resp = { data: mockImportResponse };
         (mockedAxiosInstance.post as jest.Mock).mockResolvedValue(resp);
         const zip = new AdmZip();
-        zip.writeZip("tmp.zip");
+        const zipPath = zipToTempFolder(zip);
 
-        await new ActionFlowCommandService(testContext).importActionFlows(packageId, "tmp", true, true);
+        await new ActionFlowCommandService(testContext).importActionFlows(packageId, zipPath, true, true);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);

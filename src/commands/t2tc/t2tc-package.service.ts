@@ -20,6 +20,7 @@ import { StudioService } from "./studio.service";
 import { GitService } from "../../core/git-profile/git/git.service";
 import * as fs from "fs";
 import { FileConstants } from "../../core/utils/file.constants";
+import { resolve } from "node:path";
 
 export class T2tcPackageService {
 
@@ -248,7 +249,8 @@ export class T2tcPackageService {
         } else {
             const fileDownloadedMessage = "File downloaded successfully. New filename: ";
             const filename = `export_${uuidv4()}.zip`;
-            exportedZip.writeZip(filename, () => fs.chmodSync(filename, FileConstants.DEFAULT_FILE_PERMISSIONS));
+            const fullFilePath = resolve(process.cwd(), filename);
+            exportedZip.writeZip(fullFilePath, () => fs.chmodSync(fullFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
             logger.info(fileDownloadedMessage + filename);
         }
     }

@@ -3,9 +3,11 @@ import { resolve } from "node:path";
 import { loggingTestTransport } from "../jest.setup";
 import { FileService } from "../../src/core/utils/file-service";
 import { v4 as uuid } from "uuid";
+import AdmZip = require("adm-zip");
 
 export function getDownloadedFileName(): string {
-    return loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+    const filename = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
+    return resolve(process.cwd(), filename);
 }
 
 export function getJsonFromDownloadedFile(): any {
@@ -33,5 +35,11 @@ export function makeTempDir(): string {
 export function makeTempDirWithName(folder: string): string {
     const fullPath = resolve(process.cwd(), folder);
     mkdirSync(fullPath);
+    return fullPath;
+}
+
+export function zipToTempFolder(zip: AdmZip): string {
+    const fullPath = resolve(process.cwd(), `${uuid()}.zip`);
+    zip.writeZip(fullPath);
     return fullPath;
 }

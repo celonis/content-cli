@@ -11,7 +11,7 @@ import { SinglePackageImportResult } from "../../../src/commands/configuration-m
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
-import { getJsonFromDownloadedFile, makeTempDir } from "../../utls/fs-utils";
+import { getJsonFromDownloadedFile, makeTempDir, zipToTempFolder } from "../../utls/fs-utils";
 
 const IMPORT_URL = "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/import-file";
 
@@ -61,12 +61,12 @@ describe("Single package import", () => {
 
     it.each([true, false])("Should import a single package from a zip file with overwrite %p", async (overwrite: boolean) => {
         const packageZip = buildSinglePackageZip();
-        packageZip.writeZip("package.zip");
+        const zipPath = zipToTempFolder(packageZip);
 
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage("./package.zip", null, overwrite, false);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, overwrite, false);
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             IMPORT_URL,
@@ -94,22 +94,22 @@ describe("Single package import", () => {
 
     it("Should write the import result to a json file when jsonResponse is true", async () => {
         const packageZip = buildSinglePackageZip();
-        packageZip.writeZip("package.zip");
+        const zipPath = zipToTempFolder(packageZip);
 
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, true);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, false, true);
 
         expect(getJsonFromDownloadedFile()).toEqual(importResponse);
     });
 
     it("Should pass the overwrite flag to the API", async () => {
         const packageZip = buildSinglePackageZip();
-        packageZip.writeZip("package.zip");
+        const zipPath = zipToTempFolder(packageZip);
         mockAxiosPost(IMPORT_URL, buildImportResponse());
 
-        await new SinglePackageImportService(testContext).importPackage("./package.zip", null, true, false);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, true, false);
 
         expect(mockedPostRequestBodyByUrl.has(IMPORT_URL)).toBe(true);
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
@@ -148,6 +148,8 @@ describe("Single package import", () => {
     });
 
     it("Should throw when the uncompressed zip size exceeds the 4 GB limit", async () => {
+        const packageZip = buildSinglePackageZip();
+        const zipPath = zipToTempFolder(packageZip);
         const FIVE_GB = 5 * 1024 * 1024 * 1024;
         (AdmZip as unknown as jest.Mock).mockImplementationOnce((...args: any[]) => {
             const instance = jest.requireActual<any>("adm-zip")(...args);
@@ -156,8 +158,8 @@ describe("Single package import", () => {
         });
 
         await expect(
-            new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, false)
-        ).rejects.toThrow('Failed to handle zip file "./package.zip": uncompressed size 5.00 GB exceeds the 4 GB limit.');
+            new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false)
+        ).rejects.toThrow(/Failed to handle zip file ".+": uncompressed size 5.00 GB exceeds the 4 GB limit./);
     });
 
 });
