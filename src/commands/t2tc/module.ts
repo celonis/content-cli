@@ -26,7 +26,7 @@ class Module extends IModule {
             .action(this.listPackages);
 
         t2tcPackageCommand.command("export")
-            .description("Export one or more packages into a Team-to-Team Copy archive. The archive is consumed by 't2tc package import' / 't2tc package diff'.")
+            .description("Export one or more packages into a Team-to-Team Copy archive. The archive is consumed by 't2tc package import' / 't2tc package diff'. To export a single standalone package, use 'config package export'.")
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
