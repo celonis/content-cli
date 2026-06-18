@@ -6,6 +6,7 @@ The `config` command group manages a package and its resources — importing a s
 
 - **Package & resource commands** — work with a package and its contents:
     - [`config package import`](#package-commands-config-package) — import a single package
+    - [`config package export`](#export-a-package) — export a single package
     - [`config package validate`](#validate-package-configurations-config-package-validate) — validate a package's staging version
     - [`config package list`](#list-packages-config-package-list) — list packages (staging by default)
     - [`config nodes …`](#finding-nodes) — work with individual nodes
@@ -17,7 +18,7 @@ The `config` command group manages a package and its resources — importing a s
 
 ## Package vs. batch artifact format
 
-`config package import` works with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The Team-to-Team Copy commands instead use a multi-package **batch artifact** (a top-level `manifest.json`, `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package). The two formats are **not interchangeable**:
+`config package import` and `config package export` work with a plain **package zip** (a `package.json`, an optional `variables.json`, and a `nodes/` folder). The Team-to-Team Copy commands instead use a multi-package **batch artifact** (a top-level `manifest.json`, `variables.json`, `studio.json`, and a nested `<packageKey>_<version>.zip` per package). The two formats are **not interchangeable**:
 
 - An archive from `t2tc package export` can be imported with `t2tc package import` or inspected with `t2tc package diff` — but **not** with `config package import`.
 - A package zip used by `config package import` **cannot** be imported with `t2tc package import` or diffed with `t2tc package diff`.
@@ -39,7 +40,7 @@ This applies to every command that reads or modifies a single package or its nod
 - `config nodes create`, `config nodes update`, `config nodes archive`
 - `config variables list`
 - `config versions get`, `config versions create`
-- `config package validate`, `config package import`, `config metadata export`
+- `config package validate`, `config package import`, `config package export`, `config metadata export`
 - `t2tc package export`, `t2tc package import`, `t2tc package diff`
 
 If the authenticated profile does not have the required permission, the command fails with `Access is Denied`.
@@ -166,6 +167,49 @@ content-cli config package import -p <sourceProfile> -f <file path> --json
 ```bash
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
+
+### Export a Package
+
+`config package export` is the counterpart of [`config package import`](#import-a-package): it exports a single package's **staging (draft) version** in the package format. As with the `config nodes` commands, "staging" refers to the current draft state of the package — the unpublished working version, not a published package version. The output uses the same flat [package format](#package-zip-format) that `config package import` consumes, so a package can be exported from one team and imported into another without any conversion. Unlike [`t2tc package export`](./t2tc-commands.md#export-packages) — which produces a multi-package **batch artifact** — this command exports exactly one package on its own.
+
+> The artifact produced here is a **single package** in the package format, not a batch artifact. It cannot be imported with `t2tc package import` or diffed with `t2tc package diff`. Use [`config package import`](#import-a-package) to import it back.
+
+This command requires **edit permission** on the target package (see [Permissions](#permissions)).
+
+By default the package is exported **unzipped** into a `<packageKey>` directory in the current working directory (where you run the CLI) — handy for inspecting or version-controlling the package contents:
+
+```bash
+content-cli config package export -p <sourceProfile> --packageKey <packageKey>
+```
+
+```bash
+info:    Successful export. Exported directory: my-package
+```
+
+Use `--zip` to export the package as a single `<packageKey>.zip` file in the current working directory instead:
+
+```bash
+content-cli config package export -p <sourceProfile> --packageKey <packageKey> --zip
+```
+
+```bash
+info:    File downloaded successfully. New filename: my-package.zip
+```
+
+#### Package Layout
+
+Whether exported unzipped or as a zip, the package uses the same flat layout consumed by [`config package import`](#package-zip-format):
+
+```bash
+my-package/
+├─ package.json        # package metadata and configuration (key, name, type, flavor, configuration)
+├─ variables.json      # present only when the package has variable assignments
+├─ nodes/
+│  ├─ <nodeKey>.json   # one file per node
+│  ├─ ...
+```
+
+`variables.json` is omitted when the package has no variable assignments.
 
 ## Validate Package Configurations (`config package validate`)
 

@@ -8,6 +8,7 @@ import { NodeDependencyService } from "../../../src/commands/configuration-manag
 import { PackageVersionCommandService } from "../../../src/commands/configuration-management/package-version-command.service";
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
+import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
 import { buildTestProgram } from "../../utls/cli-program";
 import { loggingTestTransport } from "../../jest.setup";
 
@@ -19,6 +20,7 @@ jest.mock("../../../src/commands/configuration-management/node-dependency.servic
 jest.mock("../../../src/commands/configuration-management/node-diff.service");
 jest.mock("../../../src/commands/configuration-management/package-version-command.service");
 jest.mock("../../../src/commands/configuration-management/single-package-import.service");
+jest.mock("../../../src/commands/configuration-management/single-package-export.service");
 
 describe("configuration-management command integration", () => {
     let program: Command;
@@ -30,6 +32,7 @@ describe("configuration-management command integration", () => {
     let mockNodeDiffService: jest.Mocked<NodeDiffService>;
     let mockPackageVersionCommandService: jest.Mocked<PackageVersionCommandService>;
     let mockSinglePackageImportService: jest.Mocked<SinglePackageImportService>;
+    let mockSinglePackageExportService: jest.Mocked<SinglePackageExportService>;
 
     beforeEach(() => {
         mockConfigCommandService = {
@@ -69,6 +72,10 @@ describe("configuration-management command integration", () => {
             importPackage: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockSinglePackageExportService = {
+            exportPackage: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (StagingPackageService as jest.MockedClass<typeof StagingPackageService>).mockImplementation(() => mockStagingPackageService);
         (MetadataService as jest.MockedClass<typeof MetadataService>).mockImplementation(() => mockMetadataService);
@@ -77,6 +84,7 @@ describe("configuration-management command integration", () => {
         (NodeDiffService as jest.MockedClass<typeof NodeDiffService>).mockImplementation(() => mockNodeDiffService);
         (PackageVersionCommandService as jest.MockedClass<typeof PackageVersionCommandService>).mockImplementation(() => mockPackageVersionCommandService);
         (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
+        (SinglePackageExportService as jest.MockedClass<typeof SinglePackageExportService>).mockImplementation(() => mockSinglePackageExportService);
 
         program = buildTestProgram([Module]);
     });
@@ -515,6 +523,26 @@ describe("configuration-management command integration", () => {
                 "single-package.zip",
                 undefined,
                 true,
+                true
+            );
+        });
+    });
+
+    describe("config package export (exportSinglePackage)", () => {
+        it("exports unzipped by default (zip defaults to false)", async () => {
+            await runCli(["config", "package", "export", "--packageKey", "my-package"]);
+
+            expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
+                "my-package",
+                false
+            );
+        });
+
+        it("forwards --zip", async () => {
+            await runCli(["config", "package", "export", "--packageKey", "my-package", "--zip"]);
+
+            expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
+                "my-package",
                 true
             );
         });
