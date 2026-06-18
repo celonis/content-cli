@@ -204,19 +204,20 @@ The `--layers` option selects which validation layers to run. Multiple layers ca
 | `SCHEMA` | Asset-schema conformance of each node's `configuration` field — required properties, enum values, type checks, conditional schemas. | Asset registry |
 | `BUSINESS` | Asset-type-specific business rules — for `SEMANTIC_MODEL`, e.g. PQL parsing, data-model availability, KPI uniqueness. Rules live in the owning asset service. | Owning asset service (e.g. `cloud-semantic-layer` for Knowledge Models) |
 | `PACKAGE_SETTINGS` | Package-level configuration rules — package dependencies, package variable definitions, variable assignments such as Studio data models, and flavor-specific package settings for Studio/OCDM packages. | Pacman plus flavor-specific services |
-| `PLATFORM_SERVICE` | Platform-service-owned validation — each participating platform service checks the assets it owns against its live service (for example Semantic Layer "list-problems" checks), surfacing platform-level problems that only the running service can detect. Which services take part, and how their findings map to severities, is declared by platform-service descriptors. | Owning platform services (e.g. `cloud-semantic-layer`), coordinated by Pacman |
+| `PIG_SEMANTICS` | Semantic-model validation delegated to the Process Intelligence Graph semantic-layer runtime (PIG-SL), surfacing the `list-problems` findings the live service reports for Knowledge Models. | Semantic layer (`cloud-semantic-layer`) |
+| `DATA_PIPELINES` | Validation delegated to the data-pipeline platform service for the package's data-integration assets. | Data pipeline service |
 
-`SCHEMA`, `BUSINESS`, `PACKAGE_SETTINGS`, and `PLATFORM_SERVICE` are the layers accepted by the Pacman API. Other values are rejected with a `400 layers.unsupported` error.
+`SCHEMA`, `BUSINESS`, `PACKAGE_SETTINGS`, `PIG_SEMANTICS`, and `DATA_PIPELINES` are the layers accepted by the Pacman API. Other values are rejected with a `400 layers.unsupported` error.
 
 To run all layers:
 
 ```bash
-content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PLATFORM_SERVICE
+content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PIG_SEMANTICS DATA_PIPELINES
 ```
 
 Use `PACKAGE_SETTINGS` when you need to verify that the package's own settings are usable in the destination team before continuing authoring or import work. It reports issues such as missing dependency versions, duplicate dependency or variable keys, blank variable keys/types, missing Studio data model assignments, and OCDM package-settings problems when the corresponding backend validation is enabled.
 
-Use `PLATFORM_SERVICE` to additionally validate the package against the live platform services that own its assets — for example Semantic Layer problem checks for Knowledge Models. The set of services that take part, and how their findings map to severities, is declared by platform-service descriptors, so additional services can join the layer without CLI changes.
+Use `PIG_SEMANTICS` and `DATA_PIPELINES` to additionally validate the package against the live platform services that own its assets: `PIG_SEMANTICS` runs the Process Intelligence Graph semantic-layer checks (for example for Knowledge Models) and `DATA_PIPELINES` runs the data-pipeline service checks for the package's data-integration assets. Both delegate validation to the owning service rather than running in-process; which services take part, and how their findings map to severities, is declared by platform-service descriptors.
 
 ### Validate Specific Nodes
 
@@ -231,7 +232,7 @@ content-cli config package validate --packageKey <packageKey> --nodeKeys node-ke
 Use `--json` to write the full validation report to a JSON file in the current working directory instead of printing it to the console:
 
 ```bash
-content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PLATFORM_SERVICE --json
+content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PIG_SEMANTICS DATA_PIPELINES --json
 ```
 
 The filename is printed on success:
@@ -251,7 +252,7 @@ interface ValidationReport {
 }
 
 interface ValidationResult {
-    layer: "SCHEMA" | "BUSINESS" | "PACKAGE_SETTINGS" | "PLATFORM_SERVICE";
+    layer: "SCHEMA" | "BUSINESS" | "PACKAGE_SETTINGS" | "PIG_SEMANTICS" | "DATA_PIPELINES";
     severity: "ERROR" | "WARNING" | "INFO";
     nodeKey: string;
     assetType: string;
