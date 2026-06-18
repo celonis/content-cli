@@ -46,8 +46,7 @@ describe("Package Version create", () => {
             packageKey, "1.2.0", "NONE", "Added new analysis views", undefined, true,
         );
 
-        const savedTransport = getJsonFromDownloadedFile() as PackageVersionCreatedTransport;
-        expect(savedTransport).toEqual(createdVersion);
+        expect(getJsonFromDownloadedFile()).toEqual(createdVersion);
     });
 
     it("Should create package version with PATCH version bump option", async () => {

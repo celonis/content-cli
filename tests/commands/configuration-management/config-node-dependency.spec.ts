@@ -51,8 +51,7 @@ describe("Node Dependencies", () => {
 
         await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, version, true);
 
-        const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
-        expect(dependenciesTransport).toEqual(dependencies);
+        expect(getJsonFromDownloadedFile()).toEqual(dependencies);
     });
 
     it("Should handle empty dependencies list in console output", async () => {
@@ -79,8 +78,7 @@ describe("Node Dependencies", () => {
 
         await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, version, true);
 
-        const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
-        expect(dependenciesTransport).toEqual([]);
+        expect(getJsonFromDownloadedFile()).toEqual([]);
     });
 
     it("Should list single node dependency", async () => {
@@ -128,8 +126,7 @@ describe("Node Dependencies", () => {
 
             await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, null, true);
 
-            const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
-            expect(dependenciesTransport).toEqual(dependencies);
+            expect(getJsonFromDownloadedFile()).toEqual(dependencies);
         });
 
         it("Should handle empty staging dependencies list in console output", async () => {
@@ -156,8 +153,7 @@ describe("Node Dependencies", () => {
 
             await new NodeDependencyService(testContext).listNodeDependencies(packageKey, nodeKey, null, true);
 
-            const dependenciesTransport = getJsonFromDownloadedFile() as NodeDependencyTransport[];
-            expect(dependenciesTransport).toEqual([]);
+            expect(getJsonFromDownloadedFile()).toEqual([]);
         });
 
         it("Should list single staging node dependency", async () => {

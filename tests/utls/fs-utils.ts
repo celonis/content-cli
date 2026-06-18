@@ -1,8 +1,7 @@
-import { readFileSync, mkdirSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { loggingTestTransport } from "../jest.setup";
 import { FileService } from "../../src/core/utils/file-service";
-import { writeFileSync } from "node:fs";
 import { v4 as uuid } from "uuid";
 
 export function getDownloadedFileName(): string {

@@ -45,8 +45,7 @@ describe("Package Version get", () => {
 
         await new PackageVersionService(testContext).findPackageVersion(packageKey, version, true);
 
-        const packageVersionTransport = getJsonFromDownloadedFile() as PackageVersionTransport;
-        expect(packageVersionTransport).toEqual(packageVersion);
+        expect(getJsonFromDownloadedFile()).toEqual(packageVersion);
     });
 
     it("Should handle package version with empty publish message", async () => {

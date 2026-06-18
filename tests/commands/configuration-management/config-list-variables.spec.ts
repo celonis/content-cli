@@ -155,7 +155,6 @@ describe("Config listVariables", () => {
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
-        const downloadedFile = getJsonFromDownloadedFile();
         expect(getJsonFromDownloadedFile()).toEqual(fixedVariableManifests);
     })
 

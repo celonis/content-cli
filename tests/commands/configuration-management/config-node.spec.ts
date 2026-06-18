@@ -102,9 +102,7 @@ describe("Node find", () => {
 
         await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, true);
 
-        const nodeTransport = getJsonFromDownloadedFile() as NodeTransport;
-
-        expect(nodeTransport).toEqual(node);
+        expect(getJsonFromDownloadedFile()).toEqual(node);
     });
 
     it("Should find node with configuration and return as JSON", async () => {

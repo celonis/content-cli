@@ -4,7 +4,7 @@ jest.mock("adm-zip", () => {
     const realAdmZip = jest.requireActual("adm-zip");
     return jest.fn((...args: any[]) => realAdmZip(...args));
 });
-import fs = require("fs");
+import fs = require("node:fs");
 import { mockAxiosPost, mockedAxiosInstance, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageImportResult } from "../../../src/commands/configuration-management/interfaces/single-package-import.interfaces";

@@ -51,9 +51,7 @@ describe("Node create", () => {
 
         await new NodeService(testContext).createNode(packageKey, JSON.stringify(saveTransport), undefined, false, true);
 
-        const savedTransport = getJsonFromDownloadedFile() as NodeTransport;
-
-        expect(savedTransport).toEqual(createdNode);
+        expect(getJsonFromDownloadedFile()).toEqual(createdNode);
     });
 
     it("Should send correct request body", async () => {

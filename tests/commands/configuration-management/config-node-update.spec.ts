@@ -50,8 +50,7 @@ describe("Node update", () => {
 
         await new NodeService(testContext).updateNode(packageKey, nodeKey, JSON.stringify(updateTransport), undefined, false, true);
 
-        const savedTransport = getJsonFromDownloadedFile() as NodeTransport;
-        expect(savedTransport).toEqual(updatedNode);
+        expect(getJsonFromDownloadedFile()).toEqual(updatedNode);
     });
 
     it("Should send correct request body", async () => {

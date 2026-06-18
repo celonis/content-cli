@@ -36,8 +36,6 @@ describe("Deployment create", () => {
 
         await new DeploymentService(testContext).createDeployment(deployment.packageKey, deployment.packageVersion, deployment.deployableType, deployment.target.id, true);
 
-        const deploymentTransport = getJsonFromDownloadedFile() as DeploymentTransport;
-
-        expect(deploymentTransport).toEqual(deployment);
+        expect(getJsonFromDownloadedFile()).toEqual(deployment);
     });
 })
