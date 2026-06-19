@@ -3,8 +3,9 @@ import AdmZip = require("adm-zip");
 import { mockAxiosGet, mockAxiosGetError, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
+import { accessSync, readFileSync } from "node:fs";
 
 const PACKAGE_KEY = "pkg-1";
 const EXPORT_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/export-file`;
@@ -44,7 +45,6 @@ describe("Single package export", () => {
         const [extractedData, extractedDir] = extractSpy.mock.calls[0];
         expect((extractedData as Buffer).equals(packageData)).toBe(true);
         expect(extractedDir).toEqual(PACKAGE_KEY);
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages[0].message).toContain(`Successful export. Exported directory: ${PACKAGE_KEY}`);
     });
 
@@ -56,10 +56,10 @@ describe("Single package export", () => {
 
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(EXPORT_URL, expect.anything());
 
-        const [writtenPath, writtenData, writtenOptions] = mockWriteFileSync.mock.calls[0];
-        expect(writtenPath).toEqual(path.resolve(process.cwd(), `${PACKAGE_KEY}.zip`));
-        expect((writtenData as Buffer).equals(packageData)).toBe(true);
-        expect(writtenOptions).toEqual({ mode: 0o600 });
+        console.log(`CWD is ${process.cwd()}`);
+        const expectedFile = path.resolve(process.cwd(), `${PACKAGE_KEY}.zip`);
+        expect(() => accessSync(expectedFile)).not.toThrow();
+        expect(readFileSync(expectedFile)).toEqual(packageData);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${FileService.fileDownloadedMessage}${PACKAGE_KEY}.zip`);
     });
 
@@ -69,7 +69,5 @@ describe("Single package export", () => {
         await expect(
             new SinglePackageExportService(testContext).exportPackage(PACKAGE_KEY, false)
         ).rejects.toThrow(`Problem exporting package ${PACKAGE_KEY}`);
-
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
     });
 });

@@ -13,11 +13,14 @@ mockAxios();
 let tempDir = null;
 beforeAll(done => {
     fs.mkdtemp(join(tmpdir(), "jest"), (err, dir) => {
-        const spy = jest.spyOn(process, "cwd");
-        spy.mockReturnValue(dir);
         tempDir = dir;
         done();
     });
+});
+
+beforeEach(() => {
+    const spy = jest.spyOn(process, "cwd");
+    spy.mockReturnValue(tempDir);
 });
 
 afterEach(() => {
