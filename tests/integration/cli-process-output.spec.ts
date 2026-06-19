@@ -1,6 +1,7 @@
 import { Command, OptionValues } from "commander";
+import AdmZip = require("adm-zip");
 import { runCli } from "../utls/cli-runner";
-import { mockAxiosGet, mockAxiosGetError } from "../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosGetError, mockAxiosPost } from "../utls/http-requests-mock";
 import {
     ASSET_REGISTRY_DISABLED_ERROR,
     ASSET_REGISTRY_DISABLED_USER_MESSAGE,
@@ -14,8 +15,12 @@ import { Configurator, IModule } from "../../src/core/command/module-handler";
 import { Context } from "../../src/core/command/cli-context";
 import { FatalError, GracefulError } from "../../src/core/utils/logger";
 import { VersionUtils } from "../../src/core/utils/version";
+import { zipToTempFolder } from "../utls/fs-utils";
+import { T2tcPackageApi } from "../../src/commands/t2tc/api/t2tc-package-api";
+import { VariableApi } from "../../src/commands/configuration-management/api/variable-api";
 
 import AssetRegistryModule = require("../../src/commands/asset-registry/module");
+import ConfigModule = require("../../src/commands/configuration-management/module");
 
 const GRACEFUL_MESSAGE = "graceful failure - should not fail the process";
 
@@ -178,6 +183,51 @@ describe("CLI process output and exit codes", () => {
             const result = await runCli(["diag", "fatal"], [DiagnosticsModule]);
 
             expect(result.exitCode).toBe(1);
+        });
+    });
+
+    describe("config export", () => {
+        it("downloads zip and exits 0", async () => {
+            const zip = new AdmZip();
+            zip.addFile("manifest.json", Buffer.from(JSON.stringify([
+                { packageKey: "my-package", flavor: "AUTOMATION", activeVersion: "1.0.0", dependenciesByVersion: {} },
+            ])));
+            jest.spyOn(T2tcPackageApi.prototype, "exportPackages").mockResolvedValue(zip.toBuffer());
+            jest.spyOn(VariableApi.prototype, "findVariablesWithValuesByPackageKeysAndVersion").mockResolvedValue([]);
+
+            const result = await runCli(
+                ["config", "export", "--packageKeys", "my-package"],
+                [ConfigModule]
+            );
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("File downloaded successfully");
+        });
+
+        it("exits non-zero when no package filter is provided", async () => {
+            const result = await runCli(["config", "export"], [ConfigModule]);
+
+            expect(result.exitCode).toBe(1);
+            expect(result.output).toContain("Please provide either --packageKeys or --keysByVersion");
+        });
+    });
+
+    describe("config import", () => {
+        const PACKAGES_URL = `${BASE_URL}/package-manager/api/packages`;
+        const IMPORT_BATCH_URL = `${BASE_URL}/package-manager/api/core/packages/import/batch`;
+
+        it("imports zip and exits 0", async () => {
+            const zipFilePath = zipToTempFolder(new AdmZip());
+            mockAxiosGet(PACKAGES_URL, []);
+            mockAxiosPost(IMPORT_BATCH_URL, []);
+
+            const result = await runCli(
+                ["config", "import", "--file", zipFilePath],
+                [ConfigModule]
+            );
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("Config import report file:");
         });
     });
 });
