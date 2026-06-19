@@ -1,7 +1,6 @@
-import { Command } from "commander";
-import { IModuleConstructor, ModuleHandler } from "../../src/core/command/module-handler";
-import { Context } from "../../src/core/command/cli-context";
-import { HttpClient } from "../../src/core/http/http-client";
+import { IModuleConstructor } from "../../src/core/command/module-handler";
+import { createProgram } from "../../src/content-cli";
+import { testContext } from "./test-context";
 
 export interface CliRunResult {
     stdout: string;
@@ -17,39 +16,6 @@ class ExitSignal extends Error {
     constructor(public readonly code: number) {
         super(`process.exit(${code})`);
     }
-}
-
-function buildTestContext(): Context {
-    const context = new Context({});
-    context.profile = {
-        name: "test",
-        type: "Key",
-        team: "https://myTeam.celonis.cloud/",
-        apiToken: "test-token",
-        authenticationType: "Bearer",
-    };
-    context._httpClient = new HttpClient(context);
-    return context;
-}
-
-function buildProgram(context: Context, modules: IModuleConstructor[]): Command {
-    const program = new Command();
-    program.exitOverride();
-    program.version("test-version");
-    program.option("-q, --quietmode", "Reduce output to a minimum", false);
-    program.option("-p, --profile [profile]");
-    program.option("--gitProfile [gitProfile]", "Git profile to use");
-    program.option("--debug", "Print debug messages", false);
-    program.option("--dev", "Development Mode", false);
-
-    const moduleHandler = new ModuleHandler(program, context);
-    moduleHandler.configurator.command("list").description("Commands to list content.").alias("ls");
-
-    for (const ModuleClass of modules) {
-        new ModuleClass().register(context, moduleHandler.configurator);
-    }
-
-    return program;
 }
 
 export async function runCli(args: string[], modules: IModuleConstructor[]): Promise<CliRunResult> {
@@ -79,8 +45,8 @@ export async function runCli(args: string[], modules: IModuleConstructor[]): Pro
     process.exitCode = 0;
 
     try {
-        const context = buildTestContext();
-        const program = buildProgram(context, modules);
+        const program = createProgram(testContext, { modules });
+        program.exitOverride();
         await program.parseAsync(["node", "content-cli", ...args]);
     } catch (error) {
         if (error instanceof ExitSignal) {

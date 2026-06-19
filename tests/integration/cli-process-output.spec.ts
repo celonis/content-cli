@@ -5,10 +5,15 @@ import {
     ASSET_REGISTRY_DISABLED_ERROR,
     ASSET_REGISTRY_DISABLED_USER_MESSAGE,
 } from "../../src/commands/asset-registry/asset-registry-error";
-import { AssetRegistryMetadata } from "../../src/commands/asset-registry/asset-registry.interfaces";
+import {
+    AgentSkillsResponse,
+    AssetRegistryDescriptor,
+    AssetRegistryMetadata,
+} from "../../src/commands/asset-registry/asset-registry.interfaces";
 import { Configurator, IModule } from "../../src/core/command/module-handler";
 import { Context } from "../../src/core/command/cli-context";
 import { FatalError, GracefulError } from "../../src/core/utils/logger";
+import { VersionUtils } from "../../src/core/utils/version";
 
 import AssetRegistryModule = require("../../src/commands/asset-registry/module");
 
@@ -33,42 +38,108 @@ class DiagnosticsModule extends IModule {
 }
 
 describe("CLI process output and exit codes", () => {
-    const TYPES_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types";
+    const BASE_URL = "https://myTeam.celonis.cloud";
+    const TYPES_URL = `${BASE_URL}/pacman/api/core/asset-registry/types`;
+    const SKILLS_URL = `${BASE_URL}/pacman/api/core/asset-registry/skills`;
+    const TYPE_URL = `${BASE_URL}/pacman/api/core/asset-registry/types/BOARD_V2`;
+    const SCHEMA_URL = `${BASE_URL}/pacman/api/core/asset-registry/schemas/BOARD_V2`;
+    const EXAMPLES_URL = `${BASE_URL}/pacman/api/core/asset-registry/examples/BOARD_V2`;
 
-    const metadata: AssetRegistryMetadata = {
-        types: {
-            BOARD_V2: {
-                assetType: "BOARD_V2",
-                displayName: "View",
-                description: null,
-                group: "DASHBOARDS",
-                assetSchema: { version: "2.1.0" },
-                service: { basePath: "/blueprint/api" },
-                endpoints: {
-                    schema: "/schema/board_v2",
-                    validate: "/validate/board_v2",
-                    examples: "/examples/board_v2",
-                },
-                contributions: { pigEntityTypes: [], dataPipelineEntityTypes: [], actionTypes: [] },
-            },
+    const descriptor: AssetRegistryDescriptor = {
+        assetType: "BOARD_V2",
+        displayName: "View",
+        description: null,
+        group: "DASHBOARDS",
+        assetSchema: { version: "2.1.0" },
+        service: { basePath: "/blueprint/api" },
+        endpoints: {
+            schema: "/schema/board_v2",
+            validate: "/validate/board_v2",
+            examples: "/examples/board_v2",
         },
+        contributions: { pigEntityTypes: [], dataPipelineEntityTypes: [], actionTypes: [] },
+    };
+
+    const metadata: AssetRegistryMetadata = { types: { BOARD_V2: descriptor } };
+
+    const skills: AgentSkillsResponse = {
+        skills: [
+            {
+                name: "board-create",
+                description: "Create a new View asset",
+                path: "/blueprint/api/skills/board-create",
+                metadata: { version: "1.0.0" },
+            },
+        ],
     };
 
     describe("successful commands", () => {
-        it("Should print the version and exit with code 0", async () => {
+        it("Should print the CLI version and exit with code 0", async () => {
             const result = await runCli(["-V"], [AssetRegistryModule]);
 
             expect(result.exitCode).toBe(0);
-            expect(result.stdout).toContain("test-version");
+            expect(result.stdout).toContain(VersionUtils.getCurrentCliVersion());
         });
 
-        it("Should print asset types to stdout and exit with code 0", async () => {
+        it("asset-registry list: prints types to output and exits 0", async () => {
             mockAxiosGet(TYPES_URL, metadata);
 
             const result = await runCli(["asset-registry", "list"], [AssetRegistryModule]);
 
             expect(result.exitCode).toBe(0);
             expect(result.output).toContain("BOARD_V2 - View [DASHBOARDS]");
+        });
+
+        it("asset-registry get: prints full descriptor and exits 0", async () => {
+            mockAxiosGet(TYPE_URL, descriptor);
+
+            const result = await runCli(
+                ["asset-registry", "get", "--assetType", "BOARD_V2"],
+                [AssetRegistryModule]
+            );
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("Asset Type:   BOARD_V2");
+            expect(result.output).toContain("Display Name: View");
+            expect(result.output).toContain("Group:        DASHBOARDS");
+        });
+
+        it("asset-registry schema: prints schema JSON and exits 0", async () => {
+            const schema = { $schema: "http://json-schema.org/draft-07/schema#", type: "object" };
+            mockAxiosGet(SCHEMA_URL, schema);
+
+            const result = await runCli(
+                ["asset-registry", "schema", "--assetType", "BOARD_V2"],
+                [AssetRegistryModule]
+            );
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("json-schema.org");
+        });
+
+        it("asset-registry examples: prints example JSON and exits 0", async () => {
+            const example = { name: "simple-view", configuration: { title: "My View" } };
+            mockAxiosGet(EXAMPLES_URL, [example]);
+
+            const result = await runCli(
+                ["asset-registry", "examples", "--assetType", "BOARD_V2"],
+                [AssetRegistryModule]
+            );
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("simple-view");
+        });
+
+        it("asset-registry skills list: prints skill names and exits 0", async () => {
+            mockAxiosGet(SKILLS_URL, skills);
+
+            const result = await runCli(
+                ["asset-registry", "skills", "list"],
+                [AssetRegistryModule]
+            );
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("board-create");
         });
     });
 
