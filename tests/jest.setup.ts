@@ -1,21 +1,41 @@
 // Mock the modules using Jest
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { mockAxios } from "./utls/http-requests-mock";
 import { LoggingTestTransport } from "./utls/logging-test-transport";
 import { logger } from "../src/core/utils/logger";
+import { tmpdir } from "os"
+import { join } from "path";
+
+import process = require("process");
 
 mockAxios();
-jest.mock("fs");
-jest.mock("node:fs", () => require("fs"));
 
-const mockWriteFileSync = jest.fn();
-(fs.writeFileSync as jest.Mock).mockImplementation(mockWriteFileSync);
+let tempDir = null;
+beforeAll(done => {
+    fs.mkdtemp(join(tmpdir(), "jest"), (err, dir) => {
+        tempDir = dir;
+        done();
+    });
+});
 
-const mockWriteSync = jest.fn();
-(fs.writeSync as jest.Mock).mockImplementation(mockWriteSync);
+beforeEach(() => {
+    const spy = jest.spyOn(process, "cwd");
+    spy.mockReturnValue(tempDir);
+});
 
 afterEach(() => {
     jest.clearAllMocks();
+});
+
+afterAll(() => {
+    if (tempDir !== null) {
+        logger.info(`Removing tempdir: ${tempDir}`);
+        try {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        } catch (e) {
+            logger.warn(`Could not delete tempdir: ${tempDir}`, e);
+        }
+    }
 });
 
 let loggingTestTransport: LoggingTestTransport;
@@ -26,4 +46,4 @@ beforeEach(() => {
     logger.add(loggingTestTransport);
 });
 
-export {loggingTestTransport, mockWriteFileSync, mockWriteSync};
+export {loggingTestTransport};

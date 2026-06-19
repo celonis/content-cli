@@ -2,6 +2,7 @@ import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
 import { SinglePackageExportApi } from "./api/single-package-export-api";
+import { resolve } from "node:path";
 
 export class SinglePackageExportService {
 
@@ -16,7 +17,7 @@ export class SinglePackageExportService {
 
         if (zip) {
             const fileName = `${packageKey}.zip`;
-            fileService.writeBufferToFileWithGivenName(packageData, fileName);
+            fileService.writeBufferToFileWithGivenName(packageData, resolve(process.cwd(), fileName));
             logger.info(FileService.fileDownloadedMessage + fileName);
             return;
         }

@@ -2,9 +2,8 @@ import { AssetRegistryMetadata } from "../../../src/commands/asset-registry/asse
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Asset registry list", () => {
     const metadata: AssetRegistryMetadata = {
@@ -85,14 +84,7 @@ describe("Asset registry list", () => {
 
         await new AssetRegistryService(testContext).listTypes(true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as AssetRegistryMetadata;
+        const written = getJsonFromDownloadedFile() as AssetRegistryMetadata;
         expect(Object.keys(written.types).length).toBe(2);
         expect(written.types["BOARD_V2"].assetType).toBe("BOARD_V2");
         expect(written.types["SEMANTIC_MODEL"].assetType).toBe("SEMANTIC_MODEL");

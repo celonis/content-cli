@@ -2,9 +2,9 @@ import { DeployableTransport, TargetTransport } from "../../../src/commands/depl
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { DeploymentService } from "../../../src/commands/deployment/deployment.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { getJsonFromFile } from "../../utls/fs-utils";
 
 describe("Deployment list targets", () => {
     const firstTarget: TargetTransport = {
@@ -34,9 +34,7 @@ describe("Deployment list targets", () => {
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const targetTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as DeployableTransport[];
+        const targetTransports = getJsonFromFile(expectedFileName) as DeployableTransport[];
         expect(targetTransports.length).toBe(2);
 
         const firstTargetTransport = targetTransports.filter(transport => transport.name === firstTarget.name)[0];

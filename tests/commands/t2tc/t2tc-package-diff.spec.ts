@@ -1,5 +1,3 @@
-import * as path from "path";
-import { mockCreateReadStream, mockExistsSync, mockReadFileSync } from "../../utls/fs-mock-utils";
 import {
     PackageManifestTransport
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
@@ -11,21 +9,19 @@ import {
 import { mockAxiosPost } from "../../utls/http-requests-mock";
 import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
+import { loggingTestTransport } from "../../jest.setup";
 import { ConfigUtils } from "../../utls/config-utils";
+import { getJsonFromDownloadedFile, zipToTempFolder } from "../../utls/fs-utils";
 
-function mockZipDiff(expectedUrl: string): PackageDiffTransport[] {
+function createZip(): string {
     const manifest: PackageManifestTransport[] = [];
     manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
+    const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+    return zipToTempFolder(exportedPackagesZip);
+}
 
-    const firstPackageNode = ConfigUtils.buildPackageNode("package-key", {metadata: {description: "test"}, variables: [], dependencies: []});
+function mockZipDiff(expectedUrl: string): PackageDiffTransport[] {
     const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
-    const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
-    const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
-
-    mockReadFileSync(exportedPackagesZip.toBuffer());
-    mockCreateReadStream(exportedPackagesZip.toBuffer());
 
     const diffResponse: PackageDiffTransport[] = [{
         packageKey: "package-key",
@@ -58,22 +54,7 @@ function mockZipDiff(expectedUrl: string): PackageDiffTransport[] {
 
 describe("Config diff", () => {
 
-    beforeEach(() => {
-        mockExistsSync();
-    });
-
     it("Should show on terminal if packages have changes with hasChanges set to true and jsonResponse false", async () => {
-        const manifest: PackageManifestTransport[] = [];
-        manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("package-key", "STUDIO"));
-
-        const firstPackageNode = ConfigUtils.buildPackageNode("package-key", {metadata: {description: "test"}, variables: [], dependencies: []});
-        const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
-        const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
-        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
-
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
-
         const diffResponse: PackageDiffMetadata[] = [{
             packageKey: "package-key",
             hasChanges: true
@@ -81,7 +62,7 @@ describe("Config diff", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
 
-        await new T2tcCommandService(testContext).diffPackages("./packages.zip", true, null, false);
+        await new T2tcCommandService(testContext).diffPackages(createZip(), true, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -92,7 +73,7 @@ describe("Config diff", () => {
     it("Should show diff on terminal with hasChanges set to false and jsonResponse false", async () => {
         const diffResponse = mockZipDiff("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration");
 
-        await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, null, false);
+        await new T2tcCommandService(testContext).diffPackages(createZip(), false, null, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -103,7 +84,7 @@ describe("Config diff", () => {
     it("Should compare with specified version", async () => {
         const diffResponse = mockZipDiff("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration?baseVersion=1.0.0");
 
-        await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, "1.0.0", false);
+        await new T2tcCommandService(testContext).diffPackages(createZip(), false, "1.0.0", false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -114,12 +95,9 @@ describe("Config diff", () => {
     it("Should generate a json file with diff info when hasChanges is set to false and jsonResponse is set to true", async () => {
         const diffResponse = mockZipDiff("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration");
 
-        await new T2tcCommandService(testContext).diffPackages("./packages.zip", false, null, true);
+        await new T2tcCommandService(testContext).diffPackages(createZip(), false, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-        const exportedPackageDiffTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageDiffTransport[];
+        const exportedPackageDiffTransport = getJsonFromDownloadedFile() as PackageDiffTransport[];
         expect(exportedPackageDiffTransport.length).toBe(1);
 
         const exportedFirstPackageDiffTransport = exportedPackageDiffTransport.filter(diffTransport => diffTransport.packageKey === "package-key");
@@ -134,9 +112,7 @@ describe("Config diff", () => {
         const firstChildNode = ConfigUtils.buildChildNode("key-1", "package-key", "TEST");
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [firstChildNode], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, [firstPackageZip]);
-
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const diffResponse: PackageDiffMetadata[] = [{
             packageKey: "package-key",
@@ -145,12 +121,9 @@ describe("Config diff", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/diff/configuration/has-changes", diffResponse);
 
-        await new T2tcCommandService(testContext).diffPackages("./packages.zip", true, null, true);
+        await new T2tcCommandService(testContext).diffPackages(zipPath, true, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-        const exportedPackageDiffTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageDiffTransport[];
+        const exportedPackageDiffTransport = getJsonFromDownloadedFile() as PackageDiffTransport[];
         expect(exportedPackageDiffTransport.length).toBe(1);
 
         const exportedFirstPackageDiffTransport = exportedPackageDiffTransport.filter(diffTransport => diffTransport.packageKey === firstPackageNode.key);

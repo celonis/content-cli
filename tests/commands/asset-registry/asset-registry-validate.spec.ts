@@ -1,15 +1,8 @@
 import { mockAxiosPost, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
-import * as fs from "fs";
-
-jest.mock("fs", () => ({
-    ...jest.requireActual("fs"),
-    readFileSync: jest.fn(),
-}));
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile, writeJsonTempFile, writeTempFile } from "../../utls/fs-utils";
 
 describe("Asset registry validate", () => {
     const validateResponse = {
@@ -53,14 +46,7 @@ describe("Asset registry validate", () => {
                 json: true,
             });
 
-            const msg = loggingTestTransport.logMessages[0].message;
-            const expectedFileName = msg.split(FileService.fileDownloadedMessage)[1];
-            expect(mockWriteFileSync).toHaveBeenCalledWith(
-                path.resolve(process.cwd(), expectedFileName),
-                expect.any(String),
-                expect.objectContaining({ encoding: "utf-8" })
-            );
-            const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]);
+            const written = getJsonFromDownloadedFile();
             expect(written.valid).toBe(false);
         });
 
@@ -144,7 +130,7 @@ describe("Asset registry validate", () => {
         };
 
         it("Should validate with -f file and print result", async () => {
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(fullRequest));
+            writeJsonTempFile("request.json", fullRequest);
             mockAxiosPost(mockUrl, validateResponse);
 
             await new AssetRegistryService(testContext).validate({
@@ -153,12 +139,11 @@ describe("Asset registry validate", () => {
                 json: false,
             });
 
-            expect(fs.readFileSync).toHaveBeenCalledWith("request.json", "utf-8");
             expect(loggingTestTransport.logMessages[0].message).toContain("INVALID_ENUM_VALUE");
         });
 
         it("Should send the file body as-is (no envelope wrapping)", async () => {
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(fullRequest));
+            writeJsonTempFile("request.json", fullRequest);
             mockAxiosPost(mockUrl, validateResponse);
 
             await new AssetRegistryService(testContext).validate({
@@ -173,7 +158,7 @@ describe("Asset registry validate", () => {
         });
 
         it("Should throw when -f file contains invalid JSON", async () => {
-            (fs.readFileSync as jest.Mock).mockReturnValue("not-json{");
+            writeTempFile("bad.json", "not-json{");
 
             await expect(
                 new AssetRegistryService(testContext).validate({

@@ -1,13 +1,11 @@
 import * as AdmZip from "adm-zip";
-import * as fs from "fs";
 import { parse, stringify } from "yaml";
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { ActionFlowCommandService } from "../../../src/commands/action-flows/action-flow/action-flow-command.service";
-import { loggingTestTransport, mockWriteSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import { mockExistsSyncOnce, mockReadFileSync } from "../../utls/fs-mock-utils";
+import { loggingTestTransport } from "../../jest.setup";
 import { ActionFlowService } from "../../../src/commands/action-flows/action-flow/action-flow.service";
 import { testContext } from "../../utls/test-context";
+import { getDownloadedFileName, writeJsonTempFile } from "../../utls/fs-utils";
 
 describe("Export action-flows", () => {
 
@@ -69,10 +67,6 @@ describe("Export action-flows", () => {
         },
     };
 
-    beforeEach(() => {
-        (fs.openSync as jest.Mock).mockReturnValue(100);
-    });
-
     it("Should call export API and return the zip response", async () => {
         const zipExport = new AdmZip();
         zipExport.addFile(actionFlowFileName, Buffer.from(stringify(actionFlowConfig)));
@@ -82,12 +76,7 @@ describe("Export action-flows", () => {
         await new ActionFlowCommandService(testContext).exportActionFlows(packageId, null);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
-        const expectedZipFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedZipFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const receivedZip = new AdmZip(fileBuffer);
+        const receivedZip = new AdmZip(getDownloadedFileName());
 
         expect(receivedZip.getEntries().length).toBe(1);
         const receivedZipEntry = receivedZip.getEntries()[0];
@@ -131,8 +120,7 @@ describe("Export action-flows", () => {
             "actionFlowsTeamId": "555",
         };
 
-        mockExistsSyncOnce();
-        mockReadFileSync(stringify(metadata));
+        writeJsonTempFile("metadata.json", metadata);
         const zipExport = new AdmZip();
         zipExport.addFile(actionFlowFileName, Buffer.from(stringify(actionFlowConfig)));
 
@@ -140,12 +128,7 @@ describe("Export action-flows", () => {
         await new ActionFlowCommandService(testContext).exportActionFlows(packageId, ActionFlowService.METADATA_FILE_NAME);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
-        const expectedZipFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(fs.openSync).toHaveBeenCalledWith(expectedZipFileName, expect.anything(), expect.anything());
-        expect(mockWriteSync).toHaveBeenCalled();
-
-        const fileBuffer = mockWriteSync.mock.calls[0][1];
-        const receivedZip = new AdmZip(fileBuffer);
+        const receivedZip = new AdmZip(getDownloadedFileName());
 
         expect(receivedZip.getEntries().length).toBe(2);
         expect(receivedZip.getEntries().filter(entry => entry.name === ActionFlowService.METADATA_FILE_NAME).length).toBe(1);

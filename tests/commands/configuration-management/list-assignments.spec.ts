@@ -1,9 +1,9 @@
-import * as path from "path";
 import { mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { VariableCommandService } from "../../../src/commands/configuration-management/variable-command.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("List assignments", () => {
 
@@ -37,9 +37,7 @@ describe("List assignments", () => {
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockAssignmentValues), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromDownloadedFile()).toEqual(mockAssignmentValues);
     })
 
     it("Should contain url params in the url", async () => {

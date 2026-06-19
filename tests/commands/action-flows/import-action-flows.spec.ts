@@ -1,11 +1,10 @@
-import * as path from "path";
 import * as AdmZip from "adm-zip";
 import { mockedAxiosInstance } from "../../utls/http-requests-mock";
-import { mockCreateReadStream } from "../../utls/fs-mock-utils";
 import { ActionFlowCommandService } from "../../../src/commands/action-flows/action-flow/action-flow-command.service";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { testContext } from "../../utls/test-context";
+import { getJsonFromDownloadedFile, zipToTempFolder } from "../../utls/fs-utils";
 
 describe("Import action-flows", () => {
 
@@ -28,9 +27,9 @@ describe("Import action-flows", () => {
         const resp = { data: mockImportResponse };
         (mockedAxiosInstance.post as jest.Mock).mockResolvedValue(resp);
         const zip = new AdmZip();
-        mockCreateReadStream(zip.toBuffer());
+        const zipPath = zipToTempFolder(zip);
 
-        await new ActionFlowCommandService(testContext).importActionFlows(packageId, "tmp", true, false);
+        await new ActionFlowCommandService(testContext).importActionFlows(packageId, zipPath, true, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(mockImportResponse, null, 4));
@@ -42,15 +41,14 @@ describe("Import action-flows", () => {
         const resp = { data: mockImportResponse };
         (mockedAxiosInstance.post as jest.Mock).mockResolvedValue(resp);
         const zip = new AdmZip();
-        mockCreateReadStream(zip.toBuffer());
+        const zipPath = zipToTempFolder(zip);
 
-        await new ActionFlowCommandService(testContext).importActionFlows(packageId, "tmp", true, true);
+        await new ActionFlowCommandService(testContext).importActionFlows(packageId, zipPath, true, true);
 
         expect(loggingTestTransport.logMessages.length).toBe(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(mockImportResponse, null, 4), { encoding: "utf-8", mode: 0o600 });
+        expect(getJsonFromDownloadedFile()).toEqual(mockImportResponse);
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(`https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/import/assets`, expect.anything(), expect.anything());
     });
 });
