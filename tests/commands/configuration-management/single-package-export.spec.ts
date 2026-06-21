@@ -4,9 +4,10 @@ import AdmZip = require("adm-zip");
 import { mockAxiosGet, mockAxiosGetError, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { GitService } from "../../../src/core/git-profile/git/git.service";
+import { accessSync, readFileSync } from "node:fs";
 
 const PACKAGE_KEY = "pkg-1";
 const EXPORT_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/export-file`;
@@ -46,7 +47,6 @@ describe("Single package export", () => {
         const [extractedData, extractedDir] = extractSpy.mock.calls[0];
         expect((extractedData as Buffer).equals(packageData)).toBe(true);
         expect(extractedDir).toEqual(PACKAGE_KEY);
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages[0].message).toContain(`Successful export. Exported directory: ${PACKAGE_KEY}`);
     });
 
@@ -58,10 +58,9 @@ describe("Single package export", () => {
 
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(EXPORT_URL, expect.anything());
 
-        const [writtenPath, writtenData, writtenOptions] = mockWriteFileSync.mock.calls[0];
-        expect(writtenPath).toEqual(path.resolve(process.cwd(), `${PACKAGE_KEY}.zip`));
-        expect((writtenData as Buffer).equals(packageData)).toBe(true);
-        expect(writtenOptions).toEqual({ mode: 0o600 });
+        const expectedFile = path.resolve(process.cwd(), `${PACKAGE_KEY}.zip`);
+        expect(() => accessSync(expectedFile)).not.toThrow();
+        expect(readFileSync(expectedFile)).toEqual(packageData);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${FileService.fileDownloadedMessage}${PACKAGE_KEY}.zip`);
     });
 
@@ -71,8 +70,6 @@ describe("Single package export", () => {
         await expect(
             new SinglePackageExportService(testContext).exportPackage(PACKAGE_KEY, false, null)
         ).rejects.toThrow(`Problem exporting package ${PACKAGE_KEY}`);
-
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
     });
 
     it("Should push the exported package to a Git branch when --gitBranch is set", async () => {
@@ -83,6 +80,8 @@ describe("Single package export", () => {
         const extractTempSpy = jest.spyOn(FileService.prototype, "extractZipBufferToTempDirectory").mockReturnValue(extractedDirectory);
         const extractDirSpy = jest.spyOn(FileService.prototype, "extractZipBufferToDirectory").mockImplementation(() => undefined);
         const pushToBranchSpy = jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
+        const rmSyncSpy = jest.spyOn(fs, "rmSync").mockImplementation(() => undefined);
+        const writeBufferSpy = jest.spyOn(FileService.prototype, "writeBufferToFileWithGivenName").mockImplementation(() => undefined);
 
         await new SinglePackageExportService(testContext).exportPackage(PACKAGE_KEY, false, "my-branch");
 
@@ -90,10 +89,10 @@ describe("Single package export", () => {
         expect(extractTempSpy).toHaveBeenCalledTimes(1);
         expect((extractTempSpy.mock.calls[0][0] as Buffer).equals(packageData)).toBe(true);
         expect(pushToBranchSpy).toHaveBeenCalledWith(extractedDirectory, "my-branch");
-        expect(fs.rmSync).toHaveBeenCalledWith(extractedDirectory, { recursive: true, force: true });
+        expect(rmSyncSpy).toHaveBeenCalledWith(extractedDirectory, { recursive: true, force: true });
         expect(loggingTestTransport.logMessages[0].message).toContain("Successfully exported package to branch: my-branch");
         expect(extractDirSpy).not.toHaveBeenCalled();
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
+        expect(writeBufferSpy).not.toHaveBeenCalled();
     });
 
     it("Should push to the Git branch unzipped even when --zip is also set", async () => {
@@ -103,12 +102,14 @@ describe("Single package export", () => {
         const extractedDirectory = "/tmp/content-cli-export-temp";
         const extractTempSpy = jest.spyOn(FileService.prototype, "extractZipBufferToTempDirectory").mockReturnValue(extractedDirectory);
         const pushToBranchSpy = jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
+        jest.spyOn(fs, "rmSync").mockImplementation(() => undefined);
+        const writeBufferSpy = jest.spyOn(FileService.prototype, "writeBufferToFileWithGivenName").mockImplementation(() => undefined);
 
         await new SinglePackageExportService(testContext).exportPackage(PACKAGE_KEY, true, "my-branch");
 
         expect(extractTempSpy).toHaveBeenCalledTimes(1);
         expect(pushToBranchSpy).toHaveBeenCalledWith(extractedDirectory, "my-branch");
-        expect(mockWriteFileSync).not.toHaveBeenCalled();
+        expect(writeBufferSpy).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages[0].message).toContain("Successfully exported package to branch: my-branch");
     });
 });

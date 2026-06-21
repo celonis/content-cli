@@ -1,25 +1,18 @@
-import * as path from "path";
-import * as fs from "node:fs";
 import AdmZip = require("adm-zip");
-import { mockCreateReadStream, mockExistsSync, mockReadFileSync } from "../../utls/fs-mock-utils";
-
-// The service imports `node:fs`; the global jest.mock("fs") in jest.setup only
-// covers the bare "fs" specifier, so mock the prefixed module explicitly to
-// intercept the temp-file cleanup (fs.rmSync).
-jest.mock("node:fs");
 
 jest.mock("adm-zip", () => {
     const realAdmZip = jest.requireActual("adm-zip");
     return jest.fn((...args: any[]) => realAdmZip(...args));
 });
-
+import fs = require("node:fs");
 import { mockAxiosPost, mockedAxiosInstance, mockedPostRequestBodyByUrl } from "../../utls/http-requests-mock";
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageImportResult } from "../../../src/commands/configuration-management/interfaces/single-package-import.interfaces";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { GitService } from "../../../src/core/git-profile/git/git.service";
+import { getJsonFromDownloadedFile, makeTempDir, zipToTempFolder } from "../../utls/fs-utils";
 
 const IMPORT_URL = "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/import-file";
 
@@ -67,23 +60,14 @@ function buildImportResponse(): SinglePackageImportResult {
 
 describe("Single package import", () => {
 
-    beforeEach(() => {
-        mockExistsSync();
-    });
-
-    afterEach(() => {
-        jest.restoreAllMocks();
-    });
-
     it.each([true, false])("Should import a single package from a zip file with overwrite %p", async (overwrite: boolean) => {
         const packageZip = buildSinglePackageZip();
-        mockReadFileSync(packageZip.toBuffer());
-        mockCreateReadStream(packageZip.toBuffer());
+        const zipPath = zipToTempFolder(packageZip);
 
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage("./package.zip", null, overwrite, false, null);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, overwrite, false, null);
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             IMPORT_URL,
@@ -95,50 +79,38 @@ describe("Single package import", () => {
     });
 
     it("Should import a single package from a directory by zipping it first", async () => {
-        const packageZip = buildSinglePackageZip();
-        const temporaryZipPath = "/tmp/content-cli-imports/single_package_test.zip";
-
-        jest.spyOn(FileService.prototype, "isDirectory").mockReturnValue(true);
-        const zipDirectorySpy = jest.spyOn(FileService.prototype, "zipDirectoryAsSinglePackage").mockReturnValue(temporaryZipPath);
-        mockReadFileSync(packageZip.toBuffer());
-        mockCreateReadStream(packageZip.toBuffer());
+        const packageFolder = makeTempDir();
+        const zipDirectorySpy = jest.spyOn(FileService.prototype, "zipDirectoryAsSinglePackage");
+        const rmSyncSpy = jest.spyOn(fs, "rmSync");
 
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage(null, "./package-dir", true, false, null);
+        await new SinglePackageImportService(testContext).importPackage(null, packageFolder, true, false, null);
 
-        expect(zipDirectorySpy).toHaveBeenCalledWith("./package-dir");
+        expect(zipDirectorySpy).toHaveBeenCalledWith(packageFolder);
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(IMPORT_URL, expect.anything(), expect.anything());
-        expect(fs.rmSync).toHaveBeenCalledWith(temporaryZipPath);
+        expect(rmSyncSpy).toHaveBeenCalledWith(zipDirectorySpy.mock.results[0].value);
     });
 
     it("Should write the import result to a json file when jsonResponse is true", async () => {
         const packageZip = buildSinglePackageZip();
-        mockReadFileSync(packageZip.toBuffer());
-        mockCreateReadStream(packageZip.toBuffer());
+        const zipPath = zipToTempFolder(packageZip);
 
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, true, null);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, false, true, null);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            JSON.stringify(importResponse, null, 2),
-            { encoding: "utf-8", mode: 0o600 }
-        );
+        expect(getJsonFromDownloadedFile()).toEqual(importResponse);
     });
 
     it("Should pass the overwrite flag to the API", async () => {
         const packageZip = buildSinglePackageZip();
-        mockReadFileSync(packageZip.toBuffer());
-        mockCreateReadStream(packageZip.toBuffer());
-
+        const zipPath = zipToTempFolder(packageZip);
         mockAxiosPost(IMPORT_URL, buildImportResponse());
 
-        await new SinglePackageImportService(testContext).importPackage("./package.zip", null, true, false, null);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, true, false, null);
 
         expect(mockedPostRequestBodyByUrl.has(IMPORT_URL)).toBe(true);
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
@@ -149,14 +121,10 @@ describe("Single package import", () => {
     });
 
     it("Should import a single package from a Git branch when --gitBranch is set", async () => {
-        const packageZip = buildSinglePackageZip();
-        const pulledDirectory = "mocked-pulled-git-path";
-        const temporaryZipPath = "/tmp/content-cli-imports/single_package_test.zip";
-
+        const pulledDirectory = makeTempDir();
         const pullSpy = jest.spyOn(GitService.prototype, "pullFromBranch").mockResolvedValue(pulledDirectory);
-        const zipDirectorySpy = jest.spyOn(FileService.prototype, "zipDirectoryAsSinglePackage").mockReturnValue(temporaryZipPath);
-        mockReadFileSync(packageZip.toBuffer());
-        mockCreateReadStream(packageZip.toBuffer());
+        const zipDirectorySpy = jest.spyOn(FileService.prototype, "zipDirectoryAsSinglePackage");
+        const rmSyncSpy = jest.spyOn(fs, "rmSync");
 
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
@@ -171,8 +139,8 @@ describe("Single package import", () => {
             expect.objectContaining({ params: { overwrite: true } })
         );
         expect(loggingTestTransport.logMessages[0].message).toContain("Successfully imported package: pkg-1");
-        expect(fs.rmSync).toHaveBeenCalledWith(temporaryZipPath);
-        expect(fs.rmSync).toHaveBeenCalledWith(pulledDirectory, { recursive: true, force: true });
+        expect(rmSyncSpy).toHaveBeenCalledWith(zipDirectorySpy.mock.results[0].value);
+        expect(rmSyncSpy).toHaveBeenCalledWith(pulledDirectory, { recursive: true, force: true });
     });
 
     it("Should throw when both --file and --directory are provided", async () => {
@@ -214,9 +182,7 @@ describe("Single package import", () => {
 
     it("Should throw when the uncompressed zip size exceeds the 4 GB limit", async () => {
         const packageZip = buildSinglePackageZip();
-        mockReadFileSync(packageZip.toBuffer());
-        mockCreateReadStream(packageZip.toBuffer());
-
+        const zipPath = zipToTempFolder(packageZip);
         const FIVE_GB = 5 * 1024 * 1024 * 1024;
         (AdmZip as unknown as jest.Mock).mockImplementationOnce((...args: any[]) => {
             const instance = jest.requireActual<any>("adm-zip")(...args);
@@ -225,7 +191,8 @@ describe("Single package import", () => {
         });
 
         await expect(
-            new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, false, null)
-        ).rejects.toThrow('Failed to handle zip file "./package.zip": uncompressed size 5.00 GB exceeds the 4 GB limit.');
+            new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false, null)
+        ).rejects.toThrow(/Failed to handle zip file ".+": uncompressed size 5.00 GB exceeds the 4 GB limit./);
     });
+
 });

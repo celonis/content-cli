@@ -37,7 +37,7 @@ export class FileService {
         return tempDir;
     }
 
-    public async readFileToJson<T>(fileName: string): Promise<T> {
+    public readFileToJson(fileName: string): any {
         const fileContent = this.readFile(fileName);
 
         return JSON.parse(fileContent);

@@ -70,19 +70,19 @@ export class VariableService {
     }
 
     private async getVersionedVariablesByKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<VariableManifestTransport[]> {
-        const variablesExportRequest: PackageKeyAndVersionPair[] = await this.buildKeyVersionPairs(keysByVersion, keysByVersionFile);
+        const variablesExportRequest: PackageKeyAndVersionPair[] = this.buildKeyVersionPairs(keysByVersion, keysByVersionFile);
 
         const variableManifests = await this.variableApi.findVariablesWithValuesByPackageKeysAndVersion(variablesExportRequest);
         return fixConnectionVariables(variableManifests);
     }
 
-    private async buildKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<PackageKeyAndVersionPair[]> {
+    private buildKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): PackageKeyAndVersionPair[] {
         let variablesExportRequest: PackageKeyAndVersionPair[] = [];
 
         if (keysByVersion.length !== 0) {
             variablesExportRequest = this.buildKeyAndVersionPairsFromArrayInput(keysByVersion);
         } else if (keysByVersion.length === 0 && keysByVersionFile !== "") {
-            variablesExportRequest = await fileService.readFileToJson(keysByVersionFile);
+            variablesExportRequest = fileService.readFileToJson(keysByVersionFile);
         } else {
             throw new FatalError("Please provide keysByVersion mappings or file path!");
         }

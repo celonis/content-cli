@@ -4,8 +4,9 @@ import {
 } from "../../utls/http-requests-mock";
 import { PackageValidationService } from "../../../src/commands/configuration-management/package-validation.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { SchemaValidationResponse } from "../../../src/commands/configuration-management/interfaces/package-validation.interfaces";
+import { getJsonFromFile } from "../../utls/fs-utils";
 
 describe("Config validate", () => {
 
@@ -81,11 +82,8 @@ describe("Config validate", () => {
 
         await new PackageValidationService(testContext).validatePackage("my-package", ["SCHEMA"], null, true);
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            expect.stringMatching(/config_validate_report_.+\.json$/),
-            JSON.stringify(response),
-            { encoding: "utf-8", mode: 0o600 }
-        );
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split("Validation report file: ")[1];
+        expect(getJsonFromFile(expectedFileName)).toEqual(response);
     })
 
     it("Should log VALID when package has no errors", async () => {

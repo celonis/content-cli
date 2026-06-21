@@ -1,18 +1,16 @@
-jest.unmock("fs");
-
-import * as fs from "fs";
+import * as fs from "node:fs";
 import * as path from "path";
 import * as os from "os";
 import * as AdmZip from "adm-zip";
 import { FileService } from "../../../src/core/utils/file-service";
-import { FatalError } from "../../../src/core/utils/logger";
+import { FatalError, logger } from "../../../src/core/utils/logger";
 
 describe("FileService", () => {
     let fileService: FileService;
     const tempDir = path.join(os.tmpdir(), "file-service-test");
     const symLinkSourceTempDir = path.join(os.tmpdir(), "file-service-symlink-source");
 
-    beforeEach(() => {
+    beforeAll(() => {
         fileService = new FileService();
 
         if (!fs.existsSync(tempDir)) {
@@ -26,13 +24,21 @@ describe("FileService", () => {
         fileService = new FileService();
     });
 
-    afterEach(() => {
+    afterAll(() => {
         if (fs.existsSync(tempDir)) {
-            fs.rmSync(tempDir, { recursive: true, force: true });
+            try {
+                fs.rmSync(tempDir, { recursive: true, force: true });
+            } catch (e) {
+                logger.warn(`Could not delete: ${tempDir}`);
+            }
         }
 
         if (fs.existsSync(symLinkSourceTempDir)) {
-            fs.rmSync(symLinkSourceTempDir, { recursive: true, force: true });
+            try {
+                fs.rmSync(symLinkSourceTempDir, { recursive: true, force: true });
+            } catch (e) {
+                logger.warn(`Could not delete: ${tempDir}`);
+            }
         }
     });
 

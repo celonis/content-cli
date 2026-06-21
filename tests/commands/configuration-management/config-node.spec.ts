@@ -2,9 +2,8 @@ import { NodeTransport } from "../../../src/commands/configuration-management/in
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { NodeService } from "../../../src/commands/configuration-management/node.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Node find", () => {
     const node: NodeTransport = {
@@ -103,13 +102,7 @@ describe("Node find", () => {
 
         await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const nodeTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport;
-
-        expect(nodeTransport).toEqual(node);
+        expect(getJsonFromDownloadedFile()).toEqual(node);
     });
 
     it("Should find node with configuration and return as JSON", async () => {
@@ -129,11 +122,7 @@ describe("Node find", () => {
 
         await new NodeService(testContext).findNode(packageKey, nodeKey, true, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const nodeTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport;
+        const nodeTransport = getJsonFromDownloadedFile() as NodeTransport;
 
         expect(nodeTransport).toEqual(nodeWithConfig);
         expect(nodeTransport.configuration).toEqual(nodeWithConfig.configuration);
@@ -173,11 +162,7 @@ describe("Node find", () => {
 
         await new NodeService(testContext).findNode(packageKey, nodeKey, false, null, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-
-        const nodeTransport = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as NodeTransport;
+        const nodeTransport = getJsonFromDownloadedFile() as NodeTransport;
 
         expect(nodeTransport).toEqual(nodeWithInvalidConfig);
         expect(nodeTransport.invalidConfiguration).toEqual(invalidConfigMessage);

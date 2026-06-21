@@ -4,7 +4,6 @@ import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
-import * as fs from "fs";
 
 export class AssetRegistryService {
     private api: AssetRegistryApi;
@@ -92,7 +91,8 @@ export class AssetRegistryService {
         }
 
         if (hasFile) {
-            return this.parseJson(fs.readFileSync(opts.file!, "utf-8"), `-f ${opts.file}`);
+
+            return this.parseJson(fileService.readFile(opts.file), `-f ${opts.file}`);
         }
 
         if (hasNodeKey && hasConfig) {
