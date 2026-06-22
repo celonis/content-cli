@@ -143,4 +143,24 @@ describe("FileService", () => {
             expect(JSON.parse(fs.readFileSync(path.join(targetDir, "package.json"), "utf-8"))).toEqual({ key: "pkg-1" });
         });
     });
+
+    describe("extractZipBufferToTempDirectory", () => {
+        test("Should extract the package zip buffer into a fresh temp directory and return its path", () => {
+            const zip = new AdmZip();
+            zip.addFile("package.json", Buffer.from(JSON.stringify({ key: "pkg-1" })));
+            zip.addFile("nodes/node-1.json", Buffer.from(JSON.stringify({ key: "node-1" })));
+            const zipBuffer = zip.toBuffer();
+
+            const extractedDir = fileService.extractZipBufferToTempDirectory(zipBuffer);
+
+            try {
+                expect(extractedDir.startsWith(os.tmpdir())).toBe(true);
+                expect(fs.existsSync(path.join(extractedDir, "package.json"))).toBe(true);
+                expect(fs.existsSync(path.join(extractedDir, "nodes", "node-1.json"))).toBe(true);
+                expect(JSON.parse(fs.readFileSync(path.join(extractedDir, "package.json"), "utf-8"))).toEqual({ key: "pkg-1" });
+            } finally {
+                fs.rmSync(extractedDir, { recursive: true, force: true });
+            }
+        });
+    });
 });

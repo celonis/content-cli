@@ -73,17 +73,21 @@ class Module extends IModule {
             .description("Commands for working with a single package.");
 
         packageCommand.command("import")
-            .description("Import a package from a zip file or directory. Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
+            .description("Import a package from a zip file, directory, or Git branch. Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
             .option("-f, --file <file>", "Package zip file (relative path)")
             .option("-d, --directory <directory>", "Package directory (relative path)")
             .option("--overwrite", "Flag to allow overwriting an existing package with the same key")
             .option("--json", "Return the response as a JSON file")
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the package and import")
             .action(this.importSinglePackage);
 
         packageCommand.command("export")
-            .description("Export a single package's staging (draft) version to an unzipped directory (or a single zip with --zip). Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
+            .description("Export a single package's staging (draft) version to an unzipped directory (or a single zip with --zip, or to a Git branch with --gitBranch). Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
             .requiredOption("--packageKey <packageKey>", "Key of the package to export")
             .option("--zip", "Export the package as a single <packageKey>.zip file instead of an unzipped <packageKey> directory", false)
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported package")
             .action(this.exportSinglePackage);
 
         packageCommand.command("validate")
@@ -307,11 +311,17 @@ class Module extends IModule {
     }
 
     private async importSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new SinglePackageImportService(context).importPackage(options.file, options.directory, options.overwrite, options.json);
+        if (options.gitProfile && !options.gitBranch) {
+            throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
+        }
+        await new SinglePackageImportService(context).importPackage(options.file, options.directory, options.overwrite, options.json, options.gitBranch);
     }
 
     private async exportSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new SinglePackageExportService(context).exportPackage(options.packageKey, options.zip);
+        if (options.gitProfile && !options.gitBranch) {
+            throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
+        }
+        await new SinglePackageExportService(context).exportPackage(options.packageKey, options.zip, options.gitBranch);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

@@ -113,7 +113,7 @@ Where `-f` is the shorthand for `--file`. You can also point at an unzipped dire
 content-cli config package import -p <sourceProfile> -d <package directory path>
 ```
 
-`--file` and `--directory` are mutually exclusive — provide exactly one.
+`--file`, `--directory`, and `--gitBranch` are mutually exclusive — provide exactly one. See [Git Integration for Import](#git-integration-for-import) for the `--gitBranch` workflow.
 
 This command requires **edit permission** on the target package, or **create** permission when the package does not yet exist (see [Permissions](#permissions)).
 
@@ -168,6 +168,19 @@ content-cli config package import -p <sourceProfile> -f <file path> --json
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
+#### Git Integration for Import
+
+Instead of `--file` / `--directory`, you can pull the package straight from a Git branch with the following **Git options**:
+
+- `--gitProfile <gitProfileName>` – the Git profile to use for the Git operations. If omitted, the default profile is used.
+- `--gitBranch <branchName>` – the branch in the Git repository the package is pulled from and imported.
+
+The CLI clones the configured repository at the given branch, expects the branch contents to be the flat [package layout](#package-zip-format), zips them, and imports the package. `--gitBranch` cannot be combined with `--file` or `--directory`.
+
+```bash
+content-cli config package import -p <sourceProfile> --gitProfile myGitProfile --gitBranch feature-branch
+```
+
 ### Export a Package
 
 `config package export` is the counterpart of [`config package import`](#import-a-package): it exports a single package's **staging (draft) version** in the package format. As with the `config nodes` commands, "staging" refers to the current draft state of the package — the unpublished working version, not a published package version. The output uses the same flat [package format](#package-zip-format) that `config package import` consumes, so a package can be exported from one team and imported into another without any conversion. Unlike [`t2tc package export`](./t2tc-commands.md#export-packages) — which produces a multi-package **batch artifact** — this command exports exactly one package on its own.
@@ -210,6 +223,23 @@ my-package/
 ```
 
 `variables.json` is omitted when the package has no variable assignments.
+
+#### Git Integration for Export
+
+Instead of writing to the current working directory, you can push the exported package straight to a Git branch with the following **Git options**:
+
+- `--gitProfile <gitProfileName>` – the Git profile to use for the Git operations. If omitted, the default profile is used.
+- `--gitBranch <branchName>` – the branch in the Git repository the exported package is pushed to.
+
+The package is pushed in its unzipped [package layout](#package-layout), so `--zip` has no effect when `--gitBranch` is used.
+
+```bash
+content-cli config package export -p <sourceProfile> --packageKey <packageKey> --gitProfile myGitProfile --gitBranch feature-branch
+```
+
+```bash
+info:    Successfully exported package to branch: feature-branch
+```
 
 ## Validate Package Configurations (`config package validate`)
 

@@ -496,6 +496,7 @@ describe("configuration-management command integration", () => {
                 "single-package.zip",
                 undefined,
                 undefined,
+                undefined,
                 undefined
             );
         });
@@ -506,6 +507,7 @@ describe("configuration-management command integration", () => {
             expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
                 undefined,
                 "./single-package-dir",
+                undefined,
                 undefined,
                 undefined
             );
@@ -523,8 +525,36 @@ describe("configuration-management command integration", () => {
                 "single-package.zip",
                 undefined,
                 true,
-                true
+                true,
+                undefined
             );
+        });
+
+        it("forwards --gitBranch + --gitProfile", async () => {
+            await runCli([
+                "config", "package", "import",
+                "--gitProfile", "myProfile",
+                "--gitBranch", "feature-branch",
+            ]);
+
+            expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                "feature-branch"
+            );
+        });
+
+        it("rejects when --gitProfile is provided without --gitBranch", async () => {
+            await runCli([
+                "config", "package", "import",
+                "--file", "single-package.zip",
+                "--gitProfile", "myProfile",
+            ]);
+
+            expectErrorLogged("Please specify a branch using --gitBranch when using a Git profile.");
+            expect(mockSinglePackageImportService.importPackage).not.toHaveBeenCalled();
         });
     });
 
@@ -534,7 +564,8 @@ describe("configuration-management command integration", () => {
 
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
-                false
+                false,
+                undefined
             );
         });
 
@@ -543,8 +574,35 @@ describe("configuration-management command integration", () => {
 
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
-                true
+                true,
+                undefined
             );
+        });
+
+        it("forwards --gitBranch + --gitProfile", async () => {
+            await runCli([
+                "config", "package", "export",
+                "--packageKey", "my-package",
+                "--gitProfile", "myProfile",
+                "--gitBranch", "feature-branch",
+            ]);
+
+            expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
+                "my-package",
+                false,
+                "feature-branch"
+            );
+        });
+
+        it("rejects when --gitProfile is provided without --gitBranch", async () => {
+            await runCli([
+                "config", "package", "export",
+                "--packageKey", "my-package",
+                "--gitProfile", "myProfile",
+            ]);
+
+            expectErrorLogged("Please specify a branch using --gitBranch when using a Git profile.");
+            expect(mockSinglePackageExportService.exportPackage).not.toHaveBeenCalled();
         });
     });
 
