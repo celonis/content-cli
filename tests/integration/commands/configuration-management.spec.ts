@@ -10,6 +10,7 @@ import { NodeDiffService } from "../../../src/commands/configuration-management/
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
 import { buildTestProgram } from "../../utls/cli-program";
+import { runCli as runCliProcess } from "../../utls/cli-runner";
 import { loggingTestTransport } from "../../jest.setup";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
@@ -274,6 +275,17 @@ describe("configuration-management command integration", () => {
     });
 
     describe("config export (deprecated batchExportPackages)", () => {
+        it("writes export output to stdout and exits with code 0", async () => {
+            mockT2tcCommandService.batchExportPackages.mockImplementationOnce(async () => {
+                process.stdout.write("File downloaded successfully. New filename: export_test.zip\n");
+            });
+
+            const result = await runCliProcess(["config", "export", "--packageKeys", "package1"], [Module]);
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("File downloaded successfully. New filename: export_test.zip");
+        });
+
         it("rejects when both --packageKeys and --keysByVersion are provided", async () => {
             await runCli([
                 "config", "export",
@@ -283,6 +295,13 @@ describe("configuration-management command integration", () => {
 
             expectErrorLogged("Please provide either --packageKeys or --keysByVersion, but not both.");
             expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
+        });
+
+        it("logs validation error to stdout and exits non-zero when package filters are missing", async () => {
+            const result = await runCliProcess(["config", "export"], [Module]);
+
+            expect(result.exitCode).toBe(1);
+            expect(result.output).toContain("Please provide either --packageKeys or --keysByVersion, but not both.");
         });
 
         it("rejects when neither --packageKeys nor --keysByVersion are provided", async () => {
@@ -390,6 +409,17 @@ describe("configuration-management command integration", () => {
     });
 
     describe("config import (deprecated batchImportPackages)", () => {
+        it("writes import output to stdout and exits with code 0", async () => {
+            mockT2tcCommandService.batchImportPackages.mockImplementationOnce(async () => {
+                process.stdout.write("Config import report file: config_import_report_test.json\n");
+            });
+
+            const result = await runCliProcess(["config", "import", "--file", "export.zip"], [Module]);
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("Config import report file: config_import_report_test.json");
+        });
+
         it("rejects when --gitProfile is provided without --gitBranch", async () => {
             await runCli([
                 "config", "import",
@@ -485,6 +515,17 @@ describe("configuration-management command integration", () => {
                 "feature-branch",
                 false
             );
+        });
+
+        it("logs validation error to stdout and exits non-zero when --gitProfile has no --gitBranch", async () => {
+            const result = await runCliProcess([
+                "config", "import",
+                "--file", "export.zip",
+                "--gitProfile", "myProfile",
+            ], [Module]);
+
+            expect(result.exitCode).toBe(1);
+            expect(result.output).toContain("Please specify a branch using --gitBranch when using a Git profile.");
         });
     });
 

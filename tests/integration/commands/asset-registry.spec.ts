@@ -2,6 +2,7 @@ import Module = require("../../../src/commands/asset-registry/module");
 import { Command } from "commander";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { buildTestProgram } from "../../utls/cli-program";
+import { runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
@@ -38,6 +39,17 @@ describe("asset-registry command integration", () => {
         it("defaults --json to false when omitted", async () => {
             await runCli(["asset-registry", "schema", "--assetType", "BOARD_V2"]);
             expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", false);
+        });
+
+        it("writes schema output to stdout and exits with code 0", async () => {
+            mockService.getSchema.mockImplementationOnce(async () => {
+                process.stdout.write("{\"type\":\"object\"}\n");
+            });
+
+            const result = await runCliProcess(["asset-registry", "schema", "--assetType", "BOARD_V2"], [Module]);
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("\"type\":\"object\"");
         });
     });
 
@@ -103,6 +115,17 @@ describe("asset-registry command integration", () => {
         it("calls getExamples with --json", async () => {
             await runCli(["asset-registry", "examples", "--assetType", "BOARD_V2", "--json"]);
             expect(mockService.getExamples).toHaveBeenCalledWith("BOARD_V2", true);
+        });
+
+        it("writes examples output to stdout and exits with code 0", async () => {
+            mockService.getExamples.mockImplementationOnce(async () => {
+                process.stdout.write("[{\"name\":\"simple-view\"}]\n");
+            });
+
+            const result = await runCliProcess(["asset-registry", "examples", "--assetType", "BOARD_V2"], [Module]);
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("simple-view");
         });
     });
 
