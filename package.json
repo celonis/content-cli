@@ -23,7 +23,7 @@
     "uuid": "9.0.1",
     "axios": "1.13.5",
     "commander": "13.1.0",
-    "form-data": "4.0.4",
+    "form-data": "4.0.6",
     "openid-client": "5.6.1",
     "hpagent": "1.2.0",
     "@github/keytar": "7.10.6",
