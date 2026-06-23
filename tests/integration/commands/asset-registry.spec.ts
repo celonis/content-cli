@@ -1,6 +1,7 @@
 import Module = require("../../../src/commands/asset-registry/module");
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { CliRunResult, runCli as runCliProcess } from "../../utls/cli-runner";
+import { GracefulError } from "../../../src/core/utils/logger";
 
 jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
@@ -152,6 +153,15 @@ describe("asset-registry command integration", () => {
 
             expect(result.exitCode).toBe(1);
             expect(result.output).toContain("Asset registry feature is disabled");
+        });
+
+        it("exits with code 0 when the service raises a GracefulError", async () => {
+            mockService.listTypes.mockRejectedValueOnce(new GracefulError("Nothing to list"));
+
+            const result = await runCli(["asset-registry", "list"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(result.output).toContain("Nothing to list");
         });
 
         it("exits non-zero for an unknown command", async () => {
