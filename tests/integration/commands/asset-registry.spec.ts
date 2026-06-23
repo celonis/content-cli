@@ -1,6 +1,6 @@
 import Module = require("../../../src/commands/asset-registry/module");
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
-import { runCli as runCliProcess } from "../../utls/cli-runner";
+import { CliRunResult, runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
@@ -21,8 +21,8 @@ describe("asset-registry command integration", () => {
             .mockImplementation(() => mockService);
     });
 
-    async function runCli(args: string[]): Promise<void> {
-        await runCliProcess(args, [Module]);
+    async function runCli(args: string[]): Promise<CliRunResult> {
+        return runCliProcess(args, [Module]);
     }
 
     describe("asset-registry schema", () => {
@@ -34,17 +34,6 @@ describe("asset-registry command integration", () => {
         it("defaults --json to false when omitted", async () => {
             await runCli(["asset-registry", "schema", "--assetType", "BOARD_V2"]);
             expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", false);
-        });
-
-        it("writes schema output to stdout and exits with code 0", async () => {
-            mockService.getSchema.mockImplementationOnce(async () => {
-                process.stdout.write("{\"type\":\"object\"}\n");
-            });
-
-            const result = await runCliProcess(["asset-registry", "schema", "--assetType", "BOARD_V2"], [Module]);
-
-            expect(result.exitCode).toBe(0);
-            expect(result.output).toContain("\"type\":\"object\"");
         });
     });
 
@@ -111,17 +100,6 @@ describe("asset-registry command integration", () => {
             await runCli(["asset-registry", "examples", "--assetType", "BOARD_V2", "--json"]);
             expect(mockService.getExamples).toHaveBeenCalledWith("BOARD_V2", true);
         });
-
-        it("writes examples output to stdout and exits with code 0", async () => {
-            mockService.getExamples.mockImplementationOnce(async () => {
-                process.stdout.write("[{\"name\":\"simple-view\"}]\n");
-            });
-
-            const result = await runCliProcess(["asset-registry", "examples", "--assetType", "BOARD_V2"], [Module]);
-
-            expect(result.exitCode).toBe(0);
-            expect(result.output).toContain("simple-view");
-        });
     });
 
     describe("asset-registry list", () => {
@@ -157,6 +135,37 @@ describe("asset-registry command integration", () => {
         it("calls getType with --json", async () => {
             await runCli(["asset-registry", "get", "--assetType", "BOARD_V2", "--json"]);
             expect(mockService.getType).toHaveBeenCalledWith("BOARD_V2", true);
+        });
+    });
+
+    describe("exit codes", () => {
+        it("exits with code 0 on a successful command", async () => {
+            const result = await runCli(["asset-registry", "list"]);
+
+            expect(result.exitCode).toBe(0);
+        });
+
+        it("exits non-zero and reports the error when the service fails", async () => {
+            mockService.listTypes.mockRejectedValueOnce(new Error("Asset registry feature is disabled"));
+
+            const result = await runCli(["asset-registry", "list"]);
+
+            expect(result.exitCode).toBe(1);
+            expect(result.output).toContain("Asset registry feature is disabled");
+        });
+
+        it("exits non-zero for an unknown command", async () => {
+            const result = await runCli(["this-command-does-not-exist"]);
+
+            expect(result.exitCode).not.toBe(0);
+            expect(mockService.listTypes).not.toHaveBeenCalled();
+        });
+
+        it("exits non-zero when a required option is missing", async () => {
+            const result = await runCli(["asset-registry", "get"]);
+
+            expect(result.exitCode).not.toBe(0);
+            expect(mockService.getType).not.toHaveBeenCalled();
         });
     });
 });
