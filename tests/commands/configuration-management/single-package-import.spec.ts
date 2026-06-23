@@ -11,6 +11,7 @@ import { SinglePackageImportResult } from "../../../src/commands/configuration-m
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
+import { GitService } from "../../../src/core/git-profile/git/git.service";
 import { getJsonFromDownloadedFile, makeTempDir, zipToTempFolder } from "../../utls/fs-utils";
 
 const IMPORT_URL = "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/import-file";
@@ -66,7 +67,7 @@ describe("Single package import", () => {
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage(zipPath, null, overwrite, false);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, overwrite, false, null);
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             IMPORT_URL,
@@ -85,7 +86,7 @@ describe("Single package import", () => {
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage(null, packageFolder, true, false);
+        await new SinglePackageImportService(testContext).importPackage(null, packageFolder, true, false, null);
 
         expect(zipDirectorySpy).toHaveBeenCalledWith(packageFolder);
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(IMPORT_URL, expect.anything(), expect.anything());
@@ -99,7 +100,7 @@ describe("Single package import", () => {
         const importResponse = buildImportResponse();
         mockAxiosPost(IMPORT_URL, importResponse);
 
-        await new SinglePackageImportService(testContext).importPackage(zipPath, null, false, true);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, false, true, null);
 
         expect(getJsonFromDownloadedFile()).toEqual(importResponse);
     });
@@ -109,7 +110,7 @@ describe("Single package import", () => {
         const zipPath = zipToTempFolder(packageZip);
         mockAxiosPost(IMPORT_URL, buildImportResponse());
 
-        await new SinglePackageImportService(testContext).importPackage(zipPath, null, true, false);
+        await new SinglePackageImportService(testContext).importPackage(zipPath, null, true, false, null);
 
         expect(mockedPostRequestBodyByUrl.has(IMPORT_URL)).toBe(true);
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
@@ -119,23 +120,55 @@ describe("Single package import", () => {
         );
     });
 
+    it("Should import a single package from a Git branch when --gitBranch is set", async () => {
+        const pulledDirectory = makeTempDir();
+        const pullSpy = jest.spyOn(GitService.prototype, "pullFromBranch").mockResolvedValue(pulledDirectory);
+        const zipDirectorySpy = jest.spyOn(FileService.prototype, "zipDirectoryAsSinglePackage");
+        const rmSyncSpy = jest.spyOn(fs, "rmSync");
+
+        const importResponse = buildImportResponse();
+        mockAxiosPost(IMPORT_URL, importResponse);
+
+        await new SinglePackageImportService(testContext).importPackage(null, null, true, false, "my-branch");
+
+        expect(pullSpy).toHaveBeenCalledWith("my-branch");
+        expect(zipDirectorySpy).toHaveBeenCalledWith(pulledDirectory);
+        expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
+            IMPORT_URL,
+            expect.anything(),
+            expect.objectContaining({ params: { overwrite: true } })
+        );
+        expect(loggingTestTransport.logMessages[0].message).toContain("Successfully imported package: pkg-1");
+        expect(rmSyncSpy).toHaveBeenCalledWith(zipDirectorySpy.mock.results[0].value);
+        expect(rmSyncSpy).toHaveBeenCalledWith(pulledDirectory, { recursive: true, force: true });
+    });
+
     it("Should throw when both --file and --directory are provided", async () => {
         await expect(
-            new SinglePackageImportService(testContext).importPackage("./package.zip", "./package-dir", false, false)
+            new SinglePackageImportService(testContext).importPackage("./package.zip", "./package-dir", false, false, null)
         ).rejects.toThrow("You cannot use both --file and --directory options at the same time. Only one import source can be defined.");
     });
 
-    it("Should throw when neither --file nor --directory is provided", async () => {
+    it.each(["./package.zip", "./package-dir"])("Should throw when --gitBranch is combined with another source (%s)", async (source: string) => {
+        const file = source.endsWith(".zip") ? source : null;
+        const directory = source.endsWith(".zip") ? null : source;
+
         await expect(
-            new SinglePackageImportService(testContext).importPackage(null, null, false, false)
-        ).rejects.toThrow("You must provide either a --file or a --directory option to import a package.");
+            new SinglePackageImportService(testContext).importPackage(file, directory, false, false, "my-branch")
+        ).rejects.toThrow("You cannot use --file or --directory together with --gitBranch. Only one import source can be defined.");
+    });
+
+    it("Should throw when neither --file, --directory, nor --gitBranch is provided", async () => {
+        await expect(
+            new SinglePackageImportService(testContext).importPackage(null, null, false, false, null)
+        ).rejects.toThrow("You must provide a --file, a --directory, or a --gitBranch option to import a package.");
     });
 
     it("Should throw when the --file option points to a directory", async () => {
         jest.spyOn(FileService.prototype, "isDirectory").mockReturnValue(true);
 
         await expect(
-            new SinglePackageImportService(testContext).importPackage("./package-dir", null, false, false)
+            new SinglePackageImportService(testContext).importPackage("./package-dir", null, false, false, null)
         ).rejects.toThrow("The --file option accepts only zip files.");
     });
 
@@ -143,7 +176,7 @@ describe("Single package import", () => {
         jest.spyOn(FileService.prototype, "isDirectory").mockReturnValue(false);
 
         await expect(
-            new SinglePackageImportService(testContext).importPackage(null, "./package.zip", false, false)
+            new SinglePackageImportService(testContext).importPackage(null, "./package.zip", false, false, null)
         ).rejects.toThrow("The --directory option accepts only directories.");
     });
 
@@ -158,7 +191,7 @@ describe("Single package import", () => {
         });
 
         await expect(
-            new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false)
+            new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false, null)
         ).rejects.toThrow(/Failed to handle zip file ".+": uncompressed size 5.00 GB exceeds the 4 GB limit./);
     });
 

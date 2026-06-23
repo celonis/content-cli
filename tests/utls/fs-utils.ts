@@ -1,9 +1,10 @@
-import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { readFileSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 import { loggingTestTransport } from "../jest.setup";
 import { FileService } from "../../src/core/utils/file-service";
 import { v4 as uuid } from "uuid";
 import AdmZip = require("adm-zip");
+import { logger } from "../../src/core/utils/logger";
 
 export function getDownloadedFileName(): string {
     const filename = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
@@ -42,4 +43,12 @@ export function zipToTempFolder(zip: AdmZip): string {
     const fullPath = resolve(process.cwd(), `${uuid()}.zip`);
     zip.writeZip(fullPath);
     return fullPath;
+}
+
+export function rmTempDir(folder: string): void {
+    try {
+        rmSync(folder, { recursive: true, force: true });
+    } catch (e) {
+        logger.warn(`Could not delete: ${folder}`, e);
+    }
 }

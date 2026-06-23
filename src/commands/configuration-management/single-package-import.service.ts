@@ -6,6 +6,7 @@ import * as fs from "node:fs";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
+import { GitService } from "../../core/git-profile/git/git.service";
 import { SinglePackageImportApi } from "./api/single-package-import-api";
 import { SinglePackageImportResult } from "./interfaces/single-package-import.interfaces";
 
@@ -14,22 +15,44 @@ export class SinglePackageImportService {
     private static readonly MAX_UNCOMPRESSED_ZIP_SIZE = 4 * 1024 * 1024 * 1024;
 
     private readonly singlePackageImportApi: SinglePackageImportApi;
+    private readonly gitService: GitService;
 
     constructor(context: Context) {
         this.singlePackageImportApi = new SinglePackageImportApi(context);
+        this.gitService = new GitService(context);
     }
 
-    public async importPackage(file: string, directory: string, overwrite: boolean, jsonResponse: boolean): Promise<void> {
-        const resolvedSource = this.resolveSource(file, directory);
+    public async importPackage(file: string, directory: string, overwrite: boolean, jsonResponse: boolean, gitBranch: string): Promise<void> {
+        if ((file || directory) && gitBranch) {
+            throw new Error("You cannot use --file or --directory together with --gitBranch. Only one import source can be defined.");
+        }
+        if (!file && !directory && !gitBranch) {
+            throw new Error("You must provide a --file, a --directory, or a --gitBranch option to import a package.");
+        }
 
+        let gitTempDir: string | undefined;
         try {
-            const packageZip = new AdmZip(resolvedSource.zipPath);
-            const formData = this.buildBodyForImport(packageZip, resolvedSource.zipPath);
-            const result = await this.singlePackageImportApi.importPackage(formData, overwrite);
-            this.outputResult(result, jsonResponse);
+            let resolvedSource: { zipPath: string; isTemporary: boolean };
+            if (gitBranch) {
+                gitTempDir = await this.gitService.pullFromBranch(gitBranch);
+                resolvedSource = { zipPath: fileService.zipDirectoryAsSinglePackage(gitTempDir), isTemporary: true };
+            } else {
+                resolvedSource = this.resolveSource(file, directory);
+            }
+
+            try {
+                const packageZip = new AdmZip(resolvedSource.zipPath);
+                const formData = this.buildBodyForImport(packageZip, resolvedSource.zipPath);
+                const result = await this.singlePackageImportApi.importPackage(formData, overwrite);
+                this.outputResult(result, jsonResponse);
+            } finally {
+                if (resolvedSource.isTemporary) {
+                    fs.rmSync(resolvedSource.zipPath);
+                }
+            }
         } finally {
-            if (resolvedSource.isTemporary) {
-                fs.rmSync(resolvedSource.zipPath);
+            if (gitTempDir) {
+                fs.rmSync(gitTempDir, { recursive: true, force: true });
             }
         }
     }
@@ -37,9 +60,6 @@ export class SinglePackageImportService {
     private resolveSource(file: string, directory: string): { zipPath: string; isTemporary: boolean } {
         if (file && directory) {
             throw new Error("You cannot use both --file and --directory options at the same time. Only one import source can be defined.");
-        }
-        if (!file && !directory) {
-            throw new Error("You must provide either a --file or a --directory option to import a package.");
         }
         if (file) {
             if (fileService.isDirectory(file)) {

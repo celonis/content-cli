@@ -29,6 +29,14 @@ export class FileService {
         this.restrictFilePermissions(targetPath);
     }
 
+    public extractZipBufferToTempDirectory(data: Buffer): string {
+        const tempDir = path.join(os.tmpdir(), `content-cli-${uuidv4()}`);
+        fs.mkdirSync(tempDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
+        new AdmZip(data).extractAllTo(tempDir, true, true);
+        this.restrictFilePermissions(tempDir);
+        return tempDir;
+    }
+
     public readFileToJson(fileName: string): any {
         const fileContent = this.readFile(fileName);
 
