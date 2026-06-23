@@ -1,5 +1,4 @@
 import Module = require("../../../src/commands/configuration-management/module");
-import { Command } from "commander";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { StagingPackageService } from "../../../src/commands/configuration-management/staging-package.service";
 import { MetadataService } from "../../../src/commands/configuration-management/metadata.service";
@@ -9,7 +8,6 @@ import { PackageVersionCommandService } from "../../../src/commands/configuratio
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
-import { buildTestProgram } from "../../utls/cli-program";
 import { runCli as runCliProcess } from "../../utls/cli-runner";
 import { loggingTestTransport } from "../../jest.setup";
 
@@ -24,7 +22,6 @@ jest.mock("../../../src/commands/configuration-management/single-package-import.
 jest.mock("../../../src/commands/configuration-management/single-package-export.service");
 
 describe("configuration-management command integration", () => {
-    let program: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
     let mockStagingPackageService: jest.Mocked<StagingPackageService>;
     let mockMetadataService: jest.Mocked<MetadataService>;
@@ -86,12 +83,10 @@ describe("configuration-management command integration", () => {
         (PackageVersionCommandService as jest.MockedClass<typeof PackageVersionCommandService>).mockImplementation(() => mockPackageVersionCommandService);
         (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
         (SinglePackageExportService as jest.MockedClass<typeof SinglePackageExportService>).mockImplementation(() => mockSinglePackageExportService);
-
-        program = buildTestProgram([Module]);
     });
 
-    function runCli(args: string[]): Promise<Command> {
-        return program.parseAsync(["node", "content-cli", ...args]);
+    async function runCli(args: string[]): Promise<void> {
+        await runCliProcess(args, [Module]);
     }
 
     /**

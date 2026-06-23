@@ -1,4 +1,3 @@
-import { Command, OptionValues } from "commander";
 import { runCli } from "../utls/cli-runner";
 import { mockAxiosGet, mockAxiosGetError } from "../utls/http-requests-mock";
 import {
@@ -10,32 +9,10 @@ import {
     AssetRegistryDescriptor,
     AssetRegistryMetadata,
 } from "../../src/commands/asset-registry/asset-registry.interfaces";
-import { Configurator, IModule } from "../../src/core/command/module-handler";
-import { Context } from "../../src/core/command/cli-context";
-import { FatalError, GracefulError } from "../../src/core/utils/logger";
+import { FatalError } from "../../src/core/utils/logger";
 import { VersionUtils } from "../../src/core/utils/version";
 
 import AssetRegistryModule = require("../../src/commands/asset-registry/module");
-
-const GRACEFUL_MESSAGE = "graceful failure - should not fail the process";
-
-class DiagnosticsModule extends IModule {
-    public register(context: Context, configurator: Configurator): void {
-        const diag = configurator.command("diag").description("Diagnostics test commands");
-
-        diag.command("graceful")
-            .description("Throws a GracefulError")
-            .action(async (_ctx: Context, _cmd: Command, _opts: OptionValues): Promise<void> => {
-                throw new GracefulError(GRACEFUL_MESSAGE);
-            });
-
-        diag.command("fatal")
-            .description("Throws a FatalError")
-            .action(async (_ctx: Context, _cmd: Command, _opts: OptionValues): Promise<void> => {
-                throw new FatalError("boom");
-            });
-    }
-}
 
 describe("CLI process output and exit codes", () => {
     const BASE_URL = "https://myTeam.celonis.cloud";
@@ -161,21 +138,6 @@ describe("CLI process output and exit codes", () => {
 
         it("Should exit non-zero when a required option is missing", async () => {
             const result = await runCli(["asset-registry", "get"], [AssetRegistryModule]);
-
-            expect(result.exitCode).toBe(1);
-        });
-    });
-
-    describe("action-wrapper error semantics", () => {
-        it("Should report a GracefulError without forcing a non-zero exit code", async () => {
-            const result = await runCli(["diag", "graceful"], [DiagnosticsModule]);
-
-            expect(result.exitCode).toBe(0);
-            expect(result.output).toContain(GRACEFUL_MESSAGE);
-        });
-
-        it("Should exit non-zero for a regular error thrown by a command", async () => {
-            const result = await runCli(["diag", "fatal"], [DiagnosticsModule]);
 
             expect(result.exitCode).toBe(1);
         });

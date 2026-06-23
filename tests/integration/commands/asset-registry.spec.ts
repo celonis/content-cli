@@ -1,13 +1,10 @@
 import Module = require("../../../src/commands/asset-registry/module");
-import { Command } from "commander";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
-import { buildTestProgram } from "../../utls/cli-program";
 import { runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/asset-registry/asset-registry.service");
 
 describe("asset-registry command integration", () => {
-    let program: Command;
     let mockService: jest.Mocked<AssetRegistryService>;
 
     beforeEach(() => {
@@ -22,12 +19,10 @@ describe("asset-registry command integration", () => {
 
         (AssetRegistryService as jest.MockedClass<typeof AssetRegistryService>)
             .mockImplementation(() => mockService);
-
-        program = buildTestProgram([Module]);
     });
 
-    function runCli(args: string[]): Promise<Command> {
-        return program.parseAsync(["node", "content-cli", ...args]);
+    async function runCli(args: string[]): Promise<void> {
+        await runCliProcess(args, [Module]);
     }
 
     describe("asset-registry schema", () => {
