@@ -1,6 +1,5 @@
 import { IModuleConstructor } from "../../src/core/command/module-handler";
-import { createProgram } from "../../src/content-cli";
-import { testContext } from "./test-context";
+import { buildTestProgram } from "./cli-program";
 
 export interface CliRunResult {
     stdout: string;
@@ -45,7 +44,7 @@ export async function runCli(args: string[], modules: IModuleConstructor[]): Pro
     process.exitCode = 0;
 
     try {
-        const program = createProgram(testContext, { modules });
+        const program = buildTestProgram(modules);
         program.exitOverride();
         await program.parseAsync(["node", "content-cli", ...args]);
     } catch (error) {
