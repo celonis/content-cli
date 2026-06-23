@@ -4,6 +4,7 @@ import * as os from "os";
 import * as AdmZip from "adm-zip";
 import { FileService } from "../../../src/core/utils/file-service";
 import { FatalError, logger } from "../../../src/core/utils/logger";
+import { rmTempDir } from "../../utls/fs-utils";
 
 describe("FileService", () => {
     let fileService: FileService;
@@ -26,19 +27,11 @@ describe("FileService", () => {
 
     afterAll(() => {
         if (fs.existsSync(tempDir)) {
-            try {
-                fs.rmSync(tempDir, { recursive: true, force: true });
-            } catch (e) {
-                logger.warn(`Could not delete: ${tempDir}`);
-            }
+            rmTempDir(tempDir);
         }
 
         if (fs.existsSync(symLinkSourceTempDir)) {
-            try {
-                fs.rmSync(symLinkSourceTempDir, { recursive: true, force: true });
-            } catch (e) {
-                logger.warn(`Could not delete: ${tempDir}`);
-            }
+            rmTempDir(tempDir);
         }
     });
 
@@ -159,7 +152,7 @@ describe("FileService", () => {
                 expect(fs.existsSync(path.join(extractedDir, "nodes", "node-1.json"))).toBe(true);
                 expect(JSON.parse(fs.readFileSync(path.join(extractedDir, "package.json"), "utf-8"))).toEqual({ key: "pkg-1" });
             } finally {
-                fs.rmSync(extractedDir, { recursive: true, force: true });
+                rmTempDir(extractedDir);
             }
         });
     });
