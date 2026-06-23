@@ -7,6 +7,7 @@ import { tmpdir } from "os"
 import { join } from "path";
 
 import process = require("process");
+import { rmTempDir } from "./utls/fs-utils";
 
 mockAxios();
 
@@ -30,11 +31,7 @@ afterEach(() => {
 afterAll(() => {
     if (tempDir !== null) {
         logger.info(`Removing tempdir: ${tempDir}`);
-        try {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-        } catch (e) {
-            logger.warn(`Could not delete tempdir: ${tempDir}`, e);
-        }
+        rmTempDir(tempDir);
     }
 });
 
