@@ -34,7 +34,7 @@ describe("Asset registry skills get", () => {
         expect(fs.existsSync(written)).toBe(true);
         expect(fs.readFileSync(written).equals(skillContent)).toBe(true);
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(
             FileService.fileDownloadedMessage + written
         );

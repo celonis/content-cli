@@ -5,7 +5,7 @@ import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
 import { trimSlashes } from "../../core/utils/path";
 import { v4 as uuidv4 } from "uuid";
-import * as path from "path";
+import * as path from "node:path";
 
 export class AssetRegistryService {
     private api: AssetRegistryApi;

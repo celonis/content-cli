@@ -1,3 +1,3 @@
 export function trimSlashes(value: string): string {
-    return value.replace(/^\/+|\/+$/g, "");
+    return value.replace(/^\/+/, "").replace(/\/+$/, "");
 }
