@@ -149,6 +149,71 @@ Options:
 - `--assetType <assetType>` (required) – The asset type identifier
 - `--json` – Write the examples to a JSON file in the working directory
 
+## Skills
+
+The asset registry also publishes agent skills (authored guidance for the platform and for specific asset types). Each skill exposes a `SKILL.md` and optional reference files.
+
+### List Skills
+
+List all skills available on the platform.
+
+```
+content-cli asset-registry skills list
+```
+
+Example output:
+
+```
+content-cli-setup (platform/content-cli-setup) - Install content-cli and create a profile against a Celonis team.
+asset-studio-board-v2 (asset/BOARD_V2/asset-studio-board-v2) - Authoring one Celonis Studio view asset of type BOARD_V2.
+```
+
+Each line is `<name> (<path>)` followed by ` - <description>` when the skill provides one. The `<path>` value is what you pass to `skills get --path`.
+
+Use `--json` to write the full response to a JSON file in the working directory:
+
+```
+content-cli asset-registry skills list --json
+```
+
+### Download a Skill File
+
+Download a skill's `SKILL.md` (or a specific reference file) to the local filesystem. The Studio MCP server remains the recommended source for live agent use; this command is a fetch/inspect utility for environments without the MCP server, for offline review, or for vendoring a copy into a repo.
+
+Download the default `SKILL.md` for a platform skill:
+
+```
+content-cli asset-registry skills get --path platform/content-cli-setup
+```
+
+Download a `SKILL.md` for an asset skill:
+
+```
+content-cli asset-registry skills get --path asset/BOARD_V2/asset-studio-board-v2
+```
+
+Download a specific reference file and write into a target directory:
+
+```
+content-cli asset-registry skills get \
+  --path asset/BOARD_V2/asset-studio-board-v2 \
+  --file refs/example.md \
+  --output ./skills
+```
+
+Options:
+
+- `--path <path>` (required) – Skill path from `asset-registry skills list` (e.g. `platform/<skill>` or `asset/<assetType>/<skill>`).
+- `--file <file>` – Relative path of a reference file within the skill. Defaults to `SKILL.md` when omitted.
+- `--output <output>` – Destination directory. Defaults to the current working directory. Created automatically if it does not exist.
+
+Behavior:
+
+- The local filename is the basename of `--file` (or `SKILL.md` when `--file` is omitted). Subdirectories in `--file` are not preserved on the local side.
+- Re-running the command overwrites the existing local file without prompting.
+- On success the command logs a single confirmation line with the absolute path of the written file.
+- A missing skill or file returns a clear error such as `Problem getting SKILL.md for 'platform/missing': ...`.
+
 ## Troubleshooting
 
 If the asset registry is disabled on your team, commands fail with:

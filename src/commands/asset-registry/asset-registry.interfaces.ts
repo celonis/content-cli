@@ -57,3 +57,9 @@ export interface AgentSkill {
 export interface AgentSkillsResponse {
     skills: AgentSkill[];
 }
+
+export interface GetSkillFileOptions {
+    path: string;
+    file?: string;
+    output?: string;
+}
