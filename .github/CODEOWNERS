@@ -3,21 +3,21 @@
 /*                                                @celonis/studio-platform
 /src                                              @celonis/studio-platform
 /src/core                                         @celonis/studio-platform
-/src/commands/configuration-management/           @celonis/studio-platform
-/tests/commands/configuration-management/         @celonis/studio-platform
+/src/commands/configuration-management/           @celonis/astro @celonis/studio-platform
+/tests/commands/configuration-management/         @celonis/astro @celonis/studio-platform
 /src/commands/t2tc/                               @celonis/studio-platform
 /tests/commands/t2tc/                             @celonis/studio-platform
 /src/commands/profile/                            @celonis/studio-platform
-/src/commands/asset-registry/                     @celonis/studio-platform
-/tests/commands/asset-registry/                   @celonis/studio-platform
-/src/commands/deployment/                         @celonis/studio-platform
-/tests/commands/deployment/                       @celonis/studio-platform
+/src/commands/asset-registry/                     @celonis/astro @celonis/studio-platform
+/tests/commands/asset-registry/                   @celonis/astro @celonis/studio-platform
+/src/commands/deployment/                         @celonis/astro @celonis/studio-platform
+/tests/commands/deployment/                       @celonis/astro @celonis/studio-platform
 /src/commands/action-flows/                       @celonis/process-automation
 /tests/commands/action-flows/                     @celonis/process-automation
 /src/commands/analysis/                           @celonis/process-analytics
 /src/commands/cpm4/                               @celonis/cpm4
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
-/src/commands/studio/                             @celonis/studio-platform
-/tests/commands/studio/                           @celonis/studio-platform
+/src/commands/studio/                             @celonis/astro @celonis/studio-platform
+/tests/commands/studio/                           @celonis/astro @celonis/studio-platform
 /package.json                                     @celonis/studio-platform @aocelo @siavash-celonis
 /yarn.lock                                        @celonis/studio-platform @aocelo @siavash-celonis
