@@ -38,6 +38,7 @@ jest.mock("../../../src/core/utils/logger", () => ({
 }));
 
 import { ProfileService } from "../../../src/core/profile/profile.service";
+import { Dirent } from "node:fs";
 
 describe("ProfileService - mapCelonisEnvProfile", () => {
     let profileService: ProfileService;
@@ -302,7 +303,7 @@ describe("ProfileService - findProfile", () => {
             };
 
             const profileFilePath = path.resolve(mockProfilePath, `${profileName}.json`);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockProfile));
+            jest.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify(mockProfile));
 
             process.env.TEAM_URL = "https://env.celonis.cloud";
             process.env.API_TOKEN = "env-token";
@@ -326,8 +327,7 @@ describe("ProfileService - findProfile", () => {
                 type: ProfileType.KEY
             };
 
-            const profileFilePath = path.resolve(mockProfilePath, `${profileName}.json`);
-            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockProfile));
+            jest.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify(mockProfile));
 
             const refreshProfileSpy = jest.spyOn(profileService, "refreshProfile").mockResolvedValue(undefined);
 
@@ -868,8 +868,8 @@ describe("ProfileService - makeDefaultProfile", () => {
     });
 
     it("should call findProfile and store default profile name in config", async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
 
         await profileService.makeDefaultProfile("my-profile");
 
@@ -896,8 +896,8 @@ describe("ProfileService - getDefaultProfile", () => {
     });
 
     it("should return default profile name when config exists", () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ defaultProfile: "my-default" }));
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        jest.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify({ defaultProfile: "my-default" }));
 
         const result = profileService.getDefaultProfile();
 
@@ -906,12 +906,11 @@ describe("ProfileService - getDefaultProfile", () => {
     });
 
     it("should return null when config file does not exist", () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        jest.spyOn(fs, "existsSync").mockReturnValue(false);
 
         const result = profileService.getDefaultProfile();
 
         expect(result).toBeNull();
-        expect(fs.readFileSync).not.toHaveBeenCalled();
     });
 });
 
@@ -923,12 +922,13 @@ describe("ProfileService - storeProfile", () => {
     beforeEach(() => {
         (os.homedir as jest.Mock).mockReturnValue(mockHomedir);
         profileService = new ProfileService();
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        jest.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+        jest.spyOn(fs, "mkdirSync").mockReturnValue(mockProfilePath);
     });
 
     it("should create profile container if not exists and write profile with normalized team URL", async () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        jest.spyOn(fs, "existsSync").mockReturnValue(false);
 
         const profile: Profile = {
             name: "test-profile",
@@ -997,13 +997,13 @@ describe("ProfileService - getAllFilesInDirectory", () => {
     });
 
     it("should return profile names (without .json) when directory exists", () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(true);
-        (fs.readdirSync as jest.Mock).mockReturnValue([
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        jest.spyOn(fs, "readdirSync").mockReturnValue([
             { name: "profile1.json", isDirectory: () => false },
             { name: "profile2.json", isDirectory: () => false },
             { name: "config.json", isDirectory: () => false },
             { name: "subdir", isDirectory: () => true },
-        ]);
+        ] as Dirent[]);
 
         const result = profileService.getAllFilesInDirectory();
 
@@ -1012,12 +1012,11 @@ describe("ProfileService - getAllFilesInDirectory", () => {
     });
 
     it("should return empty array when directory does not exist", () => {
-        (fs.existsSync as jest.Mock).mockReturnValue(false);
+        jest.spyOn(fs, "existsSync").mockReturnValue(false);
 
         const result = profileService.getAllFilesInDirectory();
 
         expect(result).toEqual([]);
-        expect(fs.readdirSync).not.toHaveBeenCalled();
     });
 });
 

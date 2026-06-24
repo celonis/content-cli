@@ -1,7 +1,7 @@
 # Asset Registry Commands
 
-The **asset-registry** command group allows you to discover registered asset types, fetch their schemas, examples, and methodology from the Asset Registry.
-This is useful for understanding which asset types are available on the platform, their configuration structure, and best practices for authoring assets.
+The **asset-registry** command group allows you to discover registered asset types, fetch their schemas, and examples from the Asset Registry.
+This is useful for understanding which asset types are available on the platform, their configuration structure, and example configurations to author assets against.
 
 ## List Asset Types
 
@@ -14,9 +14,11 @@ content-cli asset-registry list
 Example output:
 
 ```
-BOARD_V2 - View [DASHBOARDS] (basePath: /blueprint/api)
-SEMANTIC_MODEL - Knowledge Model [DATA_AND_PROCESS_MODELING] (basePath: /semantic-layer/api)
+BOARD_V2 - View [DASHBOARDS]
+SEMANTIC_MODEL - Knowledge Model [DATA_AND_PROCESS_MODELING] - Defines KPIs, records, filters, and data bindings for analytics
 ```
+
+Each line is `<assetType> - <displayName> [<group>]` followed by ` - <description>` when the asset type provides one.
 
 It is also possible to use the `--json` option for writing the full response to a file that gets created in the working directory.
 
@@ -43,7 +45,6 @@ Base Path:    /blueprint/api
 Endpoints:
   schema:     /validation/schema/board_v2
   validate:   /validate
-  methodology: /methodology/board_v2
   examples:   /examples/board_v2
 ```
 
@@ -148,15 +149,12 @@ Options:
 - `--assetType <assetType>` (required) – The asset type identifier
 - `--json` – Write the examples to a JSON file in the working directory
 
-## Get Methodology
+## Troubleshooting
 
-Fetch methodology and best-practices guidance for an asset type. Not all asset types provide methodology.
+If the asset registry is disabled on your team, commands fail with:
 
 ```
-content-cli asset-registry methodology --assetType BOARD_V2
+Asset registry is not enabled for this team. Contact your administrator to enable the feature.
 ```
 
-Options:
-
-- `--assetType <assetType>` (required) – The asset type identifier
-- `--json` – Write the methodology to a JSON file in the working directory
+This replaces the raw API error and indicates the feature is turned off server-side, not a permissions or connectivity issue on your CLI profile.

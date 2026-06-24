@@ -6,13 +6,13 @@ import {
     PackageExportTransport, PackageKeyAndVersionPair,
     StudioPackageManifest, VariableExportTransport,
     VariableManifestTransport,
-} from "./interfaces/package-export.interfaces";
+} from "../configuration-management/interfaces/package-export.interfaces";
 import {
     ContentNodeTransport,
     PackageManagerVariableType,
     PackageWithVariableAssignments, StudioComputeNodeDescriptor,
 } from "../studio/interfaces/package-manager.interfaces";
-import { BatchExportImportConstants } from "./interfaces/batch-export-import.constants";
+import { BatchExportImportConstants } from "./batch-export-import.constants";
 import { SpaceTransport } from "../studio/interfaces/space.interface";
 import { parse, stringify } from "../../core/utils/json";
 import { Context } from "../../core/command/cli-context";
@@ -23,6 +23,7 @@ import { SpaceApi } from "../studio/api/space-api";
 import { StudioVariablesApi } from "../studio/api/studio-variables-api";
 import { SpaceService } from "../studio/service/space.service";
 import { StudioVariableService } from "../studio/service/studio-variable.service";
+import { BranchUtils } from "../../core/utils/branches";
 
 export class StudioService {
 
@@ -59,19 +60,6 @@ export class StudioService {
         return packagesToExport;
     }
 
-    public fixConnectionVariables(variables: VariableManifestTransport[]): VariableManifestTransport[] {
-        return variables.map(variableManifest => ({
-            ...variableManifest,
-            variables: variableManifest.variables.map(variable => {
-                if (variable.type !== PackageManagerVariableType.CONNECTION) {
-                    return variable;
-                }
-
-                return this.fixConnectionVariable(variable);
-            })
-        }));
-    }
-
     public async getStudioPackageManifests(studioPackageKeys: string[]): Promise<StudioPackageManifest[]> {
         return Promise.all(studioPackageKeys.map(async packageKey => {
             const node = await this.studioNodeApi.findOneByKeyAndRootNodeKey(packageKey, packageKey);
@@ -103,7 +91,7 @@ export class StudioService {
         }
         for (const  manifest of studioManifests) {
             const existingPackage = existingStudioPackages.find(existingPackage => existingPackage.key === manifest.packageKey);
-            if (existingPackage) {
+            if (existingPackage && !BranchUtils.isBranchPackageKey(existingPackage.key)) {
                 await this.studioPackageApi.movePackageToSpace(existingPackage.id, manifest.space.id);
             }
             await this.assignRuntimeVariables(manifest);
@@ -139,20 +127,6 @@ export class StudioService {
                             }))
             } : pkg;
         });
-    }
-
-    private fixConnectionVariable(variable: VariableExportTransport): VariableExportTransport {
-        if (!variable.value?.appName) {
-            return variable;
-        }
-
-        return {
-            ...variable,
-            metadata: {
-                ...variable.metadata,
-                appName: variable.value.appName
-            }
-        }
     }
 
     private deleteScenarioAssets(packageZip: AdmZip): void {

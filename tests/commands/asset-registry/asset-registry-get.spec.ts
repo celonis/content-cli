@@ -2,9 +2,8 @@ import { AssetRegistryDescriptor } from "../../../src/commands/asset-registry/as
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Asset registry get", () => {
     const boardDescriptor: AssetRegistryDescriptor = {
@@ -17,7 +16,6 @@ describe("Asset registry get", () => {
         endpoints: {
             schema: "/schema/board_v2",
             validate: "/validate/board_v2",
-            methodology: "/methodology/board_v2",
             examples: "/examples/board_v2",
         },
         contributions: { pigEntityTypes: [], dataPipelineEntityTypes: [], actionTypes: [] },
@@ -39,6 +37,7 @@ describe("Asset registry get", () => {
                 expect.stringContaining("/validate/board_v2"),
             ])
         );
+        expect(messages.join("\n")).not.toContain("skills:");
     });
 
     it("Should get a specific asset type as JSON", async () => {
@@ -46,14 +45,7 @@ describe("Asset registry get", () => {
 
         await new AssetRegistryService(testContext).getType("BOARD_V2", true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            path.resolve(process.cwd(), expectedFileName),
-            expect.any(String),
-            { encoding: "utf-8", mode: 0o600 }
-        );
-
-        const written = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as AssetRegistryDescriptor;
+        const written = getJsonFromDownloadedFile() as AssetRegistryDescriptor;
         expect(written.assetType).toBe("BOARD_V2");
         expect(written.displayName).toBe("View");
         expect(written.service.basePath).toBe("/blueprint/api");
@@ -67,8 +59,27 @@ describe("Asset registry get", () => {
         const messages = loggingTestTransport.logMessages.map((m) => m.message);
         expect(messages).toEqual(
             expect.arrayContaining([
-                expect.stringContaining("/methodology/board_v2"),
                 expect.stringContaining("/examples/board_v2"),
+            ])
+        );
+    });
+
+    it("Should include the skills endpoint when present", async () => {
+        const descriptorWithSkillsEndpoint: AssetRegistryDescriptor = {
+            ...boardDescriptor,
+            endpoints: {
+                ...boardDescriptor.endpoints,
+                skills: "/skills/board_v2",
+            },
+        };
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types/BOARD_V2", descriptorWithSkillsEndpoint);
+
+        await new AssetRegistryService(testContext).getType("BOARD_V2", false);
+
+        const messages = loggingTestTransport.logMessages.map((m) => m.message);
+        expect(messages).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining("/skills/board_v2"),
             ])
         );
     });
@@ -86,7 +97,6 @@ describe("Asset registry get", () => {
         await new AssetRegistryService(testContext).getType("BOARD_V2", false);
 
         const messages = loggingTestTransport.logMessages.map((m) => m.message).join("\n");
-        expect(messages).not.toContain("methodology");
         expect(messages).not.toContain("examples");
     });
 });

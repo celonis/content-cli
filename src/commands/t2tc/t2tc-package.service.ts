@@ -5,52 +5,57 @@ import * as AdmZip from "adm-zip";
 import { Context } from "../../core/command/cli-context";
 import {
     PackageExportTransport, PackageKeyAndVersionPair,
-    PackageManifestTransport, PackageMetadataExportTransport,
+    PackageManifestTransport,
     StudioPackageManifest, VariableManifestTransport,
-} from "./interfaces/package-export.interfaces";
-import { BatchExportImportConstants } from "./interfaces/batch-export-import.constants";
+} from "../configuration-management/interfaces/package-export.interfaces";
+import { BatchExportImportConstants } from "./batch-export-import.constants";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
 import { parse, stringify } from "../../core/utils/json";
 import { PackageApi } from "../studio/api/package-api";
-import { BatchImportExportApi } from "./api/batch-import-export-api";
+import { T2tcPackageApi } from "./api/t2tc-package-api";
+import { VariableApi } from "../configuration-management/api/variable-api";
+import { fixConnectionVariables } from "../configuration-management/connection-variable.helper";
 import { StudioService } from "./studio.service";
 import { GitService } from "../../core/git-profile/git/git.service";
 import * as fs from "fs";
 import { FileConstants } from "../../core/utils/file.constants";
+import { resolve } from "node:path";
 
-export class BatchImportExportService {
+export class T2tcPackageService {
 
-    private batchImportExportApi: BatchImportExportApi;
+    private t2tcPackageApi: T2tcPackageApi;
+    private variableApi: VariableApi;
 
     private studioPackageApi: PackageApi;
     private studioService: StudioService;
     private gitService: GitService;
 
     constructor(context: Context) {
-        this.batchImportExportApi = new BatchImportExportApi(context);
+        this.t2tcPackageApi = new T2tcPackageApi(context);
+        this.variableApi = new VariableApi(context);
 
         this.studioPackageApi = new PackageApi(context);
         this.studioService = new StudioService(context);
         this.gitService = new GitService(context);
     }
 
-    public async listActivePackages(flavors: string[]): Promise<void> {
-        const activePackages = await this.batchImportExportApi.findAllActivePackages(flavors);
+    public async listActivePackages(flavors: string[], includeBranches: boolean): Promise<void> {
+        const activePackages = await this.t2tcPackageApi.findAllActivePackages(flavors, false, includeBranches);
         activePackages.forEach(pkg => {
             logger.info(`${pkg.name} - Key: "${pkg.key}"`)
         });
     }
 
-    public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean): Promise<void> {
+    public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean, includeBranches: boolean): Promise<void> {
         let packagesToExport: PackageExportTransport[];
 
         if (keysByVersion.length) {
-            packagesToExport = await this.batchImportExportApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
+            packagesToExport = await this.t2tcPackageApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
         } else if (packageKeys.length) {
-            packagesToExport = await this.batchImportExportApi.findActivePackagesByKeys(packageKeys, withDependencies);
+            packagesToExport = await this.t2tcPackageApi.findActivePackagesByKeys(packageKeys, withDependencies);
         } else {
-            packagesToExport = await this.batchImportExportApi.findAllActivePackages(flavors, withDependencies);
+            packagesToExport = await this.t2tcPackageApi.findAllActivePackages(flavors, withDependencies, includeBranches);
         }
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, withDependencies);
@@ -59,7 +64,7 @@ export class BatchImportExportService {
     }
 
     public async listPackagesByKeysWithVersion(keysByVersion: string[], withDependencies: boolean): Promise<void> {
-        const exportedPackages = await this.batchImportExportApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
+        const exportedPackages = await this.t2tcPackageApi.findPackagesByKeysAndVersion(keysByVersion, withDependencies);
         exportedPackages.forEach(pkg => {
             logger.info(`${pkg.name} - Key: "${pkg.key}"`);
         });
@@ -68,9 +73,9 @@ export class BatchImportExportService {
     public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
         let exportedPackagesData: Buffer;
         if (packageKeys) {
-            exportedPackagesData = await this.batchImportExportApi.exportPackages(packageKeys, withDependencies);
+            exportedPackagesData = await this.t2tcPackageApi.exportPackages(packageKeys, withDependencies);
         } else {
-            exportedPackagesData = await this.batchImportExportApi.exportPackagesByVersions(packageKeysByVersion, withDependencies);
+            exportedPackagesData = await this.t2tcPackageApi.exportPackagesByVersions(packageKeysByVersion, withDependencies);
         }
 
         const exportedPackagesZip: AdmZip = new AdmZip(exportedPackagesData);
@@ -82,7 +87,7 @@ export class BatchImportExportService {
         const versionsByPackageKey = this.getVersionsByPackageKey(manifest);
 
         let exportedVariables = await this.getVersionedVariablesForPackagesWithKeys(versionsByPackageKey);
-        exportedVariables = this.studioService.fixConnectionVariables(exportedVariables);
+        exportedVariables = fixConnectionVariables(exportedVariables);
         exportedPackagesZip.addFile(BatchExportImportConstants.VARIABLES_FILE_NAME, Buffer.from(stringify(exportedVariables), "utf8"), "", FileConstants.DEFAULT_FILE_PERMISSIONS);
 
         const studioPackageKeys = manifest.filter(packageManifest => packageManifest.flavor === BatchExportImportConstants.STUDIO)
@@ -113,18 +118,6 @@ export class BatchImportExportService {
         }
     }
 
-    public async batchExportPackagesMetadata(packageKeys: string[], jsonResponse: boolean): Promise<void> {
-        const exportedPackagesMetadata: PackageMetadataExportTransport[] = await this.batchImportExportApi.batchExportPackagesMetadata(packageKeys);
-
-        if (jsonResponse) {
-            this.exportListOfPackagesMetadata(exportedPackagesMetadata);
-        } else {
-            exportedPackagesMetadata.forEach(pkg => {
-                logger.info(`${pkg.key} - Has Unpublished Changes: ${pkg.hasUnpublishedChanges}`);
-            });
-        }
-    }
-
     public async batchImportPackages(sourcePath: string, overwrite: boolean, gitBranch: string, performValidation: boolean = false): Promise<void> {
         let sourceToBeImported: string;
         let temporaryGitFolder: string;
@@ -146,11 +139,11 @@ export class BatchImportExportService {
         const existingStudioPackages = await this.studioPackageApi.findAllPackages();
 
         const formData = this.buildBodyForImport(configs, sourceToBeImported, variablesManifests);
-        const postPackageImportData = await this.batchImportExportApi.importPackages(formData, overwrite, performValidation);
+        const postPackageImportData = await this.t2tcPackageApi.importPackages(formData, overwrite, performValidation);
         await this.studioService.processImportedPackages(configs, existingStudioPackages, studioManifests);
 
         if (gitBranch) {
-            fs.rmSync(temporaryGitFolder, { recursive: true });
+            fs.rmSync(temporaryGitFolder, { recursive: true, force: true });
         }
         fs.rmSync(sourceToBeImported);
 
@@ -159,16 +152,16 @@ export class BatchImportExportService {
         logger.info("Config import report file: " + reportFileName);
     }
 
-    public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<void>  {
-        let packagesToExport = await this.batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
+    public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean): Promise<void>  {
+        let packagesToExport = await this.t2tcPackageApi.findActivePackagesByVariableValue(flavors, variableValue, variableType, includeBranches);
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, false);
 
         this.exportListOfPackages(packagesToExport);
     }
 
-    public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string) : Promise<void> {
-        const packagesByVariableValue = await this.batchImportExportApi.findActivePackagesByVariableValue(flavors, variableValue, variableType);
+    public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean) : Promise<void> {
+        const packagesByVariableValue = await this.t2tcPackageApi.findActivePackagesByVariableValue(flavors, variableValue, variableType, includeBranches);
         packagesByVariableValue.forEach(pkg => {
             logger.info(`${pkg.name} - Key: "${pkg.key}"`)
         });
@@ -200,13 +193,7 @@ export class BatchImportExportService {
             })
         });
 
-        return this.batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
-    }
-
-    private exportListOfPackagesMetadata(packagesMetadata: PackageMetadataExportTransport[]): void {
-        const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(packagesMetadata), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        return this.variableApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
     }
 
     private buildBodyForImport(configs: AdmZip, sourcePath: string, variablesManifests: VariableManifestTransport[]): FormData {
@@ -262,7 +249,8 @@ export class BatchImportExportService {
         } else {
             const fileDownloadedMessage = "File downloaded successfully. New filename: ";
             const filename = `export_${uuidv4()}.zip`;
-            exportedZip.writeZip(filename, () => fs.chmodSync(filename, FileConstants.DEFAULT_FILE_PERMISSIONS));
+            const fullFilePath = resolve(process.cwd(), filename);
+            exportedZip.writeZip(fullFilePath, () => fs.chmodSync(fullFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
             logger.info(fileDownloadedMessage + filename);
         }
     }

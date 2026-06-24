@@ -1,39 +1,40 @@
 import * as FormData from "form-data";
 import {
     PackageExportTransport,
-    PackageKeyAndVersionPair, PackageMetadataExportTransport,
-    PostPackageImportData, VariableManifestTransport,
-} from "../interfaces/package-export.interfaces";
+    PostPackageImportData,
+} from "../../configuration-management/interfaces/package-export.interfaces";
 import { FatalError } from "../../../core/utils/logger";
 import { HttpClient } from "../../../core/http/http-client";
 import { Context } from "../../../core/command/cli-context";
 
-export class BatchImportExportApi {
+export class T2tcPackageApi {
 
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;
     }
 
-    public async findAllActivePackages(flavors: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
+    public async findAllActivePackages(flavors: string[], withDependencies: boolean = false, includeBranches: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         queryParams.set("withDependencies", withDependencies.toString());
-        flavors.forEach(flavor => queryParams.append("flavors", flavor))
+        queryParams.set("includeBranches", includeBranches.toString());
+        flavors.forEach(flavor => queryParams.append("flavors", flavor));
 
         return this.httpClient().get(`/package-manager/api/core/packages/export/list?${queryParams.toString()}`).catch(e => {
             throw new FatalError(`Problem getting active packages: ${e}`);
         });
     }
 
-    public async findActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string): Promise<PackageExportTransport[]> {
+    public async findActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 
         queryParams.set("variableValue", variableValue);
         if (variableType) {
             queryParams.set("variableType", variableType);
         }
+        queryParams.set("includeBranches", includeBranches.toString());
         flavors.forEach(flavor => queryParams.append("flavors", flavor))
 
         return this.httpClient().get(`/package-manager/api/core/packages/export/list-by-variable-value?${queryParams.toString()}`).catch(e => {
@@ -83,26 +84,11 @@ export class BatchImportExportApi {
         });
     }
 
-    public async batchExportPackagesMetadata(packageKeys: string[]): Promise<PackageMetadataExportTransport[]> {
-        const queryParams = new URLSearchParams();
-        packageKeys.forEach(packageKey => queryParams.append("packageKeys", packageKey));
-
-        return this.httpClient().get(`/package-manager/api/core/packages/metadata/export?${queryParams.toString()}`).catch(e => {
-            throw new FatalError(`Problem exporting packages metadata: ${e}`);
-        })
-    }
-
     public async importPackages(data: FormData, overwrite: boolean, performValidation: boolean): Promise<PostPackageImportData[]> {
         return this.httpClient().postFile(
             "/package-manager/api/core/packages/import/batch",
             data,
             {overwrite, performValidation}
         );
-    }
-
-    public async findVariablesWithValuesByPackageKeysAndVersion(packagesByKeyAndVersion: PackageKeyAndVersionPair[]): Promise<VariableManifestTransport[]> {
-        return this.httpClient().post("/package-manager/api/core/packages/export/batch/variables-with-assignments", packagesByKeyAndVersion).catch(e => {
-            throw new FatalError(`Problem exporting package variables: ${e}`);
-        })
     }
 }

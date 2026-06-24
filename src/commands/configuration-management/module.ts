@@ -6,30 +6,40 @@ import { Configurator, IModule } from "../../core/command/module-handler";
 import { Context } from "../../core/command/cli-context";
 import { Command, OptionValues } from "commander";
 import { ConfigCommandService } from "./config-command.service";
+import { StagingPackageService } from "./staging-package.service";
+import { MetadataService } from "./metadata.service";
+import { T2tcCommandService } from "../t2tc/t2tc-command.service";
 import { VariableCommandService } from "./variable-command.service";
 import { NodeService } from "./node.service";
 import { NodeDiffService } from "./node-diff.service";
 import { NodeDependencyService } from "./node-dependency.service";
 import { PackageVersionCommandService } from "./package-version-command.service";
 import { PackageValidationService } from "./package-validation.service";
+import { SinglePackageImportService } from "./single-package-import.service";
+import { SinglePackageExportService } from "./single-package-export.service";
 
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
-        const configCommand = configurator.command("config");
+        const configCommand = configurator.command("config")
+            .description("Manage package configurations and their resources (package, nodes, versions, variables, metadata). Note: 'config list/export/import/diff' are deprecated — bulk Team-to-Team Copy operations have moved to the 't2tc package' group, and single-package operations live under 'config package'.");
         configCommand.command("list")
-            .description("Command to list packages")
+            .description("[Deprecated] Use 't2tc package list' instead. List packages in the target team.")
+            .deprecationNotice("'config list' is deprecated and will be removed in a future release. Use 't2tc package list' instead.")
             .option("--json", "Return response as json type", "")
-            .option("--flavors <flavors...>", "Lists only active packages of the given flavors")
+            .option("--flavors <flavors...>", "Lists only packages of the given flavors")
             .option("--withDependencies", "Include dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only active versions of given package keys")
             .option("--keysByVersion <keysByVersion...>", "Lists packages by given key and version [packageKey.version]")
             .option("--variableValue <variableValue>", "Variable value for filtering packages by.")
             .option("--variableType <variableType>", "Variable type for filtering packages by.")
+            .option("--branches", "Include branches", false)
+            .option("--staging", "List staging packages instead", false)
             .action(this.listPackages);
 
         configCommand.command("export")
-            .description("Command to export package configs")
+            .description("[Deprecated] Use 't2tc package export' instead. Export one or more packages into a Team-to-Team Copy archive.")
+            .deprecationNotice("'config export' is deprecated and will be removed in a future release. Use 't2tc package export' instead.")
             .option("--packageKeys <packageKeys...>", "Keys of packages to export. Exports the latest deployed version only")
             .option("--keysByVersion <keysByVersion...>", "Keys of packages to export by version")
             .option("--withDependencies", "Include variables and dependencies", "")
@@ -43,13 +53,14 @@ class Module extends IModule {
 
         metadataCommand
             .command("export")
-            .description("Command to show whether packages have unpublished changes")
+            .description("Show whether multiple packages have unpublished changes (bulk metadata export).")
             .requiredOption("--packageKeys <packageKeys...>", "Keys of packages to find the metadata of")
             .option("--json", "Return response as json type", "")
-            .action(this.batchExportPackagesMetadata);
+            .action(this.exportPackagesMetadata);
 
         configCommand.command("import")
-            .description("Command to import package configs")
+            .description("[Deprecated] Use 't2tc package import' (batch) or 'config package import' (single package) instead. Import packages from a Team-to-Team Copy archive.")
+            .deprecationNotice("'config import' is deprecated and will be removed in a future release. Use 't2tc package import' (batch archive) or 'config package import' (single package) instead.")
             .option("--overwrite", "Flag to allow overwriting of packages")
             .option("--validate", "Validate node configurations before import", false)
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
@@ -58,17 +69,63 @@ class Module extends IModule {
             .option("-d, --directory <directory>", "Exported packages directory (relative path)")
             .action(this.batchImportPackages);
 
-        configCommand.command("validate")
+        const packageCommand = configCommand.command("package")
+            .description("Commands for working with a single package.");
+
+        packageCommand.command("import")
+            .description("Import a package from a zip file, directory, or Git branch. Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
+            .option("-f, --file <file>", "Package zip file (relative path)")
+            .option("-d, --directory <directory>", "Package directory (relative path)")
+            .option("--overwrite", "Flag to allow overwriting an existing package with the same key")
+            .option("--json", "Return the response as a JSON file")
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the package and import")
+            .action(this.importSinglePackage);
+
+        packageCommand.command("export")
+            .description("Export a single package's staging (draft) version to an unzipped directory (or a single zip with --zip, or to a Git branch with --gitBranch). Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.")
+            .requiredOption("--packageKey <packageKey>", "Key of the package to export")
+            .option("--zip", "Export the package as a single <packageKey>.zip file instead of an unzipped <packageKey> directory", false)
+            .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
+            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported package")
+            .action(this.exportSinglePackage);
+
+        packageCommand.command("validate")
             .description("Validate package node configurations")
             .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
-            .option("--layers <layers...>", "Validation layers to run", ["SCHEMA"])
+            .option(
+                "--layers <layers...>",
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS (can be combined, e.g. --layers SCHEMA BUSINESS PACKAGE_SETTINGS). Defaults to SCHEMA.",
+                ["SCHEMA"]
+            )
+            .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.validatePackage);
+
+        packageCommand.command("list")
+            .description("List packages in the target team. Lists staging packages by default.")
+            .option("--json", "Return response as json type", "")
+            .option("--flavors <flavors...>", "Lists only packages of the given flavors")
+            .action(this.listStagingPackages);
+
+        configCommand.command("validate")
+            .description("[Deprecated] Use 'config package validate' instead. Validate package node configurations.")
+            .deprecationNotice("'config validate' is deprecated and will be removed in a future release. Use 'config package validate' instead.")
+            .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
+            .option(
+                "--layers <layers...>",
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS (can be combined, e.g. --layers SCHEMA BUSINESS PACKAGE_SETTINGS). Defaults to SCHEMA.",
+                ["SCHEMA"]
+            )
             .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
             .option("--json", "Return the response as a JSON file")
             .action(this.validatePackage);
 
         configCommand.command("diff")
-            .description("Command to diff configs of packages")
+            .description("[Deprecated] Use 't2tc package diff' instead. Diff a local Team-to-Team Copy archive against deployed or staging packages.")
+            .deprecationNotice("'config diff' is deprecated and will be removed in a future release. Use 't2tc package diff' instead.")
             .option("--hasChanges", "Flag to return only the information if the package has changes without the actual changes")
+            .option("--baseVersion <version>", "Compare against a given version or STAGING")
             .option("--json", "Return the response as a JSON file")
             .requiredOption("-f, --file <file>", "Exported packages file (relative or absolute path)")
             .action(this.diffPackages);
@@ -157,7 +214,8 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
             .requiredOption("--nodeKey <nodeKey>", "Identifier of the node")
             .requiredOption("--baseVersion <baseVersion>", "Base version of the node")
-            .requiredOption("--compareVersion <compareVersion>", "Compare version of the node")
+            .option("--compareVersion <compareVersion>", "Compare version of the node, mutually exclusive with --file (exactly one required)")
+            .option("-f, --file <file>", "Local node JSON file to diff against the base version, mutually exclusive with --compareVersion (exactly one required)")
             .option("--json", "Return the response as a JSON file")
             .action(this.diffNode);
 
@@ -182,10 +240,27 @@ class Module extends IModule {
     }
 
     private async listPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.staging && (options.withDependencies || options.packageKeys || options.keysByVersion || options.variableValue || options.variableType)) {
+            throw new Error("Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        }
         if (options.packageKeys && options.keysByVersion) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
-        await new ConfigCommandService(context).listPackages(options.json, options.flavors, options.withDependencies, options.packageKeys, options.keysByVersion, options.variableValue, options.variableType);
+
+        await new T2tcCommandService(context).listPackages(
+            options.json,
+            options.flavors,
+            options.withDependencies,
+            options.packageKeys,
+            options.keysByVersion,
+            options.variableValue,
+            options.variableType,
+            options.branches,
+            options.staging);
+    }
+
+    private async listStagingPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new StagingPackageService(context).listStagingPackages(options.flavors ?? [], false, options.json);
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -196,11 +271,11 @@ class Module extends IModule {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
         options.withDependencies = options.withDependencies ?? false;
-        await new ConfigCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch, options.unzip);
+        await new T2tcCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch, options.unzip);
     }
 
-    private async batchExportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).batchExportPackagesMetadata(options.packageKeys, options.json);
+    private async exportPackagesMetadata(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new MetadataService(context).exportPackagesMetadata(options.packageKeys, options.json);
     }
 
     private async getPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -232,11 +307,25 @@ class Module extends IModule {
         if (options.gitProfile && !options.gitBranch) {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
-        await new ConfigCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch, options.validate);
+        await new T2tcCommandService(context).batchImportPackages(options.file, options.directory, options.overwrite, options.gitBranch, options.validate);
+    }
+
+    private async importSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.gitProfile && !options.gitBranch) {
+            throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
+        }
+        await new SinglePackageImportService(context).importPackage(options.file, options.directory, options.overwrite, options.json, options.gitBranch);
+    }
+
+    private async exportSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
+        if (options.gitProfile && !options.gitBranch) {
+            throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
+        }
+        await new SinglePackageExportService(context).exportPackage(options.packageKey, options.zip, options.gitBranch);
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new ConfigCommandService(context).diffPackages(options.file, options.hasChanges, options.json);
+        await new T2tcCommandService(context).diffPackages(options.file, options.hasChanges, options.baseVersion, options.json);
     }
 
     private async validatePackage(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -292,7 +381,14 @@ class Module extends IModule {
     }
 
     private async diffNode(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new NodeDiffService(context).diff(options.packageKey, options.nodeKey, options.baseVersion, options.compareVersion, options.json);
+        if ((options.file && options.compareVersion) || (!options.file && !options.compareVersion)) {
+            throw new Error("Please provide either --compareVersion or --file, but not both.");
+        }
+        if (options.file) {
+            await new NodeDiffService(context).diffWithFile(options.packageKey, options.nodeKey, options.baseVersion, options.file, options.json);
+        } else {
+            await new NodeDiffService(context).diff(options.packageKey, options.nodeKey, options.baseVersion, options.compareVersion, options.json);
+        }
     }
 
     private async listNodeDependencies(context: Context, command: Command, options: OptionValues): Promise<void> {

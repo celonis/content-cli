@@ -1,26 +1,24 @@
 import { v4 as uuidv4 } from "uuid";
 import { Context } from "../../core/command/cli-context";
 import { FatalError, logger } from "../../core/utils/logger";
-import { StudioService } from "./studio.service";
+import { fixConnectionVariables } from "./connection-variable.helper";
 import { FileService, fileService } from "../../core/utils/file-service";
 import { PackageKeyAndVersionPair, StagingVariableManifestTransport, VariableManifestTransport } from "./interfaces/package-export.interfaces";
-import { BatchImportExportApi } from "./api/batch-import-export-api";
+import { VariableApi } from "./api/variable-api";
 import { URLSearchParams } from "url";
 import { VariableAssignmentCandidatesApi } from "./api/variable-assignment-candidates-api";
 import { StagingPackageVariablesApi } from "./api/staging-package-variables-api";
 
 export class VariableService {
 
-    private batchImportExportApi: BatchImportExportApi;
+    private variableApi: VariableApi;
     private variableAssignmentCandidatesApi: VariableAssignmentCandidatesApi;
     private readonly stagingPackageVariablesApi: StagingPackageVariablesApi;
-    private studioService: StudioService;
 
     constructor(context: Context) {
-        this.batchImportExportApi = new BatchImportExportApi(context);
+        this.variableApi = new VariableApi(context);
         this.variableAssignmentCandidatesApi = new VariableAssignmentCandidatesApi(context);
         this.stagingPackageVariablesApi = new StagingPackageVariablesApi(context);
-        this.studioService = new StudioService(context);
     }
 
     public async listVariables(keysByVersion: string[], keysByVersionFile: string): Promise<void> {
@@ -72,19 +70,19 @@ export class VariableService {
     }
 
     private async getVersionedVariablesByKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<VariableManifestTransport[]> {
-        const variablesExportRequest: PackageKeyAndVersionPair[] = await this.buildKeyVersionPairs(keysByVersion, keysByVersionFile);
+        const variablesExportRequest: PackageKeyAndVersionPair[] = this.buildKeyVersionPairs(keysByVersion, keysByVersionFile);
 
-        const variableManifests = await this.batchImportExportApi.findVariablesWithValuesByPackageKeysAndVersion(variablesExportRequest);
-        return this.studioService.fixConnectionVariables(variableManifests);
+        const variableManifests = await this.variableApi.findVariablesWithValuesByPackageKeysAndVersion(variablesExportRequest);
+        return fixConnectionVariables(variableManifests);
     }
 
-    private async buildKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): Promise<PackageKeyAndVersionPair[]> {
+    private buildKeyVersionPairs(keysByVersion: string[], keysByVersionFile: string): PackageKeyAndVersionPair[] {
         let variablesExportRequest: PackageKeyAndVersionPair[] = [];
 
         if (keysByVersion.length !== 0) {
             variablesExportRequest = this.buildKeyAndVersionPairsFromArrayInput(keysByVersion);
         } else if (keysByVersion.length === 0 && keysByVersionFile !== "") {
-            variablesExportRequest = await fileService.readFileToJson(keysByVersionFile);
+            variablesExportRequest = fileService.readFileToJson(keysByVersionFile);
         } else {
             throw new FatalError("Please provide keysByVersion mappings or file path!");
         }

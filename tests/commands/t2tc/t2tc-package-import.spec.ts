@@ -1,6 +1,4 @@
-import * as path from "path";
 import AdmZip = require("adm-zip");
-import { mockCreateReadStream, mockExistsSync, mockReadDirSync, mockReadFileSync } from "../../utls/fs-mock-utils";
 
 jest.mock("adm-zip", () => {
     const realAdmZip = jest.requireActual("adm-zip");
@@ -16,9 +14,9 @@ import {
     mockedAxiosInstance,
     mockedPostRequestBodyByUrl,
 } from "../../utls/http-requests-mock";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { T2tcCommandService } from "../../../src/commands/t2tc/t2tc-command.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
+import { loggingTestTransport } from "../../jest.setup";
 import { SpaceTransport } from "../../../src/commands/studio/interfaces/space.interface";
 import {
     ContentNodeTransport,
@@ -26,19 +24,16 @@ import {
 } from "../../../src/commands/studio/interfaces/package-manager.interfaces";
 import {
     BatchExportImportConstants
-} from "../../../src/commands/configuration-management/interfaces/batch-export-import.constants";
+} from "../../../src/commands/t2tc/batch-export-import.constants";
 import { ConfigUtils } from "../../utls/config-utils";
 import { stringify } from "../../../src/core/utils/json";
 import { GitService } from "../../../src/core/git-profile/git/git.service";
 import { FileService } from "../../../src/core/utils/file-service";
+import { getJsonFromFile, zipToTempFolder } from "../../utls/fs-utils";
 
 describe("Config import", () => {
 
     const LOG_MESSAGE: string = "Config import report file: ";
-
-    beforeEach(() => {
-        mockExistsSync();
-    })
 
     it.each([
         true,
@@ -47,9 +42,8 @@ describe("Config import", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
 
         const importResponse: PostPackageImportData[] = [{
@@ -62,10 +56,10 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, overwrite, null);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, overwrite, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
     })
 
     it.each([
@@ -78,11 +72,13 @@ describe("Config import", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         jest.spyOn(GitService.prototype, "pullFromBranch")
             .mockResolvedValue("mocked-pulled-git-path");
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        jest.spyOn(FileService.prototype, "isDirectory").mockReturnValueOnce(true);
+        jest.spyOn(FileService.prototype, "zipDirectoryInBatchExportFormat").mockReturnValue(zipPath);
+
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
 
         const importResponse: PostPackageImportData[] = [{
@@ -95,10 +91,10 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
+        await new T2tcCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
     })
 
     it.each([
@@ -114,14 +110,12 @@ describe("Config import", () => {
             const returnedGitPath = "mocked-pulled-git-path";
             jest.spyOn(GitService.prototype, "pullFromBranch")
                 .mockResolvedValue(returnedGitPath);
+            jest.spyOn(FileService.prototype, "isDirectory").mockReturnValueOnce(true);
 
-            jest.spyOn(FileService.prototype, "zipDirectoryInBatchExportFormat")
-                .mockReturnValue("export_file.zip");
             const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
-
-            mockReadFileSync(exportedPackagesZip.toBuffer());
-            mockCreateReadStream(exportedPackagesZip.toBuffer());
-            mockReadDirSync(["manifest.json", "variables.json"]);
+            const zipPath = zipToTempFolder(exportedPackagesZip);
+            jest.spyOn(FileService.prototype, "zipDirectoryInBatchExportFormat")
+                .mockReturnValue(zipPath);
             mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
 
             const importResponse: PostPackageImportData[] = [{
@@ -134,10 +128,10 @@ describe("Config import", () => {
 
             mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-            await new ConfigCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
+            await new T2tcCommandService(testContext).batchImportPackages(null, null, overwrite, branchName);
 
             const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-            expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+            expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
         })
 
     it("Should batch import configs & map space ID as specified in manifest file for Studio Packages", async () => {
@@ -150,6 +144,7 @@ describe("Config import", () => {
         const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const space: SpaceTransport = {
             id: "space-id",
@@ -163,8 +158,6 @@ describe("Config import", () => {
             iconReference: "earth"
         };
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space, otherSpace]);
 
@@ -178,10 +171,10 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
     })
 
     it("Should fail to map space ID as the space id specified in manifest file cannot be found", async () => {
@@ -194,6 +187,7 @@ describe("Config import", () => {
         const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const space: SpaceTransport = {
             id: "space-id",
@@ -201,13 +195,11 @@ describe("Config import", () => {
             iconReference: "earth"
         };
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
 
         await expect(
-            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null)
+            new T2tcCommandService(testContext).batchImportPackages(zipPath, null, true, null)
         ).rejects.toThrow("Provided space ID does not exist.");
     })
 
@@ -221,7 +213,7 @@ describe("Config import", () => {
         const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
-
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const existingNode: Partial<ContentNodeTransport> = {
             id: "node-id",
@@ -234,8 +226,6 @@ describe("Config import", () => {
             iconReference: "earth"
         };
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", [existingNode]);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
         mockAxiosPut("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/spaceId", {});
@@ -250,9 +240,9 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, true, null);
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/packages/node-id/move/spaceId", expect.anything(), expect.anything());
     })
 
@@ -266,14 +256,13 @@ describe("Config import", () => {
         const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const space: SpaceTransport = {
             id: "spaceId",
             name: "spaceName",
             iconReference: "earth"
         };
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
 
@@ -287,10 +276,10 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
         expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
     })
 
@@ -304,6 +293,7 @@ describe("Config import", () => {
         const firstPackageNode = ConfigUtils.buildPackageNode("key-2", {variables: []});
         const firstPackageZip = ConfigUtils.buildExportPackageZip(firstPackageNode, [], "1.0.0");
         const exportedPackagesZip = ConfigUtils.buildBatchExportZipWithStudioManifest(manifest, studioManifest,[firstPackageZip]);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const space: SpaceTransport = {
             id: "space-id",
@@ -317,8 +307,6 @@ describe("Config import", () => {
             iconReference: "earth"
         };
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/spaces", [space]);
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/spaces", [newSpace]);
@@ -334,10 +322,10 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
         expect(mockedAxiosInstance.put).not.toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/spaces", expect.anything(), expect.anything());
     })
 
@@ -345,9 +333,8 @@ describe("Config import", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
 
         const FIVE_GB = 5 * 1024 * 1024 * 1024;
@@ -358,8 +345,8 @@ describe("Config import", () => {
         });
 
         await expect(
-            new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null)
-        ).rejects.toThrow('Failed to handle zip file "./export_file.zip": uncompressed size 5.00 GB exceeds the 4 GB limit.');
+            new T2tcCommandService(testContext).batchImportPackages(zipPath, null, false, null)
+        ).rejects.toThrow(/Failed to handle zip file ".+": uncompressed size 5.00 GB exceeds the 4 GB limit./);
     })
 
     it("Should assign studio runtime variable values after import", async () => {
@@ -381,9 +368,7 @@ describe("Config import", () => {
             runtimeVariableAssignments: [variableAssignment]
         }];
         exportedPackagesZip.addFile(BatchExportImportConstants.STUDIO_FILE_NAME, Buffer.from(stringify(studioManifest)));
-
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
         const importResponse: PostPackageImportData[] = [{
             packageKey: "key-1",
@@ -413,10 +398,10 @@ describe("Config import", () => {
         mockAxiosPost(assignVariablesUrl, {});
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", [node]);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, true, null);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, true, null);
 
         const expectedFileName = loggingTestTransport.logMessages[0].message.split(LOG_MESSAGE)[1];
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), JSON.stringify(importResponse), {encoding: "utf-8", mode: 0o600});
+        expect(getJsonFromFile(expectedFileName)).toEqual(importResponse);
 
         expect(mockedPostRequestBodyByUrl.get(assignVariablesUrl)).toEqual(JSON.stringify([variableAssignment]));
     })
@@ -425,9 +410,8 @@ describe("Config import", () => {
         const manifest: PackageManifestTransport[] = [];
         manifest.push(ConfigUtils.buildManifestForKeyAndFlavor("key-1", "TEST"));
         const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+        const zipPath = zipToTempFolder(exportedPackagesZip);
 
-        mockReadFileSync(exportedPackagesZip.toBuffer());
-        mockCreateReadStream(exportedPackagesZip.toBuffer());
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages", []);
 
         const importResponse: PostPackageImportData[] = [{
@@ -440,7 +424,7 @@ describe("Config import", () => {
 
         mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/import/batch", importResponse);
 
-        await new ConfigCommandService(testContext).batchImportPackages("./export_file.zip", null, false, null, true);
+        await new T2tcCommandService(testContext).batchImportPackages(zipPath, null, false, null, true);
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             expect.stringContaining("/package-manager/api/core/packages/import/batch"),

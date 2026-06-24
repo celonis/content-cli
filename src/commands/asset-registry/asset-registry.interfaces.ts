@@ -24,8 +24,8 @@ export interface AssetService {
 export interface AssetEndpoints {
     schema: string;
     validate: string;
-    methodology?: string;
     examples?: string;
+    skills?: string;
 }
 
 export interface AssetContributions {
@@ -41,4 +41,19 @@ export interface ValidateOptions {
     configuration?: string;
     file?: string;
     json: boolean;
+}
+
+export interface AgentSkillMetadata {
+    version: string;
+}
+
+export interface AgentSkill {
+    name: string;
+    description: string;
+    path: string;
+    metadata: AgentSkillMetadata;
+}
+
+export interface AgentSkillsResponse {
+    skills: AgentSkill[];
 }

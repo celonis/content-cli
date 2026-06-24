@@ -16,7 +16,28 @@ export class FileService {
         });
     }
 
-    public async readFileToJson<T>(fileName: string): Promise<T> {
+    public writeBufferToFileWithGivenName(data: Buffer, filename: string): void {
+        fs.writeFileSync(path.resolve(process.cwd(), filename), data, {
+            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
+        });
+    }
+
+    public extractZipBufferToDirectory(data: Buffer, targetDir: string): void {
+        const targetPath = path.resolve(process.cwd(), targetDir);
+        fs.mkdirSync(targetPath, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
+        new AdmZip(data).extractAllTo(targetPath, true, true);
+        this.restrictFilePermissions(targetPath);
+    }
+
+    public extractZipBufferToTempDirectory(data: Buffer): string {
+        const tempDir = path.join(os.tmpdir(), `content-cli-${uuidv4()}`);
+        fs.mkdirSync(tempDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
+        new AdmZip(data).extractAllTo(tempDir, true, true);
+        this.restrictFilePermissions(tempDir);
+        return tempDir;
+    }
+
+    public readFileToJson(fileName: string): any {
         const fileContent = this.readFile(fileName);
 
         return JSON.parse(fileContent);
@@ -86,6 +107,22 @@ export class FileService {
         fs.mkdirSync(tempDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
         const zipFilePath = path.join(tempDir, `export_${uuidv4()}.zip`);
         finalZip.writeZip(zipFilePath, () => fs.chmodSync(zipFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
+
+        return zipFilePath;
+    }
+
+    public zipDirectoryAsSinglePackage(sourceDir: string): string {
+        if (fs.lstatSync(sourceDir).isSymbolicLink()) {
+            throw new FatalError("Source directory cannot be a symbolic link.");
+        }
+
+        const zip = new AdmZip();
+        zip.addLocalFolder(sourceDir);
+
+        const tempDir = path.join(os.tmpdir(), "content-cli-imports");
+        fs.mkdirSync(tempDir, { recursive: true, mode: FileConstants.DEFAULT_FOLDER_PERMISSIONS });
+        const zipFilePath = path.join(tempDir, `single_package_${uuidv4()}.zip`);
+        zip.writeZip(zipFilePath, () => fs.chmodSync(zipFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
 
         return zipFilePath;
     }

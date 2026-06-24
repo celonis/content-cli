@@ -1,20 +1,13 @@
-import { mockExistsSync } from "../../utls/fs-mock-utils";
 import { mockAxiosGet } from "../../utls/http-requests-mock";
 import {
     PackageMetadataExportTransport
 } from "../../../src/commands/configuration-management/interfaces/package-export.interfaces";
-import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
+import { MetadataService } from "../../../src/commands/configuration-management/metadata.service";
 import { testContext } from "../../utls/test-context";
-import { loggingTestTransport, mockWriteFileSync } from "../../jest.setup";
-import { FileService } from "../../../src/core/utils/file-service";
-import * as path from "path";
+import { loggingTestTransport } from "../../jest.setup";
+import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("Config metadata export", () => {
-
-    beforeEach(() => {
-        mockExistsSync();
-    });
-
     it("Should show on terminal if packages have unpublished changes", async () => {
         const packageKeys: string[] = ["package-key-1", "package-key-2"];
 
@@ -28,7 +21,7 @@ describe("Config metadata export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/metadata/export?packageKeys=package-key-1&packageKeys=package-key-2", response);
 
-        await new ConfigCommandService(testContext).batchExportPackagesMetadata(packageKeys, false);
+        await new MetadataService(testContext).exportPackagesMetadata(packageKeys, false);
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(
@@ -49,12 +42,9 @@ describe("Config metadata export", () => {
 
         mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/metadata/export?packageKeys=package-key-1&packageKeys=package-key-2", response);
 
-        await new ConfigCommandService(testContext).batchExportPackagesMetadata(packageKeys, true);
+        await new MetadataService(testContext).exportPackagesMetadata(packageKeys, true);
 
-        const expectedFileName = loggingTestTransport.logMessages[0].message.split(FileService.fileDownloadedMessage)[1];
-
-        expect(mockWriteFileSync).toHaveBeenCalledWith(path.resolve(process.cwd(), expectedFileName), expect.any(String), {encoding: "utf-8", mode: 0o600});
-        const exportedPackagesMetadataTransports = JSON.parse(mockWriteFileSync.mock.calls[0][1]) as PackageMetadataExportTransport[];
+        const exportedPackagesMetadataTransports = getJsonFromDownloadedFile() as PackageMetadataExportTransport[];
         expect(exportedPackagesMetadataTransports.length).toBe(2);
 
         expect(exportedPackagesMetadataTransports).toEqual(response);
