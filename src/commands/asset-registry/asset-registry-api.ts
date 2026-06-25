@@ -7,6 +7,7 @@ import {
 } from "./asset-registry.interfaces";
 import { handleAssetRegistryApiError } from "./asset-registry-error";
 import { trimSlashes } from "../../core/utils/path";
+import * as path from "node:path";
 
 export class AssetRegistryApi {
     private static readonly BASE_URL = "/pacman/api/core/asset-registry";
@@ -71,8 +72,8 @@ export class AssetRegistryApi {
         return AssetRegistryApi.endpointUrl(...segments);
     }
 
-    private static endpointUrl(...path: string[]): string {
-        return `${AssetRegistryApi.BASE_URL}/${path.join("/")}`;
+    private static endpointUrl(...parts: string[]): string {
+        return `${AssetRegistryApi.BASE_URL}/${path.join(...parts)}`;
     }
 }
 
