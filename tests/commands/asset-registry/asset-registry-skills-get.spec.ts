@@ -1,21 +1,17 @@
 import * as fs from "node:fs";
 import * as path from "path";
-import { v4 as uuidv4 } from "uuid";
 import { mockAxiosGet, mockAxiosGetError } from "../../utls/http-requests-mock";
 import { AssetRegistryService } from "../../../src/commands/asset-registry/asset-registry.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport } from "../../jest.setup";
 import { FatalError } from "../../../src/core/utils/logger";
 import { FileService } from "../../../src/core/utils/file-service";
+import { uniqueDirName } from "../../utls/fs-utils";
 
 const SKILLS_BASE_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/skills";
 
 describe("Asset registry skills get", () => {
     const skillContent = Buffer.from("# Hello SKILL\n\nLine 2.\n", "utf-8");
-
-    function uniqueOutputDir(): string {
-        return uuidv4();
-    }
 
     function absoluteOutputDir(outputDir: string): string {
         return path.resolve(process.cwd(), outputDir);
@@ -23,7 +19,7 @@ describe("Asset registry skills get", () => {
 
     it("Should download SKILL.md by default for a platform skill", async () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo`, skillContent);
-        const output = uniqueOutputDir();
+        const output = uniqueDirName();
 
         await new AssetRegistryService(testContext).getSkillFile({
             path: "platform/foo",
@@ -42,7 +38,7 @@ describe("Asset registry skills get", () => {
 
     it("Should download SKILL.md by default for an asset skill (multi-segment path)", async () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/asset/BOARD_V2/board-authoring`, skillContent);
-        const output = uniqueOutputDir();
+        const output = uniqueDirName();
 
         await new AssetRegistryService(testContext).getSkillFile({
             path: "asset/BOARD_V2/board-authoring",
@@ -57,7 +53,7 @@ describe("Asset registry skills get", () => {
     it("Should write a reference file using only its basename (strips --file subdirs)", async () => {
         const refContent = Buffer.from("ref content", "utf-8");
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/refs/style.md`, refContent);
-        const output = uniqueOutputDir();
+        const output = uniqueDirName();
 
         await new AssetRegistryService(testContext).getSkillFile({
             path: "platform/foo",
@@ -75,7 +71,7 @@ describe("Asset registry skills get", () => {
 
     it("Should create the --output directory if it does not exist", async () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo`, skillContent);
-        const output = path.join(uniqueOutputDir(), "nested", "deep");
+        const output = path.join(uniqueDirName(), "nested", "deep");
         expect(fs.existsSync(absoluteOutputDir(output))).toBe(false);
 
         await new AssetRegistryService(testContext).getSkillFile({
@@ -92,7 +88,7 @@ describe("Asset registry skills get", () => {
     it("Should overwrite an existing local file", async () => {
         const newContent = Buffer.from("NEW", "utf-8");
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo`, newContent);
-        const output = uniqueOutputDir();
+        const output = uniqueDirName();
         fs.mkdirSync(absoluteOutputDir(output), { recursive: true });
         const target = path.join(absoluteOutputDir(output), "SKILL.md");
         fs.writeFileSync(target, "OLD");
@@ -120,7 +116,7 @@ describe("Asset registry skills get", () => {
     it("Should URI-encode path segments while preserving slashes", async () => {
         const url = `${SKILLS_BASE_URL}/asset/BOARD_V2/${encodeURIComponent("with space")}`;
         mockAxiosGet(url, skillContent);
-        const output = uniqueOutputDir();
+        const output = uniqueDirName();
 
         await new AssetRegistryService(testContext).getSkillFile({
             path: "asset/BOARD_V2/with space",
@@ -137,7 +133,7 @@ describe("Asset registry skills get", () => {
         await expect(
             new AssetRegistryService(testContext).getSkillFile({
                 path: "platform/missing",
-                output: uniqueOutputDir(),
+                output: uniqueDirName(),
             })
         ).rejects.toThrow(/Problem getting SKILL\.md for 'platform\/missing':/);
     });
@@ -151,7 +147,7 @@ describe("Asset registry skills get", () => {
             new AssetRegistryService(testContext).getSkillFile({
                 path: "platform/foo",
                 file: "refs/missing.md",
-                output: uniqueOutputDir(),
+                output: uniqueDirName(),
             })
         ).rejects.toThrow(/Problem getting skill file 'refs\/missing\.md' for 'platform\/foo':/);
     });
@@ -161,7 +157,7 @@ describe("Asset registry skills get", () => {
             new AssetRegistryService(testContext).getSkillFile({
                 path: "platform/foo",
                 file: "/",
-                output: uniqueOutputDir(),
+                output: uniqueDirName(),
             })
         ).rejects.toThrow(new FatalError("--file must point to a file, got '/'."));
     });
