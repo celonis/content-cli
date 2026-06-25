@@ -19,37 +19,37 @@ export class AssetRegistryApi {
 
     public async listTypes(): Promise<AssetRegistryMetadata> {
         return this.httpClient()
-            .get(`${AssetRegistryApi.BASE_URL}/types`)
+            .get(AssetRegistryApi.endpointUrl("types"))
             .catch((e) => handleAssetRegistryApiError("listing asset registry types", e));
     }
 
     public async listSkills(): Promise<AgentSkillsResponse> {
         return this.httpClient()
-            .get(`${AssetRegistryApi.BASE_URL}/skills`)
+            .get(AssetRegistryApi.endpointUrl("skills"))
             .catch((e) => handleAssetRegistryApiError("listing asset registry skills", e));
     }
 
     public async getType(assetType: string): Promise<AssetRegistryDescriptor> {
         return this.httpClient()
-            .get(`${AssetRegistryApi.BASE_URL}/types/${encodeURIComponent(assetType)}`)
+            .get(AssetRegistryApi.endpointUrl("types", encodeURIComponent(assetType)))
             .catch((e) => handleAssetRegistryApiError(`getting asset type '${assetType}'`, e));
     }
 
     public async getSchema(assetType: string): Promise<any> {
         return this.httpClient()
-            .get(`${AssetRegistryApi.BASE_URL}/schemas/${encodeURIComponent(assetType)}`)
+            .get(AssetRegistryApi.endpointUrl("schemas", encodeURIComponent(assetType)))
             .catch((e) => handleAssetRegistryApiError(`getting schema for asset type '${assetType}'`, e));
     }
 
     public async getExamples(assetType: string): Promise<any> {
         return this.httpClient()
-            .get(`${AssetRegistryApi.BASE_URL}/examples/${encodeURIComponent(assetType)}`)
+            .get(AssetRegistryApi.endpointUrl("examples", encodeURIComponent(assetType)))
             .catch((e) => handleAssetRegistryApiError(`getting examples for asset type '${assetType}'`, e));
     }
 
     public async validate(assetType: string, body: any): Promise<any> {
         return this.httpClient()
-            .post(`${AssetRegistryApi.BASE_URL}/validate/${encodeURIComponent(assetType)}`, body)
+            .post(AssetRegistryApi.endpointUrl("validate", encodeURIComponent(assetType)), body)
             .catch((e) => handleAssetRegistryApiError(`validating asset type '${assetType}'`, e));
     }
 
@@ -64,12 +64,15 @@ export class AssetRegistryApi {
     }
 
     private buildSkillFileUrl(skillPath: string, filePath?: string): string {
-        const skillSegments = encodePathSegments(skillPath);
-        const base = `${AssetRegistryApi.BASE_URL}/skills/${skillSegments}`;
-        if (!filePath) {
-            return base;
+        const segments = ["skills", encodePathSegments(skillPath)];
+        if (filePath) {
+            segments.push(encodePathSegments(filePath));
         }
-        return `${base}/${encodePathSegments(filePath)}`;
+        return AssetRegistryApi.endpointUrl(...segments);
+    }
+
+    private static endpointUrl(...path: string[]): string {
+        return `${AssetRegistryApi.BASE_URL}/${path.join("/")}`;
     }
 }
 
