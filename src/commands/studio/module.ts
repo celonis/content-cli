@@ -15,7 +15,8 @@ class Module extends IModule {
     public register(context: Context, configurator: Configurator): void {
         const listCommand = configurator.command("list");
         listCommand.command("packages")
-            .description("Command to list all packages")
+            .description("[Deprecated] Use 'config package list' instead. Command to list all packages")
+            .deprecationNotice("'list packages' is deprecated and will be removed in a future release. Use 'config package list' instead.")
             .option("--json", "Return response as json type", "")
             .option("--includeDependencies", "Include variables and dependencies", "")
             .option("--packageKeys <packageKeys...>", "Lists only given package keys")
@@ -39,7 +40,8 @@ class Module extends IModule {
             .action(this.pullAsset);
 
         pullCommand.command("package")
-            .description("Command to pull a package")
+            .description("[Deprecated] Use 'config package export' instead. Command to pull a package")
+            .deprecationNotice("'pull package' is deprecated and will be removed in a future release. Use 'config package export' instead.")
             .requiredOption("--key <key>", "Key of the package you want to pull")
             .option("--store", "Pull package with store deployment metadata")
             .option("--newKey <newKey>", "Define a new key for your package")
@@ -59,7 +61,8 @@ class Module extends IModule {
             .action(this.pushAssets);
 
         pushCommand.command("package")
-            .description("Command to push a package to Studio")
+            .description("[Deprecated] Use 'config package import' instead. Command to push a package to Studio")
+            .deprecationNotice("'push package' is deprecated and will be removed in a future release. Use 'config package import' instead.")
             .option("--newKey <newKey>", "Define a new key for your package")
             .option("--overwrite", "Overwrite package and its assets")
             .requiredOption("-f, --file <file>", "The file you want to push")
@@ -67,7 +70,8 @@ class Module extends IModule {
             .action(this.pushPackage);
 
         pushCommand.command("packages")
-            .description("Command to push packages to Studio")
+            .description("[Deprecated] Use 'config package import' (single package) instead. Command to push packages to Studio")
+            .deprecationNotice("'push packages' is deprecated and will be removed in a future release. Use 'config package import' (single package) instead.")
             .requiredOption("--spaceKey <spaceKey>", "The key of the destination space")
             .action(this.pushPackages);
 
