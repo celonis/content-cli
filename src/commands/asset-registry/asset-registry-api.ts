@@ -9,6 +9,8 @@ import { handleAssetRegistryApiError } from "./asset-registry-error";
 import { trimSlashes } from "../../core/utils/path";
 
 export class AssetRegistryApi {
+    private static readonly BASE_URL = "/pacman/api/core/asset-registry";
+
     private httpClient: () => HttpClient;
 
     constructor(context: Context) {
@@ -17,37 +19,37 @@ export class AssetRegistryApi {
 
     public async listTypes(): Promise<AssetRegistryMetadata> {
         return this.httpClient()
-            .get("/pacman/api/core/asset-registry/types")
+            .get(`${AssetRegistryApi.BASE_URL}/types`)
             .catch((e) => handleAssetRegistryApiError("listing asset registry types", e));
     }
 
     public async listSkills(): Promise<AgentSkillsResponse> {
         return this.httpClient()
-            .get("/pacman/api/core/asset-registry/skills")
+            .get(`${AssetRegistryApi.BASE_URL}/skills`)
             .catch((e) => handleAssetRegistryApiError("listing asset registry skills", e));
     }
 
     public async getType(assetType: string): Promise<AssetRegistryDescriptor> {
         return this.httpClient()
-            .get(`/pacman/api/core/asset-registry/types/${encodeURIComponent(assetType)}`)
+            .get(`${AssetRegistryApi.BASE_URL}/types/${encodeURIComponent(assetType)}`)
             .catch((e) => handleAssetRegistryApiError(`getting asset type '${assetType}'`, e));
     }
 
     public async getSchema(assetType: string): Promise<any> {
         return this.httpClient()
-            .get(`/pacman/api/core/asset-registry/schemas/${encodeURIComponent(assetType)}`)
+            .get(`${AssetRegistryApi.BASE_URL}/schemas/${encodeURIComponent(assetType)}`)
             .catch((e) => handleAssetRegistryApiError(`getting schema for asset type '${assetType}'`, e));
     }
 
     public async getExamples(assetType: string): Promise<any> {
         return this.httpClient()
-            .get(`/pacman/api/core/asset-registry/examples/${encodeURIComponent(assetType)}`)
+            .get(`${AssetRegistryApi.BASE_URL}/examples/${encodeURIComponent(assetType)}`)
             .catch((e) => handleAssetRegistryApiError(`getting examples for asset type '${assetType}'`, e));
     }
 
     public async validate(assetType: string, body: any): Promise<any> {
         return this.httpClient()
-            .post(`/pacman/api/core/asset-registry/validate/${encodeURIComponent(assetType)}`, body)
+            .post(`${AssetRegistryApi.BASE_URL}/validate/${encodeURIComponent(assetType)}`, body)
             .catch((e) => handleAssetRegistryApiError(`validating asset type '${assetType}'`, e));
     }
 
@@ -63,7 +65,7 @@ export class AssetRegistryApi {
 
     private buildSkillFileUrl(skillPath: string, filePath?: string): string {
         const skillSegments = encodePathSegments(skillPath);
-        const base = `/pacman/api/core/asset-registry/skills/${skillSegments}`;
+        const base = `${AssetRegistryApi.BASE_URL}/skills/${skillSegments}`;
         if (!filePath) {
             return base;
         }
