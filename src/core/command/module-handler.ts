@@ -2,7 +2,7 @@ import path = require("path");
 import * as fs from "fs";
 import { Command, CommandOptions, Option, OptionValues } from "commander";
 import { Context } from "./cli-context";
-import { logger } from "../utils/logger";
+import { GracefulError, logger } from "../utils/logger";
 import * as chalk from "chalk";
 
 export abstract class IModule {
@@ -216,7 +216,12 @@ export class CommandConfig {
                 this.printDeprecationNoticeIfDeprecated();
                 await handler(this.ctx, this.cmd, this.cmd.optsWithGlobals());
             } catch (error) {
+                if (error instanceof GracefulError) {
+                    logger.error(error.message);
+                    return;
+                }
                 logger.error(`An unexpected error occured executing a command: ${error}`);
+                process.exitCode = 1;
             }
         });
     }
