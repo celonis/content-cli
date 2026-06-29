@@ -29,10 +29,15 @@ export function writeTempFile(filename: string, contents: any): void {
     const fullPath = resolve(process.cwd(), filename);
     writeFileSync(fullPath, contents);
 }
-export function makeTempDir(): string {
-    const folder = uuid();
-    return makeTempDirWithName(folder);
+
+export function uniqueDirName(): string {
+    return uuid();
 }
+
+export function makeTempDir(): string {
+    return makeTempDirWithName(uniqueDirName());
+}
+
 export function makeTempDirWithName(folder: string): string {
     const fullPath = resolve(process.cwd(), folder);
     mkdirSync(fullPath);

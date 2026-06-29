@@ -1,9 +1,11 @@
 import { AssetRegistryApi } from "./asset-registry-api";
-import { AgentSkill, AssetRegistryDescriptor, ValidateOptions } from "./asset-registry.interfaces";
+import { AgentSkill, AssetRegistryDescriptor, GetSkillFileOptions, ValidateOptions } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
+import { trimSlashes } from "../../core/utils/path";
 import { v4 as uuidv4 } from "uuid";
+import * as path from "node:path";
 
 export class AssetRegistryService {
     private api: AssetRegistryApi;
@@ -29,6 +31,28 @@ export class AssetRegistryService {
                 this.logDescriptorSummary(descriptor);
             });
         }
+    }
+
+    public async getSkillFile(opts: GetSkillFileOptions): Promise<void> {
+        const filename = this.resolveLocalFilename(opts.file);
+        const targetDir = opts.output ?? ".";
+
+        const buffer = await this.api.getSkillFile(opts.path, opts.file);
+        const absolutePath = fileService.writeBufferToPath(targetDir, filename, buffer);
+
+        logger.info(FileService.fileDownloadedMessage + absolutePath);
+    }
+
+    private resolveLocalFilename(file?: string): string {
+        if (!file) {
+            return "SKILL.md";
+        }
+        const trimmed = trimSlashes(file);
+        const base = trimmed ? path.basename(trimmed) : "";
+        if (!base) {
+            throw new FatalError(`--file must point to a file, got '${file}'.`);
+        }
+        return base;
     }
 
     public async listSkills(jsonResponse: boolean): Promise<void> {
