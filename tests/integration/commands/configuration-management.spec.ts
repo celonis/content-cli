@@ -1,5 +1,4 @@
 import Module = require("../../../src/commands/configuration-management/module");
-import { Command } from "commander";
 import { ConfigCommandService } from "../../../src/commands/configuration-management/config-command.service";
 import { StagingPackageService } from "../../../src/commands/configuration-management/staging-package.service";
 import { MetadataService } from "../../../src/commands/configuration-management/metadata.service";
@@ -9,8 +8,7 @@ import { PackageVersionCommandService } from "../../../src/commands/configuratio
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
-import { buildTestProgram } from "../../utls/cli-program";
-import { loggingTestTransport } from "../../jest.setup";
+import { CliRunResult, runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
 jest.mock("../../../src/commands/configuration-management/staging-package.service");
@@ -23,7 +21,6 @@ jest.mock("../../../src/commands/configuration-management/single-package-import.
 jest.mock("../../../src/commands/configuration-management/single-package-export.service");
 
 describe("configuration-management command integration", () => {
-    let program: Command;
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
     let mockStagingPackageService: jest.Mocked<StagingPackageService>;
     let mockMetadataService: jest.Mocked<MetadataService>;
@@ -85,28 +82,25 @@ describe("configuration-management command integration", () => {
         (PackageVersionCommandService as jest.MockedClass<typeof PackageVersionCommandService>).mockImplementation(() => mockPackageVersionCommandService);
         (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
         (SinglePackageExportService as jest.MockedClass<typeof SinglePackageExportService>).mockImplementation(() => mockSinglePackageExportService);
-
-        program = buildTestProgram([Module]);
     });
 
-    function runCli(args: string[]): Promise<Command> {
-        return program.parseAsync(["node", "content-cli", ...args]);
+    let lastResult: CliRunResult;
+
+    async function runCli(args: string[]): Promise<CliRunResult> {
+        lastResult = await runCliProcess(args, [Module]);
+        return lastResult;
     }
 
     /**
      * Action-body validation errors (`throw new Error(...)`) are caught by
-     * Configurator.action and re-emitted via `logger.error(...)`, so we
-     * inspect the in-memory winston transport instead of asserting on
-     * promise rejection. The level field is colorized by `winston.format.cli()`,
-     * hence the substring match.
+     * Configurator.action, surfaced on the real process output and reflected
+     * in a non-zero exit code. We assert on the actual captured output and
+     * exit code of the last run rather than inspecting an injected logger
+     * transport.
      */
-    function expectErrorLogged(message: string): void {
-        expect(loggingTestTransport.logMessages).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                level: expect.stringContaining("error"),
-                message: expect.stringContaining(message),
-            }),
-        ]));
+    function expectError(message: string): void {
+        expect(lastResult.exitCode).toBe(1);
+        expect(lastResult.output).toContain(message);
     }
 
     describe("config list (deprecated listPackages)", () => {
@@ -117,17 +111,18 @@ describe("configuration-management command integration", () => {
                 "--keysByVersion", "package3.1.0.0", "package4.1.0.0",
             ]);
 
-            expectErrorLogged("Please provide either --packageKeys or --keysByVersion, but not both.");
+            expectError("Please provide either --packageKeys or --keysByVersion, but not both.");
             expect(mockT2tcCommandService.listPackages).not.toHaveBeenCalled();
         });
 
         it("forwards only --packageKeys when provided", async () => {
-            await runCli([
+            const result = await runCli([
                 "config", "list",
                 "--packageKeys", "package1", "package2",
                 "--json",
             ]);
 
+            expect(result.exitCode).toBe(0);
             expect(mockT2tcCommandService.listPackages).toHaveBeenCalledWith(
                 true,
                 undefined,
@@ -201,7 +196,7 @@ describe("configuration-management command integration", () => {
                     "--packageKeys", "package1", "package2",
                 ]);
 
-                expectErrorLogged(
+                expectError(
                     "Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType"
                 );
             });
@@ -209,7 +204,7 @@ describe("configuration-management command integration", () => {
             it("rejects --staging combined with --withDependencies", async () => {
                 await runCli(["config", "list", "--staging", "--withDependencies"]);
 
-                expectErrorLogged(
+                expectError(
                     "Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType"
                 );
             });
@@ -221,7 +216,7 @@ describe("configuration-management command integration", () => {
                     "--keysByVersion", "package3.1.0.0", "package4.1.0.0",
                 ]);
 
-                expectErrorLogged(
+                expectError(
                     "Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType"
                 );
             });
@@ -229,7 +224,7 @@ describe("configuration-management command integration", () => {
             it("rejects --staging combined with --variableValue", async () => {
                 await runCli(["config", "list", "--staging", "--variableValue", "myValue"]);
 
-                expectErrorLogged(
+                expectError(
                     "Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType"
                 );
             });
@@ -237,7 +232,7 @@ describe("configuration-management command integration", () => {
             it("rejects --staging combined with --variableType", async () => {
                 await runCli(["config", "list", "--staging", "--variableType", "myType"]);
 
-                expectErrorLogged(
+                expectError(
                     "Staging parameter is not compatible with --withDependencies, --packageKeys, --keysByVersion, --variableValue, --variableType"
                 );
             });
@@ -281,14 +276,14 @@ describe("configuration-management command integration", () => {
                 "--keysByVersion", "package3:v1", "package4:v2",
             ]);
 
-            expectErrorLogged("Please provide either --packageKeys or --keysByVersion, but not both.");
+            expectError("Please provide either --packageKeys or --keysByVersion, but not both.");
             expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
         });
 
         it("rejects when neither --packageKeys nor --keysByVersion are provided", async () => {
             await runCli(["config", "export"]);
 
-            expectErrorLogged("Please provide either --packageKeys or --keysByVersion, but not both.");
+            expectError("Please provide either --packageKeys or --keysByVersion, but not both.");
             expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
         });
 
@@ -323,7 +318,7 @@ describe("configuration-management command integration", () => {
                 "--gitProfile", "myProfile",
             ]);
 
-            expectErrorLogged("Please specify a branch using --gitBranch when using a Git profile.");
+            expectError("Please specify a branch using --gitBranch when using a Git profile.");
             expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
         });
 
@@ -384,7 +379,7 @@ describe("configuration-management command integration", () => {
                 "--gitProfile", "myProfile",
             ]);
 
-            expectErrorLogged("Please provide either --packageKeys or --keysByVersion, but not both.");
+            expectError("Please provide either --packageKeys or --keysByVersion, but not both.");
             expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
         });
     });
@@ -397,7 +392,7 @@ describe("configuration-management command integration", () => {
                 "--gitProfile", "myProfile",
             ]);
 
-            expectErrorLogged("Please specify a branch using --gitBranch when using a Git profile.");
+            expectError("Please specify a branch using --gitBranch when using a Git profile.");
             expect(mockT2tcCommandService.batchImportPackages).not.toHaveBeenCalled();
         });
 
@@ -553,7 +548,7 @@ describe("configuration-management command integration", () => {
                 "--gitProfile", "myProfile",
             ]);
 
-            expectErrorLogged("Please specify a branch using --gitBranch when using a Git profile.");
+            expectError("Please specify a branch using --gitBranch when using a Git profile.");
             expect(mockSinglePackageImportService.importPackage).not.toHaveBeenCalled();
         });
     });
@@ -601,7 +596,7 @@ describe("configuration-management command integration", () => {
                 "--gitProfile", "myProfile",
             ]);
 
-            expectErrorLogged("Please specify a branch using --gitBranch when using a Git profile.");
+            expectError("Please specify a branch using --gitBranch when using a Git profile.");
             expect(mockSinglePackageExportService.exportPackage).not.toHaveBeenCalled();
         });
     });
@@ -614,7 +609,7 @@ describe("configuration-management command integration", () => {
                 "--keysByVersion", "key-1:1.0.0",
             ]);
 
-            expectErrorLogged(
+            expectError(
                 "Please provide either --packageKeys or --keysByVersion/--keysByVersionFile, but not both."
             );
             expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();
@@ -627,7 +622,7 @@ describe("configuration-management command integration", () => {
                 "--keysByVersionFile", "mapping.json",
             ]);
 
-            expectErrorLogged(
+            expectError(
                 "Please provide either --packageKeys or --keysByVersion/--keysByVersionFile, but not both."
             );
             expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();
@@ -636,7 +631,7 @@ describe("configuration-management command integration", () => {
         it("rejects when neither staging nor versioned inputs are provided", async () => {
             await runCli(["config", "variables", "list"]);
 
-            expectErrorLogged(
+            expectError(
                 "Please provide --packageKeys for staging, or --keysByVersion / --keysByVersionFile for versioned packages."
             );
             expect(mockConfigCommandService.listVariables).not.toHaveBeenCalled();
@@ -681,7 +676,7 @@ describe("configuration-management command integration", () => {
                 "--versionBumpOption", "PATCH",
             ]);
 
-            expectErrorLogged("Please provide either --packageVersion or --versionBumpOption, but not both.");
+            expectError("Please provide either --packageVersion or --versionBumpOption, but not both.");
             expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
         });
 
@@ -692,7 +687,7 @@ describe("configuration-management command integration", () => {
                 "--versionBumpOption", "NONE",
             ]);
 
-            expectErrorLogged("Please provide either --packageVersion or --versionBumpOption PATCH.");
+            expectError("Please provide either --packageVersion or --versionBumpOption PATCH.");
             expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
         });
 
@@ -702,7 +697,7 @@ describe("configuration-management command integration", () => {
                 "--packageKey", "my-package",
             ]);
 
-            expectErrorLogged("Please provide either --packageVersion or --versionBumpOption PATCH.");
+            expectError("Please provide either --packageVersion or --versionBumpOption PATCH.");
             expect(mockPackageVersionCommandService.createPackageVersion).not.toHaveBeenCalled();
         });
 
@@ -859,7 +854,7 @@ describe("configuration-management command integration", () => {
                 "--file", "./node.json",
             ]);
 
-            expectErrorLogged("Please provide either --compareVersion or --file, but not both.");
+            expectError("Please provide either --compareVersion or --file, but not both.");
             expect(mockNodeDiffService.diff).not.toHaveBeenCalled();
             expect(mockNodeDiffService.diffWithFile).not.toHaveBeenCalled();
         });
@@ -872,7 +867,7 @@ describe("configuration-management command integration", () => {
                 "--baseVersion", "STAGING",
             ]);
 
-            expectErrorLogged("Please provide either --compareVersion or --file, but not both.");
+            expectError("Please provide either --compareVersion or --file, but not both.");
             expect(mockNodeDiffService.diff).not.toHaveBeenCalled();
             expect(mockNodeDiffService.diffWithFile).not.toHaveBeenCalled();
         });
