@@ -8,7 +8,7 @@ export class ViewBookmarksManager extends BaseManager {
     private static readonly BASE_URL = "/blueprint/api/bookmarks";
     private static readonly VIEW_BOOKMARKS_FILE_PREFIX = "studio_view_bookmarks_";
 
-    private _rootNodeKey: string;
+    private _rootNodeKeyWithBoardKey: string;
     private _key: string;
     private _filePath: string;
     private _type: string;
@@ -25,12 +25,12 @@ export class ViewBookmarksManager extends BaseManager {
         this._filePath = value;
     }
 
-    public get rootNodeKey(): string {
-        return this._rootNodeKey;
+    public get rootNodeKeyWithBoardKey(): string {
+        return this._rootNodeKeyWithBoardKey;
     }
 
-    public set rootNodeKey(value: string) {
-        this._rootNodeKey = value;
+    public set rootNodeKeyWithBoardKey(value: string) {
+        this._rootNodeKeyWithBoardKey = value;
     }
 
     public get key(): string {
@@ -50,11 +50,11 @@ export class ViewBookmarksManager extends BaseManager {
     }
 
     public getConfig(): ManagerConfig {
-        const keyParams = `rootNodeKey=${encodeURIComponent(this.rootNodeKey)}&key=${encodeURIComponent(this.key)}`;
+        const keyParams = `rootNodeKeyWithBoardKey=${encodeURIComponent(this.rootNodeKeyWithBoardKey)}&key=${encodeURIComponent(this.key)}`;
         return {
             pushUrl: `${ViewBookmarksManager.BASE_URL}/import?${keyParams}`,
             pullUrl: `${ViewBookmarksManager.BASE_URL}/export?${keyParams}&type=${encodeURIComponent(this.type)}`,
-            exportFileName: `${ViewBookmarksManager.VIEW_BOOKMARKS_FILE_PREFIX}${this.rootNodeKey}.${this.key}.json`,
+            exportFileName: `${ViewBookmarksManager.VIEW_BOOKMARKS_FILE_PREFIX}${this.rootNodeKeyWithBoardKey}.${this.key}.json`,
             onPushSuccessMessage: (): string => {
                 return "View Bookmarks were pushed successfully.";
             },

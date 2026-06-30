@@ -212,14 +212,14 @@ content-cli push analysis --help
 ## Pull and Push View Bookmarks
 
 Enable users to pull and push view (board) bookmarks using content-cli. Views (boards) are
-identified by their stable node key (`--rootNodeKey` and `--key`) rather than the board id, so
+identified by their stable node key (`--rootNodeKeyWithBoardKey` and `--key`) rather than the board id, so
 the same command works across teams even after a team-to-team copy regenerates the board id. For
 pulling view bookmarks you can specify --type (SHARED/ALL/USER), and by default it fetches USER
 bookmarks:
 
 ```
 // Pull view bookmarks
-content-cli pull view-bookmarks --profile my-profile-name --rootNodeKey my-package --key my-board --type SHARED
+content-cli pull view-bookmarks --profile my-profile-name --rootNodeKeyWithBoardKey my-package --key my-board --type SHARED
 ```
 
 After you have pulled your view bookmarks,
@@ -228,5 +228,5 @@ the same command as with pushing other assets in Studio:
 
 ```
 // Push view bookmarks to Studio
-content-cli push view-bookmarks -p my-profile-name --rootNodeKey my-package --key my-board --file studio_view_bookmarks_my-package.my-board.json
+content-cli push view-bookmarks -p my-profile-name --rootNodeKeyWithBoardKey my-package --key my-board --file studio_view_bookmarks_my-package.my-board.json
 ```

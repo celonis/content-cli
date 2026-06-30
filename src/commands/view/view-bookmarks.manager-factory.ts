@@ -13,12 +13,12 @@ export class ViewBookmarksManagerFactory {
 
     public createViewBookmarksManager(
         filename: string,
-        rootNodeKey: string,
+        rootNodeKeyWithBoardKey: string,
         key: string,
         type?: string
     ): ViewBookmarksManager {
         const viewBookmarksManager = new ViewBookmarksManager(this.context);
-        viewBookmarksManager.rootNodeKey = rootNodeKey;
+        viewBookmarksManager.rootNodeKeyWithBoardKey = rootNodeKeyWithBoardKey;
         viewBookmarksManager.key = key;
         type = (type ?? "USER").toUpperCase();
 

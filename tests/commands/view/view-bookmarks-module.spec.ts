@@ -25,14 +25,14 @@ describe("View Bookmarks Module", () => {
             .mockImplementation(() => mockService);
     });
 
-    it("should call pullViewBookmarks with rootNodeKey, key and type", async () => {
-        const options: OptionValues = { rootNodeKey: "my-package", key: "my-board", type: "SHARED" };
+    it("should call pullViewBookmarks with rootNodeKeyWithBoardKey, key and type", async () => {
+        const options: OptionValues = { rootNodeKeyWithBoardKey: "my-package", key: "my-board", type: "SHARED" };
         await (module as any).pullViewBookmarks(testContext, mockCommand, options);
         expect(mockService.pullViewBookmarks).toHaveBeenCalledWith("my-package", "my-board", "SHARED");
     });
 
-    it("should call pushViewBookmarks with rootNodeKey, key and file", async () => {
-        const options: OptionValues = { rootNodeKey: "my-package", key: "my-board", file: "bookmarks.json" };
+    it("should call pushViewBookmarks with rootNodeKeyWithBoardKey, key and file", async () => {
+        const options: OptionValues = { rootNodeKeyWithBoardKey: "my-package", key: "my-board", file: "bookmarks.json" };
         await (module as any).pushViewBookmarks(testContext, mockCommand, options);
         expect(mockService.pushViewBookmarks).toHaveBeenCalledWith("my-package", "my-board", "bookmarks.json");
     });

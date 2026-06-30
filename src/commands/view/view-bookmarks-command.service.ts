@@ -11,15 +11,21 @@ export class ViewBookmarksCommandService {
         this.viewBookmarksManagerFactory = new ViewBookmarksManagerFactory(context);
     }
 
-    public async pullViewBookmarks(rootNodeKey: string, key: string, type?: string): Promise<void> {
+    public async pullViewBookmarks(rootNodeKeyWithBoardKey: string, key: string, type?: string): Promise<void> {
         if (type !== undefined && !ALLOWED_VIEW_BOOKMARK_TYPES.includes(type.toUpperCase())) {
-            logger.error(new FatalError(`Invalid type "${type}". Allowed values are: ${ALLOWED_VIEW_BOOKMARK_TYPES.join(", ")}.`));
+            logger.error(
+                new FatalError(`Invalid type "${type}". Allowed values are: ${ALLOWED_VIEW_BOOKMARK_TYPES.join(", ")}.`)
+            );
             return;
         }
-        await this.viewBookmarksManagerFactory.createViewBookmarksManager(null, rootNodeKey, key, type).pull();
+        await this.viewBookmarksManagerFactory
+            .createViewBookmarksManager(null, rootNodeKeyWithBoardKey, key, type)
+            .pull();
     }
 
-    public async pushViewBookmarks(rootNodeKey: string, key: string, filename: string): Promise<void> {
-        await this.viewBookmarksManagerFactory.createViewBookmarksManager(filename, rootNodeKey, key).push();
+    public async pushViewBookmarks(rootNodeKeyWithBoardKey: string, key: string, filename: string): Promise<void> {
+        await this.viewBookmarksManagerFactory
+            .createViewBookmarksManager(filename, rootNodeKeyWithBoardKey, key)
+            .push();
     }
 }
