@@ -7,6 +7,7 @@ import { testContext } from "../../utls/test-context";
 import { loggingTestTransport } from "../../jest.setup";
 import { SchemaValidationResponse } from "../../../src/commands/configuration-management/interfaces/package-validation.interfaces";
 import { getJsonFromFile } from "../../utls/fs-utils";
+import * as fs from "fs";
 
 describe("Config validate", () => {
 
@@ -169,6 +170,8 @@ describe("Config validate", () => {
         };
 
         mockAxiosPost(VALIDATE_URL, response);
+
+        const mockWriteFileSync = jest.spyOn(fs, "writeFileSync");
 
         await new PackageValidationService(testContext).validatePackage("my-package", ["DATA_PIPELINES"], null, true);
 
