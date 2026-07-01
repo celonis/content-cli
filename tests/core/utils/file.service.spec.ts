@@ -12,27 +12,18 @@ describe("FileService", () => {
     const symLinkSourceTempDir = path.join(os.tmpdir(), "file-service-symlink-source");
 
     beforeAll(() => {
-        fileService = new FileService();
+        rmTempDir(tempDir);
+        rmTempDir(symLinkSourceTempDir);
 
-        if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true, mode: 0o700 });
-        }
-
-        if (!fs.existsSync(symLinkSourceTempDir)) {
-            fs.mkdirSync(symLinkSourceTempDir, { recursive: true, mode: 0o700 });
-        }
+        fs.mkdirSync(tempDir, { recursive: true, mode: 0o700 });
+        fs.mkdirSync(symLinkSourceTempDir, { recursive: true, mode: 0o700 });
 
         fileService = new FileService();
     });
 
     afterAll(() => {
-        if (fs.existsSync(tempDir)) {
-            rmTempDir(tempDir);
-        }
-
-        if (fs.existsSync(symLinkSourceTempDir)) {
-            rmTempDir(tempDir);
-        }
+        rmTempDir(tempDir);
+        rmTempDir(symLinkSourceTempDir);
     });
 
     describe("zipDirectoryInBatchExportFormat", () => {
