@@ -86,10 +86,10 @@ content-cli pull package -h
 
 ## Command Graph
 
-[`docs/command-graph.html`](./docs/command-graph.html) is an interactive, searchable visualization of every 
-Content CLI command, grouped by command area, with descriptions and options shown on click. Since it relies on 
-JavaScript, GitHub's file viewer won't render it interactively — download the file and open it in your browser 
-locally to explore it.
+[**Open the interactive Command Graph**](https://raw.githack.com/celonis/content-cli/main/docs/command-graph.html) — a
+searchable visualization of every Content CLI command, grouped by command area, with descriptions and options shown
+on click. It's served live from the [`docs/command-graph.html`](./docs/command-graph.html) source file via
+[raw.githack.com](https://raw.githack.com/), so it renders directly in your browser without needing to be downloaded.
 
 > **Note for contributors:** this graph must be kept in sync manually. See 
 > [How to Add a Command](./docs/how-to-add-command.md#keeping-the-command-graph-up-to-date) for instructions on 
