@@ -600,7 +600,7 @@ document.getElementById("search").addEventListener("input", e => {
     visNodes.update(NODES.map(n => ({ id: n.id, color: {
       background: getNodeColor(n).bg, border: getNodeColor(n).border,
       highlight: { background: getNodeColor(n).bg, border: "#222" },
-    } })));
+    }, font: { color: "#222" } })));
     return;
   }
   const matches = NODES.filter(n => n.path.toLowerCase().includes(q) || n.description.toLowerCase().includes(q));
