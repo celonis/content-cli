@@ -45,7 +45,8 @@ export class DataPoolCommands {
             .description("Command to push data pools")
             .action(this.pushDataPools);
 
-        const updateCommand = configurator.command("update");
+        const updateCommand = configurator.command("update")
+            .description("Update data pool");
         updateCommand.command("data-pool")
             .description("Command to update a data pool using a data pool configuration file")
             .requiredOption("--id <id>", "Id of the data pool you want to update")

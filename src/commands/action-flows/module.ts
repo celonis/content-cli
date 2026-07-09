@@ -11,7 +11,8 @@ import { SkillCommandService } from "./skill/skill-command.service";
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
-        const analyzeCommand = configurator.command("analyze");
+        const analyzeCommand = configurator.command("analyze")
+            .description("Analyze action flows and return its dependencies");
         analyzeCommand.command("action-flows")
             .description("Analyze Action Flows dependencies for a certain package")
             .requiredOption("--packageId <packageId>", "ID of the package from which you want to export Action Flows")

@@ -6,7 +6,8 @@ import { DeploymentService } from "./deployment.service";
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
-        const deploymentCommand = configurator.command("deployment").beta();
+        const deploymentCommand = configurator.command("deployment").beta()
+            .description("Create deployments, list their history, check active deployments, and retrieve deployables and targets");
 
         deploymentCommand.command("create")
             .beta()
@@ -18,7 +19,8 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.createDeployment);
 
-        const listCommand = deploymentCommand.command("list").beta();
+        const listCommand = deploymentCommand.command("list")
+            .description("List deployment history, active deployments, deployables or targets").beta();
 
         listCommand.command("history")
             .beta()
