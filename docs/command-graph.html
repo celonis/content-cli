@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>content-cli command graph</title>
+<script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+<style>
+  :root {
+    --root-color: #d9d2e9;
+    --area-color: #cfe2f3;
+    --subarea-color: #e6efff;
+    --subsubarea-color: #eef6ff;
+    --command-color: #fff2cc;
+    --deprecated-color: #f4cccc;
+    --border: #666;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: #fafafa;
+    color: #222;
+  }
+  #network {
+    flex: 1 1 auto;
+    height: 100%;
+    border-right: 1px solid #ddd;
+  }
+  #sidebar {
+    width: 380px;
+    min-width: 320px;
+    max-width: 420px;
+    padding: 20px;
+    overflow-y: auto;
+    background: #fff;
+  }
+  #sidebar h2 {
+    margin-top: 0;
+    font-size: 16px;
+    word-break: break-word;
+  }
+  #sidebar .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+  #sidebar .desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #333;
+    margin-bottom: 14px;
+    white-space: pre-line;
+  }
+  #sidebar h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #666;
+    margin: 12px 0 6px;
+  }
+  #sidebar ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  #sidebar li {
+    margin-bottom: 4px;
+  }
+  #sidebar .path {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  #legend {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    background: rgba(255,255,255,0.92);
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    z-index: 10;
+  }
+  #legend .row { display: flex; align-items: center; margin: 3px 0; }
+  #legend .swatch { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); margin-right: 8px; display: inline-block; }
+  #controls {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+  }
+  #controls input {
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 220px;
+  }
+  #controls button {
+    padding: 6px 10px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+  }
+  #controls button:hover { background: #f0f0f0; }
+  .empty-hint {
+    color: #999;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div id="network"></div>
+  <div id="controls">
+    <input id="search" type="text" placeholder="Search commands…" autocomplete="off" />
+    <button id="fitBtn">Fit view</button>
+  </div>
+  <div id="legend">
+    <div class="row"><span class="swatch" style="background:var(--root-color)"></span> root (content-cli)</div>
+    <div class="row"><span class="swatch" style="background:var(--area-color)"></span> top-level area</div>
+    <div class="row"><span class="swatch" style="background:var(--subarea-color)"></span> nested area</div>
+    <div class="row"><span class="swatch" style="background:var(--command-color)"></span> command</div>
+    <div class="row"><span class="swatch" style="background:var(--deprecated-color)"></span> deprecated command</div>
+  </div>
+  <div id="sidebar">
+    <p class="empty-hint">Click a node to see its full description and options. Drag to pan, scroll to zoom.</p>
+  </div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Data: every node = a content-cli command or command area.
+// group: root | area | subarea | subsubarea | command
+// ---------------------------------------------------------------------------
+const NODES = [
+  { id: "root", label: "content-cli", group: "root", path: "content-cli",
+    description: "Root CLI. Global options apply to every command.",
+    options: ["-V, --version", "-q, --quietmode (default: false)", "-p, --profile [profile]", "--gitProfile [gitProfile]", "--debug (default: false)", "--dev (default: false)", "-h, --help"] },
+
+  // top-level areas
+  { id: "area_list", label: "list | ls", group: "area", path: "list | ls",
+    description: "Commands to list content.", options: ["-h, --help"] },
+  { id: "area_analyze", label: "analyze", group: "area", path: "analyze",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_export", label: "export", group: "area", path: "export",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_import", label: "import", group: "area", path: "import",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_pull", label: "pull", group: "area", path: "pull",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_push", label: "push", group: "area", path: "push",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_asset_registry", label: "asset-registry", group: "area", path: "asset-registry",
+    description: "Manage the asset registry — discover registered asset types and their service descriptors.", options: ["-h, --help"] },
+  { id: "area_config", label: "config", group: "area", path: "config",
+    description: "Manage package configurations and their resources (package, nodes, versions, variables, metadata). Note: 'config list/export/import/diff' are deprecated — bulk Team-to-Team Copy operations have moved to the 't2tc package' group, and single-package operations live under 'config package'.",
+    options: ["-h, --help"] },
+  { id: "area_t2tc", label: "t2tc", group: "area", path: "t2tc",
+    description: "Team-to-Team Copy (T2TC) commands for moving whole packages and their dependencies between teams using the batch transport archive format.",
+    options: ["-h, --help"] },
+  { id: "area_update", label: "update", group: "area", path: "update",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_get", label: "get", group: "area", path: "get",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_set", label: "set", group: "area", path: "set",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_deployment", label: "deployment (beta)", group: "area", path: "deployment",
+    description: "(no description)", options: ["-h, --help"] },
+  { id: "area_git", label: "git", group: "area", path: "git",
+    description: "Commands related to Git settings", options: ["-h, --help"] },
+  { id: "area_profile", label: "profile", group: "area", path: "profile",
+    description: "Manage profiles required to access a system.", options: ["-h, --help"] },
+
+  // list
+  { id: "list_assignments", label: "assignments", group: "command", path: "list assignments",
+    description: "Command to list possible variable assignments for a type",
+    options: ["-p, --profile <profile>", "--json", "--type <type>", "--params <params>", "-h, --help"] },
+  { id: "list_data_pools", label: "data-pools", group: "command", path: "list data-pools",
+    description: "Command to list all Data Pools", options: ["-p, --profile <profile>", "--json", "-h, --help"] },
+  { id: "list_connection", label: "connection", group: "command", path: "list connection",
+    description: "Command to list all connections in a Data Pool", options: ["-p, --profile <profile>", "--dataPoolId <dataPoolId>", "-h, --help"] },
+  { id: "list_packages", label: "packages", group: "command", path: "list packages",
+    description: "[Deprecated] Use 'config package list' instead. Command to list all packages",
+    options: ["-p, --profile <profile>", "--json", "--includeDependencies", "--packageKeys <packageKeys...>", "-h, --help"] },
+  { id: "list_spaces", label: "spaces", group: "command", path: "list spaces",
+    description: "Command to list all spaces", options: ["-p, --profile <profile>", "--json", "-h, --help"] },
+  { id: "list_assets", label: "assets", group: "command", path: "list assets",
+    description: "Command to list all assets", options: ["-p, --profile <profile>", "--json", "--assetType <assetType>", "-h, --help"] },
+
+  // analyze
+  { id: "analyze_action_flows", label: "action-flows", group: "command", path: "analyze action-flows",
+    description: "Analyze Action Flows dependencies for a certain package",
+    options: ["-p, --profile <profile>", "--packageId <packageId>", "-o, --outputToJsonFile", "-h, --help"] },
+
+  // export
+  { id: "export_action_flows", label: "action-flows", group: "command", path: "export action-flows",
+    description: "Command to export all Action Flows in a package with their objects and dependencies",
+    options: ["-p, --profile <profile>", "--packageId <packageId>", "-f, --file <file>", "-h, --help"] },
+  { id: "export_data_pool", label: "data-pool", group: "command", path: "export data-pool",
+    description: "Command to export a data pool",
+    options: ["-p, --profile <profile>", "--id <id>", "--outputToJsonFile", "-h, --help"] },
+
+  // import
+  { id: "import_action_flows", label: "action-flows", group: "command", path: "import action-flows",
+    description: "Command to import all Action Flows in a package with their objects and dependencies",
+    options: ["-p, --profile <profile>", "--packageId <packageId>", "-f, --file <file>", "-d, --dryRun <dryRun>", "-o, --outputToJsonFile", "-h, --help"] },
+  { id: "import_data_pools", label: "data-pools", group: "command", path: "import data-pools",
+    description: "Command to batch import multiple data pools with their objects and dependencies",
+    options: ["-p, --profile <profile>", "-f, --jsonFile <file>", "--outputToJsonFile", "-h, --help"] },
+
+  // pull
+  { id: "pull_skill", label: "skill", group: "command", path: "pull skill",
+    description: "Command to pull a skill", options: ["-p, --profile <profile>", "--projectId <projectId>", "--skillId <skillId>", "-h, --help"] },
+  { id: "pull_bookmarks", label: "bookmarks", group: "command", path: "pull bookmarks",
+    description: "Command to pull an analysis bookmarks", options: ["-p, --profile <profile>", "--type <type>", "--id <id>", "-h, --help"] },
+  { id: "pull_data_pool", label: "data-pool", group: "command", path: "pull data-pool",
+    description: "Command to pull a data pool", options: ["-p, --profile <profile>", "--id <id>", "-h, --help"] },
+  { id: "pull_asset", label: "asset", group: "command", path: "pull asset",
+    description: "Command to pull an asset from Studio", options: ["-p, --profile <profile>", "--key <key>", "-h, --help"] },
+  { id: "pull_package", label: "package", group: "command", path: "pull package",
+    description: "[Deprecated] Use 'config package export' instead. Command to pull a package", options: ["-p, --profile <profile>", "--key <key>", "--store", "--newKey <newKey>", "--draft", "-h, --help"] },
+  { id: "pull_view_bookmarks", label: "view-bookmarks", group: "command", path: "pull view-bookmarks",
+    description: "Command to pull view bookmarks",
+    options: ["-p, --profile <profile>", "--type <type> (Type of view bookmarks to pull: USER (default), SHARED, or ALL)", "--id <id> (ID of the view (board) to pull bookmarks from)", "-h, --help"] },
+
+  // push
+  { id: "push_skill", label: "skill", group: "command", path: "push skill",
+    description: "Command to push a skill to a project", options: ["-p, --profile <profile>", "--projectId <projectId>", "-f, --file <file>", "-h, --help"] },
+  { id: "push_bookmarks", label: "bookmarks", group: "command", path: "push bookmarks",
+    description: "Command to push an analysis to a workspace", options: ["-p, --profile <profile>", "--id <id>", "-f, --file <file>", "-h, --help"] },
+  { id: "push_ctp", label: "ctp", group: "command", path: "push ctp",
+    description: "Command to push a .ctp (Celonis 4 transport file) to create a package",
+    options: ["-p, --profile <profile>", "-a, --pushAnalysis", "-d, --pushDataModels", "--globalPoolName <globalPoolName> (default: null)", "--existingPoolId <existingPoolId> (default: null)", "-s, --spaceKey <spaceKey> (default: \"\")", "-f, --file <file>", "--password <password>", "-h, --help"] },
+  { id: "push_data_pool", label: "data-pool", group: "command", path: "push data-pool",
+    description: "Command to push a data pool", options: ["-p, --profile <profile>", "-f, --file <file>", "-h, --help"] },
+  { id: "push_data_pools", label: "data-pools", group: "command", path: "push data-pools",
+    description: "Command to push data pools", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "push_asset", label: "asset", group: "command", path: "push asset",
+    description: "Command to push an asset to Studio", options: ["-p, --profile <profile>", "-f, --file <file>", "--package <packageKey>", "-h, --help"] },
+  { id: "push_assets", label: "assets", group: "command", path: "push assets",
+    description: "Command to push assets to Studio", options: ["-p, --profile <profile>", "--package <packageKey>", "-h, --help"] },
+  { id: "push_package", label: "package", group: "command", path: "push package",
+    description: "[Deprecated] Use 'config package import' instead. Command to push a package to Studio", options: ["-p, --profile <profile>", "--newKey <newKey>", "--overwrite", "-f, --file <file>", "--spaceKey <spaceKey>", "-h, --help"] },
+  { id: "push_packages", label: "packages", group: "command", path: "push packages",
+    description: "[Deprecated] Use 'config package import' (single package) instead. Command to push packages to Studio", options: ["-p, --profile <profile>", "--spaceKey <spaceKey>", "-h, --help"] },
+  { id: "push_view_bookmarks", label: "view-bookmarks", group: "command", path: "push view-bookmarks",
+    description: "Command to push view bookmarks to a board",
+    options: ["-p, --profile <profile>", "--id <id> (ID of the view (board) to push bookmarks into)", "-f, --file <file> (The file to push)", "-h, --help"] },
+  { id: "push_widget", label: "widget", group: "command", path: "push widget",
+    description: "Command to push a widget", options: ["-p, --profile <profile>", "--tenantIndependent", "--userSpecific", "--packageManager (deprecated)", "-h, --help"] },
+
+  // asset-registry
+  { id: "ar_list", label: "list", group: "command", path: "asset-registry list",
+    description: "List all registered asset types", options: ["-p, --profile <profile>", "--json", "-h, --help"] },
+  { id: "ar_get", label: "get", group: "command", path: "asset-registry get",
+    description: "Get the descriptor for a specific asset type", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
+  { id: "ar_schema", label: "schema", group: "command", path: "asset-registry schema",
+    description: "Get the JSON schema for an asset type's configuration", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
+  { id: "ar_examples", label: "examples", group: "command", path: "asset-registry examples",
+    description: "Get example configurations for an asset type", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
+  { id: "ar_validate", label: "validate", group: "command", path: "asset-registry validate",
+    description: "Validate asset configuration against the asset service's validate endpoint.",
+    options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--packageKey <packageKey> (required with --nodeKey or --configuration)", "--nodeKey <nodeKey> (use with --packageKey)", "--configuration <configuration> (inline JSON, use with --packageKey)", "-f, --file <file> (full ValidateRequest body; mutually exclusive with build-from-options flags)", "--json", "-h, --help"] },
+  { id: "ar_skills_area", label: "skills", group: "subarea", path: "asset-registry skills",
+    description: "Discover agent skills exposed by the asset registry", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "ar_skills_list", label: "list", group: "command", path: "asset-registry skills list",
+    description: "List all available agent skills (name, description, path)", options: ["-p, --profile <profile>", "--json", "-h, --help"] },
+  { id: "ar_skills_get", label: "get", group: "command", path: "asset-registry skills get",
+    description: "Download a skill file (defaults to SKILL.md)",
+    options: ["-p, --profile <profile>", "--path <path> (Skill path from 'skills list', e.g. platform/<skill> or asset/<assetType>/<skill>)", "--file <file> (Relative path of a reference file within the skill, defaults to SKILL.md)", "--output <output> (Destination directory, defaults to current working directory)", "-h, --help"] },
+
+  // config direct leaves (deprecated)
+  { id: "config_list", label: "list", group: "command", path: "config list",
+    description: "[Deprecated] Use 't2tc package list' instead. List packages in the target team.",
+    options: ["-p, --profile <profile>", "--json", "--flavors <flavors...>", "--withDependencies", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--variableValue <variableValue>", "--variableType <variableType>", "--branches (default: false)", "--staging (default: false)", "-h, --help"] },
+  { id: "config_export", label: "export", group: "command", path: "config export",
+    description: "[Deprecated] Use 't2tc package export' instead. Export one or more packages into a Team-to-Team Copy archive.",
+    options: ["-p, --profile <profile>", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--withDependencies", "--unzip", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
+  { id: "config_import", label: "import", group: "command", path: "config import",
+    description: "[Deprecated] Use 't2tc package import' (batch) or 'config package import' (single package) instead. Import packages from a Team-to-Team Copy archive.",
+    options: ["-p, --profile <profile>", "--overwrite", "--validate (default: false)", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-f, --file <file>", "-d, --directory <directory>", "-h, --help"] },
+  { id: "config_validate", label: "validate", group: "command", path: "config validate",
+    description: "[Deprecated] Use 'config package validate' instead. Validate package node configurations.",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--layers <layers...> (SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES; default: [\"SCHEMA\"])", "--nodeKeys <nodeKeys...> (default: all nodes)", "--json", "-h, --help"] },
+  { id: "config_diff", label: "diff", group: "command", path: "config diff",
+    description: "[Deprecated] Use 't2tc package diff' instead. Diff a local Team-to-Team Copy archive against deployed or staging packages.",
+    options: ["-p, --profile <profile>", "--hasChanges", "--baseVersion <version> (Compare against a given version or STAGING)", "--json", "-f, --file <file>", "-h, --help"] },
+
+  // config package
+  { id: "config_package_area", label: "package", group: "subarea", path: "config package",
+    description: "Commands for working with a single package.", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_package_import", label: "import", group: "command", path: "config package import",
+    description: "Import a package from a zip file, directory, or Git branch. Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.",
+    options: ["-p, --profile <profile>", "-f, --file <file> (Package zip file)", "-d, --directory <directory> (Package directory)", "--overwrite", "--json", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
+  { id: "config_package_export", label: "export", group: "command", path: "config package export",
+    description: "Export a single package's staging (draft) version to an unzipped directory (or a single zip with --zip, or to a Git branch with --gitBranch). Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--zip (default: false)", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
+  { id: "config_package_validate", label: "validate", group: "command", path: "config package validate",
+    description: "Validate package node configurations",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--layers <layers...> (SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES; default: [\"SCHEMA\"])", "--nodeKeys <nodeKeys...> (default: all nodes)", "--json", "-h, --help"] },
+  { id: "config_package_list", label: "list", group: "command", path: "config package list",
+    description: "List packages in the target team. Lists staging packages by default.",
+    options: ["-p, --profile <profile>", "--json", "--flavors <flavors...>", "-h, --help"] },
+
+  // config metadata
+  { id: "config_metadata_area", label: "metadata", group: "subarea", path: "config metadata",
+    description: "Commands related to package metadata", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_metadata_export", label: "export", group: "command", path: "config metadata export",
+    description: "Show whether multiple packages have unpublished changes (bulk metadata export).",
+    options: ["-p, --profile <profile>", "--packageKeys <packageKeys...>", "--json", "-h, --help"] },
+
+  // config versions
+  { id: "config_versions_area", label: "versions", group: "subarea", path: "config versions",
+    description: "Commands related to Package version metadata", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_versions_get", label: "get", group: "command", path: "config versions get",
+    description: "Get version metadata for a specific package version",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--packageVersion <packageVersion> (specific version or \"LATEST\")", "--json", "-h, --help"] },
+  { id: "config_versions_create", label: "create", group: "command", path: "config versions create",
+    description: "Create a new version for a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--packageVersion <packageVersion> (required if versionBumpOption is NONE)", "--versionBumpOption <versionBumpOption> (NONE or PATCH, default: \"NONE\")", "--summaryOfChanges <summaryOfChanges>", "--nodeFilterKeys <nodeFilterKeys...> (default: all nodes)", "--json", "-h, --help"] },
+
+  // config variables
+  { id: "config_variables_area", label: "variables", group: "subarea", path: "config variables",
+    description: "Commands related to variable configs", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_variables_list", label: "list", group: "command", path: "config variables list",
+    description: "List package variables: use --packageKeys for unversioned, or --keysByVersion / --keysByVersionFile for versioned packages",
+    options: ["-p, --profile <profile>", "--json", "--packageKeys <packageKeys...> (unversioned only; default: [])", "--keysByVersion <keysByVersion...> (default: [])", "--keysByVersionFile <keysByVersionFile> (default: \"\")", "-h, --help"] },
+
+  // config nodes
+  { id: "config_nodes_area", label: "nodes", group: "subarea", path: "config nodes",
+    description: "Commands related to nodes of the package", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_nodes_get", label: "get", group: "command", path: "config nodes get",
+    description: "Find a specific node in a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--nodeKey <nodeKey>", "--packageVersion <packageVersion>", "--withConfiguration (default: false)", "--json", "-h, --help"] },
+  { id: "config_nodes_create", label: "create", group: "command", path: "config nodes create",
+    description: "Create a new staging node in a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--body <body> (JSON string)", "-f, --file <file>", "--validate (default: false)", "--json", "-h, --help"] },
+  { id: "config_nodes_update", label: "update", group: "command", path: "config nodes update",
+    description: "Update a staging node in a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--nodeKey <nodeKey>", "--body <body> (JSON string)", "-f, --file <file>", "--validate (default: false)", "--json", "-h, --help"] },
+  { id: "config_nodes_archive", label: "archive", group: "command", path: "config nodes archive",
+    description: "Archive a staging node in a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--nodeKey <nodeKey>", "--force (default: false)", "-h, --help"] },
+  { id: "config_nodes_list", label: "list", group: "command", path: "config nodes list",
+    description: "List nodes in a specific package version",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--packageVersion <packageVersion>", "--limit <limit>", "--offset <offset>", "--withConfiguration (default: false)", "--json", "-h, --help"] },
+  { id: "config_nodes_diff", label: "diff", group: "command", path: "config nodes diff",
+    description: "Diff two versions of a specific node in a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--nodeKey <nodeKey>", "--baseVersion <baseVersion>", "--compareVersion <compareVersion> (mutually exclusive with --file; exactly one required)", "-f, --file <file> (mutually exclusive with --compareVersion; exactly one required)", "--json", "-h, --help"] },
+
+  // config nodes dependencies
+  { id: "config_nodes_deps_area", label: "dependencies", group: "subsubarea", path: "config nodes dependencies",
+    description: "Commands related to node dependencies", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_nodes_deps_list", label: "list", group: "command", path: "config nodes dependencies list",
+    description: "List dependencies of a specific node in a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--nodeKey <nodeKey>", "--packageVersion <packageVersion> (if omitted, staging state is used)", "--json", "-h, --help"] },
+
+  // update
+  { id: "update_data_pool", label: "data-pool", group: "command", path: "update data-pool",
+    description: "Command to update a data pool using a data pool configuration file",
+    options: ["-p, --profile <profile>", "--id <id>", "-f, --file <file>", "-h, --help"] },
+
+  // get
+  { id: "get_connection", label: "connection", group: "command", path: "get connection",
+    description: "Programmatically read properties of your connections",
+    options: ["-p, --profile <profile>", "--dataPoolId <dataPoolId>", "--connectionId <connectionId>", "-h, --help"] },
+
+  // set
+  { id: "set_connection", label: "connection", group: "command", path: "set connection",
+    description: "Programmatically update properties of your connections",
+    options: ["-p, --profile <profile>", "--dataPoolId <dataPoolId>", "--connectionId <connectionId>", "--property <property>", "--value <value>", "-h, --help"] },
+
+  // deployment
+  { id: "deployment_create", label: "create (beta)", group: "command", path: "deployment create",
+    description: "Create a new deployment",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--packageVersion <packageVersion>", "--deployableType <deployableType>", "--targetId <targetId>", "--json", "-h, --help"] },
+  { id: "deployment_list_area", label: "list (beta)", group: "subarea", path: "deployment list",
+    description: "(no description)", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "deployment_list_history", label: "history (beta)", group: "command", path: "deployment list history",
+    description: "List deployment history",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--targetId <targetId>", "--deployableType <deployableType>", "--status <status>", "--createdBy <createdBy>", "--limit <limit>", "--offset <offset>", "--json", "-h, --help"] },
+  { id: "deployment_list_active", label: "active (beta)", group: "command", path: "deployment list active",
+    description: "Get the active deployment(s) for a given target or package. The targetIds filter is only available when getting active deployments for a package. Listing active deployments for a package returns paginated results.",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--targetId <targetId>", "--targetIds <targetIds> (only with packageKey)", "--limit <limit>", "--offset <offset>", "--json", "-h, --help"] },
+  { id: "deployment_list_deployables", label: "deployables (beta)", group: "command", path: "deployment list deployables",
+    description: "List all deployables", options: ["-p, --profile <profile>", "--flavor <flavor>", "--json", "-h, --help"] },
+  { id: "deployment_list_targets", label: "targets (beta)", group: "command", path: "deployment list targets",
+    description: "List all targets for a given deployable type and package key",
+    options: ["-p, --profile <profile>", "--deployableType <deployableType>", "--packageKey <packageKey>", "--json", "-h, --help"] },
+
+  // git profile
+  { id: "git_profile_area", label: "profile", group: "subarea", path: "git profile",
+    description: "Manage Git profiles required to use git-related operations.", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "git_profile_list", label: "list", group: "command", path: "git profile list",
+    description: "Command to list all stored Git profiles", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "git_profile_create", label: "create", group: "command", path: "git profile create",
+    description: "Command to create a new Git profile", options: ["-p, --profile <profile>", "--setAsDefault", "-h, --help"] },
+  { id: "git_profile_default", label: "default <profile>", group: "command", path: "git profile default",
+    description: "Command to set a Git profile as default", options: ["-p, --profile <profile>", "-h, --help"] },
+
+  // profile
+  { id: "profile_list", label: "list", group: "command", path: "profile list",
+    description: "Command to list all stored profiles", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "profile_create", label: "create", group: "command", path: "profile create",
+    description: "Command to create a new profile", options: ["-p, --profile <profile>", "--setAsDefault", "-h, --help"] },
+  { id: "profile_default", label: "default <profile>", group: "command", path: "profile default",
+    description: "Command to set a profile as default", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "profile_secure", label: "secure <profile>", group: "command", path: "profile secure",
+    description: "Migrate a profile's secrets to secure system keychain storage", options: ["-p, --profile <profile>", "-h, --help"] },
+
+  // t2tc package
+  { id: "t2tc_package_area", label: "package", group: "subarea", path: "t2tc package",
+    description: "Team-to-Team Copy package commands: list, export, import and diff packages using the batch transport archive.",
+    options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "t2tc_package_list", label: "list", group: "command", path: "t2tc package list",
+    description: "List packages in the target team. Part of the Team-to-Team Copy export/import workflow.",
+    options: ["-p, --profile <profile>", "--json", "--flavors <flavors...>", "--withDependencies", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--variableValue <variableValue>", "--variableType <variableType>", "--branches (default: false)", "--staging (default: false)", "-h, --help"] },
+  { id: "t2tc_package_export", label: "export", group: "command", path: "t2tc package export",
+    description: "Export one or more packages into a Team-to-Team Copy archive. The archive is consumed by 't2tc package import' / 't2tc package diff'. To export a single standalone package, use 'config package export'.",
+    options: ["-p, --profile <profile>", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--withDependencies", "--unzip", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
+  { id: "t2tc_package_import", label: "import", group: "command", path: "t2tc package import",
+    description: "Import packages from a Team-to-Team Copy archive produced by 't2tc package export'. To import a single standalone package, use 'config package import'.",
+    options: ["-p, --profile <profile>", "--overwrite", "--validate (default: false)", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-f, --file <file>", "-d, --directory <directory>", "-h, --help"] },
+  { id: "t2tc_package_diff", label: "diff", group: "command", path: "t2tc package diff",
+    description: "Diff a local Team-to-Team Copy archive (from 't2tc package export') against deployed or staging packages.",
+    options: ["-p, --profile <profile>", "--hasChanges", "--baseVersion <version> (Compare against a given version or STAGING)", "--json", "-f, --file <file>", "-h, --help"] },
+];
+
+const EDGES = [
+  ["root","area_list"],["root","area_analyze"],["root","area_export"],["root","area_import"],
+  ["root","area_pull"],["root","area_push"],["root","area_asset_registry"],["root","area_config"],
+  ["root","area_t2tc"],
+  ["root","area_update"],["root","area_get"],["root","area_set"],["root","area_deployment"],
+  ["root","area_git"],["root","area_profile"],
+
+  ["area_list","list_assignments"],["area_list","list_data_pools"],["area_list","list_connection"],
+  ["area_list","list_packages"],["area_list","list_spaces"],["area_list","list_assets"],
+
+  ["area_analyze","analyze_action_flows"],
+
+  ["area_export","export_action_flows"],["area_export","export_data_pool"],
+
+  ["area_import","import_action_flows"],["area_import","import_data_pools"],
+
+  ["area_pull","pull_skill"],["area_pull","pull_bookmarks"],["area_pull","pull_data_pool"],
+  ["area_pull","pull_asset"],["area_pull","pull_package"],["area_pull","pull_view_bookmarks"],
+
+  ["area_push","push_skill"],["area_push","push_bookmarks"],["area_push","push_ctp"],
+  ["area_push","push_data_pool"],["area_push","push_data_pools"],["area_push","push_asset"],
+  ["area_push","push_assets"],["area_push","push_package"],["area_push","push_packages"],
+  ["area_push","push_widget"],["area_push","push_view_bookmarks"],
+
+  ["area_asset_registry","ar_list"],["area_asset_registry","ar_get"],["area_asset_registry","ar_schema"],
+  ["area_asset_registry","ar_examples"],["area_asset_registry","ar_validate"],
+  ["area_asset_registry","ar_skills_area"],["ar_skills_area","ar_skills_list"],["ar_skills_area","ar_skills_get"],
+
+  ["area_config","config_list"],["area_config","config_export"],["area_config","config_import"],
+  ["area_config","config_validate"],["area_config","config_diff"],
+  ["area_config","config_package_area"],
+  ["config_package_area","config_package_import"],["config_package_area","config_package_export"],
+  ["config_package_area","config_package_validate"],["config_package_area","config_package_list"],
+  ["area_config","config_metadata_area"],["config_metadata_area","config_metadata_export"],
+  ["area_config","config_versions_area"],["config_versions_area","config_versions_get"],
+  ["config_versions_area","config_versions_create"],
+  ["area_config","config_variables_area"],["config_variables_area","config_variables_list"],
+  ["area_config","config_nodes_area"],
+  ["config_nodes_area","config_nodes_get"],["config_nodes_area","config_nodes_create"],
+  ["config_nodes_area","config_nodes_update"],["config_nodes_area","config_nodes_archive"],
+  ["config_nodes_area","config_nodes_list"],["config_nodes_area","config_nodes_diff"],
+  ["config_nodes_area","config_nodes_deps_area"],["config_nodes_deps_area","config_nodes_deps_list"],
+
+  ["area_t2tc","t2tc_package_area"],
+  ["t2tc_package_area","t2tc_package_list"],["t2tc_package_area","t2tc_package_export"],
+  ["t2tc_package_area","t2tc_package_import"],["t2tc_package_area","t2tc_package_diff"],
+
+  ["area_update","update_data_pool"],
+
+  ["area_get","get_connection"],
+
+  ["area_set","set_connection"],
+
+  ["area_deployment","deployment_create"],["area_deployment","deployment_list_area"],
+  ["deployment_list_area","deployment_list_history"],["deployment_list_area","deployment_list_active"],
+  ["deployment_list_area","deployment_list_deployables"],["deployment_list_area","deployment_list_targets"],
+
+  ["area_git","git_profile_area"],["git_profile_area","git_profile_list"],
+  ["git_profile_area","git_profile_create"],["git_profile_area","git_profile_default"],
+
+  ["area_profile","profile_list"],["area_profile","profile_create"],
+  ["area_profile","profile_default"],["area_profile","profile_secure"],
+];
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+const GROUP_COLORS = {
+  root:        { bg: "#d9d2e9", border: "#7a5ea8" },
+  area:        { bg: "#cfe2f3", border: "#4a86c8" },
+  subarea:     { bg: "#e6efff", border: "#6a9be0" },
+  subsubarea:  { bg: "#eef6ff", border: "#8ab4e8" },
+  command:     { bg: "#fff2cc", border: "#c9a227" },
+};
+const DEPRECATED_COLOR = { bg: "#f4cccc", border: "#cc0000" };
+
+function isDeprecated(n) {
+  return n.description.startsWith("[Deprecated]");
+}
+
+function getNodeColor(n) {
+  return isDeprecated(n) ? DEPRECATED_COLOR : GROUP_COLORS[n.group];
+}
+
+const visNodes = new vis.DataSet(NODES.map(n => ({
+  id: n.id,
+  label: n.label,
+  title: n.path,
+  shape: "box",
+  margin: 8,
+  font: { size: n.group === "root" ? 16 : n.group === "command" ? 12 : 13, multi: false },
+  color: {
+    background: getNodeColor(n).bg,
+    border: getNodeColor(n).border,
+    highlight: { background: getNodeColor(n).bg, border: "#222" },
+  },
+  borderWidth: 1.5,
+})));
+
+const visEdges = new vis.DataSet(EDGES.map(([from, to], i) => ({
+  id: i, from, to, arrows: "to", color: { color: "#aaa", highlight: "#333" }, width: 1,
+})));
+
+const container = document.getElementById("network");
+const data = { nodes: visNodes, edges: visEdges };
+const options = {
+  layout: {
+    hierarchical: {
+      direction: "LR",
+      sortMethod: "directed",
+      levelSeparation: 220,
+      nodeSpacing: 40,
+      treeSpacing: 26,
+    },
+  },
+  physics: false,
+  interaction: { hover: true, dragNodes: true, zoomView: true },
+  nodes: { shapeProperties: { borderRadius: 6 } },
+};
+
+const network = new vis.Network(container, data, options);
+
+const nodesById = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+function renderSidebar(node) {
+  const sidebar = document.getElementById("sidebar");
+  const groupLabel = {
+    root: "Root", area: "Command area", subarea: "Nested command area",
+    subsubarea: "Nested command area", command: "Command",
+  }[node.group];
+  const optionsHtml = node.options.map(o => `<li>${escapeHtml(o)}</li>`).join("");
+  sidebar.innerHTML = `
+    <div class="path">${escapeHtml(node.path)}</div>
+    <h2>${escapeHtml(node.label)}</h2>
+    <span class="badge">${groupLabel}</span>
+    <div class="desc">${escapeHtml(node.description)}</div>
+    <h3>Options</h3>
+    <ul>${optionsHtml}</ul>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+network.on("click", params => {
+  if (params.nodes.length > 0) {
+    const node = nodesById[params.nodes[0]];
+    if (node) renderSidebar(node);
+  }
+});
+
+document.getElementById("fitBtn").addEventListener("click", () => network.fit({ animation: true }));
+
+document.getElementById("search").addEventListener("input", e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) {
+    visNodes.update(NODES.map(n => ({ id: n.id, color: {
+      background: getNodeColor(n).bg, border: getNodeColor(n).border,
+      highlight: { background: getNodeColor(n).bg, border: "#222" },
+    } })));
+    return;
+  }
+  const matches = NODES.filter(n => n.path.toLowerCase().includes(q) || n.description.toLowerCase().includes(q));
+  const matchIds = new Set(matches.map(n => n.id));
+  visNodes.update(NODES.map(n => {
+    const isMatch = matchIds.has(n.id);
+    return {
+      id: n.id,
+      color: {
+        background: isMatch ? getNodeColor(n).bg : "#f2f2f2",
+        border: isMatch ? getNodeColor(n).border : "#ddd",
+        highlight: { background: getNodeColor(n).bg, border: "#222" },
+      },
+      font: { color: isMatch ? "#222" : "#ccc" },
+    };
+  }));
+  if (matches.length === 1) {
+    network.focus(matches[0].id, { scale: 1.2, animation: true });
+  }
+});
+
+network.once("afterDrawing", () => network.fit());
+</script>
+</body>
+</html>

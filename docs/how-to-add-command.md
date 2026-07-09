@@ -157,6 +157,23 @@ You are free to adapt the structure based on complexity.
 
 ---
 
+## Keeping the Command Graph Up to Date
+
+The repository root [README](../README.md#command-graph) links to [`docs/command-graph.html`](./command-graph.html), 
+an interactive visualization of every Content CLI command and its options. This file is a static, hand-maintained 
+snapshot — it is **not** generated automatically from the CLI source.
+
+Whenever you add, remove, rename, deprecate, or change the options/description of a command, update 
+`docs/command-graph.html` in the same change:
+
+- Add/update/remove the corresponding entry in the `NODES` array (`id`, `label`, `group`, `path`, `description`, `options`).
+- Add/update/remove the corresponding entry in the `EDGES` array to connect the command to its parent area.
+- Mark deprecated commands by starting their `description` with `[Deprecated]` — the graph automatically colors these
+  differently.
+- Open the file in a browser afterwards to sanity-check that the new/changed node renders and links correctly.
+
+---
+
 ## Useful Examples
 
 Example group: [configuration-management](https://github.com/celonis/content-cli/tree/main/src/commands/configuration-management)
