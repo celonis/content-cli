@@ -56,6 +56,12 @@ class Module extends IModule {
             .option("--file <file>", "Relative path of a reference file within the skill (defaults to SKILL.md)")
             .option("--output <output>", "Destination directory (defaults to current working directory)")
             .action(this.getSkillFile);
+
+        skillsCommand.command("download")
+            .description("Download an entire skill (SKILL.md and all reference files) into a new directory, preserving folder structure. Existing files are overwritten.")
+            .requiredOption("--path <path>", "Skill path from 'skills list' (e.g. platform/<skill> or asset/<assetType>/<skill>)")
+            .option("--output <output>", "Parent directory in which the skill directory will be created (defaults to current working directory)")
+            .action(this.downloadSkill);
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -93,6 +99,13 @@ class Module extends IModule {
         await new AssetRegistryService(context).getSkillFile({
             path: options.path,
             file: options.file,
+            output: options.output,
+        });
+    }
+
+    private async downloadSkill(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).downloadSkill({
+            path: options.path,
             output: options.output,
         });
     }

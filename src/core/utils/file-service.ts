@@ -25,7 +25,7 @@ export class FileService {
     public writeBufferToPath(targetDir: string, filename: string, data: Buffer): string {
         const resolvedDir = path.resolve(process.cwd(), targetDir);
         const absolutePath = path.join(resolvedDir, filename);
-        this.mkdirRecursive(resolvedDir);
+        this.mkdirRecursive(path.dirname(absolutePath));
         this.writeBufferToFileWithGivenName(data, absolutePath);
         return absolutePath;
     }

@@ -12,6 +12,8 @@ describe("asset-registry command integration", () => {
         mockService = {
             listTypes: jest.fn().mockResolvedValue(undefined),
             listSkills: jest.fn().mockResolvedValue(undefined),
+            getSkillFile: jest.fn().mockResolvedValue(undefined),
+            downloadSkill: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
             validate: jest.fn().mockResolvedValue(undefined),
@@ -134,6 +136,39 @@ describe("asset-registry command integration", () => {
         it("calls listSkills without --json", async () => {
             await runCli(["asset-registry", "skills", "list"]);
             expect(mockService.listSkills).toHaveBeenCalledWith(false);
+        });
+    });
+
+    describe("asset-registry skills download", () => {
+        it("calls downloadSkill with --path only", async () => {
+            const result = await runCli([
+                "asset-registry", "skills", "download",
+                "--path", "platform/foo",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockService.downloadSkill).toHaveBeenCalledWith({
+                path: "platform/foo",
+                output: undefined,
+            });
+        });
+
+        it("forwards --output when provided", async () => {
+            await runCli([
+                "asset-registry", "skills", "download",
+                "--path", "asset/BOARD_V2/board-authoring",
+                "--output", "./skills",
+            ]);
+            expect(mockService.downloadSkill).toHaveBeenCalledWith({
+                path: "asset/BOARD_V2/board-authoring",
+                output: "./skills",
+            });
+        });
+
+        it("fails when --path is missing", async () => {
+            const result = await runCli(["asset-registry", "skills", "download"]);
+            expect(result.exitCode).not.toBe(0);
+            expect(mockService.downloadSkill).not.toHaveBeenCalled();
         });
     });
 

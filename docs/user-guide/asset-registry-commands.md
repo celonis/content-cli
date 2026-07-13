@@ -214,6 +214,38 @@ Behavior:
 - On success the command logs a single confirmation line with the absolute path of the written file.
 - A missing skill or file returns a clear error such as `Problem getting SKILL.md for 'platform/missing': ...`.
 
+### Download an Entire Skill
+
+Download a complete skill bundle — its `SKILL.md` plus all reference files — into a new directory named after the skill. Folder structure inside the skill is preserved. Use this to vendor a full copy of a skill into a repo or filesystem in a single command.
+
+Download a platform skill into the current directory:
+
+```
+content-cli asset-registry skills download --path platform/content-cli-setup
+```
+
+Download an asset skill into a specific parent directory:
+
+```
+content-cli asset-registry skills download \
+  --path asset/BOARD_V2/asset-studio-board-v2 \
+  --output ./skills
+```
+
+The command creates a new directory named after the last segment of `--path` (the skill name) inside `--output`. For example, the second command above writes to `./skills/asset-studio-board-v2/`.
+
+Options:
+
+- `--path <path>` (required) – Skill path from `asset-registry skills list` (e.g. `platform/<skill>` or `asset/<assetType>/<skill>`).
+- `--output <output>` – Parent directory in which the skill directory will be created. Defaults to the current working directory. Created automatically if it does not exist.
+
+Behavior:
+
+- The CLI first fetches the skill's file manifest, then downloads each file to `{output}/{skillName}/{relativePath}`, creating intermediate directories as needed.
+- Existing local files are overwritten without prompting (consistent with `skills get`).
+- On success the command logs a summary line with the number of files written and the absolute path of the skill directory.
+- A missing skill returns a clear error such as `Problem listing skill files for 'platform/missing': ...`. If a listed file cannot be downloaded, the command stops on the first failure and reports which file failed; files already written are left in place.
+
 ## Troubleshooting
 
 If the asset registry is disabled on your team, commands fail with:

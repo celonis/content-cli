@@ -63,6 +63,13 @@ export class AssetRegistryApi {
             .catch((e) => handleAssetRegistryApiError(operation, e));
     }
 
+    public async listSkillFiles(skillPath: string): Promise<string[]> {
+        const url = AssetRegistryApi.endpointUrl("skills", encodePathSegments(skillPath), "files");
+        return this.httpClient()
+            .get(url)
+            .catch((e) => handleAssetRegistryApiError(`listing skill files for '${skillPath}'`, e));
+    }
+
     private buildSkillFileUrl(skillPath: string, filePath?: string): string {
         const segments = ["skills", encodePathSegments(skillPath)];
         if (filePath) {

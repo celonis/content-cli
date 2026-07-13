@@ -1,5 +1,11 @@
 import { AssetRegistryApi } from "./asset-registry-api";
-import { AgentSkill, AssetRegistryDescriptor, GetSkillFileOptions, ValidateOptions } from "./asset-registry.interfaces";
+import {
+    AgentSkill,
+    AssetRegistryDescriptor,
+    DownloadSkillOptions,
+    GetSkillFileOptions,
+    ValidateOptions,
+} from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
@@ -43,6 +49,30 @@ export class AssetRegistryService {
         logger.info(FileService.fileDownloadedMessage + absolutePath);
     }
 
+    public async downloadSkill(opts: DownloadSkillOptions): Promise<void> {
+        const skillName = this.resolveSkillName(opts.path);
+        const parentDir = opts.output ?? ".";
+        const skillDir = path.resolve(process.cwd(), parentDir, skillName);
+
+        const files = await this.api.listSkillFiles(opts.path);
+        if (!Array.isArray(files) || files.length === 0) {
+            logger.info(`No files found for skill '${opts.path}'.`);
+            return;
+        }
+
+        for (const rawFilePath of files) {
+            const filePath = this.normalizeManifestPath(rawFilePath, opts.path);
+            this.assertPathWithinSkillDir(skillDir, filePath, opts.path);
+
+            const buffer = await this.api.getSkillFile(opts.path, filePath);
+            fileService.writeBufferToPath(skillDir, filePath, buffer);
+        }
+
+        logger.info(
+            `Downloaded ${files.length} file(s) for skill '${opts.path}' to ${skillDir}`
+        );
+    }
+
     private resolveLocalFilename(file?: string): string {
         if (!file) {
             return "SKILL.md";
@@ -53,6 +83,38 @@ export class AssetRegistryService {
             throw new FatalError(`--file must point to a file, got '${file}'.`);
         }
         return base;
+    }
+
+    private resolveSkillName(skillPath: string): string {
+        const trimmed = trimSlashes(skillPath ?? "");
+        const name = trimmed ? path.basename(trimmed) : "";
+        if (!name) {
+            throw new FatalError(`--path must identify a skill, got '${skillPath}'.`);
+        }
+        return name;
+    }
+
+    private normalizeManifestPath(rawFilePath: unknown, skillPath: string): string {
+        if (typeof rawFilePath !== "string") {
+            throw new FatalError(
+                `Skill manifest for '${skillPath}' contained a non-string entry: ${JSON.stringify(rawFilePath)}.`
+            );
+        }
+        const trimmed = trimSlashes(rawFilePath);
+        if (!trimmed) {
+            throw new FatalError(`Skill manifest for '${skillPath}' contained an empty file path.`);
+        }
+        return trimmed;
+    }
+
+    private assertPathWithinSkillDir(skillDir: string, relativeFilePath: string, skillPath: string): void {
+        const resolved = path.resolve(skillDir, relativeFilePath);
+        const rel = path.relative(skillDir, resolved);
+        if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+            throw new FatalError(
+                `Refusing to write file '${relativeFilePath}' from skill '${skillPath}': path escapes the skill directory.`
+            );
+        }
     }
 
     public async listSkills(jsonResponse: boolean): Promise<void> {

@@ -63,3 +63,8 @@ export interface GetSkillFileOptions {
     file?: string;
     output?: string;
 }
+
+export interface DownloadSkillOptions {
+    path: string;
+    output?: string;
+}
