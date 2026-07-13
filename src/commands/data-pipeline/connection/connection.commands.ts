@@ -16,14 +16,16 @@ export class ConnectionCommands {
             .requiredOption("--dataPoolId <dataPoolId>", "ID of the data pool")
             .action(this.listConnections);
 
-        const getCommand = configurator.command("get");
+        const getCommand = configurator.command("get")
+            .description("get data pool connection");
         getCommand.command("connection")
             .description("Programmatically read properties of your connections")
             .requiredOption("--dataPoolId <dataPoolId>", "Id of the data pool you want to update")
             .requiredOption("--connectionId <connectionId>", "Id of the connection you want to update")
             .action(this.getCommandProperties);
 
-        const setCommand = configurator.command("set");
+        const setCommand = configurator.command("set")
+            .description("set data pool connection");
         setCommand.command("connection")
             .description("Programmatically update properties of your connections")
             .requiredOption("--dataPoolId <dataPoolId>", "Id of the data pool you want to update")

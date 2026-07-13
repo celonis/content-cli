@@ -69,6 +69,10 @@ export function createProgram(context: Context, opts: CreateProgramOptions = {})
  */
 function configureRootCommands(configurator: Configurator): void {
     configurator.command("list").description("Commands to list content.").alias("ls");
+    configurator.command("export").description("Export resource: action flow or data pool");
+    configurator.command("import").description("Import resource: action flow or data pool");
+    configurator.command("pull").description("Pull resource: skill, bookmark, view bookmark, data pool or asset");
+    configurator.command("push").description("Push resource: asset, skill, bookmark, view bookmark, CTP or data pool");
 }
 
 async function run(): Promise<void> {
