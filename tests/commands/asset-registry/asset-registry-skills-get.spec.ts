@@ -263,4 +263,121 @@ describe("Asset registry skills get", () => {
             })
         ).rejects.toThrow(new FatalError("Skill manifest for 'platform/bad' contained an empty file path."));
     });
+
+    it("Should throw a FatalError when both --file and --all are provided", async () => {
+        await expect(
+            new AssetRegistryService(testContext).getSkill({
+                path: "platform/foo",
+                file: "SKILL.md",
+                output: uniqueDirName(),
+                all: true,
+            })
+        ).rejects.toThrow(
+            new FatalError(
+                "Options --file and --all are mutually exclusive. Use --file to download an individual file (defaults to SKILL.md) or --all to download all files (SKILL.md and reference files)."
+            )
+        );
+    });
+
+    it("Should default --output to the current working directory when --all is set", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/cwd-default-all/files`, { files: ["SKILL.md"] });
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/cwd-default-all/SKILL.md`, skillContent);
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "platform/cwd-default-all",
+            all: true,
+        });
+
+        const skillDir = path.join(process.cwd(), "cwd-default-all");
+        expect(fs.readFileSync(path.join(skillDir, "SKILL.md")).equals(skillContent)).toBe(true);
+    });
+
+    it("Should create a nested --output directory that does not exist when --all is set", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/files`, { files: ["SKILL.md"] });
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/SKILL.md`, skillContent);
+
+        const output = path.join(uniqueDirName(), "nested", "deep");
+        expect(fs.existsSync(absoluteOutputDir(output))).toBe(false);
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "platform/foo",
+            output,
+            all: true,
+        });
+
+        const skillDir = path.join(absoluteOutputDir(output), "foo");
+        expect(fs.readFileSync(path.join(skillDir, "SKILL.md")).equals(skillContent)).toBe(true);
+    });
+
+    it("Should overwrite existing local files on re-download when --all is set", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/files`, { files: ["SKILL.md", "refs/style.md"] });
+        const newSkill = Buffer.from("NEW SKILL", "utf-8");
+        const newStyle = Buffer.from("NEW STYLE", "utf-8");
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/SKILL.md`, newSkill);
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/refs/style.md`, newStyle);
+
+        const output = uniqueDirName();
+        const skillDir = path.join(absoluteOutputDir(output), "foo");
+        fs.mkdirSync(path.join(skillDir, "refs"), { recursive: true });
+        fs.writeFileSync(path.join(skillDir, "SKILL.md"), "OLD SKILL");
+        fs.writeFileSync(path.join(skillDir, "refs", "style.md"), "OLD STYLE");
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "platform/foo",
+            output,
+            all: true,
+        });
+
+        expect(fs.readFileSync(path.join(skillDir, "SKILL.md")).equals(newSkill)).toBe(true);
+        expect(fs.readFileSync(path.join(skillDir, "refs", "style.md")).equals(newStyle)).toBe(true);
+    });
+
+    it("Should URI-encode multi-segment skill and file paths under --all", async () => {
+        const listUrl = `${SKILLS_BASE_URL}/asset/BOARD_V2/${encodeURIComponent("with space")}/files`;
+        const fileUrl = `${SKILLS_BASE_URL}/asset/BOARD_V2/${encodeURIComponent("with space")}/${encodeURIComponent("dir with space")}/a.md`;
+        mockAxiosGet(listUrl, { files: ["dir with space/a.md"] });
+        mockAxiosGet(fileUrl, skillContent);
+
+        const output = uniqueDirName();
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "asset/BOARD_V2/with space",
+            output,
+            all: true,
+        });
+
+        const written = path.join(absoluteOutputDir(output), "with space", "dir with space", "a.md");
+        expect(fs.existsSync(written)).toBe(true);
+    });
+
+    it("Should log 'No files found' and write nothing when the manifest is empty", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/empty/files`, { files: [] });
+        const output = uniqueDirName();
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "platform/empty",
+            output,
+            all: true,
+        });
+
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(
+            "No files found for skill 'platform/empty'."
+        );
+        expect(fs.existsSync(path.join(absoluteOutputDir(output), "empty"))).toBe(false);
+    });
+
+    it("Should surface a clear FatalError when the manifest endpoint returns 404", async () => {
+        mockAxiosGetError(`${SKILLS_BASE_URL}/platform/missing/files`, 404, {
+            error: "Skill not found",
+        });
+
+        await expect(
+            new AssetRegistryService(testContext).getSkill({
+                path: "platform/missing",
+                output: uniqueDirName(),
+                all: true,
+            })
+        ).rejects.toThrow(/Problem listing skill files for 'platform\/missing':/);
+    });
 });

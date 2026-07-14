@@ -212,21 +212,21 @@ content-cli asset-registry skills get \
 
 The command creates a new directory named after the last segment of `--path` (the skill name) inside `--output`. For example, the command above writes to `./skills/asset-studio-board-v2/`.
 
-
 Options:
 
 - `--path <path>` (required) – Skill path from `asset-registry skills list` (e.g. `platform/<skill>` or `asset/<assetType>/<skill>`).
-- `--file <file>` – Relative path of a reference file within the skill. Defaults to `SKILL.md` when omitted.
+- `--file <file>` – Relative path of a reference file within the skill. Defaults to `SKILL.md` when omitted. Mutually exclusive with `--all`.
 - `--output <output>` – Destination directory. Defaults to the current working directory. Created automatically if it does not exist.
-- `--all` - Download all skill files (SKILL.md and all reference files). Files are stored to a new directory identical to the skill name under the path provided with --output.
+- `--all` – Download every file in the skill (`SKILL.md` and all reference files). Files are written into a new directory named after the skill under `--output`, and their folder structure inside the skill is preserved. Mutually exclusive with `--file`.
 
 Behavior:
 
-- The local filename is the basename of `--file` (or `SKILL.md` when `--file` is omitted). Subdirectories in `--file` are not preserved on the local side. --file is mutually exclusive with --all.
-- When `--all` is provided, all files are downloaded into a new subdirectory to the provided output dir, the name of which is identical to the name of the skill. --all is mutually exclusive with --file.
-- Re-running the command overwrites the existing local file without prompting.
-- On success the command logs a single confirmation line with the absolute path of the written file.
-- A missing skill or file returns a clear error such as `Problem getting SKILL.md for 'platform/missing': ...`.
+- Without `--all`, the command downloads a single file (defaults to `SKILL.md`, or the file identified by `--file`). The local filename is the basename of `--file`; subdirectories in `--file` are not preserved on the local side.
+- With `--all`, the command first fetches the skill's file manifest, then downloads each file to `{output}/{skillName}/{relativePath}`, creating intermediate directories as needed. If the manifest is empty, the command logs `No files found for skill '<path>'.` and writes nothing.
+- Re-running the command overwrites existing local files without prompting.
+- On success the command logs the absolute path of the written file (single-file mode), or a summary line like `Downloaded N file(s) for skill '<path>' to <dir>` (`--all` mode).
+- Passing both `--file` and `--all` fails with `Options --file and --all are mutually exclusive. ...`.
+- A missing skill or file returns a clear error. In single-file mode this is `Problem getting SKILL.md for '<path>': ...` (or `Problem getting skill file '<file>' for '<path>': ...` when `--file` is set). In `--all` mode a missing manifest reports `Problem listing skill files for '<path>': ...`; a manifest entry that fails to download reports `Problem getting skill file '<file>' for '<path>': ...` and stops on the first failure (files already written are left in place).
 
 ## Troubleshooting
 

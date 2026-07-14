@@ -151,7 +151,7 @@ describe("asset-registry command integration", () => {
                 output: undefined,
                 all: undefined,
                 file: undefined,
-            })
+            });
         });
 
         it("forwards --output when provided", async () => {
