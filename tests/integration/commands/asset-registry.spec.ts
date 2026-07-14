@@ -12,8 +12,7 @@ describe("asset-registry command integration", () => {
         mockService = {
             listTypes: jest.fn().mockResolvedValue(undefined),
             listSkills: jest.fn().mockResolvedValue(undefined),
-            getSkillFile: jest.fn().mockResolvedValue(undefined),
-            downloadSkill: jest.fn().mockResolvedValue(undefined),
+            getSkill: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
             validate: jest.fn().mockResolvedValue(undefined),
@@ -139,36 +138,104 @@ describe("asset-registry command integration", () => {
         });
     });
 
-    describe("asset-registry skills download", () => {
-        it("calls downloadSkill with --path only", async () => {
+    describe("asset-registry skills get", () => {
+        it("calls getSkill with --path only", async () => {
             const result = await runCli([
-                "asset-registry", "skills", "download",
-                "--path", "platform/foo",
+                "asset-registry", "skills", "get",
+                "--path", "platform/foo"
             ]);
 
             expect(result.exitCode).toBe(0);
-            expect(mockService.downloadSkill).toHaveBeenCalledWith({
+            expect(mockService.getSkill).toHaveBeenCalledWith({
                 path: "platform/foo",
+                output: undefined,
+                all: undefined,
+                file: undefined,
+            })
+        });
+
+        it("forwards --output when provided", async () => {
+            const result = await runCli([
+                "asset-registry",
+                "skills",
+                "get",
+                "--path",
+                "platform/foo",
+                "--output",
+                "./skills",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockService.getSkill).toHaveBeenCalledWith({
+                path: "platform/foo",
+                output: "./skills",
+                all: undefined,
+                file: undefined,
+            });
+        });
+
+        it("forwards --all when provided", async () => {
+            const result = await runCli([
+                "asset-registry",
+                "skills",
+                "get",
+                "--path",
+                "platform/foo",
+                "--all",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockService.getSkill).toHaveBeenCalledWith({
+                path: "platform/foo",
+                all: true,
+                file: undefined,
                 output: undefined,
             });
         });
 
-        it("forwards --output when provided", async () => {
-            await runCli([
-                "asset-registry", "skills", "download",
-                "--path", "asset/BOARD_V2/board-authoring",
-                "--output", "./skills",
+        it("forwards --file when provided", async () => {
+            const result = await runCli([
+                "asset-registry",
+                "skills",
+                "get",
+                "--path",
+                "platform/foo",
+                "--file",
+                "file",
             ]);
-            expect(mockService.downloadSkill).toHaveBeenCalledWith({
-                path: "asset/BOARD_V2/board-authoring",
-                output: "./skills",
+
+            expect(result.exitCode).toBe(0);
+            expect(mockService.getSkill).toHaveBeenCalledWith({
+                path: "platform/foo",
+                all: undefined,
+                file: "file",
+                output: undefined,
             });
         });
 
-        it("fails when --path is missing", async () => {
-            const result = await runCli(["asset-registry", "skills", "download"]);
-            expect(result.exitCode).not.toBe(0);
-            expect(mockService.downloadSkill).not.toHaveBeenCalled();
+        it("fails when both --all and --file are provided", async () => {
+            mockService.getSkill.mockRejectedValueOnce(
+                new Error("Options --file and --all are mutually exclusive.")
+            );
+
+            const result = await runCli([
+                "asset-registry",
+                "skills",
+                "get",
+                "--path",
+                "platform/foo",
+                "--file",
+                "file",
+                "--all",
+            ]);
+
+            expect(result.exitCode).toBe(1);
+            expect(mockService.getSkill).toHaveBeenCalledWith({
+                path: "platform/foo",
+                all: true,
+                file: "file",
+                output: undefined,
+            });
         });
     });
 

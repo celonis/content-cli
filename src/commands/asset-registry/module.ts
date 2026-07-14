@@ -51,17 +51,12 @@ class Module extends IModule {
             .action(this.listSkills);
 
         skillsCommand.command("get")
-            .description("Download a skill file (defaults to SKILL.md)")
+            .description("Download a skill file or the entire skill directory.")
             .requiredOption("--path <path>", "Skill path from 'skills list' (e.g. platform/<skill> or asset/<assetType>/<skill>)")
             .option("--file <file>", "Relative path of a reference file within the skill (defaults to SKILL.md)")
             .option("--output <output>", "Destination directory (defaults to current working directory)")
-            .action(this.getSkillFile);
-
-        skillsCommand.command("download")
-            .description("Download an entire skill (SKILL.md and all reference files) into a new directory, preserving folder structure. Existing files are overwritten.")
-            .requiredOption("--path <path>", "Skill path from 'skills list' (e.g. platform/<skill> or asset/<assetType>/<skill>)")
-            .option("--output <output>", "Parent directory in which the skill directory will be created (defaults to current working directory)")
-            .action(this.downloadSkill);
+            .option("--all", "Download all skill files (SKILL.md and all reference files). Files are stored to a new directory identical to the skill name under the path provided with --output.")
+            .action(this.getSkill);
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -95,18 +90,12 @@ class Module extends IModule {
         await new AssetRegistryService(context).listSkills(!!options.json);
     }
 
-    private async getSkillFile(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).getSkillFile({
+    private async getSkill(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new AssetRegistryService(context).getSkill({
             path: options.path,
             file: options.file,
             output: options.output,
-        });
-    }
-
-    private async downloadSkill(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).downloadSkill({
-            path: options.path,
-            output: options.output,
+            all: options.all,
         });
     }
 }

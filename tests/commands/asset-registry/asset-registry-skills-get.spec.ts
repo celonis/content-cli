@@ -12,6 +12,8 @@ const SKILLS_BASE_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-regi
 
 describe("Asset registry skills get", () => {
     const skillContent = Buffer.from("# Hello SKILL\n\nLine 2.\n", "utf-8");
+    const styleContent = Buffer.from("body { color: red; }\n", "utf-8");
+    const exampleContent = Buffer.from("example content\n", "utf-8");
 
     function absoluteOutputDir(outputDir: string): string {
         return path.resolve(process.cwd(), outputDir);
@@ -21,7 +23,7 @@ describe("Asset registry skills get", () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo`, skillContent);
         const output = uniqueDirName();
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "platform/foo",
             output,
         });
@@ -40,7 +42,7 @@ describe("Asset registry skills get", () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/asset/BOARD_V2/board-authoring`, skillContent);
         const output = uniqueDirName();
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "asset/BOARD_V2/board-authoring",
             output,
         });
@@ -55,7 +57,7 @@ describe("Asset registry skills get", () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/refs/style.md`, refContent);
         const output = uniqueDirName();
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "platform/foo",
             file: "refs/style.md",
             output,
@@ -74,7 +76,7 @@ describe("Asset registry skills get", () => {
         const output = path.join(uniqueDirName(), "nested", "deep");
         expect(fs.existsSync(absoluteOutputDir(output))).toBe(false);
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "platform/foo",
             output,
         });
@@ -93,7 +95,7 @@ describe("Asset registry skills get", () => {
         const target = path.join(absoluteOutputDir(output), "SKILL.md");
         fs.writeFileSync(target, "OLD");
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "platform/foo",
             output,
         });
@@ -104,7 +106,7 @@ describe("Asset registry skills get", () => {
     it("Should default --output to the current working directory", async () => {
         mockAxiosGet(`${SKILLS_BASE_URL}/platform/cwd-default`, skillContent);
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "platform/cwd-default",
         });
 
@@ -118,7 +120,7 @@ describe("Asset registry skills get", () => {
         mockAxiosGet(url, skillContent);
         const output = uniqueDirName();
 
-        await new AssetRegistryService(testContext).getSkillFile({
+        await new AssetRegistryService(testContext).getSkill({
             path: "asset/BOARD_V2/with space",
             output,
         });
@@ -131,7 +133,7 @@ describe("Asset registry skills get", () => {
         mockAxiosGetError(`${SKILLS_BASE_URL}/platform/missing`, 404, { error: "Skill not found" });
 
         await expect(
-            new AssetRegistryService(testContext).getSkillFile({
+            new AssetRegistryService(testContext).getSkill({
                 path: "platform/missing",
                 output: uniqueDirName(),
             })
@@ -144,7 +146,7 @@ describe("Asset registry skills get", () => {
         });
 
         await expect(
-            new AssetRegistryService(testContext).getSkillFile({
+            new AssetRegistryService(testContext).getSkill({
                 path: "platform/foo",
                 file: "refs/missing.md",
                 output: uniqueDirName(),
@@ -154,11 +156,111 @@ describe("Asset registry skills get", () => {
 
     it("Should throw a synchronous FatalError when --file resolves to an empty basename", async () => {
         await expect(
-            new AssetRegistryService(testContext).getSkillFile({
+            new AssetRegistryService(testContext).getSkill({
                 path: "platform/foo",
                 file: "/",
                 output: uniqueDirName(),
             })
         ).rejects.toThrow(new FatalError("--file must point to a file, got '/'."));
+    });
+
+    it("Should download all files listed by the manifest into a new skill directory (platform skill)", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/files`, { files: ["SKILL.md", "refs/style.md", "refs/nested/example.md"] });
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/SKILL.md`, skillContent);
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/refs/style.md`, styleContent);
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/foo/refs/nested/example.md`, exampleContent);
+
+        const output = uniqueDirName();
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "platform/foo",
+            output,
+            all: true,
+        });
+
+        const skillDir = path.join(absoluteOutputDir(output), "foo");
+        expect(fs.existsSync(skillDir)).toBe(true);
+
+        const skillMd = path.join(skillDir, "SKILL.md");
+        const style = path.join(skillDir, "refs", "style.md");
+        const example = path.join(skillDir, "refs", "nested", "example.md");
+
+        expect(fs.readFileSync(skillMd).equals(skillContent)).toBe(true);
+        expect(fs.readFileSync(style).equals(styleContent)).toBe(true);
+        expect(fs.readFileSync(example).equals(exampleContent)).toBe(true);
+
+        const summaryLog = loggingTestTransport.logMessages[loggingTestTransport.logMessages.length - 1];
+        expect(summaryLog.message).toContain("Downloaded 3 file(s) for skill 'platform/foo'");
+        expect(summaryLog.message).toContain(skillDir);
+    });
+
+    it("Should use the last path segment as the skill directory name for asset skills", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/asset/BOARD_V2/board-authoring/files`, { files: ["SKILL.md"] });
+        mockAxiosGet(`${SKILLS_BASE_URL}/asset/BOARD_V2/board-authoring/SKILL.md`, skillContent);
+
+        const output = uniqueDirName();
+
+        await new AssetRegistryService(testContext).getSkill({
+            path: "asset/BOARD_V2/board-authoring",
+            output,
+            all: true,
+        });
+
+        const skillDir = path.join(absoluteOutputDir(output), "board-authoring");
+        expect(fs.existsSync(path.join(skillDir, "SKILL.md"))).toBe(true);
+    });
+
+    it("Should surface a clear FatalError when one of the listed files fails to download", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/partial/files`, { files: ["SKILL.md", "refs/missing.md"] });
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/partial/SKILL.md`, skillContent);
+        mockAxiosGetError(`${SKILLS_BASE_URL}/platform/partial/refs/missing.md`, 404, {
+            error: "File not found",
+        });
+
+        await expect(
+            new AssetRegistryService(testContext).getSkill({
+                path: "platform/partial",
+                output: uniqueDirName(),
+                all: true,
+            })
+        ).rejects.toThrow(/Problem getting skill file 'refs\/missing\.md' for 'platform\/partial':/);
+    });
+
+    it("Should refuse to write manifest entries that escape the skill directory", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/evil/files`, { files: ["../escape.md"] });
+
+        await expect(
+            new AssetRegistryService(testContext).getSkill({
+                path: "platform/evil",
+                output: uniqueDirName(),
+                all: true,
+            })
+        ).rejects.toThrow(
+            new FatalError(
+                "Refusing to write file '../escape.md' from skill 'platform/evil': path escapes the skill directory."
+            )
+        );
+    });
+
+    it("Should throw a synchronous FatalError when --path cannot yield a skill name", async () => {
+        await expect(
+            new AssetRegistryService(testContext).getSkill({
+                path: "/",
+                output: uniqueDirName(),
+                all: true,
+            })
+        ).rejects.toThrow(new FatalError("--path must identify a skill, got '/'."));
+    });
+
+    it("Should reject an empty file path in the manifest", async () => {
+        mockAxiosGet(`${SKILLS_BASE_URL}/platform/bad/files`, { files: [""] });
+
+        await expect(
+            new AssetRegistryService(testContext).getSkill({
+                path: "platform/bad",
+                output: uniqueDirName(),
+                all: true,
+            })
+        ).rejects.toThrow(new FatalError("Skill manifest for 'platform/bad' contained an empty file path."));
     });
 });

@@ -2,7 +2,6 @@ import { AssetRegistryApi } from "./asset-registry-api";
 import {
     AgentSkill,
     AssetRegistryDescriptor,
-    DownloadSkillOptions,
     GetSkillOptions,
     ValidateOptions,
 } from "./asset-registry.interfaces";
@@ -39,7 +38,24 @@ export class AssetRegistryService {
         }
     }
 
-    public async getSkillFile(opts: GetSkillOptions): Promise<void> {
+    public async getSkill(opts: GetSkillOptions): Promise<void> {
+        const hasFileOption = !!opts.file
+        const hasAllOption = opts.all
+
+        if (hasFileOption && hasAllOption) {
+            throw new FatalError(
+                "Options --file and --all are mutually exclusive. Use --file to download an individual file (defaults to SKILL.md) or --all to download all files (SKILL.md and reference files)."
+            );
+        }
+
+        if (hasAllOption) {
+            await this.getSkillDirectory(opts);
+        } else {
+            await this.getSingleSkillFile(opts);
+        }
+    }
+
+    private async getSingleSkillFile(opts: GetSkillOptions): Promise<void> {
         const filename = this.resolveLocalFilename(opts.file);
         const targetDir = opts.output ?? ".";
 
@@ -49,7 +65,7 @@ export class AssetRegistryService {
         logger.info(FileService.fileDownloadedMessage + absolutePath);
     }
 
-    public async downloadSkill(opts: DownloadSkillOptions): Promise<void> {
+    private async getSkillDirectory(opts: GetSkillOptions): Promise<void> {
         const skillName = this.resolveSkillName(opts.path);
         const parentDir = opts.output ?? ".";
         const skillDir = path.resolve(process.cwd(), parentDir, skillName);
@@ -68,9 +84,7 @@ export class AssetRegistryService {
             fileService.writeBufferToPath(skillDir, filePath, buffer);
         }
 
-        logger.info(
-            `Downloaded ${files.length} file(s) for skill '${opts.path}' to ${skillDir}`
-        );
+        logger.info(`Downloaded ${files.length} file(s) for skill '${opts.path}' to ${skillDir}`);
     }
 
     private resolveLocalFilename(file?: string): string {
@@ -171,13 +185,10 @@ export class AssetRegistryService {
         const hasFile = !!opts.file;
 
         if (hasFile && (hasNodeKey || hasConfig || !!opts.packageKey)) {
-            throw new FatalError(
-                "Option -f is mutually exclusive with --packageKey, --nodeKey and --configuration."
-            );
+            throw new FatalError("Option -f is mutually exclusive with --packageKey, --nodeKey and --configuration.");
         }
 
         if (hasFile) {
-
             return this.parseJson(fileService.readFile(opts.file), `-f ${opts.file}`);
         }
 

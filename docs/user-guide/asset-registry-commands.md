@@ -201,50 +201,32 @@ content-cli asset-registry skills get \
   --output ./skills
 ```
 
+Download an entire skill directory:
+
+```
+content-cli asset-registry skills get \
+  --path asset/BOARD_V2/asset-studio-board-v2 \
+  --all \
+  --output ./skills
+```
+
+The command creates a new directory named after the last segment of `--path` (the skill name) inside `--output`. For example, the command above writes to `./skills/asset-studio-board-v2/`.
+
+
 Options:
 
 - `--path <path>` (required) – Skill path from `asset-registry skills list` (e.g. `platform/<skill>` or `asset/<assetType>/<skill>`).
 - `--file <file>` – Relative path of a reference file within the skill. Defaults to `SKILL.md` when omitted.
 - `--output <output>` – Destination directory. Defaults to the current working directory. Created automatically if it does not exist.
+- `--all` - Download all skill files (SKILL.md and all reference files). Files are stored to a new directory identical to the skill name under the path provided with --output.
 
 Behavior:
 
-- The local filename is the basename of `--file` (or `SKILL.md` when `--file` is omitted). Subdirectories in `--file` are not preserved on the local side.
+- The local filename is the basename of `--file` (or `SKILL.md` when `--file` is omitted). Subdirectories in `--file` are not preserved on the local side. --file is mutually exclusive with --all.
+- When `--all` is provided, all files are downloaded into a new subdirectory to the provided output dir, the name of which is identical to the name of the skill. --all is mutually exclusive with --file.
 - Re-running the command overwrites the existing local file without prompting.
 - On success the command logs a single confirmation line with the absolute path of the written file.
 - A missing skill or file returns a clear error such as `Problem getting SKILL.md for 'platform/missing': ...`.
-
-### Download an Entire Skill
-
-Download a complete skill bundle — its `SKILL.md` plus all reference files — into a new directory named after the skill. Folder structure inside the skill is preserved. Use this to vendor a full copy of a skill into a repo or filesystem in a single command.
-
-Download a platform skill into the current directory:
-
-```
-content-cli asset-registry skills download --path platform/content-cli-setup
-```
-
-Download an asset skill into a specific parent directory:
-
-```
-content-cli asset-registry skills download \
-  --path asset/BOARD_V2/asset-studio-board-v2 \
-  --output ./skills
-```
-
-The command creates a new directory named after the last segment of `--path` (the skill name) inside `--output`. For example, the second command above writes to `./skills/asset-studio-board-v2/`.
-
-Options:
-
-- `--path <path>` (required) – Skill path from `asset-registry skills list` (e.g. `platform/<skill>` or `asset/<assetType>/<skill>`).
-- `--output <output>` – Parent directory in which the skill directory will be created. Defaults to the current working directory. Created automatically if it does not exist.
-
-Behavior:
-
-- The CLI first fetches the skill's file manifest, then downloads each file to `{output}/{skillName}/{relativePath}`, creating intermediate directories as needed.
-- Existing local files are overwritten without prompting (consistent with `skills get`).
-- On success the command logs a summary line with the number of files written and the absolute path of the skill directory.
-- A missing skill returns a clear error such as `Problem listing skill files for 'platform/missing': ...`. If a listed file cannot be downloaded, the command stops on the first failure and reports which file failed; files already written are left in place.
 
 ## Troubleshooting
 

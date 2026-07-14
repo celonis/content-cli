@@ -62,4 +62,5 @@ export interface GetSkillOptions {
     path: string;
     file?: string;
     output?: string;
+    all?: boolean;
 }

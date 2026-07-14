@@ -67,6 +67,7 @@ export class AssetRegistryApi {
         const url = AssetRegistryApi.endpointUrl("skills", encodePathSegments(skillPath), "files");
         return this.httpClient()
             .get(url)
+            .then(result => result?.files ?? [])
             .catch((e) => handleAssetRegistryApiError(`listing skill files for '${skillPath}'`, e));
     }
 
