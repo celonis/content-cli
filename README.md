@@ -9,11 +9,12 @@ teams and execute commands in a profile's context.
 
 1. [Getting Started](#getting-started)
 2. [About the Project](#about-the-project)
-3. [Building the Project](#building-and-using-the-project-locally)
-4. [Troubleshooting](#troubleshooting)
-5. [Release Process](#release-process)
-6. [Contributing](#contributing)
-7. [License](#license)
+3. [Command Graph](#command-graph)
+4. [Building the Project](#building-and-using-the-project-locally)
+5. [Troubleshooting](#troubleshooting)
+6. [Release Process](#release-process)
+7. [Contributing](#contributing)
+8. [License](#license)
 
 ## Getting Started
 
@@ -82,6 +83,17 @@ by using the `-h` option in your command.
 content-cli -h
 content-cli pull package -h
 ```
+
+## Command Graph
+
+[**Open the interactive Command Graph**](https://raw.githack.com/celonis/content-cli/main/docs/command-graph.html) — a
+searchable visualization of every Content CLI command, grouped by command area, with descriptions and options shown
+on click. It's served live from the [`docs/command-graph.html`](./docs/command-graph.html) source file via
+[raw.githack.com](https://raw.githack.com/), so it renders directly in your browser without needing to be downloaded.
+
+> **Note for contributors:** this graph must be kept in sync manually. See 
+> [How to Add a Command](./docs/how-to-add-command.md#keeping-the-command-graph-up-to-date) for instructions on 
+> updating it whenever commands are added or changed.
 
 ## Building and Using the Project locally 
 
