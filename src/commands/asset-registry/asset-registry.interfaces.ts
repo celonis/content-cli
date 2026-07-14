@@ -58,13 +58,8 @@ export interface AgentSkillsResponse {
     skills: AgentSkill[];
 }
 
-export interface GetSkillFileOptions {
+export interface GetSkillOptions {
     path: string;
     file?: string;
-    output?: string;
-}
-
-export interface DownloadSkillOptions {
-    path: string;
     output?: string;
 }

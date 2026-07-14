@@ -3,7 +3,7 @@ import {
     AgentSkill,
     AssetRegistryDescriptor,
     DownloadSkillOptions,
-    GetSkillFileOptions,
+    GetSkillOptions,
     ValidateOptions,
 } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
@@ -39,7 +39,7 @@ export class AssetRegistryService {
         }
     }
 
-    public async getSkillFile(opts: GetSkillFileOptions): Promise<void> {
+    public async getSkillFile(opts: GetSkillOptions): Promise<void> {
         const filename = this.resolveLocalFilename(opts.file);
         const targetDir = opts.output ?? ".";
 
