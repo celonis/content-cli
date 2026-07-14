@@ -603,7 +603,7 @@ document.getElementById("search").addEventListener("input", e => {
     }, font: { color: "#222" } })));
     return;
   }
-  const matches = NODES.filter(n => n.path.toLowerCase().includes(q) || n.description.toLowerCase().includes(q));
+  const matches = NODES.filter(n => n.label.toLowerCase().includes(q) || n.path.toLowerCase().includes(q) || n.description.toLowerCase().includes(q));
   const matchIds = new Set(matches.map(n => n.id));
   visNodes.update(NODES.map(n => {
     const isMatch = matchIds.has(n.id);
