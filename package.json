@@ -18,7 +18,7 @@
     "node": ">=18.20.5"
   },
   "dependencies": {
-    "adm-zip": "0.5.14",
+    "adm-zip": "0.6.0",
     "chalk": "4.1.2",
     "uuid": "9.0.1",
     "axios": "1.16.0",
