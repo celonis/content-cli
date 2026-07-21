@@ -59,4 +59,22 @@ describe("CommandConfig action error handling", () => {
             )
         ).toBe(true);
     });
+
+    it("translates a backend feature-disabled error into a clear message (exit 0)", async () => {
+        await runCommand(async () => {
+            throw new Error('{"errorCode":"feature-disabled","feature":"pacman.branching"}');
+        });
+
+        expect(process.exitCode ?? 0).toBe(0);
+        expect(
+            loggingTestTransport.logMessages.some(entry =>
+                String(entry.message).includes("is not enabled for your team")
+            )
+        ).toBe(true);
+        expect(
+            loggingTestTransport.logMessages.some(entry =>
+                String(entry.message).includes("An unexpected error occured executing a command")
+            )
+        ).toBe(false);
+    });
 });

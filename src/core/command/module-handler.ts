@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { Command, CommandOptions, Option, OptionValues } from "commander";
 import { Context } from "./cli-context";
 import { GracefulError, logger } from "../utils/logger";
+import { isFeatureDisabledError } from "../feature-flag/feature-disabled-error";
 import * as chalk from "chalk";
 
 export abstract class IModule {
@@ -129,8 +130,8 @@ export class Configurator {
     public rootCommandMap = new Map<string, CommandConfig>();
 
     constructor(
-        private program: Command,
-        private ctx: Context
+        private readonly program: Command,
+        private readonly ctx: Context
     ) {}
 
     /**
@@ -157,8 +158,8 @@ export class CommandConfig {
     private deprecationMessage: string;
 
     constructor(
-        private cmd: Command,
-        private ctx: Context
+        private readonly cmd: Command,
+        private readonly ctx: Context
     ) {}
 
     public command(nameAndArgs: string, opts?: CommandOptions): CommandConfig {
@@ -218,6 +219,14 @@ export class CommandConfig {
             } catch (error) {
                 if (error instanceof GracefulError) {
                     logger.error(error.message);
+                    return;
+                }
+                // Backend gates early-access features; translate its "feature disabled"
+                // rejection into a clear message instead of a raw error.
+                if (isFeatureDisabledError(error)) {
+                    logger.error(
+                        `'${this.cmd.name()}' is not enabled for your team. Contact support to request access.`
+                    );
                     return;
                 }
                 logger.error(`An unexpected error occured executing a command: ${error}`);
