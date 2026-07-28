@@ -1,11 +1,12 @@
 # Branch Commands (beta)
 
-The `config branch` command group lets you author and merge branches from the CLI.
+The `config branch` command group lets you author and merge branches from the CLI, and optionally mirror a branch to a Git branch one-to-one.
 
 ## Concepts
 
 - **Main package** — a regular package, identified by its plain `<packageKey>` (no `@`).
 - **Branch** — a separate package keyed `<packageKey>@<branchKey>`, created from a version of the source package. The source can be the main package or another branch.
+- **Git mirror** — an optional, one-to-one mapping between a branch and a Git branch in a configured Git profile. The mirror is opt-in: it is engaged only when you pass `--gitProfile` to `config branch export` / `config branch import`. Without a Git profile these commands read and write local files instead, exactly like `config package export` / `config package import`.
 
 ## Branching Settings
 
@@ -137,3 +138,69 @@ Worked example: the preview reports that for node `node-1`, the source set `/tit
   ]
 }
 ```
+
+## Branch export / import
+
+`config branch export` and `config branch import` move a branch's contents in and out of the package. They behave like `config package export` / `config package import`, with one difference: they always rewrite `package.json#key`, so a branch's exported content lines up with the main package's.
+
+### Key rewriting
+
+A branch package's key is `<mainPackageKey>@<branchKey>`. So that a main-vs-branch pull request diffs real content instead of key suffixes, `config branch export` rewrites that branch key down to the main package key before writing:
+
+- `package.json` → `key`
+
+Node files are **not** rewritten. The server omits `packageNodeKey` / `parentNodeKey` from the export whenever they equal the package key, so there is nothing to strip. `config branch import` applies the exact reverse on the way back in, restoring the `@<branchKey>` suffix in `package.json#key` so the package re-imports under its own branch identity.
+
+### Local vs Git
+
+Both commands work locally by default and only touch Git when you pass `--gitProfile`:
+
+| Mode | Trigger | Behaviour |
+|---|---|---|
+| Local | no `--gitProfile` | `export` writes a `<packageKey>` directory (or `<packageKey>.zip` with `--zip`); `import` reads `--file` / `--directory` |
+| Git | `--gitProfile <name>` | `export` pushes to the Git branch named `<branchKey>`; `import` pulls that Git branch. With `--all`, the main package goes to the Git branch `main` |
+
+A configured default Git profile is **not** enough to trigger Git mode — you must pass `--gitProfile` explicitly on the command. See [Using Git Profiles in Getting Started](../getting-started.md#using-git-profiles) for how to create, list, and authenticate a Git profile.
+
+### Export a branch
+
+```bash
+# Local: writes a ./my-package directory with package.json#key rewritten to "my-package"
+content-cli config branch export \
+  --packageKey my-package \
+  --branchKey feature-a
+
+# Git: pushes the rewritten package to the Git branch "feature-a"
+content-cli config branch export \
+  --packageKey my-package \
+  --branchKey feature-a \
+  --gitProfile <gitProfileName>
+```
+
+Options:
+
+- `--zip` — write a single `<packageKey>.zip` instead of an unzipped directory (local export only).
+- `--all` — push the main package and every one of its branches to Git in one go. Requires `--gitProfile` and is mutually exclusive with `--branchKey`. The main package goes to the Git branch `main`; each branch goes to a Git branch named after its branch key.
+- `--json` — write the summary to a JSON file instead of logging it.
+
+### Import a branch
+
+```bash
+# Local: reads ./feature-a-dir and imports it as my-package@feature-a
+content-cli config branch import \
+  --packageKey my-package \
+  --branchKey feature-a \
+  --directory ./feature-a-dir
+
+# Git: pulls the Git branch "feature-a" and imports it as my-package@feature-a
+content-cli config branch import \
+  --packageKey my-package \
+  --branchKey feature-a \
+  --gitProfile <gitProfileName>
+```
+
+Options:
+
+- `-f, --file <file>` / `-d, --directory <directory>` — local import source (mutually exclusive with each other and with `--gitProfile`).
+- `--overwrite` — allow overwriting an existing package with the same key.
+- `--json` — write the summary to a JSON file instead of logging it.

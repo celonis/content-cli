@@ -18,6 +18,7 @@ import { PackageValidationService } from "./package-validation.service";
 import { SinglePackageImportService } from "./single-package-import.service";
 import { SinglePackageExportService } from "./single-package-export.service";
 import { BranchCommandService } from "./branch/branch.command.service";
+import { BranchExportImportCommandService } from "./branch/branch-export-import.command.service";
 
 class Module extends IModule {
 
@@ -81,6 +82,27 @@ class Module extends IModule {
             .option("--summary <summary>", "Summary of changes for the new published version")
             .option("--json", "Write response to a JSON file", false)
             .action(this.applyBranchMerge);
+
+        branchCommand.command("export").beta()
+            .description("Export a branch's package, rewriting the package.json key to the main package key. Writes an unzipped '<packageKey>' directory by default (or a '<packageKey>.zip' with --zip), or pushes to the Git branch named after --branchKey when --gitProfile is set.")
+            .requiredOption("--packageKey <packageKey>", "Main package key (no '@')")
+            .option("--branchKey <branchKey>", "Branch key to export. The Git branch, when pushing, is named after this value. Mutually exclusive with --all")
+            .option("--all", "Push the main package and every one of its branches to Git. Requires --gitProfile and is mutually exclusive with --branchKey", false)
+            .option("--zip", "Export the branch as a single '<packageKey>.zip' file instead of an unzipped directory (local export only)", false)
+            .option("--gitProfile <gitProfile>", "Git profile to use. When set, the export is pushed to Git instead of written locally")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.exportBranch);
+
+        branchCommand.command("import").beta()
+            .description("Import a branch's package from a zip file, directory, or Git branch, restoring the package.json key to '<packageKey>@<branchKey>'. Pulls the Git branch named after --branchKey when --gitProfile is set; otherwise reads --file or --directory.")
+            .requiredOption("--packageKey <packageKey>", "Main package key (no '@')")
+            .requiredOption("--branchKey <branchKey>", "Branch key to import into. The Git branch, when pulling, is named after this value")
+            .option("-f, --file <file>", "Package zip file (relative path). Mutually exclusive with --directory and --gitProfile")
+            .option("-d, --directory <directory>", "Package directory (relative path). Mutually exclusive with --file and --gitProfile")
+            .option("--overwrite", "Flag to allow overwriting an existing package with the same key", false)
+            .option("--gitProfile <gitProfile>", "Git profile to use. When set, the package is pulled from Git instead of read locally")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.importBranch);
 
         configCommand.command("list")
             .description("[Deprecated] Use 't2tc package list' instead. List packages in the target team.")
@@ -330,6 +352,53 @@ class Module extends IModule {
             bump: options.bump,
             version: options.newVersion,
             summary: options.summary,
+            jsonResponse: !!options.json,
+        });
+    }
+
+    private async exportBranch(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const gitEnabled = !!options.gitProfile;
+        const service = new BranchExportImportCommandService(context);
+
+        if (options.all) {
+            if (options.branchKey) {
+                throw new Error("Please provide either --branchKey or --all, but not both.");
+            }
+            if (!gitEnabled) {
+                throw new Error("--all pushes to Git and requires a Git profile. Please provide --gitProfile.");
+            }
+            await service.exportAll(options.packageKey, !!options.json);
+            return;
+        }
+
+        if (!options.branchKey) {
+            throw new Error("Please provide --branchKey, or use --all to export every branch.");
+        }
+        await service.exportBranch(options.packageKey, options.branchKey, {
+            zip: !!options.zip,
+            gitEnabled,
+            jsonResponse: !!options.json,
+        });
+    }
+
+    private async importBranch(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const gitEnabled = !!options.gitProfile;
+
+        if (gitEnabled && (options.file || options.directory)) {
+            throw new Error("You cannot use --file or --directory together with --gitProfile. Only one import source can be defined.");
+        }
+        if (!gitEnabled && !options.file && !options.directory) {
+            throw new Error("You must provide a --file, a --directory, or a --gitProfile option to import a branch.");
+        }
+        if (options.file && options.directory) {
+            throw new Error("You cannot use both --file and --directory options at the same time. Only one import source can be defined.");
+        }
+
+        await new BranchExportImportCommandService(context).importBranch(options.packageKey, options.branchKey, {
+            file: options.file,
+            directory: options.directory,
+            overwrite: !!options.overwrite,
+            gitEnabled,
             jsonResponse: !!options.json,
         });
     }
