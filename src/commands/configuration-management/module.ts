@@ -77,7 +77,7 @@ class Module extends IModule {
             .option("--sourceKey <sourceKey>", "Source package key, main package key or '<mainPackageKey>@<branchKey>' (overrides the file's 'sourceKey')")
             .option("--sourceVersion <sourceVersion>", "Source version (overrides the file's 'sourceVersion'; or 'LATEST')")
             .option("--bump <bump>", "Version bump for the new published version: PATCH | MINOR | MAJOR")
-            .option("--version <version>", "Pin the new published version to an explicit semver")
+            .option("--newVersion <newVersion>", "Pin the new published version to an explicit semver")
             .option("--summary <summary>", "Summary of changes for the new published version")
             .option("--json", "Write response to a JSON file", false)
             .action(this.applyBranchMerge);
@@ -328,7 +328,7 @@ class Module extends IModule {
             sourceVersion: options.sourceVersion,
             file: options.file,
             bump: options.bump,
-            version: options.version,
+            version: options.newVersion,
             summary: options.summary,
             jsonResponse: !!options.json,
         });

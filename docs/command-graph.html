@@ -342,7 +342,7 @@ const NODES = [
     options: ["-p, --profile <profile>", "--packageKey <packageKey> (Target package key: '<packageKey>' or '<packageKey>@<branchKey>')", "--sourceKey <sourceKey>", "--sourceVersion <sourceVersion> (version or \"LATEST\")", "--json (default: false)", "-h, --help"] },
   { id: "config_branch_merge_apply", label: "apply (beta)", group: "command", path: "config branch merge apply",
     description: "Merge changes from a source into a target branch",
-    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Target package key: '<packageKey>' or '<packageKey>@<branchKey>')", "-f, --file <file> (MergeBranchTransport payload; required only when the merge has conflicts)", "--sourceKey <sourceKey> (overrides the file's 'sourceKey')", "--sourceVersion <sourceVersion> (overrides the file's 'sourceVersion'; or \"LATEST\")", "--bump <bump> (PATCH | MINOR | MAJOR)", "--version <version> (pin an explicit semver)", "--summary <summary>", "--json (default: false)", "-h, --help"] },
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Target package key: '<packageKey>' or '<packageKey>@<branchKey>')", "-f, --file <file> (MergeBranchTransport payload; required only when the merge has conflicts)", "--sourceKey <sourceKey> (overrides the file's 'sourceKey')", "--sourceVersion <sourceVersion> (overrides the file's 'sourceVersion'; or \"LATEST\")", "--bump <bump> (PATCH | MINOR | MAJOR)", "--newVersion <newVersion> (pin an explicit semver)", "--summary <summary>", "--json (default: false)", "-h, --help"] },
 
   // config metadata
   { id: "config_metadata_area", label: "metadata", group: "subarea", path: "config metadata",

@@ -78,6 +78,7 @@ describe("configuration-management command integration", () => {
 
         mockBranchCommandService = {
             setBranchingEnabled: jest.fn().mockResolvedValue(undefined),
+            mergeApply: jest.fn().mockResolvedValue(undefined),
         } as any;
 
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
@@ -303,6 +304,41 @@ describe("configuration-management command integration", () => {
 
             expectError("Please provide either 'true' or 'false' for --enabled.");
             expect(mockBranchCommandService.setBranchingEnabled).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("config branch merge apply (mergeApply)", () => {
+        it("forwards --newVersion, which the root program's --version would otherwise shadow", async () => {
+            const result = await runCli([
+                "config", "branch", "merge", "apply",
+                "--packageKey", "target",
+                "--sourceKey", "target@feature-a",
+                "--sourceVersion", "1.4.0",
+                "--newVersion", "1.5.0",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchCommandService.mergeApply).toHaveBeenCalledWith("target", expect.objectContaining({
+                sourceKey: "target@feature-a",
+                sourceVersion: "1.4.0",
+                version: "1.5.0",
+            }));
+        });
+
+        it("forwards --bump", async () => {
+            const result = await runCli([
+                "config", "branch", "merge", "apply",
+                "--packageKey", "target",
+                "--sourceKey", "target@feature-a",
+                "--sourceVersion", "1.4.0",
+                "--bump", "MINOR",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchCommandService.mergeApply).toHaveBeenCalledWith("target", expect.objectContaining({
+                bump: "MINOR",
+                version: undefined,
+            }));
         });
     });
 

@@ -83,7 +83,7 @@ The CLI posts the merge directly. If the server detects conflicts it returns an 
 Customise the published version without writing a file:
 
 - `--bump PATCH|MINOR|MAJOR` — pick the bump option (default `PATCH`).
-- `--version 1.5.0` — pin an explicit semver.
+- `--newVersion 1.5.0` — pin an explicit semver.
 - `--summary "<text>"` — summary of changes (default `"Merge <sourceKey>@<sourceVersion>"`).
 
 ### With a resolutions file
@@ -97,7 +97,7 @@ content-cli config branch merge apply \
 ```
 
 - `--sourceKey` / `--sourceVersion` override the file's values when you want to keep one resolution file but target different sources.
-- `--bump` / `--version` / `--summary` override the file's `versionCreate` block when set.
+- `--bump` / `--newVersion` / `--summary` override the file's `versionCreate` block when set.
 
 A valid merge body looks like:
 
@@ -118,7 +118,7 @@ A valid merge body looks like:
 
 `versionCreate` is filled in this order of precedence (highest wins):
 
-1. `--version <semver>` flag or `--bump PATCH|MINOR|MAJOR` flag (and `--summary`).
+1. `--newVersion <semver>` flag or `--bump PATCH|MINOR|MAJOR` flag (and `--summary`).
 2. Whatever the resolutions file already has under `versionCreate`.
 3. Default: `versionBumpOption: PATCH` + `summaryOfChanges: "Merge <sourceKey>@<sourceVersion>"`.
 
