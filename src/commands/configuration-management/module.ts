@@ -17,12 +17,71 @@ import { PackageVersionCommandService } from "./package-version-command.service"
 import { PackageValidationService } from "./package-validation.service";
 import { SinglePackageImportService } from "./single-package-import.service";
 import { SinglePackageExportService } from "./single-package-export.service";
+import { BranchCommandService } from "./branch/branch.command.service";
 
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
         const configCommand = configurator.command("config")
             .description("Manage package configurations and their resources (package, nodes, versions, variables, metadata). Note: 'config list/export/import/diff' are deprecated — bulk Team-to-Team Copy operations have moved to the 't2tc package' group, and single-package operations live under 'config package'.");
+
+        const branchCommand = configCommand.command("branch").beta()
+            .description("Author, merge, and mirror package branches");
+
+        const branchSettingsCommand = branchCommand.command("settings").beta()
+            .description("Commands to manage branch settings on a package");
+
+        branchSettingsCommand.command("set").beta()
+            .description("Configure branch settings on a main package")
+            .requiredOption("--packageKey <packageKey>", "Main package key")
+            .requiredOption("--enabled <enabled>", "true|false")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.setBranchSettings);
+
+        branchCommand.command("create").beta()
+            .description("Create a new branch from a source version")
+            .requiredOption("--packageKey <packageKey>", "Main package key to branch from")
+            .requiredOption("--branchKey <branchKey>", "New branch key")
+            .requiredOption("--sourceVersion <sourceVersion>", "Source version to branch from")
+            .option("--validate", "Only validate the request without creating the branch", false)
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.createBranch);
+
+        branchCommand.command("list").beta()
+            .description("List branches of a main package")
+            .requiredOption("--packageKey <packageKey>", "Main package key")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.listBranches);
+
+        branchCommand.command("delete").beta()
+            .description("Delete a branch")
+            .requiredOption("--packageKey <packageKey>", "Main package key (no '@')")
+            .requiredOption("--branchKey <branchKey>", "Branch key to delete")
+            .action(this.deleteBranch);
+
+        const branchMergeCommand = branchCommand.command("merge").beta()
+            .description("Commands to preview and apply branch merges");
+
+        branchMergeCommand.command("preview").beta()
+            .description("Preview the changes a merge would apply to a target branch")
+            .requiredOption("--packageKey <packageKey>", "Target package key (main package key or '<mainPackageKey>@<branchKey>')")
+            .requiredOption("--sourceKey <sourceKey>", "Source package key (main package key or '<mainPackageKey>@<branchKey>')")
+            .requiredOption("--sourceVersion <sourceVersion>", "Source version (or 'LATEST')")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.previewBranchMerge);
+
+        branchMergeCommand.command("apply").beta()
+            .description("Merge changes from a source into a target branch")
+            .requiredOption("--packageKey <packageKey>", "Target package key (main package key or '<mainPackageKey>@<branchKey>')")
+            .option("-f, --file <file>", "Path to a JSON file containing the MergeBranchTransport payload")
+            .option("--sourceKey <sourceKey>", "Source package key, main package key or '<mainPackageKey>@<branchKey>' (overrides the file's 'sourceKey')")
+            .option("--sourceVersion <sourceVersion>", "Source version (overrides the file's 'sourceVersion'; or 'LATEST')")
+            .option("--bump <bump>", "Version bump for the new published version: PATCH | MINOR | MAJOR")
+            .option("--version <version>", "Pin the new published version to an explicit semver")
+            .option("--summary <summary>", "Summary of changes for the new published version")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.applyBranchMerge);
+
         configCommand.command("list")
             .description("[Deprecated] Use 't2tc package list' instead. List packages in the target team.")
             .deprecationNotice("'config list' is deprecated and will be removed in a future release. Use 't2tc package list' instead.")
@@ -237,6 +296,39 @@ class Module extends IModule {
             .requiredOption("--type <type>", "Type of variable")
             .option("--params <params>", "Variable query params")
             .action(this.listAssignments);
+    }
+
+    private async setBranchSettings(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const enabled = options.enabled === "true";
+        await new BranchCommandService(context).setBranchingEnabled(options.packageKey, enabled, !!options.json);
+    }
+
+    private async createBranch(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new BranchCommandService(context).createBranch(options.packageKey, options.branchKey, options.sourceVersion, !!options.validate, !!options.json);
+    }
+
+    private async listBranches(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new BranchCommandService(context).listBranches(options.packageKey, !!options.json);
+    }
+
+    private async deleteBranch(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new BranchCommandService(context).deleteBranch(options.packageKey, options.branchKey);
+    }
+
+    private async previewBranchMerge(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new BranchCommandService(context).mergePreview(options.packageKey, options.sourceKey, options.sourceVersion, !!options.json);
+    }
+
+    private async applyBranchMerge(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new BranchCommandService(context).mergeApply(options.packageKey, {
+            sourceKey: options.sourceKey,
+            sourceVersion: options.sourceVersion,
+            file: options.file,
+            bump: options.bump,
+            version: options.version,
+            summary: options.summary,
+            jsonResponse: !!options.json,
+        });
     }
 
     private async listPackages(context: Context, command: Command, options: OptionValues): Promise<void> {
