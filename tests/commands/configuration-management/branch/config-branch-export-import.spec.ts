@@ -238,6 +238,29 @@ describe("config branch export/import", () => {
             expect(loggingTestTransport.logMessages.some(m => m.message.includes(`Exported Git mirror for ${MAIN_KEY}: 2 package(s) pushed`))).toBe(true);
         });
 
+        it("skips a branch keyed 'main' so it cannot push over the main package's mirror", async () => {
+            // Pacman reserves 'main' as a branch key, so this should be unreachable. Guard it
+            // anyway: such an entry would push to Git branch 'main' and clobber the main package.
+            mockAxiosGet(branchesUrl(MAIN_KEY), [
+                { packageKey: `${MAIN_KEY}@${BranchUtils.MAIN_BRANCH_KEY}`, branchKey: BranchUtils.MAIN_BRANCH_KEY, projectKey: MAIN_KEY, sourcePackageKey: MAIN_KEY, sourceVersion: "1.0.0" },
+                { packageKey: BRANCH_KEY, branchKey: BRANCH, projectKey: MAIN_KEY, sourcePackageKey: MAIN_KEY, sourceVersion: "1.0.0" },
+            ]);
+            mockAxiosGet(exportUrl(MAIN_KEY), Buffer.from("zip"));
+            mockAxiosGet(exportUrl(BRANCH_KEY), Buffer.from("zip"));
+            jest.spyOn(FileService.prototype, "extractZipBufferToTempDirectory").mockImplementation(() => {
+                const dir = makeTempDir();
+                seedPackageDir(dir, MAIN_KEY);
+                return dir;
+            });
+            const pushSpy = jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
+
+            await new BranchExportImportCommandService(testContext).exportAll(MAIN_KEY);
+
+            // Only the main package itself may occupy Git branch 'main'.
+            expect(pushSpy.mock.calls.map(call => call[1])).toEqual([BranchUtils.MAIN_BRANCH_KEY, BRANCH]);
+            expect(pushSpy).toHaveBeenCalledTimes(2);
+        });
+
         it("writes only the summary file and no per-branch logs when jsonResponse=true", async () => {
             mockAxiosGet(branchesUrl(MAIN_KEY), [
                 { packageKey: BRANCH_KEY, branchKey: BRANCH, projectKey: MAIN_KEY, sourcePackageKey: MAIN_KEY, sourceVersion: "1.0.0" },

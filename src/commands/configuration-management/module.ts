@@ -19,6 +19,7 @@ import { SinglePackageImportService } from "./single-package-import.service";
 import { SinglePackageExportService } from "./single-package-export.service";
 import { BranchCommandService } from "./branch/branch.command.service";
 import { BranchExportImportCommandService } from "./branch/branch-export-import.command.service";
+import { BranchUtils } from "../../core/utils/branches";
 
 class Module extends IModule {
 
@@ -374,6 +375,9 @@ class Module extends IModule {
         if (!options.branchKey) {
             throw new Error("Please provide --branchKey, or use --all to export every branch.");
         }
+        if (options.branchKey.toLowerCase() === BranchUtils.MAIN_BRANCH_KEY) {
+            throw new Error(`'${BranchUtils.MAIN_BRANCH_KEY}' is a reserved branch key. The main package is exported only with --all.`);
+        }
         await service.exportBranch(options.packageKey, options.branchKey, {
             zip: !!options.zip,
             gitEnabled,
@@ -384,6 +388,9 @@ class Module extends IModule {
     private async importBranch(context: Context, command: Command, options: OptionValues): Promise<void> {
         const gitEnabled = !!options.gitProfile;
 
+        if (options.branchKey.toLowerCase() === BranchUtils.MAIN_BRANCH_KEY) {
+            throw new Error(`'${BranchUtils.MAIN_BRANCH_KEY}' is a reserved branch key. Use 'config package import' to import into the main package.`);
+        }
         if (gitEnabled && (options.file || options.directory)) {
             throw new Error("You cannot use --file or --directory together with --gitProfile. Only one import source can be defined.");
         }

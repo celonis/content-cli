@@ -455,6 +455,13 @@ describe("configuration-management command integration", () => {
             expectError("Please provide --branchKey, or use --all to export every branch.");
             expect(mockBranchExportImportCommandService.exportBranch).not.toHaveBeenCalled();
         });
+
+        it.each(["main", "Main"])("rejects --branchKey %s as reserved", async branchKey => {
+            await runCli(["config", "branch", "export", "--packageKey", "my-package", "--branchKey", branchKey]);
+
+            expectError("'main' is a reserved branch key. The main package is exported only with --all.");
+            expect(mockBranchExportImportCommandService.exportBranch).not.toHaveBeenCalled();
+        });
     });
 
     describe("config branch import (importBranch)", () => {
@@ -559,6 +566,18 @@ describe("configuration-management command integration", () => {
             ]);
 
             expectError("You must provide a --file, a --directory, or a --gitProfile option to import a branch.");
+            expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
+        });
+
+        it.each(["main", "Main"])("rejects --branchKey %s as reserved", async branchKey => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", branchKey,
+                "--directory", "./some-dir",
+            ]);
+
+            expectError("'main' is a reserved branch key. Use 'config package import' to import into the main package.");
             expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
         });
     });

@@ -83,8 +83,9 @@ export class BranchExportImportCommandService {
         synced.push(mainKey);
         // listBranches also reports the main package itself, whose packageKey carries no
         // branch suffix. It is already pushed above, and it has no '<mainKey>@<branchKey>'
-        // package to export, so exporting it as a branch would fail.
-        for (const branch of branches.filter(entry => BranchUtils.isBranchPackageKey(entry.packageKey))) {
+        // package to export, so exporting it as a branch would fail. A branch keyed 'main'
+        // is skipped as well: it would push over the main package's mirror above.
+        for (const branch of branches.filter(entry => BranchExportImportCommandService.isExportableBranch(entry))) {
             const pushedKey = await this.pushBranchToGit(mainKey, branch.branchKey);
             synced.push(pushedKey);
             if (!jsonResponse) {
@@ -278,6 +279,11 @@ export class BranchExportImportCommandService {
 
     private removeDir(dir: string): void {
         fs.rmSync(dir, { recursive: true, force: true });
+    }
+
+    private static isExportableBranch(branch: BranchTransport): boolean {
+        return BranchUtils.isBranchPackageKey(branch.packageKey)
+            && branch.branchKey?.toLowerCase() !== BranchUtils.MAIN_BRANCH_KEY;
     }
 
     private static writeJson(payload: unknown): void {
