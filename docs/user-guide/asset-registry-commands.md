@@ -153,29 +153,6 @@ Options:
 
 The asset registry also publishes agent skills (authored guidance for the platform and for specific asset types). Each skill exposes a `SKILL.md` and optional reference files.
 
-### List Skills
-
-List all skills available on the platform.
-
-```
-content-cli asset-registry skills list
-```
-
-Example output:
-
-```
-content-cli-setup (platform/content-cli-setup) - Install content-cli and create a profile against a Celonis team.
-asset-studio-board-v2 (asset/BOARD_V2/asset-studio-board-v2) - Authoring one Celonis Studio view asset of type BOARD_V2.
-```
-
-Each line is `<name> (<path>)` followed by ` - <description>` when the skill provides one. The `<path>` value is what you pass to `skills get --path`.
-
-Use `--json` to write the full response to a JSON file in the working directory:
-
-```
-content-cli asset-registry skills list --json
-```
-
 ### Download a Skill File
 
 Download a skill's `SKILL.md` (or a specific reference file) to the local filesystem. The Studio MCP server remains the recommended source for live agent use; this command is a fetch/inspect utility for environments without the MCP server, for offline review, or for vendoring a copy into a repo.

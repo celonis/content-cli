@@ -1,5 +1,5 @@
 import { AssetRegistryApi } from "./asset-registry-api";
-import { AgentSkill, AssetRegistryDescriptor, GetSkillFileOptions, ValidateOptions } from "./asset-registry.interfaces";
+import { AssetRegistryDescriptor, GetSkillFileOptions, ValidateOptions } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
 import { FatalError, logger } from "../../core/utils/logger";
@@ -53,24 +53,6 @@ export class AssetRegistryService {
             throw new FatalError(`--file must point to a file, got '${file}'.`);
         }
         return base;
-    }
-
-    public async listSkills(jsonResponse: boolean): Promise<void> {
-        const response = await this.api.listSkills();
-
-        if (jsonResponse) {
-            const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(response), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
-        } else {
-            if (response.skills.length === 0) {
-                logger.info("No agent skills registered.");
-                return;
-            }
-            response.skills.forEach((skill) => {
-                this.logSkillSummary(skill);
-            });
-        }
     }
 
     public async getType(assetType: string, jsonResponse: boolean): Promise<void> {
@@ -171,15 +153,6 @@ export class AssetRegistryService {
         const base = `${descriptor.assetType} - ${descriptor.displayName} [${descriptor.group}]`;
         if (descriptor.description) {
             logger.info(`${base} - ${descriptor.description}`);
-        } else {
-            logger.info(base);
-        }
-    }
-
-    private logSkillSummary(skill: AgentSkill): void {
-        const base = `${skill.name} (${skill.path})`;
-        if (skill.description) {
-            logger.info(`${base} - ${skill.description}`);
         } else {
             logger.info(base);
         }

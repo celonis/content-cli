@@ -1,7 +1,6 @@
 import { HttpClient } from "../../core/http/http-client";
 import { Context } from "../../core/command/cli-context";
 import {
-    AgentSkillsResponse,
     AssetRegistryDescriptor,
     AssetRegistryMetadata,
 } from "./asset-registry.interfaces";
@@ -21,12 +20,6 @@ export class AssetRegistryApi {
         return this.httpClient()
             .get(AssetRegistryApi.endpointUrl("types"))
             .catch((e) => handleAssetRegistryApiError("listing asset registry types", e));
-    }
-
-    public async listSkills(): Promise<AgentSkillsResponse> {
-        return this.httpClient()
-            .get(AssetRegistryApi.endpointUrl("skills"))
-            .catch((e) => handleAssetRegistryApiError("listing asset registry skills", e));
     }
 
     public async getType(assetType: string): Promise<AssetRegistryDescriptor> {

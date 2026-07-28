@@ -45,11 +45,6 @@ class Module extends IModule {
         const skillsCommand = assetRegistryCommand.command("skills")
             .description("Discover agent skills exposed by the asset registry");
 
-        skillsCommand.command("list")
-            .description("List all available agent skills (name, description, path)")
-            .option("--json", "Return the response as a JSON file")
-            .action(this.listSkills);
-
         skillsCommand.command("get")
             .description("Download a skill file (defaults to SKILL.md)")
             .requiredOption("--path <path>", "Skill path from 'skills list' (e.g. platform/<skill> or asset/<assetType>/<skill>)")
@@ -83,10 +78,6 @@ class Module extends IModule {
 
     private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getExamples(options.assetType, !!options.json);
-    }
-
-    private async listSkills(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).listSkills(!!options.json);
     }
 
     private async getSkillFile(context: Context, command: Command, options: OptionValues): Promise<void> {

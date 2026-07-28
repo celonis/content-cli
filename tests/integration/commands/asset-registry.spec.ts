@@ -11,7 +11,6 @@ describe("asset-registry command integration", () => {
     beforeEach(() => {
         mockService = {
             listTypes: jest.fn().mockResolvedValue(undefined),
-            listSkills: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
             validate: jest.fn().mockResolvedValue(undefined),
@@ -120,20 +119,6 @@ describe("asset-registry command integration", () => {
         it("calls listTypes without --json", async () => {
             await runCli(["asset-registry", "list"]);
             expect(mockService.listTypes).toHaveBeenCalledWith(false);
-        });
-    });
-
-    describe("asset-registry skills list", () => {
-        it("calls listSkills with --json", async () => {
-            const result = await runCli(["asset-registry", "skills", "list", "--json"]);
-
-            expect(result.exitCode).toBe(0);
-            expect(mockService.listSkills).toHaveBeenCalledWith(true);
-        });
-
-        it("calls listSkills without --json", async () => {
-            await runCli(["asset-registry", "skills", "list"]);
-            expect(mockService.listSkills).toHaveBeenCalledWith(false);
         });
     });
 

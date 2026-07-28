@@ -59,13 +59,6 @@ describe("Asset registry error handling", () => {
                 .rejects.toThrow(new FatalError(ASSET_REGISTRY_DISABLED_USER_MESSAGE));
         });
 
-        it("Should surface the friendly message when listing skills and the feature flag is disabled", async () => {
-            mockAxiosGetError(SKILLS_URL, 403, { error: ASSET_REGISTRY_DISABLED_ERROR });
-
-            await expect(new AssetRegistryService(testContext).listSkills(false))
-                .rejects.toThrow(new FatalError(ASSET_REGISTRY_DISABLED_USER_MESSAGE));
-        });
-
         it("Should surface a generic error for other 403 responses", async () => {
             const errorBody = { error: "Access denied" };
             mockAxiosGetError(TYPES_URL, 403, errorBody);
