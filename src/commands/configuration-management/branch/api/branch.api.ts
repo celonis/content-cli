@@ -1,4 +1,3 @@
-import { URLSearchParams } from "url";
 import { HttpClient } from "../../../../core/http/http-client";
 import { Context } from "../../../../core/command/cli-context";
 import { FatalError } from "../../../../core/utils/logger";
@@ -13,7 +12,7 @@ import {
 } from "../interfaces/branch.interfaces";
 
 export class BranchApi {
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

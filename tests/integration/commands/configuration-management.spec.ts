@@ -8,6 +8,7 @@ import { PackageVersionCommandService } from "../../../src/commands/configuratio
 import { NodeDiffService } from "../../../src/commands/configuration-management/node-diff.service";
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
+import { BranchCommandService } from "../../../src/commands/configuration-management/branch/branch.command.service";
 import { CliRunResult, runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
@@ -19,6 +20,7 @@ jest.mock("../../../src/commands/configuration-management/node-diff.service");
 jest.mock("../../../src/commands/configuration-management/package-version-command.service");
 jest.mock("../../../src/commands/configuration-management/single-package-import.service");
 jest.mock("../../../src/commands/configuration-management/single-package-export.service");
+jest.mock("../../../src/commands/configuration-management/branch/branch.command.service");
 
 describe("configuration-management command integration", () => {
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
@@ -30,6 +32,7 @@ describe("configuration-management command integration", () => {
     let mockPackageVersionCommandService: jest.Mocked<PackageVersionCommandService>;
     let mockSinglePackageImportService: jest.Mocked<SinglePackageImportService>;
     let mockSinglePackageExportService: jest.Mocked<SinglePackageExportService>;
+    let mockBranchCommandService: jest.Mocked<BranchCommandService>;
 
     beforeEach(() => {
         mockConfigCommandService = {
@@ -73,6 +76,10 @@ describe("configuration-management command integration", () => {
             exportPackage: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockBranchCommandService = {
+            setBranchingEnabled: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (StagingPackageService as jest.MockedClass<typeof StagingPackageService>).mockImplementation(() => mockStagingPackageService);
         (MetadataService as jest.MockedClass<typeof MetadataService>).mockImplementation(() => mockMetadataService);
@@ -82,6 +89,7 @@ describe("configuration-management command integration", () => {
         (PackageVersionCommandService as jest.MockedClass<typeof PackageVersionCommandService>).mockImplementation(() => mockPackageVersionCommandService);
         (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
         (SinglePackageExportService as jest.MockedClass<typeof SinglePackageExportService>).mockImplementation(() => mockSinglePackageExportService);
+        (BranchCommandService as jest.MockedClass<typeof BranchCommandService>).mockImplementation(() => mockBranchCommandService);
     });
 
     let lastResult: CliRunResult;
@@ -265,6 +273,36 @@ describe("configuration-management command integration", () => {
                 ""
             );
             expect(mockT2tcCommandService.listPackages).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("config branch settings set (setBranchingEnabled)", () => {
+        it("forwards enabled=true", async () => {
+            const result = await runCli(["config", "branch", "settings", "set", "--packageKey", "myPackage", "--enabled", "true"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchCommandService.setBranchingEnabled).toHaveBeenCalledWith("myPackage", true, false);
+        });
+
+        it("forwards enabled=false", async () => {
+            const result = await runCli(["config", "branch", "settings", "set", "--packageKey", "myPackage", "--enabled", "false"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchCommandService.setBranchingEnabled).toHaveBeenCalledWith("myPackage", false, false);
+        });
+
+        it("accepts --enabled regardless of casing", async () => {
+            const result = await runCli(["config", "branch", "settings", "set", "--packageKey", "myPackage", "--enabled", "TRUE"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchCommandService.setBranchingEnabled).toHaveBeenCalledWith("myPackage", true, false);
+        });
+
+        it("rejects a value that is neither 'true' nor 'false' instead of disabling branching", async () => {
+            await runCli(["config", "branch", "settings", "set", "--packageKey", "myPackage", "--enabled", "yes"]);
+
+            expectError("Please provide either 'true' or 'false' for --enabled.");
+            expect(mockBranchCommandService.setBranchingEnabled).not.toHaveBeenCalled();
         });
     });
 

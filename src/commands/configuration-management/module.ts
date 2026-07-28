@@ -299,8 +299,11 @@ class Module extends IModule {
     }
 
     private async setBranchSettings(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const enabled = options.enabled === "true";
-        await new BranchCommandService(context).setBranchingEnabled(options.packageKey, enabled, !!options.json);
+        const enabled = String(options.enabled).toLowerCase();
+        if (enabled !== "true" && enabled !== "false") {
+            throw new Error("Please provide either 'true' or 'false' for --enabled.");
+        }
+        await new BranchCommandService(context).setBranchingEnabled(options.packageKey, enabled === "true", !!options.json);
     }
 
     private async createBranch(context: Context, command: Command, options: OptionValues): Promise<void> {

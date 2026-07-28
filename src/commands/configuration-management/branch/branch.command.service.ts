@@ -17,7 +17,7 @@ import {
 } from "./interfaces/branch.interfaces";
 
 export class BranchCommandService {
-    private branchApi: BranchApi;
+    private readonly branchApi: BranchApi;
 
     constructor(context: Context) {
         this.branchApi = new BranchApi(context);
