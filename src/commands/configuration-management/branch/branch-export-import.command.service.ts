@@ -107,7 +107,7 @@ export class BranchExportImportCommandService {
             ? await this.gitService.pullFromBranch(branchKey)
             : this.prepareLocalWorkingDir(options.file, options.directory);
         try {
-            this.replacePackageKey(workingDir, packageKey, branchPackageKey);
+            this.restoreBranchKey(workingDir, packageKey, branchPackageKey);
             await this.importPackageSourceDir(workingDir, !!options.overwrite);
 
             if (options.jsonResponse) {
@@ -146,7 +146,7 @@ export class BranchExportImportCommandService {
         const packageData = await this.singlePackageExportApi.exportPackage(branchPackageKey);
         const extractedDir = fileService.extractZipBufferToTempDirectory(packageData);
         const projectKey = BranchUtils.extractProjectKey(branchPackageKey);
-        this.replacePackageKey(extractedDir, branchPackageKey, projectKey);
+        this.normalizeToProjectKey(extractedDir, branchPackageKey, projectKey);
         return extractedDir;
     }
 
@@ -198,7 +198,10 @@ export class BranchExportImportCommandService {
         }
     }
 
-    private replacePackageKey(dir: string, from: string, to: string): void {
+    // The export source is a fresh Pacman export of the branch package, so a key that does not
+    // match is a no-op rather than a failure: the worst case is a mirror diff that still carries
+    // the branch suffix, and nothing outside the local working copy is touched.
+    private normalizeToProjectKey(dir: string, from: string, to: string): void {
         if (from === to) {
             return;
         }
@@ -215,6 +218,35 @@ export class BranchExportImportCommandService {
         if (updated !== raw) {
             fs.writeFileSync(filePath, updated, { encoding: "utf-8" });
         }
+    }
+
+    // The import source is caller-supplied and the import endpoint derives the target package
+    // solely from package.json#key, so a key that is neither the project key nor the branch key
+    // must abort rather than silently import into whatever package the source names.
+    private restoreBranchKey(dir: string, projectKey: string, branchPackageKey: string): void {
+        const filePath = path.join(dir, PACKAGE_FILE);
+        if (!fs.existsSync(filePath)) {
+            throw new FatalError(`The import source does not contain a ${PACKAGE_FILE} file.`);
+        }
+
+        const raw = fs.readFileSync(filePath, { encoding: "utf-8" });
+        const sourceKey = JSON.parse(raw).key;
+        if (sourceKey === branchPackageKey) {
+            return;
+        }
+        if (sourceKey !== projectKey) {
+            throw new FatalError(
+                `The import source declares package key '${sourceKey}', but importing into '${branchPackageKey}' requires '${projectKey}' or '${branchPackageKey}'. Nothing was imported.`
+            );
+        }
+
+        const updated = this.replaceFieldValue(raw, "key", projectKey, branchPackageKey);
+        if (updated === raw) {
+            throw new FatalError(
+                `Could not rewrite the package key in ${PACKAGE_FILE} from '${projectKey}' to '${branchPackageKey}'. Nothing was imported.`
+            );
+        }
+        fs.writeFileSync(filePath, updated, { encoding: "utf-8" });
     }
 
     private replaceFieldValue(content: string, field: string, from: string, to: string): string {

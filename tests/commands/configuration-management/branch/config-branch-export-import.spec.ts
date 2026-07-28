@@ -322,5 +322,46 @@ describe("config branch export/import", () => {
             expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeDefined();
             expect(loggingTestTransport.logMessages.some(m => m.message.includes(`into ${BRANCH_KEY}`))).toBe(true);
         });
+
+        it("imports a source that already carries the branch key without rewriting it", async () => {
+            const localDir = makeTempDir();
+            seedPackageDir(localDir, BRANCH_KEY);
+            mockAxiosPost(IMPORT_URL, { importedPackage: { key: BRANCH_KEY, name: "My Package" }, importedNodes: [] });
+
+            let importedPkgKey: string | undefined;
+            const realZip = fileService.zipDirectoryAsSinglePackage.bind(fileService);
+            jest.spyOn(fileService, "zipDirectoryAsSinglePackage").mockImplementation((dir: string) => {
+                importedPkgKey = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf-8")).key;
+                return realZip(dir);
+            });
+
+            await new BranchExportImportCommandService(testContext).importBranch(MAIN_KEY, BRANCH, { directory: localDir });
+
+            expect(importedPkgKey).toEqual(BRANCH_KEY);
+            expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeDefined();
+        });
+
+        it("refuses to import a source whose package key belongs to an unrelated package", async () => {
+            const localDir = makeTempDir();
+            seedPackageDir(localDir, "some-other-package");
+            mockAxiosPost(IMPORT_URL, { importedPackage: { key: BRANCH_KEY, name: "My Package" }, importedNodes: [] });
+
+            await expect(
+                new BranchExportImportCommandService(testContext).importBranch(MAIN_KEY, BRANCH, { directory: localDir })
+            ).rejects.toThrow(/declares package key 'some-other-package'/);
+
+            expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeUndefined();
+        });
+
+        it("refuses to import a source with no package.json", async () => {
+            const localDir = makeTempDir();
+            mockAxiosPost(IMPORT_URL, { importedPackage: { key: BRANCH_KEY, name: "My Package" }, importedNodes: [] });
+
+            await expect(
+                new BranchExportImportCommandService(testContext).importBranch(MAIN_KEY, BRANCH, { directory: localDir })
+            ).rejects.toThrow(/does not contain a package.json file/);
+
+            expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeUndefined();
+        });
     });
 });
