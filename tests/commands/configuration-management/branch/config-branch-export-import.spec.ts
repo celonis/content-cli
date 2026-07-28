@@ -8,7 +8,7 @@ import { testContext } from "../../../utls/test-context";
 import { loggingTestTransport } from "../../../jest.setup";
 import { FileService, fileService } from "../../../../src/core/utils/file-service";
 import { GitService } from "../../../../src/core/git-profile/git/git.service";
-import { BranchUtils } from "../../../../src/commands/configuration-management/branch/branch-utils";
+import { BranchUtils } from "../../../../src/core/utils/branches";
 
 jest.unmock("fs");
 jest.unmock("node:fs");
@@ -174,6 +174,22 @@ describe("config branch export/import", () => {
             expect(pushSpy).not.toHaveBeenCalled();
             expect(fs.existsSync(path.join(cwd, `${MAIN_KEY}.zip`))).toBe(true);
         });
+
+        it("writes a JSON summary instead of logging when jsonResponse=true", async () => {
+            arrangeExport(BRANCH_KEY);
+            jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
+            const cwd = useTempCwd();
+            const writeSpy = jest.spyOn(fileService, "writeToFileWithGivenName").mockImplementation(() => undefined);
+
+            await new BranchExportImportCommandService(testContext).exportBranch(MAIN_KEY, BRANCH, { jsonResponse: true });
+
+            expect(fs.existsSync(path.join(cwd, MAIN_KEY))).toBe(true);
+            expect(writeSpy).toHaveBeenCalledTimes(1);
+            const summary = JSON.parse(writeSpy.mock.calls[0][0] as string);
+            expect(summary.packageKey).toEqual(BRANCH_KEY);
+            expect(summary.branchName).toEqual(BRANCH);
+            expect(loggingTestTransport.logMessages.some(m => m.message.includes(`Exported directory: ${MAIN_KEY}`))).toBe(false);
+        });
     });
 
     describe("export --all", () => {
@@ -220,6 +236,45 @@ describe("config branch export/import", () => {
             expect(pushSpy).toHaveBeenCalledTimes(2);
             expect(pushSpy.mock.calls.map(call => call[1]).sort()).toEqual([BRANCH, BranchUtils.MAIN_BRANCH_KEY]);
             expect(loggingTestTransport.logMessages.some(m => m.message.includes(`Exported Git mirror for ${MAIN_KEY}: 2 package(s) pushed`))).toBe(true);
+        });
+
+        it("writes only the summary file and no per-branch logs when jsonResponse=true", async () => {
+            mockAxiosGet(branchesUrl(MAIN_KEY), [
+                { packageKey: BRANCH_KEY, branchKey: BRANCH, projectKey: MAIN_KEY, sourcePackageKey: MAIN_KEY, sourceVersion: "1.0.0" },
+            ]);
+            mockAxiosGet(exportUrl(MAIN_KEY), Buffer.from("zip"));
+            mockAxiosGet(exportUrl(BRANCH_KEY), Buffer.from("zip"));
+            jest.spyOn(FileService.prototype, "extractZipBufferToTempDirectory").mockImplementation(() => {
+                const dir = makeTempDir();
+                seedPackageDir(dir, MAIN_KEY);
+                return dir;
+            });
+            jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
+            const writeSpy = jest.spyOn(fileService, "writeToFileWithGivenName").mockImplementation(() => undefined);
+
+            await new BranchExportImportCommandService(testContext).exportAll(MAIN_KEY, true);
+
+            expect(writeSpy).toHaveBeenCalledTimes(1);
+            expect(JSON.parse(writeSpy.mock.calls[0][0] as string).synced).toEqual([MAIN_KEY, BRANCH_KEY]);
+            expect(loggingTestTransport.logMessages.some(m => m.message.includes(`to Git branch '${BRANCH}'`))).toBe(false);
+        });
+
+        it("logs per-branch progress when jsonResponse is not set", async () => {
+            mockAxiosGet(branchesUrl(MAIN_KEY), [
+                { packageKey: BRANCH_KEY, branchKey: BRANCH, projectKey: MAIN_KEY, sourcePackageKey: MAIN_KEY, sourceVersion: "1.0.0" },
+            ]);
+            mockAxiosGet(exportUrl(MAIN_KEY), Buffer.from("zip"));
+            mockAxiosGet(exportUrl(BRANCH_KEY), Buffer.from("zip"));
+            jest.spyOn(FileService.prototype, "extractZipBufferToTempDirectory").mockImplementation(() => {
+                const dir = makeTempDir();
+                seedPackageDir(dir, MAIN_KEY);
+                return dir;
+            });
+            jest.spyOn(GitService.prototype, "pushToBranch").mockResolvedValue();
+
+            await new BranchExportImportCommandService(testContext).exportAll(MAIN_KEY);
+
+            expect(loggingTestTransport.logMessages.some(m => m.message.includes(`Exported ${BRANCH_KEY} to Git branch '${BRANCH}'`))).toBe(true);
         });
     });
 

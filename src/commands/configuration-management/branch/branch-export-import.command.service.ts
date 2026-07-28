@@ -13,7 +13,7 @@ import { GitService } from "../../../core/git-profile/git/git.service";
 import { SinglePackageExportApi } from "../api/single-package-export-api";
 import { SinglePackageImportApi } from "../api/single-package-import-api";
 import { BranchApi } from "./api/branch.api";
-import { BranchUtils } from "./branch-utils";
+import { BranchUtils } from "../../../core/utils/branches";
 import { BranchSyncSummary, BranchTransport } from "./interfaces/branch.interfaces";
 
 const PACKAGE_FILE = "package.json";
@@ -48,16 +48,27 @@ export class BranchExportImportCommandService {
     }
 
     public async exportBranch(packageKey: string, branchKey: string, options: BranchExportOptions = {}): Promise<void> {
+        const jsonResponse = !!options.jsonResponse;
+
+        if (options.gitEnabled) {
+            const pushedKey = await this.pushBranchToGit(packageKey, branchKey);
+            if (jsonResponse) {
+                BranchExportImportCommandService.writeJson({ packageKey: pushedKey, branchName: branchKey });
+            } else {
+                logger.info(`Exported ${pushedKey} to Git branch '${branchKey}'.`);
+            }
+            return;
+        }
+
         const branchPackageKey = BranchUtils.constructBranchKey(packageKey, branchKey);
         const sourceDir = await this.exportRewrittenPackageDir(branchPackageKey);
         try {
-            if (options.gitEnabled) {
-                await this.gitService.pushToBranch(sourceDir, branchKey);
-                const summary: BranchSyncSummary = { packageKey: branchPackageKey, branchName: branchKey };
-                this.report(summary, !!options.jsonResponse, `Exported ${branchPackageKey} to Git branch '${branchKey}'.`);
-                return;
+            const message = this.writeLocalArtifact(sourceDir, packageKey, !!options.zip);
+            if (jsonResponse) {
+                BranchExportImportCommandService.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
+            } else {
+                logger.info(message);
             }
-            this.writeLocalArtifact(sourceDir, packageKey, !!options.zip);
         } finally {
             this.removeDir(sourceDir);
         }
@@ -74,12 +85,19 @@ export class BranchExportImportCommandService {
         // branch suffix. It is already pushed above, and it has no '<mainKey>@<branchKey>'
         // package to export, so exporting it as a branch would fail.
         for (const branch of branches.filter(entry => BranchUtils.isBranchPackageKey(entry.packageKey))) {
-            await this.exportBranch(mainKey, branch.branchKey, { gitEnabled: true });
-            synced.push(branch.packageKey);
+            const pushedKey = await this.pushBranchToGit(mainKey, branch.branchKey);
+            synced.push(pushedKey);
+            if (!jsonResponse) {
+                logger.info(`Exported ${pushedKey} to Git branch '${branch.branchKey}'.`);
+            }
         }
 
         const summary: BranchSyncSummary = { packageKey: mainKey, branchName: BranchUtils.MAIN_BRANCH_KEY, synced };
-        this.report(summary, jsonResponse, `Exported Git mirror for ${mainKey}: ${synced.length} package(s) pushed.`);
+        if (jsonResponse) {
+            BranchExportImportCommandService.writeJson(summary);
+        } else {
+            logger.info(`Exported Git mirror for ${mainKey}: ${synced.length} package(s) pushed.`);
+        }
     }
 
     public async importBranch(packageKey: string, branchKey: string, options: BranchImportOptions = {}): Promise<void> {
@@ -92,11 +110,25 @@ export class BranchExportImportCommandService {
             this.replacePackageKey(workingDir, packageKey, branchPackageKey);
             await this.importPackageSourceDir(workingDir, !!options.overwrite);
 
-            const summary: BranchSyncSummary = { packageKey: branchPackageKey, branchName: branchKey };
-            const origin = options.gitEnabled ? `Git branch '${branchKey}'` : (options.file ?? options.directory);
-            this.report(summary, !!options.jsonResponse, `Imported ${origin} into ${branchPackageKey}.`);
+            if (options.jsonResponse) {
+                BranchExportImportCommandService.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
+            } else {
+                const origin = options.gitEnabled ? `Git branch '${branchKey}'` : (options.file ?? options.directory);
+                logger.info(`Imported ${origin} into ${branchPackageKey}.`);
+            }
         } finally {
             this.removeDir(workingDir);
+        }
+    }
+
+    private async pushBranchToGit(mainKey: string, branchKey: string): Promise<string> {
+        const branchPackageKey = BranchUtils.constructBranchKey(mainKey, branchKey);
+        const sourceDir = await this.exportRewrittenPackageDir(branchPackageKey);
+        try {
+            await this.gitService.pushToBranch(sourceDir, branchKey);
+            return branchPackageKey;
+        } finally {
+            this.removeDir(sourceDir);
         }
     }
 
@@ -118,22 +150,21 @@ export class BranchExportImportCommandService {
         return extractedDir;
     }
 
-    private writeLocalArtifact(sourceDir: string, packageKey: string, zip: boolean): void {
+    private writeLocalArtifact(sourceDir: string, packageKey: string, zip: boolean): string {
         if (zip) {
             const zipPath = fileService.zipDirectoryAsSinglePackage(sourceDir);
             try {
                 const fileName = `${packageKey}.zip`;
                 fileService.writeBufferToFileWithGivenName(fs.readFileSync(zipPath), resolve(process.cwd(), fileName));
-                logger.info(FileService.fileDownloadedMessage + fileName);
+                return FileService.fileDownloadedMessage + fileName;
             } finally {
                 fs.rmSync(zipPath, { force: true });
             }
-            return;
         }
         const targetDir = resolve(process.cwd(), packageKey);
         fs.rmSync(targetDir, { recursive: true, force: true });
         fs.cpSync(sourceDir, targetDir, { recursive: true });
-        logger.info(`Successful export. Exported directory: ${packageKey}`);
+        return `Successful export. Exported directory: ${packageKey}`;
     }
 
     private prepareLocalWorkingDir(file: string | undefined, directory: string | undefined): string {
@@ -187,7 +218,7 @@ export class BranchExportImportCommandService {
     }
 
     private replaceFieldValue(content: string, field: string, from: string, to: string): string {
-        const pattern = new RegExp(`("${this.escapeRegExp(field)}"\\s*:\\s*)"${this.escapeRegExp(from)}"`);
+        const pattern = new RegExp(String.raw`("${this.escapeRegExp(field)}"\s*:\s*)"${this.escapeRegExp(from)}"`);
         return content.replace(pattern, `$1"${to}"`);
     }
 
@@ -217,13 +248,9 @@ export class BranchExportImportCommandService {
         fs.rmSync(dir, { recursive: true, force: true });
     }
 
-    private report(summary: BranchSyncSummary, jsonResponse: boolean, message: string): void {
-        if (jsonResponse) {
-            const filename = `${uuidv4()}.json`;
-            fileService.writeToFileWithGivenName(JSON.stringify(summary, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
-        } else {
-            logger.info(message);
-        }
+    private static writeJson(payload: unknown): void {
+        const filename = `${uuidv4()}.json`;
+        fileService.writeToFileWithGivenName(JSON.stringify(payload, null, 2), filename);
+        logger.info(FileService.fileDownloadedMessage + filename);
     }
 }
