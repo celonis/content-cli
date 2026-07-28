@@ -42,9 +42,3 @@ export interface ValidateOptions {
     file?: string;
     json: boolean;
 }
-
-export interface GetSkillFileOptions {
-    path: string;
-    file?: string;
-    output?: string;
-}

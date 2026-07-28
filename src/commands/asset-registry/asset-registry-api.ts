@@ -5,7 +5,6 @@ import {
     AssetRegistryMetadata,
 } from "./asset-registry.interfaces";
 import { handleAssetRegistryApiError } from "./asset-registry-error";
-import { trimSlashes } from "../../core/utils/path";
 
 export class AssetRegistryApi {
     private static readonly BASE_URL = "/pacman/api/core/asset-registry";
@@ -46,29 +45,7 @@ export class AssetRegistryApi {
             .catch((e) => handleAssetRegistryApiError(`validating asset type '${assetType}'`, e));
     }
 
-    public async getSkillFile(skillPath: string, filePath?: string): Promise<Buffer> {
-        const operation = filePath
-            ? `getting skill file '${filePath}' for '${skillPath}'`
-            : `getting SKILL.md for '${skillPath}'`;
-        const url = this.buildSkillFileUrl(skillPath, filePath);
-        return this.httpClient()
-            .getFile(url)
-            .catch((e) => handleAssetRegistryApiError(operation, e));
-    }
-
-    private buildSkillFileUrl(skillPath: string, filePath?: string): string {
-        const segments = ["skills", encodePathSegments(skillPath)];
-        if (filePath) {
-            segments.push(encodePathSegments(filePath));
-        }
-        return AssetRegistryApi.endpointUrl(...segments);
-    }
-
     private static endpointUrl(...segments: string[]): string {
         return `${AssetRegistryApi.BASE_URL}/${segments.join("/")}`;
     }
-}
-
-function encodePathSegments(value: string): string {
-    return trimSlashes(value).split("/").map(encodeURIComponent).join("/");
 }
