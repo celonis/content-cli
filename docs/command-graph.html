@@ -314,6 +314,36 @@ const NODES = [
     description: "List packages in the target team. Lists staging packages by default.",
     options: ["-p, --profile <profile>", "--json", "--flavors <flavors...>", "-h, --help"] },
 
+  // config branch
+  { id: "config_branch_area", label: "branch (beta)", group: "subarea", path: "config branch",
+    description: "Author, merge, and mirror package branches", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_branch_create", label: "create (beta)", group: "command", path: "config branch create",
+    description: "Create a new branch from a source version",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Main package key to branch from)", "--branchKey <branchKey>", "--sourceVersion <sourceVersion>", "--validate (default: false)", "--json (default: false)", "-h, --help"] },
+  { id: "config_branch_list", label: "list (beta)", group: "command", path: "config branch list",
+    description: "List branches of a main package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--json (default: false)", "-h, --help"] },
+  { id: "config_branch_delete", label: "delete (beta)", group: "command", path: "config branch delete",
+    description: "Delete a branch",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Main package key, no '@')", "--branchKey <branchKey>", "-h, --help"] },
+
+  // config branch settings
+  { id: "config_branch_settings_area", label: "settings (beta)", group: "subsubarea", path: "config branch settings",
+    description: "Commands to manage branch settings on a package", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_branch_settings_set", label: "set (beta)", group: "command", path: "config branch settings set",
+    description: "Configure branch settings on a main package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--enabled <enabled> (true|false)", "--json (default: false)", "-h, --help"] },
+
+  // config branch merge
+  { id: "config_branch_merge_area", label: "merge (beta)", group: "subsubarea", path: "config branch merge",
+    description: "Commands to preview and apply branch merges", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "config_branch_merge_preview", label: "preview (beta)", group: "command", path: "config branch merge preview",
+    description: "Preview the changes a merge would apply to a target branch",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Target package key: '<packageKey>' or '<packageKey>@<branchKey>')", "--sourceKey <sourceKey>", "--sourceVersion <sourceVersion> (version or \"LATEST\")", "--json (default: false)", "-h, --help"] },
+  { id: "config_branch_merge_apply", label: "apply (beta)", group: "command", path: "config branch merge apply",
+    description: "Merge changes from a source into a target branch",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Target package key: '<packageKey>' or '<packageKey>@<branchKey>')", "-f, --file <file> (MergeBranchTransport payload; required only when the merge has conflicts)", "--sourceKey <sourceKey> (overrides the file's 'sourceKey')", "--sourceVersion <sourceVersion> (overrides the file's 'sourceVersion'; or \"LATEST\")", "--bump <bump> (PATCH | MINOR | MAJOR)", "--newVersion <newVersion> (pin an explicit semver)", "--summary <summary>", "--json (default: false)", "-h, --help"] },
+
   // config metadata
   { id: "config_metadata_area", label: "metadata", group: "subarea", path: "config metadata",
     description: "Commands related to package metadata", options: ["-p, --profile <profile>", "-h, --help"] },
@@ -471,6 +501,12 @@ const EDGES = [
   ["area_config","config_package_area"],
   ["config_package_area","config_package_import"],["config_package_area","config_package_export"],
   ["config_package_area","config_package_validate"],["config_package_area","config_package_list"],
+  ["area_config","config_branch_area"],
+  ["config_branch_area","config_branch_create"],["config_branch_area","config_branch_list"],
+  ["config_branch_area","config_branch_delete"],
+  ["config_branch_area","config_branch_settings_area"],["config_branch_settings_area","config_branch_settings_set"],
+  ["config_branch_area","config_branch_merge_area"],
+  ["config_branch_merge_area","config_branch_merge_preview"],["config_branch_merge_area","config_branch_merge_apply"],
   ["area_config","config_metadata_area"],["config_metadata_area","config_metadata_export"],
   ["area_config","config_versions_area"],["config_versions_area","config_versions_get"],
   ["config_versions_area","config_versions_create"],
