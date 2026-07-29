@@ -172,10 +172,7 @@ describe("Config validate", () => {
 
         await new PackageValidationService(testContext).validatePackage("my-package", ["DATA_PIPELINES"], null, true);
 
-        expect(mockWriteFileSync).toHaveBeenCalledWith(
-            expect.stringMatching(/config_validate_report_.+\.json$/),
-            JSON.stringify(response),
-            { encoding: "utf-8", mode: 0o600 }
-        );
+        const expectedFileName = loggingTestTransport.logMessages[0].message.split("Validation report file: ")[1];
+        expect(getJsonFromFile(expectedFileName)).toEqual(response);
     })
 })
