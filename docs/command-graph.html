@@ -273,13 +273,6 @@ const NODES = [
   { id: "ar_validate", label: "validate", group: "command", path: "asset-registry validate",
     description: "Validate asset configuration against the asset service's validate endpoint.",
     options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--packageKey <packageKey> (required with --nodeKey or --configuration)", "--nodeKey <nodeKey> (use with --packageKey)", "--configuration <configuration> (inline JSON, use with --packageKey)", "-f, --file <file> (full ValidateRequest body; mutually exclusive with build-from-options flags)", "--json", "-h, --help"] },
-  { id: "ar_skills_area", label: "skills", group: "subarea", path: "asset-registry skills",
-    description: "Discover agent skills exposed by the asset registry", options: ["-p, --profile <profile>", "-h, --help"] },
-  { id: "ar_skills_list", label: "list", group: "command", path: "asset-registry skills list",
-    description: "List all available agent skills (name, description, path)", options: ["-p, --profile <profile>", "--json", "-h, --help"] },
-  { id: "ar_skills_get", label: "get", group: "command", path: "asset-registry skills get",
-    description: "Download a skill file (defaults to SKILL.md)",
-    options: ["-p, --profile <profile>", "--path <path> (Skill path from 'skills list', e.g. platform/<skill> or asset/<assetType>/<skill>)", "--file <file> (Relative path of a reference file within the skill, defaults to SKILL.md)", "--output <output> (Destination directory, defaults to current working directory)", "-h, --help"] },
 
   // config direct leaves (deprecated)
   { id: "config_list", label: "list", group: "command", path: "config list",
@@ -464,7 +457,6 @@ const EDGES = [
 
   ["area_asset_registry","ar_list"],["area_asset_registry","ar_get"],["area_asset_registry","ar_schema"],
   ["area_asset_registry","ar_examples"],["area_asset_registry","ar_validate"],
-  ["area_asset_registry","ar_skills_area"],["ar_skills_area","ar_skills_list"],["ar_skills_area","ar_skills_get"],
 
   ["area_config","config_list"],["area_config","config_export"],["area_config","config_import"],
   ["area_config","config_validate"],["area_config","config_diff"],

@@ -9,7 +9,6 @@ import { AssetRegistryService } from "../../../src/commands/asset-registry/asset
 import { testContext } from "../../utls/test-context";
 
 const TYPES_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types";
-const SKILLS_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/skills";
 
 describe("Asset registry error handling", () => {
     describe("handleAssetRegistryApiError", () => {
