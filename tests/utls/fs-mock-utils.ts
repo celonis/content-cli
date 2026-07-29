@@ -1,5 +1,12 @@
 import fs = require("node:fs");
 
+let readdirSyncSpy: jest.SpyInstance | undefined;
+
 export function mockReadDirSync(data: any): void {
-    jest.spyOn(fs, "readdirSync").mockReturnValue(data);
+    readdirSyncSpy = jest.spyOn(fs, "readdirSync").mockReturnValue(data);
 }
+
+afterEach(() => {
+    readdirSyncSpy?.mockRestore();
+    readdirSyncSpy = undefined;
+});

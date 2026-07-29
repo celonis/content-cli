@@ -9,6 +9,7 @@ import { NodeDiffService } from "../../../src/commands/configuration-management/
 import { SinglePackageImportService } from "../../../src/commands/configuration-management/single-package-import.service";
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
 import { BranchCommandService } from "../../../src/commands/configuration-management/branch/branch.command.service";
+import { BranchExportImportCommandService } from "../../../src/commands/configuration-management/branch/branch-export-import.command.service";
 import { CliRunResult, runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
@@ -21,6 +22,7 @@ jest.mock("../../../src/commands/configuration-management/package-version-comman
 jest.mock("../../../src/commands/configuration-management/single-package-import.service");
 jest.mock("../../../src/commands/configuration-management/single-package-export.service");
 jest.mock("../../../src/commands/configuration-management/branch/branch.command.service");
+jest.mock("../../../src/commands/configuration-management/branch/branch-export-import.command.service");
 
 describe("configuration-management command integration", () => {
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
@@ -33,6 +35,7 @@ describe("configuration-management command integration", () => {
     let mockSinglePackageImportService: jest.Mocked<SinglePackageImportService>;
     let mockSinglePackageExportService: jest.Mocked<SinglePackageExportService>;
     let mockBranchCommandService: jest.Mocked<BranchCommandService>;
+    let mockBranchExportImportCommandService: jest.Mocked<BranchExportImportCommandService>;
 
     beforeEach(() => {
         mockConfigCommandService = {
@@ -81,6 +84,12 @@ describe("configuration-management command integration", () => {
             mergeApply: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockBranchExportImportCommandService = {
+            exportBranch: jest.fn().mockResolvedValue(undefined),
+            exportAll: jest.fn().mockResolvedValue(undefined),
+            importBranch: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (StagingPackageService as jest.MockedClass<typeof StagingPackageService>).mockImplementation(() => mockStagingPackageService);
         (MetadataService as jest.MockedClass<typeof MetadataService>).mockImplementation(() => mockMetadataService);
@@ -91,6 +100,7 @@ describe("configuration-management command integration", () => {
         (SinglePackageImportService as jest.MockedClass<typeof SinglePackageImportService>).mockImplementation(() => mockSinglePackageImportService);
         (SinglePackageExportService as jest.MockedClass<typeof SinglePackageExportService>).mockImplementation(() => mockSinglePackageExportService);
         (BranchCommandService as jest.MockedClass<typeof BranchCommandService>).mockImplementation(() => mockBranchCommandService);
+        (BranchExportImportCommandService as jest.MockedClass<typeof BranchExportImportCommandService>).mockImplementation(() => mockBranchExportImportCommandService);
     });
 
     let lastResult: CliRunResult;
@@ -339,6 +349,236 @@ describe("configuration-management command integration", () => {
                 bump: "MINOR",
                 version: undefined,
             }));
+        });
+    });
+
+    describe("config branch export (exportBranch)", () => {
+        it("exports locally when no --gitProfile is given", async () => {
+            const result = await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchExportImportCommandService.exportBranch).toHaveBeenCalledWith("my-package", "feature-a", {
+                zip: false,
+                gitEnabled: false,
+                jsonResponse: false,
+            });
+        });
+
+        it("forwards --zip and --json for a local export", async () => {
+            await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--zip",
+                "--json",
+            ]);
+
+            expect(mockBranchExportImportCommandService.exportBranch).toHaveBeenCalledWith("my-package", "feature-a", {
+                zip: true,
+                gitEnabled: false,
+                jsonResponse: true,
+            });
+        });
+
+        it("switches to Git mode only when --gitProfile is passed", async () => {
+            await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--gitProfile", "myGitProfile",
+            ]);
+
+            expect(mockBranchExportImportCommandService.exportBranch).toHaveBeenCalledWith("my-package", "feature-a", {
+                zip: false,
+                gitEnabled: true,
+                jsonResponse: false,
+            });
+        });
+
+        it("calls exportAll for --all with a Git profile", async () => {
+            const result = await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--all",
+                "--gitProfile", "myGitProfile",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchExportImportCommandService.exportAll).toHaveBeenCalledWith("my-package", false);
+            expect(mockBranchExportImportCommandService.exportBranch).not.toHaveBeenCalled();
+        });
+
+        it("forwards --json to exportAll", async () => {
+            await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--all",
+                "--gitProfile", "myGitProfile",
+                "--json",
+            ]);
+
+            expect(mockBranchExportImportCommandService.exportAll).toHaveBeenCalledWith("my-package", true);
+        });
+
+        it("rejects --all combined with --branchKey", async () => {
+            await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--all",
+                "--gitProfile", "myGitProfile",
+            ]);
+
+            expectError("Please provide either --branchKey or --all, but not both.");
+            expect(mockBranchExportImportCommandService.exportAll).not.toHaveBeenCalled();
+            expect(mockBranchExportImportCommandService.exportBranch).not.toHaveBeenCalled();
+        });
+
+        it("rejects --all without --gitProfile, since it can only push to Git", async () => {
+            await runCli([
+                "config", "branch", "export",
+                "--packageKey", "my-package",
+                "--all",
+            ]);
+
+            expectError("--all pushes to Git and requires a Git profile. Please provide --gitProfile.");
+            expect(mockBranchExportImportCommandService.exportAll).not.toHaveBeenCalled();
+        });
+
+        it("rejects when neither --branchKey nor --all is provided", async () => {
+            await runCli(["config", "branch", "export", "--packageKey", "my-package"]);
+
+            expectError("Please provide --branchKey, or use --all to export every branch.");
+            expect(mockBranchExportImportCommandService.exportBranch).not.toHaveBeenCalled();
+        });
+
+        it.each(["main", "Main"])("rejects --branchKey %s as reserved", async branchKey => {
+            await runCli(["config", "branch", "export", "--packageKey", "my-package", "--branchKey", branchKey]);
+
+            expectError("'main' is a reserved branch key. The main package is exported only with --all.");
+            expect(mockBranchExportImportCommandService.exportBranch).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("config branch import (importBranch)", () => {
+        it("imports from a --directory without touching Git", async () => {
+            const result = await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--directory", "./feature-a-dir",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockBranchExportImportCommandService.importBranch).toHaveBeenCalledWith("my-package", "feature-a", {
+                file: undefined,
+                directory: "./feature-a-dir",
+                overwrite: false,
+                gitEnabled: false,
+                jsonResponse: false,
+            });
+        });
+
+        it("forwards --file, --overwrite and --json", async () => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--file", "feature-a.zip",
+                "--overwrite",
+                "--json",
+            ]);
+
+            expect(mockBranchExportImportCommandService.importBranch).toHaveBeenCalledWith("my-package", "feature-a", {
+                file: "feature-a.zip",
+                directory: undefined,
+                overwrite: true,
+                gitEnabled: false,
+                jsonResponse: true,
+            });
+        });
+
+        it("switches to Git mode only when --gitProfile is passed", async () => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--gitProfile", "myGitProfile",
+            ]);
+
+            expect(mockBranchExportImportCommandService.importBranch).toHaveBeenCalledWith("my-package", "feature-a", {
+                file: undefined,
+                directory: undefined,
+                overwrite: false,
+                gitEnabled: true,
+                jsonResponse: false,
+            });
+        });
+
+        it("rejects --gitProfile combined with --file", async () => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--file", "feature-a.zip",
+                "--gitProfile", "myGitProfile",
+            ]);
+
+            expectError("You cannot use --file or --directory together with --gitProfile. Only one import source can be defined.");
+            expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
+        });
+
+        it("rejects --gitProfile combined with --directory", async () => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--directory", "./feature-a-dir",
+                "--gitProfile", "myGitProfile",
+            ]);
+
+            expectError("You cannot use --file or --directory together with --gitProfile. Only one import source can be defined.");
+            expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
+        });
+
+        it("rejects --file combined with --directory", async () => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+                "--file", "feature-a.zip",
+                "--directory", "./feature-a-dir",
+            ]);
+
+            expectError("You cannot use both --file and --directory options at the same time. Only one import source can be defined.");
+            expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
+        });
+
+        it("rejects when no import source is provided at all", async () => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", "feature-a",
+            ]);
+
+            expectError("You must provide a --file, a --directory, or a --gitProfile option to import a branch.");
+            expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
+        });
+
+        it.each(["main", "Main"])("rejects --branchKey %s as reserved", async branchKey => {
+            await runCli([
+                "config", "branch", "import",
+                "--packageKey", "my-package",
+                "--branchKey", branchKey,
+                "--directory", "./some-dir",
+            ]);
+
+            expectError("'main' is a reserved branch key. Use 'config package import' to import into the main package.");
+            expect(mockBranchExportImportCommandService.importBranch).not.toHaveBeenCalled();
         });
     });
 

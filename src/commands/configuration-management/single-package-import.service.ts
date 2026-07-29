@@ -42,7 +42,7 @@ export class SinglePackageImportService {
 
             try {
                 const packageZip = new AdmZip(resolvedSource.zipPath);
-                const formData = this.buildBodyForImport(packageZip, resolvedSource.zipPath);
+                const formData = SinglePackageImportService.buildBodyForImport(packageZip, resolvedSource.zipPath);
                 const result = await this.singlePackageImportApi.importPackage(formData, overwrite);
                 this.outputResult(result, jsonResponse);
             } finally {
@@ -73,15 +73,15 @@ export class SinglePackageImportService {
         return { zipPath: fileService.zipDirectoryAsSinglePackage(directory), isTemporary: true };
     }
 
-    private buildBodyForImport(packageZip: AdmZip, sourcePath: string): FormData {
-        this.assertUncompressedSizeWithinLimit(packageZip, sourcePath);
+    public static buildBodyForImport(packageZip: AdmZip, sourcePath: string): FormData {
+        SinglePackageImportService.assertUncompressedSizeWithinLimit(packageZip, sourcePath);
 
         const formData = new FormData();
-        formData.append("packageFile", this.getReadableStream(packageZip), { filename: "package.zip" });
+        formData.append("packageFile", SinglePackageImportService.getReadableStream(packageZip), { filename: "package.zip" });
         return formData;
     }
 
-    private assertUncompressedSizeWithinLimit(packageZip: AdmZip, sourcePath: string): void {
+    public static assertUncompressedSizeWithinLimit(packageZip: AdmZip, sourcePath: string): void {
         const totalUncompressedBytes = packageZip.getEntries().reduce((sum, entry) => sum + entry.header.size, 0);
         if (totalUncompressedBytes > SinglePackageImportService.MAX_UNCOMPRESSED_ZIP_SIZE) {
             throw new Error(
@@ -90,7 +90,7 @@ export class SinglePackageImportService {
         }
     }
 
-    private getReadableStream(packageZip: AdmZip): Readable {
+    private static getReadableStream(packageZip: AdmZip): Readable {
         return new Readable({
             read(): void {
                 this.push(packageZip.toBuffer());

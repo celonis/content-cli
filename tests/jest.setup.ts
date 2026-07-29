@@ -29,6 +29,7 @@ afterEach(() => {
 });
 
 afterAll(() => {
+    jest.restoreAllMocks();
     if (tempDir !== null) {
         logger.info(`Removing tempdir: ${tempDir}`);
         rmTempDir(tempDir);

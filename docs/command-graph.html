@@ -319,6 +319,12 @@ const NODES = [
   { id: "config_branch_delete", label: "delete (beta)", group: "command", path: "config branch delete",
     description: "Delete a branch",
     options: ["-p, --profile <profile>", "--packageKey <packageKey> (Main package key, no '@')", "--branchKey <branchKey>", "-h, --help"] },
+  { id: "config_branch_export", label: "export (beta)", group: "command", path: "config branch export",
+    description: "Export a branch locally, or push it to a Git branch with --gitProfile",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Main package key, no '@')", "--branchKey <branchKey> (mutually exclusive with --all)", "--all (default: false) (main package plus every branch; requires --gitProfile)", "--zip (default: false) (local export only)", "--gitProfile <gitProfile> (when set, pushes to Git instead of writing locally)", "--json (default: false)", "-h, --help"] },
+  { id: "config_branch_import", label: "import (beta)", group: "command", path: "config branch import",
+    description: "Import a branch from a zip, a directory, or a Git branch",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey> (Main package key, no '@')", "--branchKey <branchKey>", "-f, --file <file> (mutually exclusive with --directory and --gitProfile)", "-d, --directory <directory> (mutually exclusive with --file and --gitProfile)", "--overwrite (default: false)", "--gitProfile <gitProfile> (when set, pulls from Git instead of reading locally)", "--json (default: false)", "-h, --help"] },
 
   // config branch settings
   { id: "config_branch_settings_area", label: "settings (beta)", group: "subsubarea", path: "config branch settings",
@@ -496,6 +502,7 @@ const EDGES = [
   ["area_config","config_branch_area"],
   ["config_branch_area","config_branch_create"],["config_branch_area","config_branch_list"],
   ["config_branch_area","config_branch_delete"],
+  ["config_branch_area","config_branch_export"],["config_branch_area","config_branch_import"],
   ["config_branch_area","config_branch_settings_area"],["config_branch_settings_area","config_branch_settings_set"],
   ["config_branch_area","config_branch_merge_area"],
   ["config_branch_merge_area","config_branch_merge_preview"],["config_branch_merge_area","config_branch_merge_apply"],

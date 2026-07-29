@@ -155,3 +155,9 @@ export interface MergeApplyOptions {
     summary?: string;
     jsonResponse?: boolean;
 }
+
+export interface BranchSyncSummary {
+    packageKey: string;
+    branchName: string;
+    synced?: string[];
+}
