@@ -22,14 +22,6 @@ export class FileService {
         });
     }
 
-    public writeBufferToPath(targetDir: string, filename: string, data: Buffer): string {
-        const resolvedDir = path.resolve(process.cwd(), targetDir);
-        const absolutePath = path.join(resolvedDir, filename);
-        this.mkdirRecursive(resolvedDir);
-        this.writeBufferToFileWithGivenName(data, absolutePath);
-        return absolutePath;
-    }
-
     public extractZipBufferToDirectory(data: Buffer, targetDir: string): void {
         const targetPath = path.resolve(process.cwd(), targetDir);
         this.mkdirRecursive(targetPath);

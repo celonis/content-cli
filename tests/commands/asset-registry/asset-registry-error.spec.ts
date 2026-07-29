@@ -9,7 +9,6 @@ import { AssetRegistryService } from "../../../src/commands/asset-registry/asset
 import { testContext } from "../../utls/test-context";
 
 const TYPES_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types";
-const SKILLS_URL = "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/skills";
 
 describe("Asset registry error handling", () => {
     describe("handleAssetRegistryApiError", () => {
@@ -56,13 +55,6 @@ describe("Asset registry error handling", () => {
             mockAxiosGetError(TYPES_URL, 403, { error: ASSET_REGISTRY_DISABLED_ERROR });
 
             await expect(new AssetRegistryService(testContext).listTypes(false))
-                .rejects.toThrow(new FatalError(ASSET_REGISTRY_DISABLED_USER_MESSAGE));
-        });
-
-        it("Should surface the friendly message when listing skills and the feature flag is disabled", async () => {
-            mockAxiosGetError(SKILLS_URL, 403, { error: ASSET_REGISTRY_DISABLED_ERROR });
-
-            await expect(new AssetRegistryService(testContext).listSkills(false))
                 .rejects.toThrow(new FatalError(ASSET_REGISTRY_DISABLED_USER_MESSAGE));
         });
 

@@ -41,21 +41,6 @@ class Module extends IModule {
             .option("-f, --file <file>", "Path to a JSON file containing a full ValidateRequest body. Mutually exclusive with the build-from-options flags.")
             .option("--json", "Return the response as a JSON file")
             .action(this.validate);
-
-        const skillsCommand = assetRegistryCommand.command("skills")
-            .description("Discover agent skills exposed by the asset registry");
-
-        skillsCommand.command("list")
-            .description("List all available agent skills (name, description, path)")
-            .option("--json", "Return the response as a JSON file")
-            .action(this.listSkills);
-
-        skillsCommand.command("get")
-            .description("Download a skill file (defaults to SKILL.md)")
-            .requiredOption("--path <path>", "Skill path from 'skills list' (e.g. platform/<skill> or asset/<assetType>/<skill>)")
-            .option("--file <file>", "Relative path of a reference file within the skill (defaults to SKILL.md)")
-            .option("--output <output>", "Destination directory (defaults to current working directory)")
-            .action(this.getSkillFile);
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -83,18 +68,6 @@ class Module extends IModule {
 
     private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new AssetRegistryService(context).getExamples(options.assetType, !!options.json);
-    }
-
-    private async listSkills(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).listSkills(!!options.json);
-    }
-
-    private async getSkillFile(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).getSkillFile({
-            path: options.path,
-            file: options.file,
-            output: options.output,
-        });
     }
 }
 
