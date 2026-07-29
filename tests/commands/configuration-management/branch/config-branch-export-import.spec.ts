@@ -1,3 +1,9 @@
+import AdmZip = require("adm-zip");
+
+jest.mock("adm-zip", () => {
+    const realAdmZip = jest.requireActual("adm-zip");
+    return jest.fn((...args: any[]) => realAdmZip(...args));
+});
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -32,6 +38,14 @@ function makeTempDir(): string {
     const dir = path.join(os.tmpdir(), `cc-git-test-${uuid()}`);
     fs.mkdirSync(path.join(dir, "nodes"), { recursive: true });
     return dir;
+}
+
+function zipDirToTempFile(sourceDir: string): string {
+    const zip = new AdmZip();
+    zip.addLocalFolder(sourceDir);
+    const zipPath = path.join(os.tmpdir(), `cc-git-test-${uuid()}.zip`);
+    zip.writeZip(zipPath);
+    return zipPath;
 }
 
 function seedPackageDir(dir: string, packageKey: string): void {
@@ -384,6 +398,49 @@ describe("config branch export/import", () => {
                 new BranchExportImportCommandService(testContext).importBranch(MAIN_KEY, BRANCH, { directory: localDir })
             ).rejects.toThrow(/does not contain a package.json file/);
 
+            expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeUndefined();
+        });
+
+        it("imports from a zip file, restoring the branch key", async () => {
+            const localDir = makeTempDir();
+            seedPackageDir(localDir, MAIN_KEY);
+            const zipPath = zipDirToTempFile(localDir);
+            mockAxiosPost(IMPORT_URL, { importedPackage: { key: BRANCH_KEY, name: "My Package" }, importedNodes: [] });
+
+            let importedPkgKey: string | undefined;
+            const realZip = fileService.zipDirectoryAsSinglePackage.bind(fileService);
+            jest.spyOn(fileService, "zipDirectoryAsSinglePackage").mockImplementation((dir: string) => {
+                importedPkgKey = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf-8")).key;
+                return realZip(dir);
+            });
+
+            await new BranchExportImportCommandService(testContext).importBranch(MAIN_KEY, BRANCH, { file: zipPath });
+
+            expect(importedPkgKey).toEqual(BRANCH_KEY);
+            expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeDefined();
+        });
+
+        it("rejects an oversized zip before extracting it", async () => {
+            const localDir = makeTempDir();
+            seedPackageDir(localDir, MAIN_KEY);
+            const zipPath = zipDirToTempFile(localDir);
+            mockAxiosPost(IMPORT_URL, { importedPackage: { key: BRANCH_KEY, name: "My Package" }, importedNodes: [] });
+
+            const extractAllTo = jest.fn();
+            const FIVE_GB = 5 * 1024 * 1024 * 1024;
+            (AdmZip as unknown as jest.Mock).mockImplementationOnce((...args: any[]) => {
+                const instance = jest.requireActual<any>("adm-zip")(...args);
+                instance.getEntries = () => [{ header: { size: FIVE_GB } }];
+                instance.extractAllTo = extractAllTo;
+                return instance;
+            });
+
+            await expect(
+                new BranchExportImportCommandService(testContext).importBranch(MAIN_KEY, BRANCH, { file: zipPath })
+            ).rejects.toThrow(/uncompressed size 5.00 GB exceeds the 4 GB limit/);
+
+            // The guard has to run before the archive is expanded onto disk, not after.
+            expect(extractAllTo).not.toHaveBeenCalled();
             expect(mockedPostRequestBodyByUrl.get(IMPORT_URL)).toBeUndefined();
         });
     });

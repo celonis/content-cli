@@ -3,8 +3,6 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { v4 as uuidv4 } from "uuid";
 import AdmZip = require("adm-zip");
-import * as FormData from "form-data";
-import { Readable } from "node:stream";
 import { resolve } from "node:path";
 import { Context } from "../../../core/command/cli-context";
 import { fileService, FileService } from "../../../core/utils/file-service";
@@ -12,12 +10,12 @@ import { FatalError, logger } from "../../../core/utils/logger";
 import { GitService } from "../../../core/git-profile/git/git.service";
 import { SinglePackageExportApi } from "../api/single-package-export-api";
 import { SinglePackageImportApi } from "../api/single-package-import-api";
+import { SinglePackageImportService } from "../single-package-import.service";
 import { BranchApi } from "./api/branch.api";
 import { BranchUtils } from "../../../core/utils/branches";
 import { BranchSyncSummary, BranchTransport } from "./interfaces/branch.interfaces";
 
 const PACKAGE_FILE = "package.json";
-const MAX_UNCOMPRESSED_ZIP_SIZE = 4 * 1024 * 1024 * 1024;
 
 export interface BranchExportOptions {
     zip?: boolean;
@@ -182,17 +180,21 @@ export class BranchExportImportCommandService {
             fs.rmSync(workingDir, { recursive: true, force: true });
             throw new FatalError("The --file option accepts only zip files.");
         }
-        new AdmZip(file).extractAllTo(workingDir, true);
+        const packageZip = new AdmZip(file);
+        try {
+            SinglePackageImportService.assertUncompressedSizeWithinLimit(packageZip, file);
+            packageZip.extractAllTo(workingDir, true);
+        } catch (error) {
+            fs.rmSync(workingDir, { recursive: true, force: true });
+            throw error;
+        }
         return workingDir;
     }
 
     private async importPackageSourceDir(sourceDir: string, overwrite: boolean): Promise<void> {
         const zipPath = fileService.zipDirectoryAsSinglePackage(sourceDir);
         try {
-            const packageZip = new AdmZip(zipPath);
-            this.assertUncompressedSizeWithinLimit(packageZip, zipPath);
-            const formData = new FormData();
-            formData.append("packageFile", this.toReadable(packageZip), { filename: "package.zip" });
+            const formData = SinglePackageImportService.buildBodyForImport(new AdmZip(zipPath), zipPath);
             await this.singlePackageImportApi.importPackage(formData, overwrite);
         } finally {
             fs.rmSync(zipPath, { force: true });
@@ -257,24 +259,6 @@ export class BranchExportImportCommandService {
 
     private escapeRegExp(value: string): string {
         return value.replace(/[.*+?^${}()|[\]\\]/g, match => "\\" + match);
-    }
-
-    private assertUncompressedSizeWithinLimit(packageZip: AdmZip, sourcePath: string): void {
-        const totalBytes = packageZip.getEntries().reduce((sum, entry) => sum + entry.header.size, 0);
-        if (totalBytes > MAX_UNCOMPRESSED_ZIP_SIZE) {
-            throw new FatalError(
-                `Failed to handle "${sourcePath}": uncompressed size ${(totalBytes / (1024 ** 3)).toFixed(2)} GB exceeds the 4 GB limit.`
-            );
-        }
-    }
-
-    private toReadable(packageZip: AdmZip): Readable {
-        return new Readable({
-            read(): void {
-                this.push(packageZip.toBuffer());
-                this.push(null);
-            },
-        });
     }
 
     private removeDir(dir: string): void {
