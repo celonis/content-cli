@@ -6,7 +6,7 @@ import { FatalError, logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 
 export class AssetRegistryService {
-    private api: AssetRegistryApi;
+    private readonly api: AssetRegistryApi;
 
     constructor(context: Context) {
         this.api = new AssetRegistryApi(context);
@@ -67,13 +67,10 @@ export class AssetRegistryService {
         const hasFile = !!opts.file;
 
         if (hasFile && (hasNodeKey || hasConfig || !!opts.packageKey)) {
-            throw new FatalError(
-                "Option -f is mutually exclusive with --packageKey, --nodeKey and --configuration."
-            );
+            throw new FatalError("Option -f is mutually exclusive with --packageKey, --nodeKey and --configuration.");
         }
 
         if (hasFile) {
-
             return this.parseJson(fileService.readFile(opts.file), `-f ${opts.file}`);
         }
 

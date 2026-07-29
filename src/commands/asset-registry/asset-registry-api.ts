@@ -9,7 +9,7 @@ import { handleAssetRegistryApiError } from "./asset-registry-error";
 export class AssetRegistryApi {
     private static readonly BASE_URL = "/pacman/api/core/asset-registry";
 
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;
