@@ -44,7 +44,7 @@ class Module extends IModule {
             .description("Create a new branch from a source version")
             .requiredOption("--packageKey <packageKey>", "Main package key to branch from")
             .requiredOption("--branchKey <branchKey>", "New branch key")
-            .requiredOption("--sourceVersion <sourceVersion>", "Source version to branch from")
+            .requiredOption("--sourceVersion <sourceVersion>", "Source version to branch from. Must be an existing version; 'LATEST' is not supported here")
             .option("--validate", "Only validate the request without creating the branch", false)
             .option("--json", "Write response to a JSON file", false)
             .action(this.createBranch);
@@ -78,7 +78,7 @@ class Module extends IModule {
             .option("-f, --file <file>", "Path to a JSON file containing the MergeBranchTransport payload")
             .option("--sourceKey <sourceKey>", "Source package key, main package key or '<mainPackageKey>@<branchKey>' (overrides the file's 'sourceKey')")
             .option("--sourceVersion <sourceVersion>", "Source version (overrides the file's 'sourceVersion'; or 'LATEST')")
-            .option("--bump <bump>", "Version bump for the new published version: PATCH | MINOR | MAJOR")
+            .option("--bump <bump>", "Version bump for the new published version: PATCH (the default when neither --bump nor --newVersion is given)")
             .option("--newVersion <newVersion>", "Pin the new published version to an explicit semver")
             .option("--summary <summary>", "Summary of changes for the new published version")
             .option("--json", "Write response to a JSON file", false)

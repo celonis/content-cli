@@ -99,6 +99,41 @@ describe("branch merge preview", () => {
 
         expect(getJsonFromDownloadedFile()).toEqual(preview);
     });
+
+    it("reports a structural conflict that has no conflicting paths", async () => {
+        const structural: MergePreviewTransport = {
+            ...preview,
+            nodeChanges: [
+                {
+                    ...preview.nodeChanges[0],
+                    nodeKey: "node-2",
+                    sourceChange: ChangeType.DELETED,
+                    targetChange: ChangeType.UNCHANGED,
+                    changes: {
+                        configuration: { status: MergeStatus.CONFLICT, sourceChanges: [], targetChanges: [], conflicts: [], autoMergedChanges: [] },
+                        metadata: { status: MergeStatus.CONFLICT, sourceChanges: [], targetChanges: [], conflicts: [], autoMergedChanges: [] },
+                    },
+                },
+            ],
+        };
+        mockAxiosPost(previewUrl, structural);
+
+        await new BranchCommandService(testContext).mergePreview(targetPackageKey, `${targetPackageKey}@feature-a`, "1.4.0", false);
+
+        const messages = loggingTestTransport.logMessages.map(m => m.message);
+        expect(messages.some(m => m.includes("conflicting paths: 0, nodes needing resolution: 1"))).toBe(true);
+        expect(messages.some(m => m.includes("The conflicts above are structural"))).toBe(true);
+    });
+
+    it("counts a node once even when both configuration and metadata conflict", async () => {
+        mockAxiosPost(previewUrl, preview);
+
+        await new BranchCommandService(testContext).mergePreview(targetPackageKey, `${targetPackageKey}@feature-a`, "1.4.0", false);
+
+        const messages = loggingTestTransport.logMessages.map(m => m.message);
+        expect(messages.some(m => m.includes("conflicting paths: 1, nodes needing resolution: 1"))).toBe(true);
+        expect(messages.some(m => m.includes("The conflicts above are structural"))).toBe(false);
+    });
 });
 
 describe("branch merge apply", () => {
@@ -120,7 +155,7 @@ describe("branch merge apply", () => {
         resolvedNodeConflicts: [
             { nodeKey: "node-1", resolution: MergeResolution.ACCEPT_SOURCE },
         ],
-        versionCreate: { versionBumpOption: VersionBumpOption.MAJOR, summaryOfChanges: "merge from feature-a" },
+        versionCreate: { version: "9.9.9", summaryOfChanges: "merge from feature-a" },
     };
 
     beforeEach(() => {
@@ -156,16 +191,16 @@ describe("branch merge apply", () => {
         expect(sent.sourceVersion).toBe("LATEST");
     });
 
-    it("flag --bump overrides versionCreate.versionBumpOption from the file", async () => {
+    it("flag --bump overrides versionCreate from the file and accepts lowercase", async () => {
         mockAxiosPost(mergeUrl, created);
 
         await new BranchCommandService(testContext).mergeApply(targetPackageKey, {
             file: "merge-request.json",
-            bump: "minor",
+            bump: "patch",
         });
 
         const sent: MergeBranchTransport = JSON.parse(mockedPostRequestBodyByUrl.get(mergeUrl) as string);
-        expect(sent.versionCreate.versionBumpOption).toBe(VersionBumpOption.MINOR);
+        expect(sent.versionCreate.versionBumpOption).toBe(VersionBumpOption.PATCH);
         expect(sent.versionCreate.version).toBeUndefined();
     });
 
@@ -219,13 +254,13 @@ describe("branch merge apply", () => {
             await new BranchCommandService(testContext).mergeApply(targetPackageKey, {
                 sourceKey: `${targetPackageKey}@feature-a`,
                 sourceVersion: "1.4.0",
-                bump: "MAJOR",
+                bump: "PATCH",
                 summary: "ship it",
             });
 
             const sent: MergeBranchTransport = JSON.parse(mockedPostRequestBodyByUrl.get(mergeUrl) as string);
             expect(sent.versionCreate).toEqual({
-                versionBumpOption: VersionBumpOption.MAJOR,
+                versionBumpOption: VersionBumpOption.PATCH,
                 summaryOfChanges: "ship it",
             });
         });

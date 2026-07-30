@@ -9,8 +9,10 @@ import {
     CreateBranchTransport,
     MergeApplyOptions,
     MergeBranchTransport,
+    MergeDiffTransport,
     MergePreviewRequestTransport,
     MergePreviewTransport,
+    MergeStatus,
     PackageVersionCreatedTransport,
     SavePackageVersionTransport,
     VersionBumpOption,
@@ -178,6 +180,20 @@ export class BranchCommandService {
             return sum + config + metadata;
         }, 0) ?? 0;
         const conflicts = packageConflicts + nodeConflicts;
-        logger.info(`Nodes touched: ${totalNodes}, conflicting paths: ${conflicts}.`);
+        const unresolvable = BranchCommandService.countUnresolvedConflicts(preview);
+
+        logger.info(`Nodes touched: ${totalNodes}, conflicting paths: ${conflicts}, nodes needing resolution: ${unresolvable}.`);
+        if (unresolvable > 0 && conflicts === 0) {
+            logger.info("The conflicts above are structural (a node exists on one side only), so no path-level diff is reported. Supply a resolution for each node before applying.");
+        }
+    }
+
+    private static countUnresolvedConflicts(preview: MergePreviewTransport): number {
+        const inConflict = (changes: MergeDiffTransport | undefined): boolean =>
+            changes?.configuration?.status === MergeStatus.CONFLICT || changes?.metadata?.status === MergeStatus.CONFLICT;
+
+        const packageConflict = inConflict(preview.packageChanges?.changes) ? 1 : 0;
+        const nodeConflicts = preview.nodeChanges?.filter(node => inConflict(node.changes)).length ?? 0;
+        return packageConflict + nodeConflicts;
     }
 }

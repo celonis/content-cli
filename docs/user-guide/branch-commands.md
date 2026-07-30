@@ -30,6 +30,8 @@ content-cli config branch create \
 
 `--validate` runs the server-side validator without persisting and prints a success message instead of the created branch.
 
+`--sourceVersion` must be an existing version of the source package. Unlike `merge preview` and `merge apply`, `create` does not accept `LATEST`; use `config versions get --packageKey <packageKey> --packageVersion LATEST` to resolve the newest version first.
+
 ## List Branches
 
 ```bash
@@ -68,6 +70,8 @@ content-cli config branch merge preview \
 
 The JSON preview contains the conflict layout (`changes.configuration.conflicts`, `changes.metadata.conflicts`) and auto-merge results.
 
+`merge apply` always needs a merge source: either pass `--sourceKey` together with `--sourceVersion`, or point `-f` at a file that carries both. Passing neither, or `--sourceKey` on its own, is rejected.
+
 ### Quick merge
 
 When you do not need to override any node-level resolutions, the resolutions file is optional:
@@ -83,7 +87,7 @@ The CLI posts the merge directly. If the server detects conflicts it returns an 
 
 Customise the published version without writing a file:
 
-- `--bump PATCH|MINOR|MAJOR` — pick the bump option (default `PATCH`).
+- `--bump PATCH` — bump the patch segment. This is also the default when neither `--bump` nor `--newVersion` is given, so you rarely need it. Minor and major bumps are not supported; pin the version with `--newVersion` instead.
 - `--newVersion 1.5.0` — pin an explicit semver.
 - `--summary "<text>"` — summary of changes (default `"Merge <sourceKey>@<sourceVersion>"`).
 
@@ -119,7 +123,7 @@ A valid merge body looks like:
 
 `versionCreate` is filled in this order of precedence (highest wins):
 
-1. `--newVersion <semver>` flag or `--bump PATCH|MINOR|MAJOR` flag (and `--summary`).
+1. `--newVersion <semver>` flag or `--bump PATCH` flag (and `--summary`).
 2. Whatever the resolutions file already has under `versionCreate`.
 3. Default: `versionBumpOption: PATCH` + `summaryOfChanges: "Merge <sourceKey>@<sourceVersion>"`.
 
@@ -127,14 +131,14 @@ A valid merge body looks like:
 
 > **Custom changes are restricted to paths the preview already touched.** Each op in `customConfigurationChanges` / `customMetadataChanges` must reference a `path` that appears in either the preview's `sourceChanges` or `targetChanges` for that node — you cannot introduce edits at paths neither side modified. The server rejects ops at unrelated paths.
 
-Worked example: the preview reports that for node `node-1`, the source set `/title` to `"Source title"` and the target set `/title` to `"Target title"` (a conflict at `/title`). A valid CUSTOM resolution can pick a third value for `/title`, but it cannot also touch `/description` (which neither side changed):
+Worked example: the preview reports that for node `node-1`, the source set `/title` to `"Source title"` and the target set `/title` to `"Target title"` (a conflict at `/title`). A valid CUSTOM resolution picks either the source's or the target's value for `/title` — not a third one — and it cannot also touch `/description` (which neither side changed):
 
 ```json
 {
   "nodeKey": "node-1",
   "resolution": "CUSTOM",
   "customConfigurationChanges": [
-    { "op": "replace", "path": "/title", "value": "Negotiated title" }
+    { "op": "replace", "path": "/title", "value": "Source title" }
   ]
 }
 ```
