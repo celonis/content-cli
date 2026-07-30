@@ -133,6 +133,69 @@ describe("branch merge preview", () => {
         const messages = loggingTestTransport.logMessages.map(m => m.message);
         expect(messages.some(m => m.includes("conflicting paths: 1, nodes needing resolution: 1"))).toBe(true);
         expect(messages.some(m => m.includes("The conflicts above are structural"))).toBe(false);
+        expect(messages.some(m => m.includes("resolvedPackageConflict"))).toBe(false);
+    });
+
+    it("reports a package-level conflict separately from the node count", async () => {
+        const packageConflict: MergePreviewTransport = {
+            ...preview,
+            packageChanges: {
+                ...preview.packageChanges,
+                changes: {
+                    configuration: {
+                        status: MergeStatus.CONFLICT,
+                        sourceChanges: [],
+                        targetChanges: [],
+                        conflicts: [
+                            { path: "/name", sourceChange: { op: "replace", path: "/name", value: "A" }, targetChange: { op: "replace", path: "/name", value: "B" } },
+                        ],
+                        autoMergedChanges: [],
+                    },
+                    metadata: { status: MergeStatus.UNCHANGED, sourceChanges: [], targetChanges: [], conflicts: [], autoMergedChanges: [] },
+                },
+            },
+            nodeChanges: [],
+        };
+        mockAxiosPost(previewUrl, packageConflict);
+
+        await new BranchCommandService(testContext).mergePreview(targetPackageKey, `${targetPackageKey}@feature-a`, "1.4.0", false);
+
+        const messages = loggingTestTransport.logMessages.map(m => m.message);
+        expect(messages.some(m => m.includes("Nodes touched: 0, conflicting paths: 1, nodes needing resolution: 0"))).toBe(true);
+        expect(messages.some(m => m.includes("resolvedPackageConflict"))).toBe(true);
+        expect(messages.some(m => m.includes("The conflicts above are structural"))).toBe(false);
+    });
+
+    it("does not advise a per-node resolution when only the package conflicts and no paths are reported", async () => {
+        const structuralPackage: MergePreviewTransport = {
+            ...preview,
+            packageChanges: {
+                ...preview.packageChanges,
+                changes: {
+                    configuration: { status: MergeStatus.CONFLICT, sourceChanges: [], targetChanges: [], conflicts: [], autoMergedChanges: [] },
+                    metadata: { status: MergeStatus.CONFLICT, sourceChanges: [], targetChanges: [], conflicts: [], autoMergedChanges: [] },
+                },
+            },
+            nodeChanges: [],
+        };
+        mockAxiosPost(previewUrl, structuralPackage);
+
+        await new BranchCommandService(testContext).mergePreview(targetPackageKey, `${targetPackageKey}@feature-a`, "1.4.0", false);
+
+        const messages = loggingTestTransport.logMessages.map(m => m.message);
+        expect(messages.some(m => m.includes("Nodes touched: 0, conflicting paths: 0, nodes needing resolution: 0"))).toBe(true);
+        expect(messages.some(m => m.includes("resolvedPackageConflict"))).toBe(true);
+        expect(messages.some(m => m.includes("The conflicts above are structural"))).toBe(false);
+    });
+
+    it("summarises a response that omits packageChanges and nodeChanges", async () => {
+        mockAxiosPost(previewUrl, { commonPackageKey: targetPackageKey, commonVersion: "1.2.0" } as MergePreviewTransport);
+
+        await new BranchCommandService(testContext).mergePreview(targetPackageKey, `${targetPackageKey}@feature-a`, "1.4.0", false);
+
+        const messages = loggingTestTransport.logMessages.map(m => m.message);
+        expect(messages.some(m => m.includes("Nodes touched: 0, conflicting paths: 0, nodes needing resolution: 0"))).toBe(true);
+        expect(messages.some(m => m.includes("resolvedPackageConflict"))).toBe(false);
     });
 });
 
