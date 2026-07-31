@@ -6,11 +6,10 @@ import { DeploymentService } from "./deployment.service";
 class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
-        const deploymentCommand = configurator.command("deployment").beta()
+        const deploymentCommand = configurator.command("deployment")
             .description("Create deployments, list their history, check active deployments, and retrieve deployables and targets");
 
         deploymentCommand.command("create")
-            .beta()
             .description("Create a new deployment")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package to deploy")
             .requiredOption("--packageVersion <packageVersion>", "Version of the package to deploy")
@@ -20,10 +19,9 @@ class Module extends IModule {
             .action(this.createDeployment);
 
         const listCommand = deploymentCommand.command("list")
-            .description("List deployment history, active deployments, deployables or targets").beta();
+            .description("List deployment history, active deployments, deployables or targets");
 
         listCommand.command("history")
-            .beta()
             .description("List deployment history")
             .option("--packageKey <packageKey>", "Filter deployment history by package key")
             .option("--targetId <targetId>", "Filter deployment history by target ID")
@@ -36,7 +34,6 @@ class Module extends IModule {
             .action(this.listDeploymentHistory);
 
         listCommand.command("active")
-            .beta()
             .description("Get the active deployment(s) for a given target or package.\n"+
                 "You can use the command to list the active deployment(s) for a specific target or for a specific package.\n" +
                 "The targetIds filter is available only for getting the active deployments for a given package. \n" +
@@ -50,14 +47,12 @@ class Module extends IModule {
             .action(this.listActiveDeployments);
 
         listCommand.command("deployables")
-            .beta()
             .description("List all deployables")
             .option("--flavor <flavor>", "Filter deployables by flavor")
             .option("--json", "Return the response as a JSON file")
             .action(this.listDeployables);
 
         listCommand.command("targets")
-            .beta()
             .description("List all targets for a given deployable type and package key")
             .requiredOption("--deployableType <deployableType>", "The type of the deployable")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package to list targets for")

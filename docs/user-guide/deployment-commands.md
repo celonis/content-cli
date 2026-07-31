@@ -1,4 +1,4 @@
-# Deployment Commands (beta)
+# Deployment Commands
 
 The **deployment** command group allows you to create deployments, list their history, check active deployments, and retrieve deployables and targets.
 
