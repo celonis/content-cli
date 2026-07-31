@@ -9,8 +9,10 @@ import {
     CreateBranchTransport,
     MergeApplyOptions,
     MergeBranchTransport,
+    MergeDiffTransport,
     MergePreviewRequestTransport,
     MergePreviewTransport,
+    MergeStatus,
     PackageVersionCreatedTransport,
     SavePackageVersionTransport,
     VersionBumpOption,
@@ -169,15 +171,27 @@ export class BranchCommandService {
         logger.info(`Preview: merge ${sourceKey}@${sourceVersion} into ${targetPackageKey}`);
         logger.info(`Common ancestor: ${preview.commonPackageKey}@${preview.commonVersion}`);
         const totalNodes = preview.nodeChanges?.length ?? 0;
-        const packageConflicts =
-            (preview.packageChanges?.changes?.configuration?.conflicts?.length ?? 0) +
-            (preview.packageChanges?.changes?.metadata?.conflicts?.length ?? 0);
-        const nodeConflicts = preview.nodeChanges?.reduce((sum, node) => {
-            const config = node.changes?.configuration?.conflicts?.length ?? 0;
-            const metadata = node.changes?.metadata?.conflicts?.length ?? 0;
-            return sum + config + metadata;
-        }, 0) ?? 0;
-        const conflicts = packageConflicts + nodeConflicts;
-        logger.info(`Nodes touched: ${totalNodes}, conflicting paths: ${conflicts}.`);
+        const packageConflictPaths = BranchCommandService.countConflictPaths(preview.packageChanges?.changes);
+        const nodeConflictPaths =
+            preview.nodeChanges?.reduce((sum, node) => sum + BranchCommandService.countConflictPaths(node.changes), 0) ?? 0;
+        const conflicts = packageConflictPaths + nodeConflictPaths;
+        const nodesNeedingResolution =
+            preview.nodeChanges?.filter(node => BranchCommandService.isInConflict(node.changes)).length ?? 0;
+
+        logger.info(`Nodes touched: ${totalNodes}, conflicting paths: ${conflicts}, nodes needing resolution: ${nodesNeedingResolution}.`);
+        if (BranchCommandService.isInConflict(preview.packageChanges?.changes)) {
+            logger.info("The package's own configuration or metadata is in conflict. Supply 'resolvedPackageConflict' before applying.");
+        }
+        if (nodesNeedingResolution > 0 && nodeConflictPaths === 0) {
+            logger.info("The conflicts above are structural (a node exists on one side only), so no path-level diff is reported. Supply a resolution for each node before applying.");
+        }
+    }
+
+    private static countConflictPaths(changes: MergeDiffTransport | undefined): number {
+        return (changes?.configuration?.conflicts?.length ?? 0) + (changes?.metadata?.conflicts?.length ?? 0);
+    }
+
+    private static isInConflict(changes: MergeDiffTransport | undefined): boolean {
+        return changes?.configuration?.status === MergeStatus.CONFLICT || changes?.metadata?.status === MergeStatus.CONFLICT;
     }
 }

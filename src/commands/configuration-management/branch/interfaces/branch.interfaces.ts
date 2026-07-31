@@ -24,8 +24,6 @@ export enum ChangeType {
 export enum VersionBumpOption {
     NONE = "NONE",
     PATCH = "PATCH",
-    MINOR = "MINOR",
-    MAJOR = "MAJOR",
 }
 
 export interface BranchingSettingsTransport {
