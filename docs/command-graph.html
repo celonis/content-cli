@@ -211,6 +211,9 @@ const NODES = [
   { id: "export_data_pool", label: "data-pool", group: "command", path: "export data-pool",
     description: "Command to export a data pool",
     options: ["-p, --profile <profile>", "--id <id>", "--outputToJsonFile", "-h, --help"] },
+  { id: "export_data_model", label: "data-model", group: "command", path: "export data-model",
+    description: "Export a data model with tables, foreign keys, and process configurations",
+    options: ["-p, --profile <profile>", "--poolId <poolId>", "--dataModelId <dataModelId>", "--outputToJsonFile", "-h, --help"] },
 
   // import
   { id: "import_action_flows", label: "action-flows", group: "command", path: "import action-flows",
@@ -247,6 +250,9 @@ const NODES = [
     description: "Command to push a data pool", options: ["-p, --profile <profile>", "-f, --file <file>", "-h, --help"] },
   { id: "push_data_pools", label: "data-pools", group: "command", path: "push data-pools",
     description: "Command to push data pools", options: ["-p, --profile <profile>", "-h, --help"] },
+  { id: "push_semantic_model", label: "semantic-model", group: "command", path: "push semantic-model",
+    description: "Convert a data model into semantic entities and push them into a pig package",
+    options: ["-p, --profile <profile>", "--poolId <poolId>", "--dataModelId <dataModelId>", "--package <packageKey>", "--schema <schema>", "--namespace <namespace>", "-f, --fromFile <file>", "--dryRun", "--outputToJsonFile", "-h, --help"] },
   { id: "push_asset", label: "asset", group: "command", path: "push asset",
     description: "Command to push an asset to Studio", options: ["-p, --profile <profile>", "-f, --file <file>", "--package <packageKey>", "-h, --help"] },
   { id: "push_assets", label: "assets", group: "command", path: "push assets",
@@ -479,7 +485,7 @@ const EDGES = [
 
   ["area_analyze","analyze_action_flows"],
 
-  ["area_export","export_action_flows"],["area_export","export_data_pool"],
+  ["area_export","export_action_flows"],["area_export","export_data_pool"],["area_export","export_data_model"],
 
   ["area_import","import_action_flows"],["area_import","import_data_pools"],
 
@@ -487,7 +493,7 @@ const EDGES = [
   ["area_pull","pull_asset"],["area_pull","pull_package"],["area_pull","pull_view_bookmarks"],
 
   ["area_push","push_skill"],["area_push","push_bookmarks"],["area_push","push_ctp"],
-  ["area_push","push_data_pool"],["area_push","push_data_pools"],["area_push","push_asset"],
+  ["area_push","push_data_pool"],["area_push","push_data_pools"],["area_push","push_semantic_model"],["area_push","push_asset"],
   ["area_push","push_assets"],["area_push","push_package"],["area_push","push_packages"],
   ["area_push","push_widget"],["area_push","push_view_bookmarks"],
 

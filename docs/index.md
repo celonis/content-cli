@@ -53,6 +53,7 @@ content-cli pull package -h
     - [Config Commands](user-guide/config-commands.md) -- Batch export/import, variables, nodes, diffs, and dependencies
     - [Deployment Commands](user-guide/deployment-commands.md) -- Create, history, active deployments, deployables, and targets
     - [Data Pool Commands](user-guide/data-pool-commands.md) -- Export/import data pools and connection management
+    - [Data Model Migration Commands](user-guide/data-model-migration-commands.md) -- Export data models and push semantic entities to pig packages
     - [Action Flow Commands](user-guide/action-flow-commands.md) -- Analyze and export action flows
 - **Development**
     - [Architecture](internal-architecture.md) -- Internal architecture and inner workings

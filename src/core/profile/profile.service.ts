@@ -17,6 +17,7 @@ const homedir = os.homedir();
 const expiryBuffer = 5000;
 /** All OAuth scopes; used for both device code and client credentials. */
 const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
+/** pig-sl-ontology public CRUD uses the same bearer/API-key auth as other platform services; no dedicated OAuth scope is registered in content-cli yet. */
 /** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
 const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
 
