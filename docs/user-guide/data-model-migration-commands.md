@@ -1,6 +1,6 @@
 # Data Model Migration Commands
 
-These commands export a Data Integration data model from cloud-data-integration and convert it into semantic entities in a target pig package via pig-sl-ontology.
+These commands export a Data Integration data model from cloud-data-integration and convert it into semantic entity nodes in a target OCDM package via the Pacman staging-node API (same path as `config nodes create`).
 
 Supported mappings:
 
@@ -11,7 +11,7 @@ Supported mappings:
 | Classic foreign key | Relationship |
 | Data model | Perspective |
 
-Object-centric **object links** (`signal-links` in cloud-data-integration) are **not** supported. The converter only reads classic `foreignKeys[]` from the `/transport` export.
+**Object links** (`signal-links` in cloud-data-integration) are **not** supported. The converter only reads classic `foreignKeys[]` from the `/transport` export.
 
 ## Export Data Model
 
@@ -29,7 +29,7 @@ content-cli export data-model --poolId 80a1389d-50c5-4976-ad6e-fb5b7a2b5517 --da
 
 ## Push Semantic Model
 
-Converts the data model and pushes semantic entities into a target pig package:
+Converts the data model and pushes semantic entity nodes into a target OCDM package:
 
 ```
 content-cli push semantic-model \
@@ -48,10 +48,19 @@ Options:
 
 - `--schema`: Physical lake schema used in data bindings. When omitted, the CLI derives `datapipelines_<poolId>_draft` (hyphens in the pool id become underscores).
 - `--fromFile`: Skip download and convert a previously exported transport JSON file.
-- `--dryRun`: Convert only; print or write the ontology payloads without calling pig-sl-ontology.
-- `--namespace`: Optional namespace for created semantic entities (defaults to ontology `"local"` when omitted).
+- `--dryRun`: Convert only; print or write the Pacman node payloads without calling the staging-node API.
+- `--namespace`: Optional namespace for data bindings (entity references use the package `local` namespace by default).
 
 Push order: objects → event sources → relationships → perspective.
+
+Each entity is created as a Pacman staging node with types `SEMANTIC_OBJECT_TYPE`, `SEMANTIC_EVENT_SOURCE_TYPE`, `SEMANTIC_RELATIONSHIP_TYPE`, and `SEMANTIC_PERSPECTIVE_TYPE`.
+
+After pushing, validate and version the authored nodes with the standard config commands:
+
+```
+content-cli config package validate --packageKey <package-key> --nodeKeys <key1> <key2> --layers SCHEMA BUSINESS
+content-cli config versions create --packageKey <package-key> --nodeFilterKeys <key1> <key2> --versionBumpOption PATCH --summaryOfChanges "..."
+```
 
 Example dry run:
 
@@ -67,4 +76,4 @@ content-cli push semantic-model \
 ## Authentication
 
 - **Download** uses the existing `integration.data-pools` OAuth scope (same as other data pool commands).
-- **Push** calls `/pig-sl-ontology/api/ontology/packages/{packageKey}/semantic-*` with the profile bearer token or API key. Ensure the profile has edit access to the target package.
+- **Push** uses the existing `package-manager` OAuth scope via `/pacman/api/core/staging/packages/{packageKey}/nodes`. Ensure the profile has edit access to the target package.

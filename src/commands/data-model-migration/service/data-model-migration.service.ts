@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
+import { NodeApi } from "../../configuration-management/api/node-api";
+import { SaveNodeTransport } from "../../configuration-management/interfaces/node.interfaces";
 import { FileService, fileService } from "../../../core/utils/file-service";
 import { logger } from "../../../core/utils/logger";
 import { Context } from "../../../core/command/cli-context";
 import { DataModelApi } from "../api/data-model-api";
-import { OntologyApi } from "../api/ontology-api";
 import { DataModelTransport } from "../interfaces/data-model-transport.interfaces";
 import { ConversionResult } from "../interfaces/conversion-result.interfaces";
 import { DataModelConverterService } from "./data-model-converter.service";
@@ -11,12 +12,12 @@ import { DataModelConverterService } from "./data-model-converter.service";
 export class DataModelMigrationService {
 
     private dataModelApi: DataModelApi;
-    private ontologyApi: OntologyApi;
+    private nodeApi: NodeApi;
     private converter: DataModelConverterService;
 
     constructor(context: Context) {
         this.dataModelApi = new DataModelApi(context);
-        this.ontologyApi = new OntologyApi(context);
+        this.nodeApi = new NodeApi(context);
         this.converter = new DataModelConverterService();
     }
 
@@ -35,13 +36,14 @@ export class DataModelMigrationService {
         logger.info("Exported Data Model:\n" + payload);
     }
 
-    /** Converts a data model transport and pushes semantic entities into a target package. */
+    /** Converts a data model transport and pushes semantic entity nodes into a target package. */
     public async pushSemanticModel(options: PushSemanticModelOptions): Promise<void> {
         const transport = await this.loadTransport(options);
         const bindingSchema = DataModelConverterService.deriveBindingSchema(options.poolId, options.schema);
         const conversion = this.converter.convert(transport, {
             poolId: options.poolId,
             bindingSchema,
+            packageKey: options.packageKey,
             namespace: options.namespace,
         });
 
@@ -68,16 +70,16 @@ export class DataModelMigrationService {
     }
 
     private async pushConversion(packageKey: string, conversion: ConversionResult): Promise<void> {
-        for (const object of conversion.objects) {
-            await this.ontologyApi.createObject(packageKey, object);
+        const nodes: SaveNodeTransport[] = [
+            ...conversion.objects,
+            ...conversion.eventSources,
+            ...conversion.relationships,
+            conversion.perspective,
+        ];
+
+        for (const node of nodes) {
+            await this.nodeApi.createStagingNode(packageKey, node, false);
         }
-        for (const eventSource of conversion.eventSources) {
-            await this.ontologyApi.createEventSource(packageKey, eventSource);
-        }
-        for (const relationship of conversion.relationships) {
-            await this.ontologyApi.createRelationship(packageKey, relationship);
-        }
-        await this.ontologyApi.createPerspective(packageKey, conversion.perspective);
     }
 
     private logDryRun(conversion: ConversionResult, outputToJsonFile?: boolean): void {

@@ -2,6 +2,7 @@ import { DataModelTransport } from "../../../src/commands/data-model-migration/i
 import { DataModelConverterService } from "../../../src/commands/data-model-migration/service/data-model-converter.service";
 
 const POOL_ID = "pool-123";
+const PACKAGE_KEY = "my-package";
 const SCHEMA = "custom_schema";
 
 const sampleTransport = (): DataModelTransport => ({
@@ -59,27 +60,36 @@ const sampleTransport = (): DataModelTransport => ({
     ],
 });
 
+const conversionOptions = () => ({
+    poolId: POOL_ID,
+    bindingSchema: SCHEMA,
+    packageKey: PACKAGE_KEY,
+});
+
 describe("DataModelConverterService", () => {
     const converter = new DataModelConverterService();
 
-    it("Should map tables to semantic objects with ID attribute and bindings", () => {
+    it("Should map tables to semantic object nodes with ID attribute and bindings", () => {
         // Arrange
         const transport = sampleTransport();
 
         // Act
-        const result = converter.convert(transport, { poolId: POOL_ID, bindingSchema: SCHEMA });
+        const result = converter.convert(transport, conversionOptions());
 
         // Assert
         const orders = result.objects.find((object) => object.key === "orders");
         expect(orders).toBeDefined();
-        expect(orders?.content.attributes).toEqual(
+        expect(orders?.type).toBe("SEMANTIC_OBJECT_TYPE");
+        expect(orders?.parentNodeKey).toBe(PACKAGE_KEY);
+        expect(orders?.schemaVersion).toBe(1);
+        expect(orders?.configuration?.attributes).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({ id: "ID", dataType: "STRING", required: true }),
                 expect.objectContaining({ id: "customer_id", dataType: "STRING" }),
                 expect.objectContaining({ id: "amount", dataType: "DOUBLE" }),
             ])
         );
-        expect(orders?.content.bindings[0]).toEqual(expect.objectContaining({
+        expect(orders?.configuration?.bindings[0]).toEqual(expect.objectContaining({
             schema: SCHEMA,
             table: "ORDERS",
             mappingColumns: expect.arrayContaining([
@@ -88,50 +98,53 @@ describe("DataModelConverterService", () => {
         }));
     });
 
-    it("Should map process configurations to semantic event sources", () => {
+    it("Should map process configurations to semantic event source nodes", () => {
         // Arrange
         const transport = sampleTransport();
 
         // Act
-        const result = converter.convert(transport, { poolId: POOL_ID, bindingSchema: SCHEMA });
+        const result = converter.convert(transport, conversionOptions());
 
         // Assert
         expect(result.eventSources).toHaveLength(1);
         expect(result.eventSources[0].key).toBe("events_events");
-        expect(result.eventSources[0].content.timestampAttribute).toBe("event_time");
-        expect(result.eventSources[0].content.idAttribute).toBe("ID");
-        expect(result.eventSources[0].content.bindings[0].table).toBe("EVENTS");
+        expect(result.eventSources[0].type).toBe("SEMANTIC_EVENT_SOURCE_TYPE");
+        expect(result.eventSources[0].configuration?.timestampAttribute).toBe("event_time");
+        expect(result.eventSources[0].configuration?.idAttribute).toBe("ID");
+        expect(result.eventSources[0].configuration?.bindings[0].table).toBe("EVENTS");
     });
 
-    it("Should map classic foreign keys to semantic relationships without junction tables", () => {
+    it("Should map classic foreign keys to semantic relationship nodes without junction tables", () => {
         // Arrange
         const transport = sampleTransport();
 
         // Act
-        const result = converter.convert(transport, { poolId: POOL_ID, bindingSchema: SCHEMA });
+        const result = converter.convert(transport, conversionOptions());
 
         // Assert
         expect(result.relationships).toHaveLength(1);
-        expect(result.relationships[0].content.source).toEqual({ type: "OBJECT", referenceKey: "orders" });
-        expect(result.relationships[0].content.target).toEqual({ type: "OBJECT", referenceKey: "customers" });
-        expect(result.relationships[0].content.cardinality).toBe("MANY_TO_ONE");
-        expect(result.relationships[0].content.foreignKeyMappings).toHaveLength(1);
-        expect((result.relationships[0].content as any).junctionTable).toBeUndefined();
+        expect(result.relationships[0].type).toBe("SEMANTIC_RELATIONSHIP_TYPE");
+        expect(result.relationships[0].configuration?.source).toEqual({ type: "OBJECT", referenceKey: "orders" });
+        expect(result.relationships[0].configuration?.target).toEqual({ type: "OBJECT", referenceKey: "customers" });
+        expect(result.relationships[0].configuration?.cardinality).toBe("MANY_TO_ONE");
+        expect(result.relationships[0].configuration?.foreignKeyMappings).toHaveLength(1);
+        expect(result.relationships[0].configuration?.junctionTable).toBeUndefined();
     });
 
-    it("Should build a perspective referencing created objects, event sources, and relationships", () => {
+    it("Should build a perspective node referencing created objects, event sources, and relationships", () => {
         // Arrange
         const transport = sampleTransport();
 
         // Act
-        const result = converter.convert(transport, { poolId: POOL_ID, bindingSchema: SCHEMA });
+        const result = converter.convert(transport, conversionOptions());
 
         // Assert
         expect(result.perspective.key).toBe("order_to_cash");
-        expect(result.perspective.content.perspectiveType).toBe("CACHED");
-        expect(result.perspective.content.objects).toHaveLength(3);
-        expect(result.perspective.content.events).toHaveLength(1);
-        expect(result.perspective.content.relationships).toHaveLength(1);
+        expect(result.perspective.type).toBe("SEMANTIC_PERSPECTIVE_TYPE");
+        expect(result.perspective.configuration?.perspectiveType).toBe("CACHED");
+        expect(result.perspective.configuration?.objects).toHaveLength(3);
+        expect(result.perspective.configuration?.events).toHaveLength(1);
+        expect(result.perspective.configuration?.relationships).toHaveLength(1);
     });
 
     it("Should derive binding schema from pool id when no explicit schema is provided", () => {
@@ -142,7 +155,7 @@ describe("DataModelConverterService", () => {
         expect(schema).toBe("datapipelines_pool_123_draft");
     });
 
-    it("Should map TIME columns to STRING because ontology has no TIME type", () => {
+    it("Should map TIME columns to STRING because semantic schemas have no TIME type", () => {
         // Arrange
         const transport: DataModelTransport = {
             ...sampleTransport(),
@@ -157,10 +170,10 @@ describe("DataModelConverterService", () => {
         };
 
         // Act
-        const result = converter.convert(transport, { poolId: POOL_ID, bindingSchema: SCHEMA });
+        const result = converter.convert(transport, conversionOptions());
 
         // Assert
-        expect(result.objects[0].content.attributes).toEqual(
+        expect(result.objects[0].configuration?.attributes).toEqual(
             expect.arrayContaining([expect.objectContaining({ id: "start_time", dataType: "STRING" })])
         );
     });

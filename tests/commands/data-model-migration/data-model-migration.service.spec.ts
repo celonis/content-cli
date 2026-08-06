@@ -8,6 +8,7 @@ const POOL_ID = "pool-1";
 const DATA_MODEL_ID = "dm-1";
 const PACKAGE_KEY = "my-package";
 const TRANSPORT_URL = `https://myTeam.celonis.cloud/integration/api/pools/${POOL_ID}/data-models/${DATA_MODEL_ID}/transport?includeColumns=true`;
+const NODE_CREATE_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/nodes`;
 
 const transportPayload = {
     id: DATA_MODEL_ID,
@@ -37,9 +38,6 @@ describe("Data model migration APIs", () => {
 });
 
 describe("DataModelMigrationService push", () => {
-    const objectUrl = `https://myTeam.celonis.cloud/pig-sl-ontology/api/ontology/packages/${PACKAGE_KEY}/semantic-objects`;
-    const perspectiveUrl = `https://myTeam.celonis.cloud/pig-sl-ontology/api/ontology/packages/${PACKAGE_KEY}/semantic-perspectives`;
-
     beforeEach(() => {
         mockAxiosGet(TRANSPORT_URL, transportPayload);
     });
@@ -58,18 +56,10 @@ describe("DataModelMigrationService push", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain("Dry run semantic model conversion");
     });
 
-    it("Should POST semantic entities to pig-sl-ontology when dry run is disabled", async () => {
+    it("Should POST staging nodes to Pacman when dry run is disabled", async () => {
         // Arrange
-        mockAxiosPost(objectUrl, { key: "orders" });
-        mockAxiosPost(
-            `https://myTeam.celonis.cloud/pig-sl-ontology/api/ontology/packages/${PACKAGE_KEY}/semantic-event-sources`,
-            { key: "unused" }
-        );
-        mockAxiosPost(
-            `https://myTeam.celonis.cloud/pig-sl-ontology/api/ontology/packages/${PACKAGE_KEY}/semantic-relationships`,
-            { key: "unused" }
-        );
-        mockAxiosPost(perspectiveUrl, { key: "demo_model" });
+        mockAxiosPost(NODE_CREATE_URL, { key: "orders" });
+        mockAxiosPost(NODE_CREATE_URL, { key: "demo_model" });
 
         // Act
         await new DataModelMigrationService(testContext).pushSemanticModel({
@@ -81,10 +71,20 @@ describe("DataModelMigrationService push", () => {
 
         // Assert
         const postCalls = (mockedAxiosInstance.post as jest.Mock).mock.calls;
-        expect(postCalls[0][0]).toBe(objectUrl);
-        expect(JSON.parse(postCalls[0][1])).toEqual(expect.objectContaining({ key: "orders" }));
-        expect(postCalls[1][0]).toBe(perspectiveUrl);
-        expect(JSON.parse(postCalls[1][1])).toEqual(expect.objectContaining({ key: "demo_model" }));
+        expect(postCalls).toHaveLength(2);
+        expect(postCalls[0][0]).toBe(NODE_CREATE_URL);
+        expect(JSON.parse(postCalls[0][1])).toEqual(expect.objectContaining({
+            key: "orders",
+            type: "SEMANTIC_OBJECT_TYPE",
+            parentNodeKey: PACKAGE_KEY,
+            schemaVersion: 1,
+        }));
+        expect(postCalls[1][0]).toBe(NODE_CREATE_URL);
+        expect(JSON.parse(postCalls[1][1])).toEqual(expect.objectContaining({
+            key: "demo_model",
+            type: "SEMANTIC_PERSPECTIVE_TYPE",
+            parentNodeKey: PACKAGE_KEY,
+        }));
         expect(loggingTestTransport.logMessages[0].message).toContain("Successfully pushed semantic model");
     });
 });

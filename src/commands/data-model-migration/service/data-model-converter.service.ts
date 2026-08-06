@@ -1,3 +1,5 @@
+import { SaveNodeTransport, NodeConfiguration } from "../../configuration-management/interfaces/node.interfaces";
+import { SEMANTIC_NODE_TYPES, SEMANTIC_SCHEMA_VERSION } from "../constants/semantic-node.constants";
 import {
     ColumnType,
     DataModelConfigurationTransport,
@@ -11,13 +13,12 @@ import {
     Binding,
     ForeignKeyMapping,
     OntologyAttribute,
-    OntologyNodeRequest,
     Reference,
-    SemanticEventSourceContent,
-    SemanticObjectContent,
-    SemanticPerspectiveContent,
-    SemanticRelationshipContent,
-} from "../interfaces/ontology.interfaces";
+    SemanticEventSourceConfiguration,
+    SemanticObjectConfiguration,
+    SemanticPerspectiveConfiguration,
+    SemanticRelationshipConfiguration,
+} from "../interfaces/semantic-entity.interfaces";
 
 interface TableContext {
     table: DataModelTableTransport;
@@ -26,20 +27,20 @@ interface TableContext {
     attributeById: Map<string, OntologyAttribute>;
 }
 
-/** Converts a Data Integration data model transport into pig semantic entity requests. */
+/** Converts a Data Integration data model transport into Pacman staging node payloads. */
 export class DataModelConverterService {
 
-    /** Converts tables, process configurations, and classic foreign keys into semantic entities. */
+    /** Converts tables, process configurations, and classic foreign keys into semantic entity nodes. */
     public convert(transport: DataModelTransport, options: ConversionOptions): ConversionResult {
         const tableContexts = this.buildTableContexts(transport.tables ?? []);
         const objects = tableContexts.map((ctx) => this.convertTable(ctx, options));
         const eventSources = (transport.processConfigurations ?? [])
             .map((config) => this.convertProcessConfiguration(config, tableContexts, options))
-            .filter((request): request is OntologyNodeRequest<SemanticEventSourceContent> => request !== null);
+            .filter((node): node is SaveNodeTransport => node !== null);
         const relationships = (transport.foreignKeys ?? [])
-            .map((fk) => this.convertForeignKey(fk, tableContexts))
-            .filter((request): request is OntologyNodeRequest<SemanticRelationshipContent> => request !== null);
-        const perspective = this.convertPerspective(transport, objects, eventSources, relationships);
+            .map((fk) => this.convertForeignKey(fk, tableContexts, options))
+            .filter((node): node is SaveNodeTransport => node !== null);
+        const perspective = this.convertPerspective(transport, objects, eventSources, relationships, options);
 
         return { objects, eventSources, relationships, perspective };
     }
@@ -76,30 +77,31 @@ export class DataModelConverterService {
         });
     }
 
-    private convertTable(
-        ctx: TableContext,
-        options: ConversionOptions
-    ): OntologyNodeRequest<SemanticObjectContent> {
+    private convertTable(ctx: TableContext, options: ConversionOptions): SaveNodeTransport {
         const attributes = Array.from(ctx.attributeById.values());
         const primaryKeys = attributes.some((attribute) => attribute.id === "ID") ? ["ID"] : [];
-
-        return {
-            key: ctx.objectKey,
-            name: ctx.table.name,
-            namespace: options.namespace,
-            content: {
-                attributes,
-                primaryKeys,
-                bindings: [this.buildTableBinding(ctx, options.bindingSchema)],
-            },
+        const configuration: SemanticObjectConfiguration = {
+            active: true,
+            attributes,
+            primaryKeys,
+            calculatedAttributes: [],
+            bindings: [this.buildTableBinding(ctx, options)],
         };
+
+        return buildSemanticNode(
+            options.packageKey,
+            ctx.objectKey,
+            ctx.table.name,
+            SEMANTIC_NODE_TYPES.OBJECT,
+            configuration
+        );
     }
 
     private convertProcessConfiguration(
         config: DataModelConfigurationTransport,
         tableContexts: TableContext[],
         options: ConversionOptions
-    ): OntologyNodeRequest<SemanticEventSourceContent> | null {
+    ): SaveNodeTransport | null {
         const activityTable = tableContexts.find((ctx) => ctx.table.id === config.activityTableId);
         if (!activityTable) {
             return null;
@@ -147,30 +149,35 @@ export class DataModelConverterService {
             targetColumn: columnToAttributeId.get(columnName) ?? sanitizeKey(columnName),
         }));
 
-        return {
-            key: eventSourceKey,
-            name: `${activityTable.table.name} Events`,
-            namespace: options.namespace,
-            content: {
-                attributes: Array.from(attributeById.values()),
-                primaryKeys: ["ID"],
-                timestampAttribute,
-                idAttribute: "ID",
-                bindings: [{
-                    name: `${eventSourceKey}-binding`,
-                    namespace: options.namespace,
-                    schema: options.bindingSchema,
-                    table: activityTable.table.name,
-                    mappingColumns,
-                }],
-            },
+        const configuration: SemanticEventSourceConfiguration = {
+            active: true,
+            attributes: Array.from(attributeById.values()),
+            primaryKeys: ["ID"],
+            timestampAttribute,
+            idAttribute: "ID",
+            bindings: [{
+                name: `${eventSourceKey}-binding`,
+                namespace: options.namespace,
+                schema: options.bindingSchema,
+                table: activityTable.table.name,
+                mappingColumns,
+            }],
         };
+
+        return buildSemanticNode(
+            options.packageKey,
+            eventSourceKey,
+            `${activityTable.table.name} Events`,
+            SEMANTIC_NODE_TYPES.EVENT_SOURCE,
+            configuration
+        );
     }
 
     private convertForeignKey(
         foreignKey: DataModelForeignKeyTransport,
-        tableContexts: TableContext[]
-    ): OntologyNodeRequest<SemanticRelationshipContent> | null {
+        tableContexts: TableContext[],
+        options: ConversionOptions
+    ): SaveNodeTransport | null {
         const source = tableContexts.find((ctx) => ctx.table.id === foreignKey.sourceTableId);
         const target = tableContexts.find((ctx) => ctx.table.id === foreignKey.targetTableId);
         if (!source || !target) {
@@ -183,42 +190,50 @@ export class DataModelConverterService {
         }));
 
         const relationshipKey = sanitizeKey(`rel-${source.objectKey}-${target.objectKey}-${foreignKey.id}`);
-
-        return {
-            key: relationshipKey,
-            name: `${source.table.name} -> ${target.table.name}`,
-            content: {
-                source: objectReference(source.objectKey),
-                target: objectReference(target.objectKey),
-                relationshipType: "INSTANCE_TO_INSTANCE",
-                cardinality: "MANY_TO_ONE",
-                foreignKeyMappings,
-            },
+        const configuration: SemanticRelationshipConfiguration = {
+            source: objectReference(source.objectKey),
+            target: objectReference(target.objectKey),
+            relationshipType: "INSTANCE_TO_INSTANCE",
+            cardinality: "MANY_TO_ONE",
+            foreignKeyMappings,
         };
+
+        return buildSemanticNode(
+            options.packageKey,
+            relationshipKey,
+            `${source.table.name} -> ${target.table.name}`,
+            SEMANTIC_NODE_TYPES.RELATIONSHIP,
+            configuration
+        );
     }
 
     private convertPerspective(
         transport: DataModelTransport,
-        objects: OntologyNodeRequest<SemanticObjectContent>[],
-        eventSources: OntologyNodeRequest<SemanticEventSourceContent>[],
-        relationships: OntologyNodeRequest<SemanticRelationshipContent>[]
-    ): OntologyNodeRequest<SemanticPerspectiveContent> {
+        objects: SaveNodeTransport[],
+        eventSources: SaveNodeTransport[],
+        relationships: SaveNodeTransport[],
+        options: ConversionOptions
+    ): SaveNodeTransport {
         const perspectiveKey = sanitizeKey(transport.name || transport.id);
-
-        return {
-            key: perspectiveKey,
-            name: transport.name,
-            content: {
-                objects: objects.map((object) => objectReference(object.key)),
-                events: eventSources.map((eventSource) => eventSourceReference(eventSource.key)),
-                relationships: relationships.map((relationship) => relationshipReference(relationship.key)),
-                perspectiveType: "CACHED",
-                INSTANTIATE_ALL_EVENTS: false,
-            },
+        const configuration: SemanticPerspectiveConfiguration = {
+            active: true,
+            objects: objects.map((object) => objectReference(object.key)),
+            events: eventSources.map((eventSource) => eventSourceReference(eventSource.key)),
+            relationships: relationships.map((relationship) => relationshipReference(relationship.key)),
+            perspectiveType: "CACHED",
+            INSTANTIATE_ALL_EVENTS: false,
         };
+
+        return buildSemanticNode(
+            options.packageKey,
+            perspectiveKey,
+            transport.name,
+            SEMANTIC_NODE_TYPES.PERSPECTIVE,
+            configuration
+        );
     }
 
-    private buildTableBinding(ctx: TableContext, schema: string): Binding {
+    private buildTableBinding(ctx: TableContext, options: ConversionOptions): Binding {
         const mappingColumns = (ctx.table.columns ?? []).map((column) => ({
             sourceColumn: column.name,
             targetColumn: ctx.columnToAttributeId.get(column.name) ?? sanitizeKey(column.name),
@@ -226,7 +241,8 @@ export class DataModelConverterService {
 
         return {
             name: `${ctx.objectKey}-binding`,
-            schema,
+            namespace: options.namespace,
+            schema: options.bindingSchema,
             table: ctx.table.name,
             mappingColumns,
         };
@@ -270,6 +286,23 @@ export class DataModelConverterService {
             dataType: "STRING",
         };
     }
+}
+
+function buildSemanticNode(
+    packageKey: string,
+    key: string,
+    name: string,
+    type: string,
+    configuration: NodeConfiguration
+): SaveNodeTransport {
+    return {
+        key,
+        name,
+        type,
+        parentNodeKey: packageKey,
+        schemaVersion: SEMANTIC_SCHEMA_VERSION,
+        configuration,
+    };
 }
 
 function objectReference(referenceKey: string): Reference {

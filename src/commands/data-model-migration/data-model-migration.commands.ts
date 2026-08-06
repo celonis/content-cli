@@ -23,7 +23,7 @@ export class DataModelMigrationCommands {
             .option("--schema <schema>", "Physical lake schema for data bindings (overrides pool-derived default)")
             .option("--namespace <namespace>", "Namespace for created semantic entities")
             .option("-f, --fromFile <file>", "Use a previously exported data model transport JSON file")
-            .option("--dryRun", "Convert only; print or write payloads without pushing to ontology")
+            .option("--dryRun", "Convert only; print or write node payloads without pushing to Pacman")
             .option("--outputToJsonFile", "With --dryRun, write conversion output to a JSON file")
             .action(this.pushSemanticModel);
     }

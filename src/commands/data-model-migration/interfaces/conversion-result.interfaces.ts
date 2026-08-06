@@ -1,20 +1,15 @@
-import {
-    OntologyNodeRequest,
-    SemanticEventSourceContent,
-    SemanticObjectContent,
-    SemanticPerspectiveContent,
-    SemanticRelationshipContent,
-} from "./ontology.interfaces";
+import { SaveNodeTransport } from "../../configuration-management/interfaces/node.interfaces";
 
 export interface ConversionResult {
-    objects: OntologyNodeRequest<SemanticObjectContent>[];
-    eventSources: OntologyNodeRequest<SemanticEventSourceContent>[];
-    relationships: OntologyNodeRequest<SemanticRelationshipContent>[];
-    perspective: OntologyNodeRequest<SemanticPerspectiveContent>;
+    objects: SaveNodeTransport[];
+    eventSources: SaveNodeTransport[];
+    relationships: SaveNodeTransport[];
+    perspective: SaveNodeTransport;
 }
 
 export interface ConversionOptions {
     poolId: string;
     bindingSchema: string;
+    packageKey: string;
     namespace?: string;
 }

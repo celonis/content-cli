@@ -35,18 +35,21 @@ export interface Binding {
     mappingColumns: MappingColumn[];
 }
 
-export interface SemanticObjectContent {
+export interface SemanticObjectConfiguration {
+    active: boolean;
     attributes: OntologyAttribute[];
     bindings: Binding[];
-    primaryKeys?: string[];
+    primaryKeys: string[];
+    calculatedAttributes: [];
 }
 
-export interface SemanticEventSourceContent {
+export interface SemanticEventSourceConfiguration {
+    active: boolean;
     attributes: OntologyAttribute[];
     bindings: Binding[];
+    primaryKeys: string[];
     timestampAttribute: string;
     idAttribute: string;
-    primaryKeys?: string[];
 }
 
 export interface Reference {
@@ -60,32 +63,19 @@ export interface ForeignKeyMapping {
     targetField: OntologyAttribute;
 }
 
-export interface SemanticRelationshipContent {
+export interface SemanticRelationshipConfiguration {
     source: Reference;
     target: Reference;
-    relationshipType?: RelationshipType;
-    cardinality?: Cardinality;
+    relationshipType: RelationshipType;
+    cardinality: Cardinality;
     foreignKeyMappings: ForeignKeyMapping[];
 }
 
-export interface SemanticPerspectiveContent {
+export interface SemanticPerspectiveConfiguration {
+    active: boolean;
     objects: Reference[];
     events: Reference[];
     relationships: Reference[];
-    perspectiveType?: PerspectiveType;
-    INSTANTIATE_ALL_EVENTS?: boolean;
-}
-
-export interface OntologyNodeRequest<T> {
-    key: string;
-    name: string;
-    namespace?: string;
-    content: T;
-}
-
-export interface OntologyNodeResponse<T> {
-    key: string;
-    name: string;
-    packageNodeKey?: string;
-    content?: T;
+    perspectiveType: PerspectiveType;
+    INSTANTIATE_ALL_EVENTS: boolean;
 }
