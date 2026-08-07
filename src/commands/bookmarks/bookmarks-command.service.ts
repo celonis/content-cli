@@ -22,6 +22,6 @@ export class BookmarksCommandService {
     public async importBookmarks(packageKey: string, file: string): Promise<void> {
         const payload = fileService.readFileToJson(file);
         const result = await this.bookmarksApi.importBookmarks(packageKey, payload);
-        logger.info("Bookmarks imported successfully: " + JSON.stringify(result, null, 4));
+        logger.info(`Bookmarks imported successfully: ${JSON.stringify(result, null, 4)}`);
     }
 }

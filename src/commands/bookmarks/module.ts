@@ -21,11 +21,11 @@ class Module extends IModule {
             .action(this.importBookmarks);
     }
 
-    private async exportBookmarks(context: Context, command: Command, options: OptionValues): Promise<void> {
+    private async exportBookmarks(context: Context, _command: Command, options: OptionValues): Promise<void> {
         await new BookmarksCommandService(context).exportBookmarks(options.packageKey, options.file);
     }
 
-    private async importBookmarks(context: Context, command: Command, options: OptionValues): Promise<void> {
+    private async importBookmarks(context: Context, _command: Command, options: OptionValues): Promise<void> {
         await new BookmarksCommandService(context).importBookmarks(options.packageKey, options.file);
     }
 }
