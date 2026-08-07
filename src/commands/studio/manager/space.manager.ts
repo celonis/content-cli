@@ -4,15 +4,18 @@ import { BaseManager } from "../../../core/http/http-shared/base.manager";
 import { ManagerConfig } from "../../../core/http/http-shared/manager-config.interface";
 import { SpaceTransport } from "../interfaces/space.interface";
 import { logger } from "../../../core/utils/logger";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 
 export class SpaceManager extends BaseManager {
 
     private static BASE_URL = "/package-manager/api/spaces";
 
     private _jsonResponse: boolean;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         super(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public get jsonResponse(): boolean {
@@ -30,11 +33,11 @@ export class SpaceManager extends BaseManager {
         };
     }
 
-    private listSpaces(nodes: SpaceTransport[]): void {
+    private async listSpaces(nodes: SpaceTransport[]): Promise<void> {
         if (this.jsonResponse) {
             const filename = uuidv4() + ".json";
-            this.writeToFileWithGivenName(JSON.stringify(nodes, ["id", "name"]), filename);
-            logger.info(this.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(nodes, ["id", "name"]), filename);
+            logger.info(this.fileDownloadedMessage + writtenFilename);
         } else {
             nodes.forEach(node => {
                 logger.info(`${node.id} - Name: "${node.name}"`);
