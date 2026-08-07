@@ -26,6 +26,7 @@ export class CuiService {
 
     private static readonly STATUS_OK = 200;
     private static readonly STATUS_NO_CONTENT = 204;
+    private static readonly STATUS_FORBIDDEN = 403;
 
     private readonly httpClient: () => HttpClient;
 
@@ -33,11 +34,13 @@ export class CuiService {
         this.httpClient = () => context.httpClient;
     }
 
-    /**
-     * Returns null when the team has CUI disabled.
-     */
     public async getCuiPdfCover(): Promise<CuiPdfCoverResponse | null> {
         const { status, data } = await this.httpClient().getStatusAndData(CuiService.COVER_SHEET_URL);
+
+        if (status === CuiService.STATUS_FORBIDDEN) {
+            logger.debug("CUI marking does not apply, the feature flag is disabled");
+            return null;
+        }
 
         if (status === CuiService.STATUS_NO_CONTENT) {
             logger.debug("CUI marking does not apply, the team has CUI disabled");
