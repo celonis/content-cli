@@ -82,18 +82,14 @@ export abstract class BaseManager {
     }
 
     public async findAll(): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
-            this.httpClient()
-                .get(this.getConfig().findAllUrl)
-                .then(data => {
-                    this.getConfig().onFindAll(data);
-                    resolve(data);
-                })
-                .catch(err => {
-                    logger.error(new FatalError(err));
-                    reject();
-                });
-        });
+        try {
+            const data = await this.httpClient().get(this.getConfig().findAllUrl);
+            await this.getConfig().onFindAll(data);
+            return data;
+        } catch (err) {
+            logger.error(new FatalError(err));
+            return Promise.reject();
+        }
     }
 
     protected writeToFile(data: any): string {

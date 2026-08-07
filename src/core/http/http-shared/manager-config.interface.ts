@@ -6,6 +6,6 @@ export interface ManagerConfig {
     exportFileName?: string;
     onPushSuccessMessage?: (data: any) => string;
     onUpdateSuccessMessage?: () => string;
-    onFindAll?: (data: any) => void;
+    onFindAll?: (data: any) => void | Promise<void>;
     onFindAllAndExport?: (data: any) => void;
 }
