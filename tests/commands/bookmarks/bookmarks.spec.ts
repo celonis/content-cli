@@ -38,7 +38,7 @@ describe("Export bookmarks", () => {
 
         await new BookmarksCommandService(testContext).exportBookmarks(packageKey);
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
         expect(loggingTestTransport.logMessages[0].message).toContain(`bookmarks-${packageKey}.json`);
 
@@ -50,7 +50,7 @@ describe("Export bookmarks", () => {
 
         await new BookmarksCommandService(testContext).exportBookmarks(packageKey, "custom-output.json");
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain("custom-output.json");
 
         expect(getJsonFromDownloadedFile()).toEqual(mockExportResponse);
@@ -108,7 +108,7 @@ describe("Import bookmarks", () => {
 
         await new BookmarksCommandService(testContext).importBookmarks(packageKey, "bookmarks-import.json");
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain("Bookmarks imported successfully");
 
         expect(JSON.parse(mockedPostRequestBodyByUrl.get(importUrl))).toEqual(mockImportPayload);
@@ -162,7 +162,7 @@ describe("Bookmarks module registration", () => {
 
         await program.parseAsync(["export", "bookmarks", "--packageKey", "test-pkg"], { from: "user" });
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
     });
 
@@ -181,7 +181,7 @@ describe("Bookmarks module registration", () => {
 
         await program.parseAsync(["import", "bookmarks", "--packageKey", "test-pkg", "-f", "module-test-import.json"], { from: "user" });
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain("Bookmarks imported successfully");
     });
 });

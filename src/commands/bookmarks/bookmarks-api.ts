@@ -5,7 +5,7 @@ import { BookmarksExport, BookmarksImportRequest, BookmarksImportResult } from "
 
 export class BookmarksApi {
 
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

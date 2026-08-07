@@ -5,7 +5,7 @@ import { logger } from "../../core/utils/logger";
 
 export class BookmarksCommandService {
 
-    private bookmarksApi: BookmarksApi;
+    private readonly bookmarksApi: BookmarksApi;
 
     constructor(context: Context) {
         this.bookmarksApi = new BookmarksApi(context);
