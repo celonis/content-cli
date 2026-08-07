@@ -12,14 +12,18 @@ export class BookmarksApi {
     }
 
     public async exportBookmarks(packageKey: string): Promise<BookmarksExport> {
-        return this.httpClient().get(`/package-manager/api/packages/${encodeURIComponent(packageKey)}/bookmarks/export`).catch(e => {
-            throw new FatalError(`Problem exporting bookmarks for package ${packageKey}: ${e}`);
-        });
+        try {
+            return await this.httpClient().get(`/package-manager/api/packages/${encodeURIComponent(packageKey)}/bookmarks/export`);
+        } catch (e) {
+            throw new FatalError(`Problem exporting bookmarks for package ${packageKey}: ${e}`, { cause: e });
+        }
     }
 
     public async importBookmarks(packageKey: string, payload: BookmarksImportRequest): Promise<BookmarksImportResult> {
-        return this.httpClient().post(`/package-manager/api/packages/${encodeURIComponent(packageKey)}/bookmarks/import`, payload).catch(e => {
-            throw new FatalError(`Problem importing bookmarks for package ${packageKey}: ${e}`);
-        });
+        try {
+            return await this.httpClient().post(`/package-manager/api/packages/${encodeURIComponent(packageKey)}/bookmarks/import`, payload);
+        } catch (e) {
+            throw new FatalError(`Problem importing bookmarks for package ${packageKey}: ${e}`, { cause: e });
+        }
     }
 }
