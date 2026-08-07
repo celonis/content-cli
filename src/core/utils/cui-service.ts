@@ -2,27 +2,13 @@ import { HttpClient } from "../http/http-client";
 import { FatalError, logger } from "./logger";
 import { Context } from "../command/cli-context";
 
-export interface CuiCategory {
-    code: string;
-    name: string;
-}
-
-export interface ResolvedCuiMarking {
-    categories?: CuiCategory[];
-}
-
-export interface CuiCoverPage {
-    pdfContent: string;
-    encoding: string;
-}
-
 export interface CuiPdfCoverResponse {
-    resolvedCuiMarking?: ResolvedCuiMarking;
-    coverPage?: CuiCoverPage;
+    resolvedCuiMarking?: { categories?: unknown[] };
+    coverPage?: { pdfContent: string; encoding: string };
 }
 
 export class CuiService {
-    private static readonly COVER_SHEET_URL = "/api/team/cui-settings/cui-pdf-cover";
+    private static readonly CUI_PDF_COVER_SHEET_URL = "/api/team/cui-settings/cui-pdf-cover";
 
     private static readonly STATUS_OK = 200;
     private static readonly STATUS_NO_CONTENT = 204;
@@ -35,7 +21,7 @@ export class CuiService {
     }
 
     public async getCuiPdfCover(): Promise<CuiPdfCoverResponse | null> {
-        const { status, data } = await this.httpClient().getStatusAndData(CuiService.COVER_SHEET_URL);
+        const { status, data } = await this.httpClient().getStatusAndData(CuiService.CUI_PDF_COVER_SHEET_URL);
 
         if (status === CuiService.STATUS_FORBIDDEN) {
             logger.debug("CUI marking does not apply, the feature flag is disabled");
@@ -48,17 +34,9 @@ export class CuiService {
         }
 
         if (status !== CuiService.STATUS_OK) {
-            const detail = this.describeBody(data) || `Backend responded with status code ${status}`;
-            throw new FatalError(`Problem fetching cui: ${detail}`);
+            throw new FatalError("Problem fetching cui pdf cover");
         }
 
         return data ? (data as CuiPdfCoverResponse) : null;
-    }
-
-    private describeBody(data: any): string {
-        if (!data) {
-            return "";
-        }
-        return `: ${typeof data === "string" ? data : JSON.stringify(data)}`;
     }
 }
