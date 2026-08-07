@@ -88,7 +88,7 @@ export abstract class BaseManager {
             return data;
         } catch (err) {
             logger.error(new FatalError(err));
-            return Promise.reject();
+            throw err;
         }
     }
 
