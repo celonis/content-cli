@@ -26,7 +26,6 @@ export class CuiService {
 
     private static readonly STATUS_OK = 200;
     private static readonly STATUS_NO_CONTENT = 204;
-    private static readonly STATUS_FORBIDDEN = 403;
 
     private readonly httpClient: () => HttpClient;
 
@@ -35,18 +34,19 @@ export class CuiService {
     }
 
     /**
-     * Returns null when no marking applies: 403 (team.cui-settings not enabled) or 204 (CUI disabled).
+     * Returns null when the team has CUI disabled.
      */
     public async getCuiPdfCover(): Promise<CuiPdfCoverResponse | null> {
         const { status, data } = await this.httpClient().getStatusAndData(CuiService.COVER_SHEET_URL);
 
-        if (status === CuiService.STATUS_FORBIDDEN || status === CuiService.STATUS_NO_CONTENT) {
-            logger.debug(`CUI marking does not apply, cover sheet endpoint responded with ${status}${this.describeBody(data)}`);
+        if (status === CuiService.STATUS_NO_CONTENT) {
+            logger.debug("CUI marking does not apply, the team has CUI disabled");
             return null;
         }
 
         if (status !== CuiService.STATUS_OK) {
-            throw new FatalError(`Problem fetching cui: ${this.describeBody(data) || `Backend responded with status code ${status}`}`);
+            const detail = this.describeBody(data) || `Backend responded with status code ${status}`;
+            throw new FatalError(`Problem fetching cui: ${detail}`);
         }
 
         return data ? (data as CuiPdfCoverResponse) : null;

@@ -28,15 +28,6 @@ describe("CuiFileService", () => {
     });
 
     describe("when CUI marking does not apply", () => {
-        it("Should keep the original filename when the feature is not enabled for the team", async () => {
-            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
-
-            const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "report.json");
-
-            expect(filename).toEqual("report.json");
-            expect(readFile("report.json").toString()).toEqual(PAYLOAD);
-        });
-
         it("Should keep the original filename when the team has CUI disabled", async () => {
             mockAxiosGetWithStatus(COVER_URL, 204, "");
 
@@ -51,6 +42,13 @@ describe("CuiFileService", () => {
 
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "broken.json")).rejects.toThrow(FatalError);
             expect(() => accessSync(resolve(process.cwd(), "broken.json"))).toThrow();
+        });
+
+        it("Should fail when the cover endpoint is not reachable", async () => {
+            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
+
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "forbidden.json")).rejects.toThrow(FatalError);
+            expect(() => accessSync(resolve(process.cwd(), "forbidden.json"))).toThrow();
         });
     });
 
