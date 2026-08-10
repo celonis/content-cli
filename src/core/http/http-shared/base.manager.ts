@@ -1,10 +1,7 @@
-import * as fs from "fs";
-import * as path from "path";
 import { FatalError, logger } from "../../utils/logger";
 import { ManagerConfig } from "./manager-config.interface";
 import { HttpClient } from "../http-client";
 import { Context } from "../../command/cli-context";
-import { FileConstants } from "../../utils/file.constants";
 import { CuiFileService } from "../../utils/cui-file-service";
 
 export abstract class BaseManager {
@@ -18,24 +15,14 @@ export abstract class BaseManager {
     }
 
     public async pull(): Promise<any> {
-        return new Promise<void>((resolve, reject) => {
-            this.httpClient()
-                .get(this.getConfig().pullUrl)
-                .then(data => {
-                    try {
-                        const filename = this.writeToFile(data);
-                        logger.info(this.fileDownloadedMessage + filename);
-                        resolve();
-                    } catch (e) {
-                        logger.error(new FatalError(e));
-                        reject();
-                    }
-                })
-                .catch(err => {
-                    logger.error(new FatalError(err));
-                    reject();
-                });
-        });
+        try {
+            const data = await this.httpClient().get(this.getConfig().pullUrl);
+            const filename = await this.writeToFile(data);
+            logger.info(this.fileDownloadedMessage + filename);
+        } catch (err) {
+            logger.error(new FatalError(err));
+            throw err;
+        }
     }
 
     public async pullFile(): Promise<any> {
@@ -90,21 +77,15 @@ export abstract class BaseManager {
         }
     }
 
-    protected writeToFile(data: any): string {
-        const filename = this.getConfig().exportFileName;
-        this.writeToFileWithGivenName(data, filename);
-        return filename;
+    protected async writeToFile(data: any): Promise<string> {
+        return this.cuiFileService.writeToFileWithGivenName(
+            this.getSerializedFileContent(data),
+            this.getConfig().exportFileName
+        );
     }
 
     protected async writeStreamToFile(data: Buffer): Promise<string> {
         return this.cuiFileService.writeZipToFileWithGivenName(data, this.getConfig().exportFileName);
-    }
-
-    protected writeToFileWithGivenName(data: any, filename: string): void {
-        fs.writeFileSync(path.resolve(process.cwd(), filename), this.getSerializedFileContent(data), {
-            encoding: "utf-8",
-            mode: FileConstants.DEFAULT_FILE_PERMISSIONS,
-        });
     }
 
     protected abstract getConfig(): ManagerConfig;
