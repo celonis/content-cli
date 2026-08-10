@@ -3,14 +3,16 @@ import { Context } from "../../core/command/cli-context";
 import { PackageValidationApi } from "./api/package-validation-api";
 import { PackageValidationRequest, SchemaValidationResponse, SchemaValidationResult } from "./interfaces/package-validation.interfaces";
 import { logger } from "../../core/utils/logger";
-import { fileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 
 export class PackageValidationService {
 
     private packageValidationApi: PackageValidationApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.packageValidationApi = new PackageValidationApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async validatePackage(packageKey: string, layers: string[], nodeKeys: string[], jsonOutput: boolean): Promise<void> {
@@ -23,8 +25,8 @@ export class PackageValidationService {
 
         if (jsonOutput) {
             const reportFileName = "config_validate_report_" + uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(response), reportFileName);
-            logger.info("Validation report file: " + reportFileName);
+            const writtenFileName = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(response), reportFileName);
+            logger.info("Validation report file: " + writtenFileName);
         } else {
             this.printValidationResult(response);
         }

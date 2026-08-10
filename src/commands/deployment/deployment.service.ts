@@ -1,15 +1,18 @@
 import { DeploymentApi } from "./deployment-api";
 import { CreateDeploymentRequest, fromString, GetDeploymentsRequest } from "./deployment.interfaces";
 import { Context } from "../../core/command/cli-context";
-import { fileService, FileService } from "../../core/utils/file-service";
+import { FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 
 export class DeploymentService {
     private deploymentApi: DeploymentApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.deploymentApi = new DeploymentApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async createDeployment(packageKey: string, packageVersion: string, deployableType: string, targetId: string, jsonResponse: boolean): Promise<void> {
@@ -24,8 +27,8 @@ export class DeploymentService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(deployment), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(deployment), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             logger.info(`Deployment created with ID: ${deployment.id}, Status: ${deployment.status}`);
         }
@@ -50,8 +53,8 @@ export class DeploymentService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(deployments), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(deployments), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             deployments.forEach(deployment => {
                 logger.info(`ID: ${deployment.id}, Package: ${deployment.packageKey}, Version: ${deployment.packageVersion}, Status: ${deployment.status}, Created at: ${new Date(deployment.createdAt).toISOString()}`);
@@ -64,8 +67,8 @@ export class DeploymentService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(deployment), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(deployment), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             logger.info(`ID: ${deployment.id}, Package: ${deployment.packageKey}, Version: ${deployment.packageVersion}, Status: ${deployment.status}, Deployed at: ${new Date(deployment.deployedAt).toISOString()}`);
         }
@@ -76,8 +79,8 @@ export class DeploymentService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(deployments), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(deployments), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             deployments.forEach(deployment => {
                 logger.info(`ID: ${deployment.id}, Package: ${deployment.packageKey}, Version: ${deployment.packageVersion}, Status: ${deployment.status}, Deployed at: ${new Date(deployment.deployedAt).toISOString()}`);
@@ -90,8 +93,8 @@ export class DeploymentService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(targets), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(targets), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             targets.forEach(target => {
                 logger.info(`ID: ${target.id}, Name: ${target.name}`);
@@ -104,8 +107,8 @@ export class DeploymentService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(deployables), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(deployables), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             deployables.forEach(deployable => {
                 logger.info(`Name: ${deployable.name}, Type: ${deployable.type}`);

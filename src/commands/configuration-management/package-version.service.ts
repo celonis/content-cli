@@ -1,5 +1,6 @@
 import { Context } from "../../core/command/cli-context";
-import { fileService, FileService } from "../../core/utils/file-service";
+import { FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 import { PackageVersionApi } from "./api/package-version-api";
@@ -12,17 +13,19 @@ import {
 
 export class PackageVersionService {
     private packageVersionApi: PackageVersionApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.packageVersionApi = new PackageVersionApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async findPackageVersion(packageKey: string, version: string, jsonResponse: boolean): Promise<void> {
         const packageVersionTransport: PackageVersionTransport = await this.packageVersionApi.findOne(packageKey, version);
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(packageVersionTransport, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(packageVersionTransport, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             this.printPackageVersionTransport(packageVersionTransport);
         }
@@ -53,8 +56,8 @@ export class PackageVersionService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(created, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(created, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             this.printPackageVersionCreatedTransport(created);
         }
