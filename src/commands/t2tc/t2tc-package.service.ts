@@ -151,8 +151,8 @@ export class T2tcPackageService {
         fs.rmSync(sourceToBeImported);
 
         const reportFileName = "config_import_report_" + uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
-        logger.info("Config import report file: " + reportFileName);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(postPackageImportData), reportFileName);
+        logger.info("Config import report file: " + writtenFilename);
     }
 
     public async findAndExportListOfActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean): Promise<void>  {
