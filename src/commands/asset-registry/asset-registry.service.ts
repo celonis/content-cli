@@ -48,18 +48,18 @@ export class AssetRegistryService {
 
     public async getSchema(assetType: string, jsonResponse: boolean): Promise<void> {
         const data = await this.api.getSchema(assetType);
-        this.outputResponse(data, jsonResponse);
+        await this.outputResponse(data, jsonResponse);
     }
 
     public async getExamples(assetType: string, jsonResponse: boolean): Promise<void> {
         const data = await this.api.getExamples(assetType);
-        this.outputResponse(data, jsonResponse);
+        await this.outputResponse(data, jsonResponse);
     }
 
     public async validate(opts: ValidateOptions): Promise<void> {
         const payload = this.buildValidatePayload(opts);
         const data = await this.api.validate(opts.assetType, payload);
-        this.outputResponse(data, opts.json);
+        await this.outputResponse(data, opts.json);
     }
 
     private static readonly INLINE_VALIDATION_NODE_KEY = "validation-node";
@@ -115,11 +115,11 @@ export class AssetRegistryService {
         }
     }
 
-    private outputResponse(data: any, jsonResponse: boolean): void {
+    private async outputResponse(data: any, jsonResponse: boolean): Promise<void> {
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(data, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(data, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             logger.info(typeof data === "string" ? data : JSON.stringify(data, null, 2));
         }

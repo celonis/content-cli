@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { FileService, fileService } from "../../../core/utils/file-service";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 import { logger } from "../../../core/utils/logger";
 import { DataPoolSlimTransport } from "./data-pool-manager.interfaces";
 import { Context } from "../../../core/command/cli-context";
@@ -8,9 +9,11 @@ import { DataPoolApi } from "./data-pool-api";
 export class DataPoolService {
 
     private dataPoolApi: DataPoolApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.dataPoolApi = new DataPoolApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async batchImportDataPools(requestFilePath: string, outputToJsonFile: boolean): Promise<void> {
@@ -49,7 +52,7 @@ export class DataPoolService {
 
     public async findAndExportAllPools(): Promise<void> {
         const dataPools = await this.findAllPools();
-        this.exportListOfPools(dataPools);
+        await this.exportListOfPools(dataPools);
     }
 
     private async findAllPools(): Promise<DataPoolSlimTransport[]> {
@@ -63,9 +66,9 @@ export class DataPoolService {
         return dataPools;
     }
 
-    private exportListOfPools(nodes: DataPoolSlimTransport[]): void {
+    private async exportListOfPools(nodes: DataPoolSlimTransport[]): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(nodes), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(nodes), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 }
