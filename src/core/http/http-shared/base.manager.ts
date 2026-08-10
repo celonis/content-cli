@@ -5,13 +5,16 @@ import { ManagerConfig } from "./manager-config.interface";
 import { HttpClient } from "../http-client";
 import { Context } from "../../command/cli-context";
 import { FileConstants } from "../../utils/file.constants";
+import { CuiFileService } from "../../utils/cui-file-service";
 
 export abstract class BaseManager {
     private httpClient: () => HttpClient;
+    protected readonly cuiFileService: CuiFileService;
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     protected constructor(context: Context) {
         this.httpClient = () => context.httpClient;
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async pull(): Promise<any> {
@@ -36,19 +39,14 @@ export abstract class BaseManager {
     }
 
     public async pullFile(): Promise<any> {
-        return new Promise<void>((resolve, reject) => {
-            this.httpClient()
-                .downloadFile(this.getConfig().pullUrl)
-                .then(data => {
-                    const filename = this.writeStreamToFile(data);
-                    logger.info(this.fileDownloadedMessage + filename);
-                    resolve();
-                })
-                .catch(err => {
-                    logger.error(new FatalError(err));
-                    reject();
-                });
-        });
+        try {
+            const data = await this.httpClient().downloadFile(this.getConfig().pullUrl);
+            const filename = await this.writeStreamToFile(data);
+            logger.info(this.fileDownloadedMessage + filename);
+        } catch (err) {
+            logger.error(new FatalError(err));
+            throw err;
+        }
     }
 
     public async push(): Promise<any> {
@@ -98,10 +96,8 @@ export abstract class BaseManager {
         return filename;
     }
 
-    protected writeStreamToFile(data: any): string {
-        const filename = this.getConfig().exportFileName;
-        fs.writeFileSync(filename, data, { mode: FileConstants.DEFAULT_FILE_PERMISSIONS });
-        return filename;
+    protected async writeStreamToFile(data: Buffer): Promise<string> {
+        return this.cuiFileService.writeZipToFileWithGivenName(data, this.getConfig().exportFileName);
     }
 
     protected writeToFileWithGivenName(data: any, filename: string): void {

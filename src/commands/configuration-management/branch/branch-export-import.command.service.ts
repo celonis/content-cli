@@ -64,7 +64,7 @@ export class BranchExportImportCommandService {
         const branchPackageKey = BranchUtils.constructBranchKey(packageKey, branchKey);
         const sourceDir = await this.exportRewrittenPackageDir(branchPackageKey);
         try {
-            const message = this.writeLocalArtifact(sourceDir, packageKey, !!options.zip);
+            const message = await this.writeLocalArtifact(sourceDir, packageKey, !!options.zip);
             if (jsonResponse) {
                 await this.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
             } else {
@@ -152,12 +152,11 @@ export class BranchExportImportCommandService {
         return extractedDir;
     }
 
-    private writeLocalArtifact(sourceDir: string, packageKey: string, zip: boolean): string {
+    private async writeLocalArtifact(sourceDir: string, packageKey: string, zip: boolean): Promise<string> {
         if (zip) {
             const zipPath = fileService.zipDirectoryAsSinglePackage(sourceDir);
             try {
-                const fileName = `${packageKey}.zip`;
-                fileService.writeBufferToFileWithGivenName(fs.readFileSync(zipPath), resolve(process.cwd(), fileName));
+                const fileName = await this.cuiFileService.writeZipToFileWithGivenName(fs.readFileSync(zipPath), `${packageKey}.zip`);
                 return FileService.fileDownloadedMessage + fileName;
             } finally {
                 fs.rmSync(zipPath, { force: true });

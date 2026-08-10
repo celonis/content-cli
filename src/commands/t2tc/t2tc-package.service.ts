@@ -21,7 +21,6 @@ import { StudioService } from "./studio.service";
 import { GitService } from "../../core/git-profile/git/git.service";
 import * as fs from "fs";
 import { FileConstants } from "../../core/utils/file.constants";
-import { resolve } from "node:path";
 
 export class T2tcPackageService {
 
@@ -117,7 +116,7 @@ export class T2tcPackageService {
             logger.info("Successfully exported packages to branch: " + gitBranch);
             fs.rmSync(extractedDirectory, { recursive: true });
         } else {
-            this.downloadZip(exportedPackagesZip, unzip);
+            await this.downloadZip(exportedPackagesZip, unzip);
         }
     }
 
@@ -243,7 +242,7 @@ export class T2tcPackageService {
         return null;
     }
 
-    private downloadZip(exportedZip: AdmZip, unzip: boolean): void {
+    private async downloadZip(exportedZip: AdmZip, unzip: boolean): Promise<void> {
         if (unzip) {
             const fileDownloadedMessage = "Successful download. Downloaded directory: ";
             const targetDirectoryName = `export_${uuidv4()}`;
@@ -251,9 +250,7 @@ export class T2tcPackageService {
             logger.info(fileDownloadedMessage + targetDirectoryName);
         } else {
             const fileDownloadedMessage = "File downloaded successfully. New filename: ";
-            const filename = `export_${uuidv4()}.zip`;
-            const fullFilePath = resolve(process.cwd(), filename);
-            exportedZip.writeZip(fullFilePath, () => fs.chmodSync(fullFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
+            const filename = await this.cuiFileService.writeZipToFileWithGivenName(exportedZip.toBuffer(), `export_${uuidv4()}.zip`);
             logger.info(fileDownloadedMessage + filename);
         }
     }
