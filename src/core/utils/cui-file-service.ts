@@ -36,16 +36,44 @@ export class CuiFileService {
         return this.writeClassifiedArchive(filename, data, cover);
     }
 
+    public async writeZipToFileWithGivenName(zipData: Buffer, filename: string): Promise<string> {
+        const cover = await this.cuiApi.getCuiPdfCover();
+
+        if (cover === null) {
+            fileService.writeBufferToFileWithGivenName(zipData, filename);
+            return filename;
+        }
+
+        if (!this.isClassified(cover)) {
+            const unclassifiedName = this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX);
+            fileService.writeBufferToFileWithGivenName(zipData, unclassifiedName);
+            return unclassifiedName;
+        }
+
+        const zip = new AdmZip(zipData);
+        this.addCoverPage(zip, cover);
+
+        return this.writeArchive(zip, filename);
+    }
+
     private writeClassifiedArchive(filename: string, data: string, cover: CuiPdfCoverResponse): string {
         const zip = new AdmZip();
         zip.addFile(path.basename(filename), Buffer.from(data, "utf-8"), "", FileConstants.DEFAULT_FILE_PERMISSIONS);
+        this.addCoverPage(zip, cover);
+
+        return this.writeArchive(zip, filename);
+    }
+
+    private addCoverPage(zip: AdmZip, cover: CuiPdfCoverResponse): void {
         zip.addFile(
             CuiFileService.COVER_SHEET_FILE_NAME,
             this.decodeCoverPage(cover),
             "",
             FileConstants.DEFAULT_FILE_PERMISSIONS
         );
+    }
 
+    private writeArchive(zip: AdmZip, filename: string): string {
         const archiveName = this.buildClassifiedArchiveName(filename);
         fileService.writeBufferToFileWithGivenName(zip.toBuffer(), archiveName);
 
