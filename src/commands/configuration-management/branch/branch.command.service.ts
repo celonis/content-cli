@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { Context } from "../../../core/command/cli-context";
 import { fileService, FileService } from "../../../core/utils/file-service";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 import { logger } from "../../../core/utils/logger";
 import { BranchApi } from "./api/branch.api";
 import {
@@ -20,9 +21,11 @@ import {
 
 export class BranchCommandService {
     private readonly branchApi: BranchApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.branchApi = new BranchApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async setBranchingEnabled(packageKey: string, enabled: boolean, jsonResponse: boolean): Promise<BranchingSettingsTransport> {
@@ -30,7 +33,7 @@ export class BranchCommandService {
         const result = await this.branchApi.configureBranchingSettings(packageKey, transport);
 
         if (jsonResponse) {
-            BranchCommandService.writeJson(result);
+            await this.writeJson(result);
         } else {
             logger.info(`Branching ${result.branchingEnabled ? "enabled" : "disabled"} for package ${packageKey}.`);
         }
@@ -47,7 +50,7 @@ export class BranchCommandService {
         }
 
         if (jsonResponse) {
-            BranchCommandService.writeJson(result);
+            await this.writeJson(result);
         } else if (result) {
             BranchCommandService.printBranch(result);
         }
@@ -58,7 +61,7 @@ export class BranchCommandService {
         const branches = await this.branchApi.listBranches(packageKey);
 
         if (jsonResponse) {
-            BranchCommandService.writeJson(branches);
+            await this.writeJson(branches);
         } else if (branches.length === 0) {
             logger.info(`No branches found for ${packageKey}.`);
         } else {
@@ -82,7 +85,7 @@ export class BranchCommandService {
         const preview = await this.branchApi.mergePreview(targetPackageKey, transport);
 
         if (jsonResponse) {
-            BranchCommandService.writeJson(preview);
+            await this.writeJson(preview);
         } else {
             BranchCommandService.printPreviewSummary(targetPackageKey, sourceKey, sourceVersion, preview);
         }
@@ -115,7 +118,7 @@ export class BranchCommandService {
         const result = await this.branchApi.merge(targetPackageKey, transport);
 
         if (options.jsonResponse) {
-            BranchCommandService.writeJson(result);
+            await this.writeJson(result);
         } else {
             logger.info(
                 `Merge applied: published ${result.packageKey}@${result.version} from ${effectiveSourceKey}@${effectiveSourceVersion}.`
@@ -153,10 +156,10 @@ export class BranchCommandService {
         return versionCreate;
     }
 
-    private static writeJson(payload: unknown): void {
+    private async writeJson(payload: unknown): Promise<void> {
         const filename = `${uuidv4()}.json`;
-        fileService.writeToFileWithGivenName(JSON.stringify(payload, null, 2), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(payload, null, 2), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
     private static printBranch(branch: BranchTransport): void {
