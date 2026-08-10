@@ -1,4 +1,4 @@
-import { mockedAxiosInstance } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { VariableCommandService } from "../../../src/commands/configuration-management/variable-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport } from "../../jest.setup";
@@ -7,13 +7,15 @@ import { getJsonFromDownloadedFile } from "../../utls/fs-utils";
 
 describe("List assignments", () => {
 
+    const DATA_MODEL_URL = "https://myTeam.celonis.cloud/package-manager/api/compute-pools/pools-with-data-models";
+    const CONNECTIONS_URL = "https://myTeam.celonis.cloud/process-automation-v2/api/connections?param1=value1&param2=value2";
+
     it("Should list assignments for supported type and non-json response", async () => {
         const mockAssignmentValues = [
             {id: "id-1"},
             {id: "id-2"}
         ];
-        const resp = {data: mockAssignmentValues};
-        (mockedAxiosInstance.get as jest.Mock).mockResolvedValue(resp);
+        mockAxiosGet(DATA_MODEL_URL, mockAssignmentValues);
 
         await new VariableCommandService(testContext).listAssignments("DATA_MODEL", false, "");
 
@@ -21,7 +23,7 @@ describe("List assignments", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain('{"id":"id-1"}');
         expect(loggingTestTransport.logMessages[1].message).toContain('{"id":"id-2"}');
 
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith("https://myTeam.celonis.cloud/package-manager/api/compute-pools/pools-with-data-models", expect.anything())
+        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(DATA_MODEL_URL, expect.anything())
     })
 
     it("Should export assignments for supported type and json response", async () => {
@@ -29,8 +31,7 @@ describe("List assignments", () => {
             {id: "id-1"},
             {id: "id-2"}
         ];
-        const resp = {data: mockAssignmentValues};
-        (mockedAxiosInstance.get as jest.Mock).mockResolvedValue(resp);
+        mockAxiosGet(DATA_MODEL_URL, mockAssignmentValues);
 
         await new VariableCommandService(testContext).listAssignments("DATA_MODEL", true, "");
 
@@ -42,12 +43,11 @@ describe("List assignments", () => {
 
     it("Should contain url params in the url", async () => {
         const mockAssignmentValues = [{id: "id-1"}];
-        const resp = {data: mockAssignmentValues};
-        (mockedAxiosInstance.get as jest.Mock).mockResolvedValue(resp);
+        mockAxiosGet(CONNECTIONS_URL, mockAssignmentValues);
 
         await new VariableCommandService(testContext).listAssignments("CONNECTION", false, "param1=value1,param2=value2");
 
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith("https://myTeam.celonis.cloud/process-automation-v2/api/connections?param1=value1&param2=value2", expect.anything())
+        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(CONNECTIONS_URL, expect.anything())
     })
 
     it("Should throw error for unsupported variable types", async () => {

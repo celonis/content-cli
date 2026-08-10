@@ -1,22 +1,25 @@
 import { v4 as uuidv4 } from "uuid";
 import { Context } from "../../core/command/cli-context";
 import { PackageExportTransport } from "./interfaces/package-export.interfaces";
-import { fileService, FileService } from "../../core/utils/file-service";
+import { FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { StagingPackageApi } from "./api/staging-package-api";
 
 export class StagingPackageService {
 
     private stagingPackageApi: StagingPackageApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.stagingPackageApi = new StagingPackageApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async listStagingPackages(flavors: string[], includeBranches: boolean, jsonResponse: boolean): Promise<void> {
         const stagingPackages = await this.stagingPackageApi.findAllStagingPackages(flavors, includeBranches);
         if (jsonResponse) {
-            this.exportListOfPackages(stagingPackages);
+            await this.exportListOfPackages(stagingPackages);
         } else {
             stagingPackages.forEach(pkg => {
                 logger.info(`${pkg.name} - Key: "${pkg.key}"`);
@@ -24,9 +27,9 @@ export class StagingPackageService {
         }
     }
 
-    private exportListOfPackages(packages: PackageExportTransport[]): void {
+    private async exportListOfPackages(packages: PackageExportTransport[]): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(packages), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(packages), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 }

@@ -1,16 +1,19 @@
 import * as fs from "node:fs";
 import { v4 as uuidv4 } from "uuid";
 import { logger } from "../../core/utils/logger";
-import { fileService, FileService } from "../../core/utils/file-service";
+import { FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { Context } from "../../core/command/cli-context";
 import { NodeDiffApi } from "./api/node-diff-api";
 import { NodeConfigurationDiffTransport } from "./interfaces/node-diff.interfaces";
 
 export class NodeDiffService {
     private nodeDiffApi: NodeDiffApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.nodeDiffApi = new NodeDiffApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async diff(
@@ -28,7 +31,7 @@ export class NodeDiffService {
         });
 
         if (jsonResponse) {
-            this.exportDiffAsJson(nodeDiff);
+            await this.exportDiffAsJson(nodeDiff);
         } else {
             this.logDiff(nodeDiff);
         }
@@ -49,16 +52,16 @@ export class NodeDiffService {
         });
 
         if (jsonResponse) {
-            this.exportDiffAsJson(nodeDiff);
+            await this.exportDiffAsJson(nodeDiff);
         } else {
             this.logDiff(nodeDiff);
         }
     }
 
-    private exportDiffAsJson(nodeDiff: NodeConfigurationDiffTransport): void {
+    private async exportDiffAsJson(nodeDiff: NodeConfigurationDiffTransport): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(nodeDiff, null, 2), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(nodeDiff, null, 2), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
     private logDiff(nodeDiff: NodeConfigurationDiffTransport): void {

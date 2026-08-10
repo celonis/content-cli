@@ -3,7 +3,8 @@ import {Readable} from "stream";
 import * as FormData from "form-data";
 import {v4 as uuidv4} from "uuid";
 import { logger } from "../../core/utils/logger";
-import { fileService, FileService } from "../../core/utils/file-service";
+import { FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { Context } from "../../core/command/cli-context";
 import { PackageDiffMetadata, PackageDiffTransport } from "../configuration-management/interfaces/diff-package.interfaces";
 import { DiffApi } from "./api/diff-api";
@@ -11,9 +12,11 @@ import { DiffApi } from "./api/diff-api";
 export class DiffService {
 
     private diffApi: DiffApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.diffApi = new DiffApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async diffPackages(file: string, hasChanges: boolean, baseVersion: string, jsonResponse: boolean): Promise<void> {
@@ -30,7 +33,7 @@ export class DiffService {
         const returnedHasChangesData = await this.diffApi.hasChanges(baseVersion, formData);
 
         if (jsonResponse) {
-            this.exportListOfPackageDiffMetadata(returnedHasChangesData);
+            await this.exportListOfPackageDiffMetadata(returnedHasChangesData);
         } else {
             logger.info(this.buildStringResponseForPackageDiffMetadataList(returnedHasChangesData));
         }
@@ -42,7 +45,7 @@ export class DiffService {
         const returnedHasChangesData = await this.diffApi.diffPackages(baseVersion, formData);
 
         if (jsonResponse) {
-            this.exportListOfPackageDiffs(returnedHasChangesData);
+            await this.exportListOfPackageDiffs(returnedHasChangesData);
         } else {
             logger.info(this.buildStringResponseForPackageDiffs(returnedHasChangesData));
         }
@@ -66,16 +69,16 @@ export class DiffService {
         });
     }
 
-    private exportListOfPackageDiffs(packageDiffs: PackageDiffTransport[]): void {
+    private async exportListOfPackageDiffs(packageDiffs: PackageDiffTransport[]): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(packageDiffs), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(packageDiffs), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
-    private exportListOfPackageDiffMetadata(packageDiffMetadata: PackageDiffMetadata[]): void {
+    private async exportListOfPackageDiffMetadata(packageDiffMetadata: PackageDiffMetadata[]): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(packageDiffMetadata), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(packageDiffMetadata), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
     private buildStringResponseForPackageDiffs(packageDiffs: PackageDiffTransport[]): string {
