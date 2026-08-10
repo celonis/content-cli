@@ -1,15 +1,18 @@
 import { NodeApi } from "./api/node-api";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 import { NodeTransport, SaveNodeTransport, UpdateNodeTransport } from "./interfaces/node.interfaces";
 
 export class NodeService {
     private nodeApi: NodeApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.nodeApi = new NodeApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async findNode(packageKey: string, nodeKey: string, withConfiguration: boolean, packageVersion: string | null, jsonResponse: boolean): Promise<void> {
@@ -19,8 +22,8 @@ export class NodeService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             this.printNode(node);
         }
@@ -31,8 +34,8 @@ export class NodeService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(nodes, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(nodes, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             nodes.forEach(node => {
                 logger.info(JSON.stringify(node))
@@ -51,8 +54,8 @@ export class NodeService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             this.printNode(node as NodeTransport);
         }
@@ -69,8 +72,8 @@ export class NodeService {
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(node, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             this.printNode(node as NodeTransport);
         }
