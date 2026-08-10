@@ -11,9 +11,9 @@ import { DataModelConverterService } from "./data-model-converter.service";
 
 export class DataModelMigrationService {
 
-    private dataModelApi: DataModelApi;
-    private nodeApi: NodeApi;
-    private converter: DataModelConverterService;
+    private readonly dataModelApi: DataModelApi;
+    private readonly nodeApi: NodeApi;
+    private readonly converter: DataModelConverterService;
 
     constructor(context: Context) {
         this.dataModelApi = new DataModelApi(context);

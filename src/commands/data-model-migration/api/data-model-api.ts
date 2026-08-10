@@ -5,7 +5,7 @@ import { DataModelTransport } from "../interfaces/data-model-transport.interface
 
 export class DataModelApi {
 
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

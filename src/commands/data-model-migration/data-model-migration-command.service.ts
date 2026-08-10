@@ -3,7 +3,7 @@ import { DataModelMigrationService } from "./service/data-model-migration.servic
 
 export class DataModelMigrationCommandService {
 
-    private migrationService: DataModelMigrationService;
+    private readonly migrationService: DataModelMigrationService;
 
     constructor(context: Context) {
         this.migrationService = new DataModelMigrationService(context);

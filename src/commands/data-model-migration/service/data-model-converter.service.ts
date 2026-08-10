@@ -66,7 +66,7 @@ export class DataModelConverterService {
                 const attribute: OntologyAttribute = {
                     id: attributeId,
                     dataType: mapColumnType(column.type),
-                    required: attributeId === "ID" || column.primaryKey === true,
+                    required: attributeId === "ID" || Boolean(column.primaryKey),
                 };
                 attributeById.set(attributeId, attribute);
             }
