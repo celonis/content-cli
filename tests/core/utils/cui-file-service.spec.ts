@@ -52,6 +52,13 @@ describe("CuiFileService", () => {
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "broken.json")).rejects.toThrow(FatalError);
             expect(() => accessSync(resolve(process.cwd(), "broken.json"))).toThrow();
         });
+
+        it("Should fail when the marking applies but the response body is empty", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, "");
+
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "empty-cover.json")).rejects.toThrow(FatalError);
+            expect(() => accessSync(resolve(process.cwd(), "empty-cover.json"))).toThrow();
+        });
     });
 
     describe("when the content is unclassified", () => {

@@ -7,7 +7,7 @@ export interface CuiPdfCoverResponse {
     coverPage?: { pdfContent: string; encoding: string };
 }
 
-export class CuiService {
+export class CuiApi {
     private static readonly CUI_PDF_COVER_SHEET_URL = "/api/team/cui-settings/cui-pdf-cover";
 
     private static readonly STATUS_OK = 200;
@@ -21,22 +21,22 @@ export class CuiService {
     }
 
     public async getCuiPdfCover(): Promise<CuiPdfCoverResponse | null> {
-        const { status, data } = await this.httpClient().getStatusAndData(CuiService.CUI_PDF_COVER_SHEET_URL);
+        const { status, data } = await this.httpClient().getStatusAndData(CuiApi.CUI_PDF_COVER_SHEET_URL);
 
-        if (status === CuiService.STATUS_FORBIDDEN) {
+        if (status === CuiApi.STATUS_FORBIDDEN) {
             logger.debug("CUI marking does not apply, the feature flag is disabled");
             return null;
         }
 
-        if (status === CuiService.STATUS_NO_CONTENT) {
+        if (status === CuiApi.STATUS_NO_CONTENT) {
             logger.debug("CUI marking does not apply, the team has CUI disabled");
             return null;
         }
 
-        if (status !== CuiService.STATUS_OK) {
-            throw new FatalError("Problem fetching cui pdf cover");
+        if (status === CuiApi.STATUS_OK && data) {
+            return data as CuiPdfCoverResponse;
         }
 
-        return data ? (data as CuiPdfCoverResponse) : null;
+        throw new FatalError("Problem fetching cui pdf cover");
     }
 }

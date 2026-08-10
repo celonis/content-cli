@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import AdmZip = require("adm-zip");
 import { Context } from "../command/cli-context";
-import { CuiPdfCoverResponse, CuiService } from "./cui-service";
+import { CuiApi, CuiPdfCoverResponse } from "./cui-api";
 import { fileService } from "./file-service";
 import { FileConstants } from "./file.constants";
 import { FatalError } from "./logger";
@@ -13,14 +13,14 @@ export class CuiFileService {
 
     private static readonly BASE64_ENCODING = "base64";
 
-    private readonly cuiService: CuiService;
+    private readonly cuiApi: CuiApi;
 
     constructor(context: Context) {
-        this.cuiService = new CuiService(context);
+        this.cuiApi = new CuiApi(context);
     }
 
     public async writeToFileWithGivenName(data: string, filename: string): Promise<string> {
-        const cover = await this.cuiService.getCuiPdfCover();
+        const cover = await this.cuiApi.getCuiPdfCover();
 
         if (cover === null) {
             fileService.writeToFileWithGivenName(data, filename);
