@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import AdmZip = require("adm-zip");
 import { Context } from "../command/cli-context";
 import { CuiPdfCoverResponse, CuiService } from "./cui-service";
