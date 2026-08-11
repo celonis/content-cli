@@ -1,4 +1,4 @@
-import { accessSync, readFileSync } from "node:fs";
+import { accessSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import AdmZip = require("adm-zip");
 import { CuiFileService } from "../../../src/core/utils/cui-file-service";
@@ -162,6 +162,61 @@ describe("CuiFileService", () => {
 
             await expect(cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip"))
                 .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+        });
+    });
+
+    describe("when the artifact is a directory", () => {
+        const writeTree = (targetDir: string): void => {
+            mkdirSync(resolve(process.cwd(), targetDir, "nodes"), { recursive: true });
+            writeFileSync(resolve(process.cwd(), targetDir, "package.json"), PAYLOAD);
+            writeFileSync(resolve(process.cwd(), targetDir, "nodes", "node-1.json"), PAYLOAD);
+        };
+
+        const exists = (...segments: string[]): boolean => existsSync(resolve(process.cwd(), ...segments));
+
+        it("Should keep the original directory name when no marking applies", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 204, "");
+
+            const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "unmarked-export");
+
+            expect(directoryName).toEqual("unmarked-export");
+            expect(exists(directoryName, "package.json")).toBe(true);
+            expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
+        });
+
+        it("Should only prefix the directory when the content is unclassified", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([]));
+
+            const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "plain-export");
+
+            expect(directoryName).toEqual("Unclassified - plain-export");
+            expect(exists(directoryName, "nodes", "node-1.json")).toBe(true);
+            expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
+            expect(exists("plain-export")).toBe(false);
+        });
+
+        it("Should prefix the directory and write the cover sheet into it", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([{ code: "PRVCY", name: "Privacy" }]));
+
+            const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "classified-export");
+
+            expect(directoryName).toEqual("CUI - classified-export");
+            expect(exists(directoryName, "package.json")).toBe(true);
+            expect(exists(directoryName, "nodes", "node-1.json")).toBe(true);
+            const coverSheet = readFileSync(resolve(process.cwd(), directoryName, CuiFileService.COVER_SHEET_FILE_NAME));
+            expect(coverSheet.equals(PDF_BYTES)).toBe(true);
+            expect(exists("classified-export")).toBe(false);
+        });
+
+        it("Should fail without writing anything when no cover page was returned", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, {
+                resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
+            });
+
+            await expect(cuiFileService.writeDirectoryWithGivenName(writeTree, "broken-export"))
+                .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+            expect(exists("broken-export")).toBe(false);
+            expect(exists("CUI - broken-export")).toBe(false);
         });
     });
 });
