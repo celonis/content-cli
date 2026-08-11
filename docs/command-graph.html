@@ -155,9 +155,9 @@ const NODES = [
   { id: "area_analyze", label: "analyze", group: "area", path: "analyze",
     description: "Analyze action flows and return its dependencies", options: ["-h, --help"] },
   { id: "area_export", label: "export", group: "area", path: "export",
-    description: "Export resource: action flow or data pool", options: ["-h, --help"] },
+    description: "Export resource: action flow, data pool, or bookmarks", options: ["-h, --help"] },
   { id: "area_import", label: "import", group: "area", path: "import",
-    description: "Import resource: action flow or data pool", options: ["-h, --help"] },
+    description: "Import resource: action flow, data pool, or bookmarks", options: ["-h, --help"] },
   { id: "area_pull", label: "pull", group: "area", path: "pull",
     description: "Pull resource: skill, bookmark, view bookmark, data pool or asset", options: ["-h, --help"] },
   { id: "area_push", label: "push", group: "area", path: "push",
@@ -214,6 +214,9 @@ const NODES = [
   { id: "export_data_model", label: "data-model", group: "command", path: "export data-model",
     description: "Export a data model with tables, foreign keys, and process configurations",
     options: ["-p, --profile <profile>", "--poolId <poolId>", "--dataModelId <dataModelId>", "--outputToJsonFile", "-h, --help"] },
+  { id: "export_bookmarks", label: "bookmarks", group: "command", path: "export bookmarks",
+    description: "Export bookmarks for a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "-f, --file <file>", "-h, --help"] },
 
   // import
   { id: "import_action_flows", label: "action-flows", group: "command", path: "import action-flows",
@@ -222,6 +225,9 @@ const NODES = [
   { id: "import_data_pools", label: "data-pools", group: "command", path: "import data-pools",
     description: "Command to batch import multiple data pools with their objects and dependencies",
     options: ["-p, --profile <profile>", "-f, --jsonFile <file>", "--outputToJsonFile", "-h, --help"] },
+  { id: "import_bookmarks", label: "bookmarks", group: "command", path: "import bookmarks",
+    description: "Import bookmarks into a package",
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "-f, --file <file>", "-h, --help"] },
 
   // pull
   { id: "pull_skill", label: "skill", group: "command", path: "pull skill",
@@ -485,9 +491,9 @@ const EDGES = [
 
   ["area_analyze","analyze_action_flows"],
 
-  ["area_export","export_action_flows"],["area_export","export_data_pool"],["area_export","export_data_model"],
+  ["area_export","export_action_flows"],["area_export","export_data_pool"],["area_export","export_data_model"],["area_export","export_bookmarks"],
 
-  ["area_import","import_action_flows"],["area_import","import_data_pools"],
+  ["area_import","import_action_flows"],["area_import","import_data_pools"],["area_import","import_bookmarks"],
 
   ["area_pull","pull_skill"],["area_pull","pull_bookmarks"],["area_pull","pull_data_pool"],
   ["area_pull","pull_asset"],["area_pull","pull_package"],["area_pull","pull_view_bookmarks"],

@@ -20,6 +20,7 @@ nav:
       - Data Pool Commands: './user-guide/data-pool-commands.md'
       - Data Model Migration Commands: './user-guide/data-model-migration-commands.md'
       - Action Flow Commands: './user-guide/action-flow-commands.md'
+      - Bookmark Commands: './user-guide/bookmark-commands.md'
   - Development:
       - Architecture: './internal-architecture.md'
       - How to Add a Command: './how-to-add-command.md'
