@@ -338,10 +338,11 @@ function mapColumnType(columnType: ColumnType): AttributeDataType {
 }
 
 function sanitizeKey(value: string): string {
+    // Collapsing non-alphanumeric runs to a single "_" guarantees no consecutive
+    // underscores, so trimming a single leading/trailing "_" needs no backtracking regex.
     return value
         .trim()
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "")
-        .replace(/_+/g, "_");
+        .replace(/^_|_$/g, "");
 }
