@@ -57,12 +57,13 @@ export class FileService {
     }
 
     public extractExportedZipWithNestedZipsToDir(zipFile: AdmZip, targetDir: string): string {
-        this.mkdirRecursive(targetDir);
-        zipFile.extractAllTo(targetDir, true, true);
+        const targetPath = path.resolve(process.cwd(), targetDir);
+        this.mkdirRecursive(targetPath);
+        zipFile.extractAllTo(targetPath, true, true);
 
-        const files = fs.readdirSync(targetDir);
+        const files = fs.readdirSync(targetPath);
         for (const file of files) {
-            const innerZipPath = path.join(targetDir, file);
+            const innerZipPath = path.join(targetPath, file);
             if (file.endsWith(".zip")) {
                 const nestedZip = new AdmZip(innerZipPath);
                 const nestedDir = innerZipPath.replace(/\.zip$/, "");
@@ -72,8 +73,8 @@ export class FileService {
                 fs.rmSync(innerZipPath); // Optionally remove the inner zip
             }
         }
-        this.restrictFilePermissions(targetDir);
-        return targetDir;
+        this.restrictFilePermissions(targetPath);
+        return targetPath;
     }
 
     public isDirectory(sourcePath: string): boolean {

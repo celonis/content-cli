@@ -162,10 +162,12 @@ export class BranchExportImportCommandService {
                 fs.rmSync(zipPath, { force: true });
             }
         }
-        const targetDir = resolve(process.cwd(), packageKey);
-        fs.rmSync(targetDir, { recursive: true, force: true });
-        fs.cpSync(sourceDir, targetDir, { recursive: true });
-        return `Successful export. Exported directory: ${packageKey}`;
+        const directoryName = await this.cuiFileService.writeDirectoryWithGivenName(name => {
+            const targetDir = resolve(process.cwd(), name);
+            fs.rmSync(targetDir, { recursive: true, force: true });
+            fs.cpSync(sourceDir, targetDir, { recursive: true });
+        }, packageKey);
+        return `Successful export. Exported directory: ${directoryName}`;
     }
 
     private prepareLocalWorkingDir(file: string | undefined, directory: string | undefined): string {

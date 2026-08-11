@@ -20,46 +20,61 @@ export class CuiFileService {
     }
 
     public async writeToFileWithGivenName(data: string, filename: string): Promise<string> {
-        return this.writeWithCoverHandling(data, filename, cover =>
-            this.writeClassifiedArchive(filename, data, cover)
+        return this.writeWithCoverHandling(
+            name => fileService.writeToFileWithGivenName(data, name),
+            filename,
+            cover => this.writeClassifiedArchive(filename, data, cover)
         );
     }
 
     public async writeZipToFileWithGivenName(zipData: Buffer, filename: string): Promise<string> {
-        return this.writeWithCoverHandling(zipData, filename, cover => {
-            const zip = new AdmZip(zipData);
-            this.addCoverPage(zip, cover);
+        return this.writeWithCoverHandling(
+            name => fileService.writeBufferToFileWithGivenName(zipData, name),
+            filename,
+            cover => {
+                const zip = new AdmZip(zipData);
+                this.addCoverPage(zip, cover);
 
-            return this.writeArchive(zip, filename);
+                return this.writeArchive(zip, filename);
+            }
+        );
+    }
+
+    public async writeDirectoryWithGivenName(write: (targetDir: string) => void, directoryName: string): Promise<string> {
+        return this.writeWithCoverHandling(write, directoryName, cover => {
+            const coverSheet = this.decodeCoverPage(cover);
+            const classifiedName = this.prefixFileName(directoryName, CuiFileService.CLASSIFIED_PREFIX);
+
+            write(classifiedName);
+            fileService.writeBufferToFileWithGivenName(
+                coverSheet,
+                path.join(classifiedName, CuiFileService.COVER_SHEET_FILE_NAME)
+            );
+
+            return classifiedName;
         });
     }
 
     private async writeWithCoverHandling(
-        payload: string | Buffer,
+        write: (name: string) => void,
         filename: string,
-        onClassified: (cover: CuiPdfCoverResponse) => Promise<string> | string
+        onClassified: (cover: CuiPdfCoverResponse) => string
     ): Promise<string> {
         const cover = await this.cuiApi.getCuiPdfCover();
 
         if (!cover) {
-            return this.writePayload(payload, filename);
+            write(filename);
+            return filename;
         }
 
         if (!this.isClassified(cover)) {
-            return this.writePayload(payload, this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX));
+            const unclassifiedName = this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX);
+            write(unclassifiedName);
+
+            return unclassifiedName;
         }
 
         return onClassified(cover);
-    }
-
-    private writePayload(payload: string | Buffer, filename: string): string {
-        if (Buffer.isBuffer(payload)) {
-            fileService.writeBufferToFileWithGivenName(payload, filename);
-        } else {
-            fileService.writeToFileWithGivenName(payload, filename);
-        }
-
-        return filename;
     }
 
     private writeClassifiedArchive(filename: string, data: string, cover: CuiPdfCoverResponse): string {

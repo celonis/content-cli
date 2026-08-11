@@ -245,9 +245,11 @@ export class T2tcPackageService {
     private async downloadZip(exportedZip: AdmZip, unzip: boolean): Promise<void> {
         if (unzip) {
             const fileDownloadedMessage = "Successful download. Downloaded directory: ";
-            const targetDirectoryName = `export_${uuidv4()}`;
-            fileService.extractExportedZipWithNestedZipsToDir(exportedZip, targetDirectoryName);
-            logger.info(fileDownloadedMessage + targetDirectoryName);
+            const directoryName = await this.cuiFileService.writeDirectoryWithGivenName(
+                targetDir => fileService.extractExportedZipWithNestedZipsToDir(exportedZip, targetDir),
+                `export_${uuidv4()}`
+            );
+            logger.info(fileDownloadedMessage + directoryName);
         } else {
             const fileDownloadedMessage = "File downloaded successfully. New filename: ";
             const filename = await this.cuiFileService.writeZipToFileWithGivenName(exportedZip.toBuffer(), `export_${uuidv4()}.zip`);
