@@ -11,12 +11,11 @@ Example: `list packages --json` would otherwise write `packages.json`.
 | Cover response | Meaning | Outcome |
 |---|---|---|
 | **403** | Feature flag disabled | `packages.json` |
-| **204** | Team has CUI disabled | `packages.json` |
-| **200**, no categories | Marking applies, unclassified | `Unclassified - packages.json` |
-| **200**, with categories | Marking applies, classified | `CUI - packages.zip` containing `packages.json` and `CUI_Cover_Sheet.pdf` |
-| Unexpected response | Fail closed | Nothing written; the command errors |
+| **204** | Unclassified | `Unclassified - packages.json` |
+| **200** | Classified | `CUI - packages.zip` containing `packages.json` and `CUI_Cover_Sheet.pdf` |
+| Any other response | Fail closed | Nothing written; the command errors |
 
-**403** and **204** both leave the artifact unmarked. They are not the same as **200 with no categories**, which still renames it to `Unclassified - …`.
+The status code alone decides the outcome. Any failure of the cover call, including an unexpected status or a **200** without a usable cover page, aborts the command and leaves no output behind.
 
 ## Scope: how the write is triggered
 
