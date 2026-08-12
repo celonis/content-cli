@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import AdmZip = require("adm-zip");
 import { Context } from "../command/cli-context";
-import { CuiApi, CuiPdfCoverResponse } from "./cui-api";
+import { CuiApi, CuiMarking, CuiPdfCoverResponse } from "./cui-api";
 import { fileService } from "./file-service";
 import { FileConstants } from "./file.constants";
 import { FatalError } from "./logger";
@@ -60,21 +60,21 @@ export class CuiFileService {
         filename: string,
         onClassified: (cover: CuiPdfCoverResponse) => string
     ): Promise<string> {
-        const cover = await this.cuiApi.getCuiPdfCover();
+        const decision = await this.cuiApi.getCuiMarking();
 
-        if (!cover) {
+        if (decision.marking === CuiMarking.DISABLED) {
             write(filename);
             return filename;
         }
 
-        if (!this.isClassified(cover)) {
+        if (decision.marking === CuiMarking.UNCLASSIFIED) {
             const unclassifiedName = this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX);
             write(unclassifiedName);
 
             return unclassifiedName;
         }
 
-        return onClassified(cover);
+        return onClassified(decision.cover);
     }
 
     private writeClassifiedArchive(filename: string, data: string, cover: CuiPdfCoverResponse): string {
@@ -111,10 +111,6 @@ export class CuiFileService {
         }
 
         return Buffer.from(coverPage.pdfContent, CuiFileService.BASE64_ENCODING);
-    }
-
-    private isClassified(cover: CuiPdfCoverResponse): boolean {
-        return (cover.resolvedCuiMarking?.categories?.length ?? 0) > 0;
     }
 
     private buildClassifiedArchiveName(filename: string): string {
