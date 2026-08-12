@@ -45,6 +45,18 @@ function markedPayload(prefix?: string): any {
     return payloadFromArchive(loggedFileName(prefix));
 }
 
+function markAsUnclassified(): void {
+    mockAxiosGetWithStatus(COVER_URL, 204, "");
+}
+
+function unclassifiedPayload(prefix?: string): any {
+    const filename = loggedFileName(prefix);
+    expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(true);
+    expect(filename.endsWith(".json")).toBe(true);
+
+    return JSON.parse(readFileSync(resolve(process.cwd(), filename), "utf-8"));
+}
+
 describe("CUI marking of --outputToJsonFile commands", () => {
 
     beforeEach(() => {
@@ -76,6 +88,16 @@ describe("CUI marking of --outputToJsonFile commands", () => {
         await new DataPoolCommandService(testContext).exportDataPool(POOL_ID, true);
 
         expect(markedPayload()).toEqual(dataPool);
+    });
+
+    it("Should only prefix the report when the content is unclassified", async () => {
+        markAsUnclassified();
+        const dataPool = { id: POOL_ID, name: "Pool 1", objects: [] };
+        mockAxiosGet(`https://myTeam.celonis.cloud/integration/api/pools/${POOL_ID}/v2/export`, dataPool);
+
+        await new DataPoolCommandService(testContext).exportDataPool(POOL_ID, true);
+
+        expect(unclassifiedPayload()).toEqual(dataPool);
     });
 
     it("Should mark the data pool batch import report", async () => {
