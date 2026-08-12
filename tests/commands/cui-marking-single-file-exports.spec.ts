@@ -53,6 +53,17 @@ function markedJson(expectedName: string, entryName: string): any {
     return JSON.parse(markedEntry(expectedName, entryName));
 }
 
+function markAsUnclassified(): void {
+    mockAxiosGetWithStatus(COVER_URL, 204, "");
+}
+
+function unclassifiedFile(expectedName: string): string {
+    const filename = loggedFileName();
+    expect(filename).toEqual(`${CuiFileService.UNCLASSIFIED_PREFIX}${expectedName}`);
+
+    return readFileSync(resolve(process.cwd(), filename), "utf-8");
+}
+
 describe("CUI marking of single-file exports", () => {
 
     beforeEach(() => {
@@ -66,6 +77,16 @@ describe("CUI marking of single-file exports", () => {
         await new AssetCommandService(testContext).pullAsset(`${PACKAGE_KEY}.asset-1`);
 
         expect(parse(markedEntry("asset_asset-1", "asset_asset-1.yml"))).toEqual(asset);
+    });
+
+    it("Should only prefix the export when the content is unclassified", async () => {
+        markAsUnclassified();
+        const asset = { key: "asset-1", name: "My Asset", rootNodeKey: PACKAGE_KEY };
+        mockAxiosGet(`https://myTeam.celonis.cloud/package-manager/api/nodes/asset/export/${PACKAGE_KEY}.asset-1`, asset);
+
+        await new AssetCommandService(testContext).pullAsset(`${PACKAGE_KEY}.asset-1`);
+
+        expect(parse(unclassifiedFile("asset_asset-1.yml"))).toEqual(asset);
     });
 
     it("Should mark the exported skill", async () => {
