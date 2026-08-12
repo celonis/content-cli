@@ -45,9 +45,9 @@ const mockAxios = () : void => {
             }
         }
         // CUI marking is probed on every user-facing write. Unless a test opts in,
-        // answer 204 so the CLI keeps the original filename.
+        // answer 403 so the CLI keeps the original filename.
         if (requestUrl.endsWith(CUI_PDF_COVER_PATH)) {
-            return Promise.resolve({ status: 204, data: "" });
+            return Promise.resolve({ status: 403, data: "" });
         }
         fail("API call not mocked.")
     });

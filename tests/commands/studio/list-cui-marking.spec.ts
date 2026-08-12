@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import AdmZip = require("adm-zip");
-import { mockAxiosGet, mockAxiosGetWithStatus, mockedAxiosInstance } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosGetError, mockAxiosGetWithStatus, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { SpaceCommandService } from "../../../src/commands/studio/command-service/space-command.service";
 import { PackageCommandService } from "../../../src/commands/studio/command-service/package-command.service";
 import { testContext } from "../../utls/test-context";
@@ -20,7 +20,6 @@ const PDF_BYTES = Buffer.from("%PDF-1.4 cover sheet");
 
 function classifiedCover(): object {
     return {
-        resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
         coverPage: { pdfContent: PDF_BYTES.toString("base64"), encoding: "base64" },
     };
 }
@@ -68,14 +67,24 @@ describe("CUI marking of Studio listings", () => {
             expect(payloadFromArchive(filename)).toEqual(SPACES);
         });
 
-        it("Should keep the original filename when no marking applies", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
+        it("Should keep the original filename when the feature flag is disabled", async () => {
+            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
 
             await listSpaces();
 
             const filename = loggedFileName();
             expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(false);
             expect(filename.startsWith(CuiFileService.CLASSIFIED_PREFIX)).toBe(false);
+            expect(readWrittenJson(filename)).toEqual(SPACES);
+        });
+
+        it("Should only prefix the listing when the content is unclassified", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 204, "");
+
+            await listSpaces();
+
+            const filename = loggedFileName();
+            expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(true);
             expect(readWrittenJson(filename)).toEqual(SPACES);
         });
 
@@ -105,14 +114,24 @@ describe("CUI marking of Studio listings", () => {
             expect(payloadFromArchive(filename)).toEqual(LISTED_PACKAGES);
         });
 
-        it("Should keep the original filename when no marking applies", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
+        it("Should keep the original filename when the feature flag is disabled", async () => {
+            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
 
             await listPackages();
 
             const filename = loggedFileName();
             expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(false);
             expect(filename.startsWith(CuiFileService.CLASSIFIED_PREFIX)).toBe(false);
+            expect(readWrittenJson(filename)).toEqual(LISTED_PACKAGES);
+        });
+
+        it("Should only prefix the listing when the content is unclassified", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 204, "");
+
+            await listPackages();
+
+            const filename = loggedFileName();
+            expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(true);
             expect(readWrittenJson(filename)).toEqual(LISTED_PACKAGES);
         });
 

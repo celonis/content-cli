@@ -27,7 +27,6 @@ const T2TC_DOWNLOAD_MESSAGE = "File downloaded successfully. New filename: ";
 
 function markAsClassified(): void {
     mockAxiosGetWithStatus(COVER_URL, 200, {
-        resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
         coverPage: { pdfContent: PDF_BYTES.toString("base64"), encoding: "base64" },
     });
 }
