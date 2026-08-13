@@ -12,6 +12,7 @@ const mockedGetErrorByUrl = new Map<string, { status: number; data: any }>();
 const mockedPostResponseByUrl = new Map<string, any>();
 const mockedPostErrorByUrl = new Map<string, { status: number; data: any }>();
 const mockedPostRequestBodyByUrl = new Map<string, any>();
+const mockedPutErrorByUrl = new Map<string, { status: number; data: any }>();
 const mockedDeleteResponseByUrl = new Map<string, any>();
 
 const mockAxios = () : void => {
@@ -64,6 +65,20 @@ const mockAxios = () : void => {
         }
         fail("API call not mocked.")
     });
+
+    (mockedAxiosInstance.put as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
+        if (mockedPutErrorByUrl.has(requestUrl)) {
+            const { status, data: errorData } = mockedPutErrorByUrl.get(requestUrl)!;
+            return Promise.reject({ response: { status, data: errorData } });
+        }
+        if (mockedPostResponseByUrl.has(requestUrl)) {
+            const response = { data: mockedPostResponseByUrl.get(requestUrl) };
+            mockedPostRequestBodyByUrl.set(requestUrl, data);
+
+            return Promise.resolve(response);
+        }
+        fail("API call not mocked.")
+    });
 }
 
 const mockAxiosGet = (url: string, responseData: any) => {
@@ -95,17 +110,13 @@ const mockAxiosPostError = (url: string, status: number, data: any) => {
 
 const mockAxiosPut = (url: string, responseData: any) => {
     mockedPostResponseByUrl.set(url, responseData);
-    (mockedAxiosInstance.put as jest.Mock).mockImplementation((requestUrl: string, data: any) => {
-        if (mockedPostResponseByUrl.has(requestUrl)) {
-            const response = { data: mockedPostResponseByUrl.get(requestUrl) };
-            mockedPostRequestBodyByUrl.set(requestUrl, data);
+    mockedPutErrorByUrl.delete(url);
+};
 
-            return Promise.resolve(response);
-        } else {
-            fail("API call not mocked.")
-        }
-    })
-}
+const mockAxiosPutError = (url: string, status: number, data: any) => {
+    mockedPutErrorByUrl.set(url, { status, data });
+    mockedPostResponseByUrl.delete(url);
+};
 
 const mockAxiosDelete = (url: string) => {
     mockedDeleteResponseByUrl.set(url, undefined);
@@ -125,6 +136,7 @@ afterEach(() => {
     mockedPostResponseByUrl.clear();
     mockedPostErrorByUrl.clear();
     mockedPostRequestBodyByUrl.clear();
+    mockedPutErrorByUrl.clear();
     mockedDeleteResponseByUrl.clear();
 })
 
@@ -137,6 +149,7 @@ export {
     mockAxiosPost,
     mockAxiosPostError,
     mockAxiosPut,
+    mockAxiosPutError,
     mockAxiosDelete,
     mockedPostRequestBodyByUrl
 };
