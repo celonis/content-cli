@@ -9,7 +9,6 @@ import { FatalError } from "./logger";
 export class CuiFileService {
     public static readonly COVER_SHEET_FILE_NAME = "CUI_Cover_Sheet.pdf";
     public static readonly CLASSIFIED_PREFIX = "CUI - ";
-    public static readonly UNCLASSIFIED_PREFIX = "Unclassified - ";
 
     private static readonly BASE64_ENCODING = "base64";
 
@@ -65,13 +64,6 @@ export class CuiFileService {
         if (decision.marking === CuiMarking.DISABLED) {
             write(filename);
             return filename;
-        }
-
-        if (decision.marking === CuiMarking.UNCLASSIFIED) {
-            const unclassifiedName = this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX);
-            write(unclassifiedName);
-
-            return unclassifiedName;
         }
 
         return onClassified(decision.cover);

@@ -51,17 +51,6 @@ function entryNames(archive: AdmZip): string[] {
     return archive.getEntries().map(entry => entry.entryName).sort();
 }
 
-function markAsUnclassified(): void {
-    mockAxiosGetWithStatus(COVER_URL, 204, "");
-}
-
-function unclassifiedArchive(expectedName: string): AdmZip {
-    const filename = loggedFileName();
-    expect(filename).toEqual(`${CuiFileService.UNCLASSIFIED_PREFIX}${expectedName}`);
-
-    return new AdmZip(readFileSync(resolve(process.cwd(), filename)));
-}
-
 function buildPackageZip(): Buffer {
     const zip = new AdmZip();
     zip.addFile("package.json", Buffer.from(JSON.stringify({ key: PACKAGE_KEY, name: "My Package" })));
@@ -98,15 +87,6 @@ describe("CUI marking of archive exports", () => {
             "nodes/node-1.json",
             "package.json",
         ]);
-    });
-
-    it("Should only prefix the archive when the content is unclassified", async () => {
-        markAsUnclassified();
-        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/export-file`, buildPackageZip());
-
-        await new SinglePackageExportService(testContext).exportPackage(PACKAGE_KEY, true, null);
-
-        expect(entryNames(unclassifiedArchive(`${PACKAGE_KEY}.zip`))).toEqual(["nodes/node-1.json", "package.json"]);
     });
 
     it("Should mark the archive of config branch export --zip", async () => {

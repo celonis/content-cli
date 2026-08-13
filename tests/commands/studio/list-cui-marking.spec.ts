@@ -73,18 +73,7 @@ describe("CUI marking of Studio listings", () => {
             await listSpaces();
 
             const filename = loggedFileName();
-            expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(false);
             expect(filename.startsWith(CuiFileService.CLASSIFIED_PREFIX)).toBe(false);
-            expect(readWrittenJson(filename)).toEqual(SPACES);
-        });
-
-        it("Should only prefix the listing when the content is unclassified", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
-
-            await listSpaces();
-
-            const filename = loggedFileName();
-            expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(true);
             expect(readWrittenJson(filename)).toEqual(SPACES);
         });
 
@@ -120,18 +109,7 @@ describe("CUI marking of Studio listings", () => {
             await listPackages();
 
             const filename = loggedFileName();
-            expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(false);
             expect(filename.startsWith(CuiFileService.CLASSIFIED_PREFIX)).toBe(false);
-            expect(readWrittenJson(filename)).toEqual(LISTED_PACKAGES);
-        });
-
-        it("Should only prefix the listing when the content is unclassified", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
-
-            await listPackages();
-
-            const filename = loggedFileName();
-            expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(true);
             expect(readWrittenJson(filename)).toEqual(LISTED_PACKAGES);
         });
 

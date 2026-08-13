@@ -35,7 +35,9 @@ describe("CuiFileService", () => {
             expect(filename).toEqual("report.json");
             expect(readFile("report.json").toString()).toEqual(PAYLOAD);
         });
+    });
 
+    describe("when the cover response cannot be used", () => {
         it("Should fail on an unexpected backend error", async () => {
             mockAxiosGetError(COVER_URL, 500, { message: "boom" });
 
@@ -49,17 +51,12 @@ describe("CuiFileService", () => {
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "empty-cover.json")).rejects.toThrow(FatalError);
             expect(() => accessSync(resolve(process.cwd(), "empty-cover.json"))).toThrow();
         });
-    });
 
-    describe("when the content is unclassified", () => {
-        it("Should only prefix the filename and write no cover sheet", async () => {
+        it("Should fail when the backend answers with no content", async () => {
             mockAxiosGetWithStatus(COVER_URL, 204, "");
 
-            const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json");
-
-            expect(filename).toEqual("Unclassified - packages.json");
-            expect(readFile(filename).toString()).toEqual(PAYLOAD);
-            expect(() => accessSync(resolve(process.cwd(), CuiFileService.COVER_SHEET_FILE_NAME))).toThrow();
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "no-content.json")).rejects.toThrow(FatalError);
+            expect(() => accessSync(resolve(process.cwd(), "no-content.json"))).toThrow();
         });
     });
 
@@ -116,16 +113,6 @@ describe("CuiFileService", () => {
             expect(readFile(filename).equals(exportZip)).toBe(true);
         });
 
-        it("Should only prefix the archive when the content is unclassified", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
-            const exportZip = buildExportZip();
-
-            const filename = await cuiFileService.writeZipToFileWithGivenName(exportZip, "export.zip");
-
-            expect(filename).toEqual("Unclassified - export.zip");
-            expect(readFile(filename).equals(exportZip)).toBe(true);
-        });
-
         it("Should add the cover sheet into the given archive instead of nesting it", async () => {
             mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
 
@@ -168,17 +155,6 @@ describe("CuiFileService", () => {
             expect(directoryName).toEqual("unmarked-export");
             expect(exists(directoryName, "package.json")).toBe(true);
             expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
-        });
-
-        it("Should only prefix the directory when the content is unclassified", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
-
-            const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "plain-export");
-
-            expect(directoryName).toEqual("Unclassified - plain-export");
-            expect(exists(directoryName, "nodes", "node-1.json")).toBe(true);
-            expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
-            expect(exists("plain-export")).toBe(false);
         });
 
         it("Should prefix the directory and write the cover sheet into it", async () => {
