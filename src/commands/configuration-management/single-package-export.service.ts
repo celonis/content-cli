@@ -4,16 +4,18 @@ import { fileService, FileService } from "../../core/utils/file-service";
 import { logger } from "../../core/utils/logger";
 import { GitService } from "../../core/git-profile/git/git.service";
 import { SinglePackageExportApi } from "./api/single-package-export-api";
-import { resolve } from "node:path";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 
 export class SinglePackageExportService {
 
     private readonly singlePackageExportApi: SinglePackageExportApi;
     private readonly gitService: GitService;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.singlePackageExportApi = new SinglePackageExportApi(context);
         this.gitService = new GitService(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async exportPackage(packageKey: string, zip: boolean, gitBranch: string): Promise<void> {
@@ -25,8 +27,7 @@ export class SinglePackageExportService {
         }
 
         if (zip) {
-            const fileName = `${packageKey}.zip`;
-            fileService.writeBufferToFileWithGivenName(packageData, resolve(process.cwd(), fileName));
+            const fileName = await this.cuiFileService.writeZipToFileWithGivenName(packageData, `${packageKey}.zip`);
             logger.info(FileService.fileDownloadedMessage + fileName);
             return;
         }

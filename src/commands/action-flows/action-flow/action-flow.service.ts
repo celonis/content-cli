@@ -8,7 +8,6 @@ import { fileService, FileService } from "../../../core/utils/file-service";
 import { CuiFileService } from "../../../core/utils/cui-file-service";
 import { logger } from "../../../core/utils/logger";
 import { FileConstants } from "../../../core/utils/file.constants";
-import { resolve } from "node:path";
 
 export class ActionFlowService {
     public static readonly METADATA_FILE_NAME = "metadata.json";
@@ -35,9 +34,8 @@ export class ActionFlowService {
         }
 
         const fileName = "action-flows_export_" + uuidv4() + ".zip";
-        const fullFilePath = resolve(process.cwd(), fileName);
-        zip.writeZip(fullFilePath, () => fs.chmodSync(fullFilePath, FileConstants.DEFAULT_FILE_PERMISSIONS));
-        logger.info(FileService.fileDownloadedMessage + fileName);
+        const writtenFilename = await this.cuiFileService.writeZipToFileWithGivenName(zip.toBuffer(), fileName);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
     public async analyzeActionFlows(packageId: string, outputToJsonFile: boolean): Promise<void> {

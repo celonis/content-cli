@@ -20,32 +20,66 @@ export class CuiFileService {
     }
 
     public async writeToFileWithGivenName(data: string, filename: string): Promise<string> {
+        return this.writeWithCoverHandling(data, filename, cover =>
+            this.writeClassifiedArchive(filename, data, cover)
+        );
+    }
+
+    public async writeZipToFileWithGivenName(zipData: Buffer, filename: string): Promise<string> {
+        return this.writeWithCoverHandling(zipData, filename, cover => {
+            const zip = new AdmZip(zipData);
+            this.addCoverPage(zip, cover);
+
+            return this.writeArchive(zip, filename);
+        });
+    }
+
+    private async writeWithCoverHandling(
+        payload: string | Buffer,
+        filename: string,
+        onClassified: (cover: CuiPdfCoverResponse) => Promise<string> | string
+    ): Promise<string> {
         const cover = await this.cuiApi.getCuiPdfCover();
 
-        if (cover === null) {
-            fileService.writeToFileWithGivenName(data, filename);
-            return filename;
+        if (!cover) {
+            return this.writePayload(payload, filename);
         }
 
         if (!this.isClassified(cover)) {
-            const unclassifiedName = this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX);
-            fileService.writeToFileWithGivenName(data, unclassifiedName);
-            return unclassifiedName;
+            return this.writePayload(payload, this.prefixFileName(filename, CuiFileService.UNCLASSIFIED_PREFIX));
         }
 
-        return this.writeClassifiedArchive(filename, data, cover);
+        return onClassified(cover);
+    }
+
+    private writePayload(payload: string | Buffer, filename: string): string {
+        if (Buffer.isBuffer(payload)) {
+            fileService.writeBufferToFileWithGivenName(payload, filename);
+        } else {
+            fileService.writeToFileWithGivenName(payload, filename);
+        }
+
+        return filename;
     }
 
     private writeClassifiedArchive(filename: string, data: string, cover: CuiPdfCoverResponse): string {
         const zip = new AdmZip();
         zip.addFile(path.basename(filename), Buffer.from(data, "utf-8"), "", FileConstants.DEFAULT_FILE_PERMISSIONS);
+        this.addCoverPage(zip, cover);
+
+        return this.writeArchive(zip, filename);
+    }
+
+    private addCoverPage(zip: AdmZip, cover: CuiPdfCoverResponse): void {
         zip.addFile(
             CuiFileService.COVER_SHEET_FILE_NAME,
             this.decodeCoverPage(cover),
             "",
             FileConstants.DEFAULT_FILE_PERMISSIONS
         );
+    }
 
+    private writeArchive(zip: AdmZip, filename: string): string {
         const archiveName = this.buildClassifiedArchiveName(filename);
         fileService.writeBufferToFileWithGivenName(zip.toBuffer(), archiveName);
 

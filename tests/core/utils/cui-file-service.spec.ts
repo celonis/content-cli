@@ -106,4 +106,62 @@ describe("CuiFileService", () => {
                 .rejects.toThrow("CUI marking applies but the response contained no cover page.");
         });
     });
+
+    describe("when the artifact is already an archive", () => {
+        const buildExportZip = (): Buffer => {
+            const zip = new AdmZip();
+            zip.addFile("manifest.json", Buffer.from(JSON.stringify({ packageKey: "pkg-1" })));
+            zip.addFile("nodes/node-1.json", Buffer.from(JSON.stringify({ key: "node-1" })));
+            return zip.toBuffer();
+        };
+
+        const entryNames = (filename: string): string[] =>
+            new AdmZip(readFile(filename)).getEntries().map(entry => entry.entryName).sort();
+
+        it("Should keep the archive untouched when no marking applies", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 204, "");
+            const exportZip = buildExportZip();
+
+            const filename = await cuiFileService.writeZipToFileWithGivenName(exportZip, "export.zip");
+
+            expect(filename).toEqual("export.zip");
+            expect(readFile(filename).equals(exportZip)).toBe(true);
+        });
+
+        it("Should only prefix the archive when the content is unclassified", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([]));
+            const exportZip = buildExportZip();
+
+            const filename = await cuiFileService.writeZipToFileWithGivenName(exportZip, "export.zip");
+
+            expect(filename).toEqual("Unclassified - export.zip");
+            expect(readFile(filename).equals(exportZip)).toBe(true);
+        });
+
+        it("Should add the cover sheet into the given archive instead of nesting it", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([{ code: "PRVCY", name: "Privacy" }]));
+
+            const filename = await cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip");
+
+            expect(filename).toEqual("CUI - export.zip");
+            expect(entryNames(filename)).toEqual([
+                CuiFileService.COVER_SHEET_FILE_NAME,
+                "manifest.json",
+                "nodes/node-1.json",
+            ]);
+
+            const archive = new AdmZip(readFile(filename));
+            expect(archive.getEntry(CuiFileService.COVER_SHEET_FILE_NAME).getData().equals(PDF_BYTES)).toBe(true);
+            expect(archive.getEntries().some(entry => entry.entryName.endsWith(".zip"))).toBe(false);
+        });
+
+        it("Should fail when the marking applies but no cover page was returned", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, {
+                resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
+            });
+
+            await expect(cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip"))
+                .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+        });
+    });
 });
