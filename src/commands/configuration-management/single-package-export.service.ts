@@ -32,8 +32,11 @@ export class SinglePackageExportService {
             return;
         }
 
-        fileService.extractZipBufferToDirectory(packageData, packageKey);
-        logger.info(`Successful export. Exported directory: ${packageKey}`);
+        const directoryName = await this.cuiFileService.writeDirectoryWithGivenName(
+            targetDir => fileService.extractZipBufferToDirectory(packageData, targetDir),
+            packageKey
+        );
+        logger.info(`Successful export. Exported directory: ${directoryName}`);
     }
 
     private async exportToGitBranch(packageData: Buffer, gitBranch: string): Promise<void> {

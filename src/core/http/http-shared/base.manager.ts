@@ -14,7 +14,7 @@ export abstract class BaseManager {
         this.cuiFileService = new CuiFileService(context);
     }
 
-    public async pull(): Promise<any> {
+    public async pull(): Promise<void> {
         try {
             const data = await this.httpClient().get(this.getConfig().pullUrl);
             const filename = await this.writeToFile(data);
@@ -25,7 +25,7 @@ export abstract class BaseManager {
         }
     }
 
-    public async pullFile(): Promise<any> {
+    public async pullFile(): Promise<void> {
         try {
             const data = await this.httpClient().downloadFile(this.getConfig().pullUrl);
             const filename = await this.writeStreamToFile(data);
