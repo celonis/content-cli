@@ -1,5 +1,6 @@
 import { FatalError, logger } from "./logger";
 import { Context } from "../command/cli-context";
+import { CuiMarkingCache } from "./cui-marking-cache";
 
 export interface CuiPdfCoverResponse {
     coverPage?: { pdfContent: string; encoding: string };
@@ -21,20 +22,52 @@ export class CuiApi {
     private static readonly STATUS_FORBIDDEN = 403;
 
     private readonly context: Context;
+    private readonly cache: CuiMarkingCache;
 
     constructor(context: Context) {
         this.context = context;
+        this.cache = new CuiMarkingCache(context);
     }
 
     public getCuiMarking(): Promise<CuiMarkingDecision> {
         if (!this.context.cuiMarking) {
-            this.context.cuiMarking = this.fetchCuiMarking().catch(error => {
+            this.context.cuiMarking = this.resolveCuiMarking().catch(error => {
                 this.context.cuiMarking = undefined;
                 throw error;
             });
         }
 
         return this.context.cuiMarking;
+    }
+
+    private async resolveCuiMarking(): Promise<CuiMarkingDecision> {
+        const cached = this.readCachedMarking();
+        if (cached) {
+            logger.debug("Reusing the CUI marking decision cached for this session");
+            return cached;
+        }
+
+        const decision = await this.fetchCuiMarking();
+        this.cache.write(decision);
+
+        return decision;
+    }
+
+    private readCachedMarking(): CuiMarkingDecision | undefined {
+        const cached = this.cache.read() as CuiMarkingDecision | undefined;
+
+        if (cached?.marking === CuiMarking.DISABLED) {
+            return cached;
+        }
+        if (cached?.marking === CuiMarking.CLASSIFIED && cached.cover) {
+            return cached;
+        }
+
+        if (cached) {
+            logger.debug("Ignoring a cached CUI marking decision that cannot be used");
+        }
+
+        return undefined;
     }
 
     private async fetchCuiMarking(): Promise<CuiMarkingDecision> {

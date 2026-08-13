@@ -8,8 +8,18 @@ import { join } from "path";
 
 import process = require("process");
 import { rmTempDir } from "./utls/fs-utils";
+import { CuiMarkingCache } from "../src/core/utils/cui-marking-cache";
 
 mockAxios();
+
+// Workers share a parent pid, so each needs its own CUI cache dir to stay independent.
+const cuiCacheDir = fs.mkdtempSync(join(tmpdir(), "jest-cui-cache"));
+process.env[CuiMarkingCache.CACHE_DIRECTORY_ENV_VARIABLE] = cuiCacheDir;
+
+// Removed wholesale rather than listed, because some specs spy on readdirSync.
+afterEach(() => {
+    fs.rmSync(cuiCacheDir, { recursive: true, force: true });
+});
 
 let tempDir = null;
 beforeAll(done => {

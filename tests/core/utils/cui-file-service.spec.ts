@@ -1,7 +1,10 @@
-import { accessSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { accessSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import AdmZip = require("adm-zip");
+import { Context } from "../../../src/core/command/cli-context";
+import { HttpClient } from "../../../src/core/http/http-client";
 import { CuiFileService } from "../../../src/core/utils/cui-file-service";
+import { CuiMarkingCache } from "../../../src/core/utils/cui-marking-cache";
 import { FatalError } from "../../../src/core/utils/logger";
 import { testContext } from "../../utls/test-context";
 import { mockAxiosGetError, mockAxiosGetWithStatus, mockedAxiosInstance } from "../../utls/http-requests-mock";
@@ -21,6 +24,9 @@ describe("CuiFileService", () => {
     });
 
     const readFile = (filename: string): Buffer => readFileSync(resolve(process.cwd(), filename));
+
+    const coverRequestCount = (): number =>
+        (mockedAxiosInstance.get as jest.Mock).mock.calls.filter(call => call[0] === COVER_URL).length;
 
     beforeEach(() => {
         cuiFileService = new CuiFileService(testContext);
@@ -139,9 +145,6 @@ describe("CuiFileService", () => {
     });
 
     describe("when several artifacts are written in the same run", () => {
-        const coverRequestCount = (): number =>
-            (mockedAxiosInstance.get as jest.Mock).mock.calls.filter(call => call[0] === COVER_URL).length;
-
         it("Should ask for the cover once and mark every artifact the same way", async () => {
             mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
 
@@ -162,6 +165,85 @@ describe("CuiFileService", () => {
             const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "recovered.json");
 
             expect(filename).toEqual("CUI - recovered.zip");
+            expect(coverRequestCount()).toEqual(2);
+        });
+    });
+
+    describe("when a later command runs in the same session", () => {
+        const cacheDirectory = (): string => process.env[CuiMarkingCache.CACHE_DIRECTORY_ENV_VARIABLE];
+
+        const nextRun = (profileName: string = "test"): CuiFileService => {
+            const context = new Context({});
+            context.profile = { ...testContext.profile, name: profileName };
+            context._httpClient = new HttpClient(context);
+
+            return new CuiFileService(context);
+        };
+
+        const overwriteCachedDecision = (contents: string): void =>
+            readdirSync(cacheDirectory()).forEach(entry => writeFileSync(join(cacheDirectory(), entry), contents));
+
+        it("Should reuse a classified decision without asking again", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+            await cuiFileService.writeToFileWithGivenName(PAYLOAD, "first-run.json");
+
+            const filename = await nextRun().writeToFileWithGivenName(PAYLOAD, "second-run.json");
+
+            expect(filename).toEqual("CUI - second-run.zip");
+            expect(readFile(filename).length).toBeGreaterThan(0);
+            expect(coverRequestCount()).toEqual(1);
+        });
+
+        it("Should reuse a disabled decision without asking again", async () => {
+            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
+            await cuiFileService.writeToFileWithGivenName(PAYLOAD, "first-run.json");
+
+            const filename = await nextRun().writeToFileWithGivenName(PAYLOAD, "second-run.json");
+
+            expect(filename).toEqual("second-run.json");
+            expect(coverRequestCount()).toEqual(1);
+        });
+
+        it("Should ask again when the earlier command failed", async () => {
+            mockAxiosGetError(COVER_URL, 500, { message: "boom" });
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "failed.json")).rejects.toThrow(FatalError);
+
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+            const filename = await nextRun().writeToFileWithGivenName(PAYLOAD, "recovered.json");
+
+            expect(filename).toEqual("CUI - recovered.zip");
+            expect(coverRequestCount()).toEqual(2);
+        });
+
+        it("Should ask again when the cached decision is unreadable", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+            await cuiFileService.writeToFileWithGivenName(PAYLOAD, "first-run.json");
+            overwriteCachedDecision("not json");
+
+            const filename = await nextRun().writeToFileWithGivenName(PAYLOAD, "after-corruption.json");
+
+            expect(filename).toEqual("CUI - after-corruption.zip");
+            expect(coverRequestCount()).toEqual(2);
+        });
+
+        it("Should ask again when the cached decision is classified without a cover", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+            await cuiFileService.writeToFileWithGivenName(PAYLOAD, "first-run.json");
+            overwriteCachedDecision(JSON.stringify({ marking: "CLASSIFIED" }));
+
+            const filename = await nextRun().writeToFileWithGivenName(PAYLOAD, "after-tampering.json");
+
+            expect(filename).toEqual("CUI - after-tampering.zip");
+            expect(coverRequestCount()).toEqual(2);
+        });
+
+        it("Should not reuse a decision made for another profile", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+            await cuiFileService.writeToFileWithGivenName(PAYLOAD, "first-run.json");
+
+            const filename = await nextRun("other-team").writeToFileWithGivenName(PAYLOAD, "other-profile.json");
+
+            expect(filename).toEqual("CUI - other-profile.zip");
             expect(coverRequestCount()).toEqual(2);
         });
     });
