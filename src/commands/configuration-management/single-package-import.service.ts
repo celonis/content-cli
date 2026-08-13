@@ -5,6 +5,7 @@ import * as AdmZip from "adm-zip";
 import * as fs from "node:fs";
 import { Context } from "../../core/command/cli-context";
 import { fileService, FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { GitService } from "../../core/git-profile/git/git.service";
 import { SinglePackageImportApi } from "./api/single-package-import-api";
@@ -16,10 +17,12 @@ export class SinglePackageImportService {
 
     private readonly singlePackageImportApi: SinglePackageImportApi;
     private readonly gitService: GitService;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.singlePackageImportApi = new SinglePackageImportApi(context);
         this.gitService = new GitService(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async importPackage(file: string, directory: string, overwrite: boolean, jsonResponse: boolean, gitBranch: string): Promise<void> {
@@ -44,7 +47,7 @@ export class SinglePackageImportService {
                 const packageZip = new AdmZip(resolvedSource.zipPath);
                 const formData = SinglePackageImportService.buildBodyForImport(packageZip, resolvedSource.zipPath);
                 const result = await this.singlePackageImportApi.importPackage(formData, overwrite);
-                this.outputResult(result, jsonResponse);
+                await this.outputResult(result, jsonResponse);
             } finally {
                 if (resolvedSource.isTemporary) {
                     fs.rmSync(resolvedSource.zipPath);
@@ -99,11 +102,11 @@ export class SinglePackageImportService {
         });
     }
 
-    private outputResult(result: SinglePackageImportResult, jsonResponse: boolean): void {
+    private async outputResult(result: SinglePackageImportResult, jsonResponse: boolean): Promise<void> {
         if (jsonResponse) {
             const filename = uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(JSON.stringify(result, null, 2), filename);
-            logger.info(FileService.fileDownloadedMessage + filename);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(result, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
             return;
         }
 

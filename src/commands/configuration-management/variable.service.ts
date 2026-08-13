@@ -3,6 +3,7 @@ import { Context } from "../../core/command/cli-context";
 import { FatalError, logger } from "../../core/utils/logger";
 import { fixConnectionVariables } from "./connection-variable.helper";
 import { FileService, fileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { PackageKeyAndVersionPair, StagingVariableManifestTransport, VariableManifestTransport } from "./interfaces/package-export.interfaces";
 import { VariableApi } from "./api/variable-api";
 import { URLSearchParams } from "url";
@@ -14,11 +15,13 @@ export class VariableService {
     private variableApi: VariableApi;
     private variableAssignmentCandidatesApi: VariableAssignmentCandidatesApi;
     private readonly stagingPackageVariablesApi: StagingPackageVariablesApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.variableApi = new VariableApi(context);
         this.variableAssignmentCandidatesApi = new VariableAssignmentCandidatesApi(context);
         this.stagingPackageVariablesApi = new StagingPackageVariablesApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async listVariables(keysByVersion: string[], keysByVersionFile: string): Promise<void> {
@@ -42,13 +45,13 @@ export class VariableService {
         const parsedParams = this.parseParams(params);
         const assignments = await this.variableAssignmentCandidatesApi.getCandidateAssignments(type, parsedParams);
 
-        this.exportToJson(assignments)
+        await this.exportToJson(assignments);
     }
 
     public async exportVariables(keysByVersion: string[], keysByVersionFile: string): Promise<void> {
         const variableManifests = await this.getVersionedVariablesByKeyVersionPairs(keysByVersion, keysByVersionFile);
 
-        this.exportToJson(variableManifests);
+        await this.exportToJson(variableManifests);
     }
 
     public async listStagingVariables(packageKeys: string[]): Promise<void> {
@@ -60,7 +63,7 @@ export class VariableService {
 
     public async exportStagingVariables(packageKeys: string[]): Promise<void> {
         const byPackage = await this.fetchStagingVariablesByPackageKeys(packageKeys);
-        this.exportToJson(byPackage);
+        await this.exportToJson(byPackage);
     }
 
     private async fetchStagingVariablesByPackageKeys(
@@ -100,10 +103,10 @@ export class VariableService {
         });
     }
 
-    private exportToJson(data: any): void {
+    private async exportToJson(data: any): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(data), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(data), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
     private parseParams(params?: string): URLSearchParams {

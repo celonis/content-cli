@@ -3,15 +3,17 @@ import { Context } from "../../../core/command/cli-context";
 import { SaveContentNode } from "../interfaces/save-content-node.interface";
 import { AssetApi } from "../api/asset-api";
 import { logger } from "../../../core/utils/logger";
-import { fileService } from "../../../core/utils/file-service";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 
 export class AssetService {
     protected readonly fileDownloadedMessage = "File downloaded successfully. New filename: ";
 
     private assetApi: AssetApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.assetApi = new AssetApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async listAssets(assetType: string): Promise<void> {
@@ -27,7 +29,7 @@ export class AssetService {
         const nodes: SaveContentNode[] = await this.assetApi.findAllAssets(assetType);
 
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
-        logger.info(this.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
+        logger.info(this.fileDownloadedMessage + writtenFilename);
     }
 }

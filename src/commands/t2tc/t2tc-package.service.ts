@@ -10,6 +10,7 @@ import {
 } from "../configuration-management/interfaces/package-export.interfaces";
 import { BatchExportImportConstants } from "./batch-export-import.constants";
 import { fileService, FileService } from "../../core/utils/file-service";
+import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { parse, stringify } from "../../core/utils/json";
 import { PackageApi } from "../studio/api/package-api";
@@ -30,6 +31,7 @@ export class T2tcPackageService {
     private studioPackageApi: PackageApi;
     private studioService: StudioService;
     private gitService: GitService;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.t2tcPackageApi = new T2tcPackageApi(context);
@@ -38,6 +40,7 @@ export class T2tcPackageService {
         this.studioPackageApi = new PackageApi(context);
         this.studioService = new StudioService(context);
         this.gitService = new GitService(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async listActivePackages(flavors: string[], includeBranches: boolean): Promise<void> {
@@ -60,7 +63,7 @@ export class T2tcPackageService {
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, withDependencies);
 
-        this.exportListOfPackages(packagesToExport);
+        await this.exportListOfPackages(packagesToExport);
     }
 
     public async listPackagesByKeysWithVersion(keysByVersion: string[], withDependencies: boolean): Promise<void> {
@@ -157,7 +160,7 @@ export class T2tcPackageService {
 
         packagesToExport = await this.studioService.getExportPackagesWithStudioData(packagesToExport, false);
 
-        this.exportListOfPackages(packagesToExport);
+        await this.exportListOfPackages(packagesToExport);
     }
 
     public async listActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean) : Promise<void> {
@@ -167,10 +170,10 @@ export class T2tcPackageService {
         });
     }
 
-    private exportListOfPackages(packages: PackageExportTransport[]): void {
+    private async exportListOfPackages(packages: PackageExportTransport[]): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(packages), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(packages), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 
     private getVersionsByPackageKey(manifests: PackageManifestTransport[]): Map<string, string[]> {

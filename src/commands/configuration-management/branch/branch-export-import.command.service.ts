@@ -6,6 +6,7 @@ import AdmZip = require("adm-zip");
 import { resolve } from "node:path";
 import { Context } from "../../../core/command/cli-context";
 import { fileService, FileService } from "../../../core/utils/file-service";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 import { FatalError, logger } from "../../../core/utils/logger";
 import { GitService } from "../../../core/git-profile/git/git.service";
 import { SinglePackageExportApi } from "../api/single-package-export-api";
@@ -37,12 +38,14 @@ export class BranchExportImportCommandService {
     private readonly singlePackageImportApi: SinglePackageImportApi;
     private readonly branchApi: BranchApi;
     private readonly gitService: GitService;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.singlePackageExportApi = new SinglePackageExportApi(context);
         this.singlePackageImportApi = new SinglePackageImportApi(context);
         this.branchApi = new BranchApi(context);
         this.gitService = new GitService(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async exportBranch(packageKey: string, branchKey: string, options: BranchExportOptions = {}): Promise<void> {
@@ -51,7 +54,7 @@ export class BranchExportImportCommandService {
         if (options.gitEnabled) {
             const pushedKey = await this.pushBranchToGit(packageKey, branchKey);
             if (jsonResponse) {
-                BranchExportImportCommandService.writeJson({ packageKey: pushedKey, branchName: branchKey });
+                await this.writeJson({ packageKey: pushedKey, branchName: branchKey });
             } else {
                 logger.info(`Exported ${pushedKey} to Git branch '${branchKey}'.`);
             }
@@ -63,7 +66,7 @@ export class BranchExportImportCommandService {
         try {
             const message = this.writeLocalArtifact(sourceDir, packageKey, !!options.zip);
             if (jsonResponse) {
-                BranchExportImportCommandService.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
+                await this.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
             } else {
                 logger.info(message);
             }
@@ -93,7 +96,7 @@ export class BranchExportImportCommandService {
 
         const summary: BranchSyncSummary = { packageKey: mainKey, branchName: BranchUtils.MAIN_BRANCH_KEY, synced };
         if (jsonResponse) {
-            BranchExportImportCommandService.writeJson(summary);
+            await this.writeJson(summary);
         } else {
             logger.info(`Exported Git mirror for ${mainKey}: ${synced.length} package(s) pushed.`);
         }
@@ -110,7 +113,7 @@ export class BranchExportImportCommandService {
             await this.importPackageSourceDir(workingDir, !!options.overwrite);
 
             if (options.jsonResponse) {
-                BranchExportImportCommandService.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
+                await this.writeJson({ packageKey: branchPackageKey, branchName: branchKey });
             } else {
                 const origin = options.gitEnabled ? `Git branch '${branchKey}'` : (options.file ?? options.directory);
                 logger.info(`Imported ${origin} into ${branchPackageKey}.`);
@@ -270,9 +273,9 @@ export class BranchExportImportCommandService {
             && branch.branchKey?.toLowerCase() !== BranchUtils.MAIN_BRANCH_KEY;
     }
 
-    private static writeJson(payload: unknown): void {
+    private async writeJson(payload: unknown): Promise<void> {
         const filename = `${uuidv4()}.json`;
-        fileService.writeToFileWithGivenName(JSON.stringify(payload, null, 2), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(payload, null, 2), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 }
