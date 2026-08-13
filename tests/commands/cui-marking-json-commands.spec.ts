@@ -49,18 +49,6 @@ function markedPayload(prefix?: string): any {
     return payloadFromArchive(loggedFileName(prefix));
 }
 
-function markAsUnclassified(): void {
-    mockAxiosGetWithStatus(COVER_URL, 204, "");
-}
-
-function unclassifiedPayload(prefix?: string): any {
-    const filename = loggedFileName(prefix);
-    expect(filename.startsWith(CuiFileService.UNCLASSIFIED_PREFIX)).toBe(true);
-    expect(filename.endsWith(".json")).toBe(true);
-
-    return JSON.parse(readFileSync(resolve(process.cwd(), filename), "utf-8"));
-}
-
 describe("CUI marking of --json commands", () => {
 
     beforeEach(() => {
@@ -74,16 +62,6 @@ describe("CUI marking of --json commands", () => {
         await new DeploymentService(testContext).getTargets(true, "app-package", "package-key");
 
         expect(markedPayload()).toEqual(targets);
-    });
-
-    it("Should only prefix the listing when the content is unclassified", async () => {
-        markAsUnclassified();
-        const targets = [{ id: "target-1", name: "First target" }];
-        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package&packageKey=package-key", targets);
-
-        await new DeploymentService(testContext).getTargets(true, "app-package", "package-key");
-
-        expect(unclassifiedPayload()).toEqual(targets);
     });
 
     it("Should fail the command without writing anything when the cover call fails", async () => {

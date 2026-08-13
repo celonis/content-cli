@@ -46,17 +46,6 @@ function exists(...segments: string[]): boolean {
     return existsSync(resolve(process.cwd(), ...segments));
 }
 
-function markAsUnclassified(): void {
-    mockAxiosGetWithStatus(COVER_URL, 204, "");
-}
-
-function unclassifiedDirectory(prefix: string, expectedName: string): string {
-    const directoryName = loggedDirectoryName(prefix);
-    expect(directoryName).toEqual(`${CuiFileService.UNCLASSIFIED_PREFIX}${expectedName}`);
-
-    return directoryName;
-}
-
 function buildPackageZip(packageKey: string): Buffer {
     const zip = new AdmZip();
     zip.addFile("package.json", Buffer.from(JSON.stringify({ key: packageKey, name: "My Package" })));
@@ -91,19 +80,6 @@ describe("CUI marking of directory exports", () => {
         const directoryName = markedDirectory(EXPORT_MESSAGE, packageKey);
         expect(exists(directoryName, "package.json")).toBe(true);
         expect(exists(directoryName, "nodes", "node-1.json")).toBe(true);
-        expect(exists(packageKey)).toBe(false);
-    });
-
-    it("Should only prefix the directory when the content is unclassified", async () => {
-        markAsUnclassified();
-        const packageKey = "pkg-unclassified";
-        mockAxiosGet(`https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/export-file`, buildPackageZip(packageKey));
-
-        await new SinglePackageExportService(testContext).exportPackage(packageKey, false, null);
-
-        const directoryName = unclassifiedDirectory(EXPORT_MESSAGE, packageKey);
-        expect(exists(directoryName, "nodes", "node-1.json")).toBe(true);
-        expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
         expect(exists(packageKey)).toBe(false);
     });
 

@@ -8,20 +8,17 @@ export interface CuiPdfCoverResponse {
 
 export enum CuiMarking {
     DISABLED = "DISABLED",
-    UNCLASSIFIED = "UNCLASSIFIED",
     CLASSIFIED = "CLASSIFIED",
 }
 
 export type CuiMarkingDecision =
     | { marking: CuiMarking.DISABLED }
-    | { marking: CuiMarking.UNCLASSIFIED }
     | { marking: CuiMarking.CLASSIFIED; cover: CuiPdfCoverResponse };
 
 export class CuiApi {
     private static readonly CUI_PDF_COVER_SHEET_URL = "/api/team/cui-settings/cui-pdf-cover";
 
     private static readonly STATUS_OK = 200;
-    private static readonly STATUS_NO_CONTENT = 204;
     private static readonly STATUS_FORBIDDEN = 403;
 
     private readonly httpClient: () => HttpClient;
@@ -36,11 +33,6 @@ export class CuiApi {
         if (status === CuiApi.STATUS_FORBIDDEN) {
             logger.debug("CUI marking does not apply, the feature flag is disabled");
             return { marking: CuiMarking.DISABLED };
-        }
-
-        if (status === CuiApi.STATUS_NO_CONTENT) {
-            logger.debug("CUI marking applies, the content is unclassified");
-            return { marking: CuiMarking.UNCLASSIFIED };
         }
 
         if (status === CuiApi.STATUS_OK && data) {
