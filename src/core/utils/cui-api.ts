@@ -2,6 +2,8 @@ import { HttpClient } from "../http/http-client";
 import { FatalError, logger } from "./logger";
 import { Context } from "../command/cli-context";
 
+export const CUI_MARKING_FAILED_MESSAGE = "Could not resolve CUI marking. No file was written";
+
 export interface CuiPdfCoverResponse {
     coverPage?: { pdfContent: string; encoding: string };
 }
@@ -39,6 +41,7 @@ export class CuiApi {
             return { marking: CuiMarking.CLASSIFIED, cover: data as CuiPdfCoverResponse };
         }
 
-        throw new FatalError("Problem fetching cui pdf cover");
+        logger.debug(`The CUI cover call answered with status ${status}`);
+        throw new FatalError(CUI_MARKING_FAILED_MESSAGE);
     }
 }

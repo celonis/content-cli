@@ -35,6 +35,15 @@ describe("CuiFileService", () => {
             expect(filename).toEqual("report.json");
             expect(readFile("report.json").toString()).toEqual(PAYLOAD);
         });
+
+        it("Should keep the original filename when axios resolves the 403 instead of rejecting", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 403, "");
+
+            const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "resolved-403.json");
+
+            expect(filename).toEqual("resolved-403.json");
+            expect(readFile("resolved-403.json").toString()).toEqual(PAYLOAD);
+        });
     });
 
     describe("when the cover response cannot be used", () => {
@@ -55,7 +64,8 @@ describe("CuiFileService", () => {
         it("Should fail when the backend answers with no content", async () => {
             mockAxiosGetWithStatus(COVER_URL, 204, "");
 
-            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "no-content.json")).rejects.toThrow(FatalError);
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "no-content.json"))
+                .rejects.toThrow("Could not resolve CUI marking. No file was written");
             expect(() => accessSync(resolve(process.cwd(), "no-content.json"))).toThrow();
         });
     });
@@ -81,14 +91,14 @@ describe("CuiFileService", () => {
             mockAxiosGetWithStatus(COVER_URL, 200, response);
 
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json"))
-                .rejects.toThrow("Unsupported CUI cover page encoding: hex");
+                .rejects.toThrow("Could not resolve CUI marking. No file was written");
         });
 
         it("Should fail when the marking applies but no cover page was returned", async () => {
             mockAxiosGetWithStatus(COVER_URL, 200, { teamId: "team-1" });
 
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json"))
-                .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+                .rejects.toThrow("Could not resolve CUI marking. No file was written");
         });
     });
 
@@ -134,7 +144,7 @@ describe("CuiFileService", () => {
             mockAxiosGetWithStatus(COVER_URL, 200, { teamId: "team-1" });
 
             await expect(cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip"))
-                .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+                .rejects.toThrow("Could not resolve CUI marking. No file was written");
         });
     });
 
@@ -174,7 +184,7 @@ describe("CuiFileService", () => {
             mockAxiosGetWithStatus(COVER_URL, 200, { teamId: "team-1" });
 
             await expect(cuiFileService.writeDirectoryWithGivenName(writeTree, "broken-export"))
-                .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+                .rejects.toThrow("Could not resolve CUI marking. No file was written");
             expect(exists("broken-export")).toBe(false);
             expect(exists("CUI - broken-export")).toBe(false);
         });

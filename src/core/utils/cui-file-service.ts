@@ -1,10 +1,10 @@
 import * as path from "node:path";
 import AdmZip = require("adm-zip");
 import { Context } from "../command/cli-context";
-import { CuiApi, CuiMarking, CuiPdfCoverResponse } from "./cui-api";
+import { CUI_MARKING_FAILED_MESSAGE, CuiApi, CuiMarking, CuiPdfCoverResponse } from "./cui-api";
 import { fileService } from "./file-service";
 import { FileConstants } from "./file.constants";
-import { FatalError } from "./logger";
+import { FatalError, logger } from "./logger";
 
 export class CuiFileService {
     public static readonly COVER_SHEET_FILE_NAME = "CUI_Cover_Sheet.pdf";
@@ -96,10 +96,12 @@ export class CuiFileService {
     private decodeCoverPage(cover: CuiPdfCoverResponse): Buffer {
         const coverPage = cover.coverPage;
         if (!coverPage?.pdfContent) {
-            throw new FatalError("CUI marking applies but the response contained no cover page.");
+            logger.debug("CUI marking applies but the response contained no cover page");
+            throw new FatalError(CUI_MARKING_FAILED_MESSAGE);
         }
         if (coverPage.encoding !== CuiFileService.BASE64_ENCODING) {
-            throw new FatalError(`Unsupported CUI cover page encoding: ${coverPage.encoding}`);
+            logger.debug(`Unsupported CUI cover page encoding: ${coverPage.encoding}`);
+            throw new FatalError(CUI_MARKING_FAILED_MESSAGE);
         }
 
         return Buffer.from(coverPage.pdfContent, CuiFileService.BASE64_ENCODING);
