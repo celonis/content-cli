@@ -1,4 +1,3 @@
-import { HttpClient } from "../http/http-client";
 import { FatalError, logger } from "./logger";
 import { Context } from "../command/cli-context";
 
@@ -21,14 +20,25 @@ export class CuiApi {
     private static readonly STATUS_OK = 200;
     private static readonly STATUS_FORBIDDEN = 403;
 
-    private readonly httpClient: () => HttpClient;
+    private readonly context: Context;
 
     constructor(context: Context) {
-        this.httpClient = () => context.httpClient;
+        this.context = context;
     }
 
-    public async getCuiMarking(): Promise<CuiMarkingDecision> {
-        const { status, data } = await this.httpClient().getStatusAndData(CuiApi.CUI_PDF_COVER_SHEET_URL);
+    public getCuiMarking(): Promise<CuiMarkingDecision> {
+        if (!this.context.cuiMarking) {
+            this.context.cuiMarking = this.fetchCuiMarking().catch(error => {
+                this.context.cuiMarking = undefined;
+                throw error;
+            });
+        }
+
+        return this.context.cuiMarking;
+    }
+
+    private async fetchCuiMarking(): Promise<CuiMarkingDecision> {
+        const { status, data } = await this.context.httpClient.getStatusAndData(CuiApi.CUI_PDF_COVER_SHEET_URL);
 
         if (status === CuiApi.STATUS_FORBIDDEN) {
             logger.debug("CUI marking does not apply, the feature flag is disabled");

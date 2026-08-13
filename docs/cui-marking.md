@@ -16,6 +16,8 @@ Example: `list packages --json` would otherwise write `packages.json`.
 
 The status code alone decides the outcome. Marked content is always classified: there is no unclassified artifact. Any other answer, whether a **204**, an unexpected status, a transport failure, or a **200** without a usable cover page, aborts the command and leaves no output behind.
 
+A command asks once and applies the same outcome to everything it writes, so an export made up of several files cannot come out partly marked. Nothing carries over between commands: the next run asks again, and a failed request is never reused.
+
 ## Scope: how the write is triggered
 
 | Trigger | Commands | Example when classified |

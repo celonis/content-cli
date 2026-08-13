@@ -10,4 +10,9 @@ testContext.profile = {
     authenticationType: "Bearer"
 }
 testContext._httpClient = new HttpClient(testContext);
+
+afterEach(() => {
+    testContext.cuiMarking = undefined;
+});
+
 export { testContext };

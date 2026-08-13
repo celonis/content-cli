@@ -4,6 +4,7 @@ import {FatalError, logger} from "../utils/logger";
 import {Profile} from "../profile/profile.interface";
 import { GitProfileService } from "../git-profile/git-profile.service";
 import { GitProfile } from "../git-profile/git-profile.interface";
+import type { CuiMarkingDecision } from "../utils/cui-api";
 
 /**
  * The execution context object is passed to the modules to access
@@ -16,6 +17,7 @@ export class Context {
     public _httpClient: HttpClient;
     public profile: Profile;
     public gitProfile: GitProfile;
+    public cuiMarking: Promise<CuiMarkingDecision> | undefined;
 
     private log = logger;
     private profileName: string | undefined;

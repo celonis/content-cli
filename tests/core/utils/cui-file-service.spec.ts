@@ -4,7 +4,7 @@ import AdmZip = require("adm-zip");
 import { CuiFileService } from "../../../src/core/utils/cui-file-service";
 import { FatalError } from "../../../src/core/utils/logger";
 import { testContext } from "../../utls/test-context";
-import { mockAxiosGetError, mockAxiosGetWithStatus } from "../../utls/http-requests-mock";
+import { mockAxiosGetError, mockAxiosGetWithStatus, mockedAxiosInstance } from "../../utls/http-requests-mock";
 
 describe("CuiFileService", () => {
     const COVER_URL = "https://myTeam.celonis.cloud/api/team/cui-settings/cui-pdf-cover";
@@ -135,6 +135,34 @@ describe("CuiFileService", () => {
 
             await expect(cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip"))
                 .rejects.toThrow("CUI marking applies but the response contained no cover page.");
+        });
+    });
+
+    describe("when several artifacts are written in the same run", () => {
+        const coverRequestCount = (): number =>
+            (mockedAxiosInstance.get as jest.Mock).mock.calls.filter(call => call[0] === COVER_URL).length;
+
+        it("Should ask for the cover once and mark every artifact the same way", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+
+            const firstFilename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json");
+            const secondFilename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "summary.json");
+
+            expect(firstFilename).toEqual("CUI - packages.zip");
+            expect(secondFilename).toEqual("CUI - summary.zip");
+            expect(coverRequestCount()).toEqual(1);
+        });
+
+        it("Should ask again after a failed cover request", async () => {
+            mockAxiosGetError(COVER_URL, 500, { message: "boom" });
+
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "failed.json")).rejects.toThrow(FatalError);
+
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
+            const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "recovered.json");
+
+            expect(filename).toEqual("CUI - recovered.zip");
+            expect(coverRequestCount()).toEqual(2);
         });
     });
 
