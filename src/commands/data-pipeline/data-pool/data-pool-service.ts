@@ -23,8 +23,8 @@ export class DataPoolService {
 
         if (outputToJsonFile) {
             const reportFileName = "batch_import_report_" + uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(importReportString, reportFileName);
-            logger.info("Batch import report file: " + reportFileName);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(importReportString, reportFileName);
+            logger.info("Batch import report file: " + writtenFilename);
         } else {
             logger.info("Batch import report: \n" + importReportString);
         }
@@ -36,8 +36,8 @@ export class DataPoolService {
 
         if (outputToJsonFile) {
             const reportFileName = uuidv4() + "_data_pool_" + poolId + ".json";
-            fileService.writeToFileWithGivenName(exportedDataPoolString, reportFileName);
-            logger.info(FileService.fileDownloadedMessage + reportFileName);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(exportedDataPoolString, reportFileName);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             logger.info("Exported Data Pool: \n" + exportedDataPoolString);
         }

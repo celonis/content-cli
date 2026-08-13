@@ -1,5 +1,5 @@
 import * as path from "path";
-import { mockedAxiosInstance } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { loggingTestTransport } from "../../jest.setup";
 import { FileService } from "../../../src/core/utils/file-service";
 import { ActionFlowCommandService } from "../../../src/commands/action-flows/action-flow/action-flow-command.service";
@@ -9,6 +9,7 @@ import { getJsonFromDownloadedFile, getJsonFromFile } from "../../utls/fs-utils"
 describe("Analyze action-flows", () => {
 
     const packageId = "123-456-789";
+    const analyzeUrl = `https://myTeam.celonis.cloud/ems-automation/api/root/${packageId}/export/assets/analyze`;
     const mockAnalyzeResponse = {
         "actionFlows": [
             {
@@ -44,8 +45,7 @@ describe("Analyze action-flows", () => {
     };
 
     it("Should call import API and return non-json response", async () => {
-        const resp = { data: mockAnalyzeResponse };
-        (mockedAxiosInstance.get as jest.Mock).mockResolvedValue(resp);
+        mockAxiosGet(analyzeUrl, mockAnalyzeResponse);
 
         await new ActionFlowCommandService(testContext).analyzeActionFlows(packageId, false);
 
@@ -56,8 +56,7 @@ describe("Analyze action-flows", () => {
     });
 
     it("Should call import API and return json response", async () => {
-        const resp = { data: mockAnalyzeResponse };
-        (mockedAxiosInstance.get as jest.Mock).mockResolvedValue(resp);
+        mockAxiosGet(analyzeUrl, mockAnalyzeResponse);
 
         await new ActionFlowCommandService(testContext).analyzeActionFlows(packageId, true);
 

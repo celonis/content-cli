@@ -5,6 +5,7 @@ import * as fs from "fs";
 import { Context } from "../../../core/command/cli-context";
 import { ActionFlowApi } from "./action-flow-api";
 import { fileService, FileService } from "../../../core/utils/file-service";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 import { logger } from "../../../core/utils/logger";
 import { FileConstants } from "../../../core/utils/file.constants";
 import { resolve } from "node:path";
@@ -13,9 +14,11 @@ export class ActionFlowService {
     public static readonly METADATA_FILE_NAME = "metadata.json";
 
     private actionFlowApi: ActionFlowApi;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.actionFlowApi = new ActionFlowApi(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async exportActionFlows(packageId: string, metadataFilePath: string): Promise<void> {
@@ -43,8 +46,8 @@ export class ActionFlowService {
 
         if (outputToJsonFile) {
             const metadataFileName = "action-flows_metadata_" + uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(actionFlowsMetadataString, metadataFileName);
-            logger.info(FileService.fileDownloadedMessage + metadataFileName);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(actionFlowsMetadataString, metadataFileName);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             logger.info("Action flows analyze metadata: \n" + actionFlowsMetadataString);
         }
@@ -57,8 +60,8 @@ export class ActionFlowService {
 
         if (outputToJsonFile) {
             const eventLogFileName = "action-flows_import_event_log_" + uuidv4() + ".json";
-            fileService.writeToFileWithGivenName(eventLogString, eventLogFileName);
-            logger.info(FileService.fileDownloadedMessage + eventLogFileName);
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(eventLogString, eventLogFileName);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
         } else {
             logger.info("Action flows import event log: \n" + eventLogString);
         }
