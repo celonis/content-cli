@@ -1,11 +1,12 @@
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import AdmZip = require("adm-zip");
-import { mockAxiosGet, mockAxiosGetWithStatus, mockAxiosPost } from "../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosGetError, mockAxiosGetWithStatus, mockAxiosPost } from "../utls/http-requests-mock";
 import { testContext } from "../utls/test-context";
 import { loggingTestTransport } from "../jest.setup";
 import { FileService } from "../../src/core/utils/file-service";
 import { CuiFileService } from "../../src/core/utils/cui-file-service";
+import { FatalError } from "../../src/core/utils/logger";
 import { ConfigUtils } from "../utls/config-utils";
 import { zipToTempFolder } from "../utls/fs-utils";
 import { DeploymentService } from "../../src/commands/deployment/deployment.service";
@@ -24,7 +25,6 @@ const PDF_BYTES = Buffer.from("%PDF-1.4 cover sheet");
 
 function markAsClassified(): void {
     mockAxiosGetWithStatus(COVER_URL, 200, {
-        resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
         coverPage: { pdfContent: PDF_BYTES.toString("base64"), encoding: "base64" },
     });
 }
@@ -62,6 +62,14 @@ describe("CUI marking of --json commands", () => {
         await new DeploymentService(testContext).getTargets(true, "app-package", "package-key");
 
         expect(markedPayload()).toEqual(targets);
+    });
+
+    it("Should fail the command without writing anything when the cover call fails", async () => {
+        mockAxiosGetError(COVER_URL, 500, { message: "boom" });
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/deployments/targets?deployableType=app-package&packageKey=package-key", []);
+
+        await expect(new DeploymentService(testContext).getTargets(true, "app-package", "package-key")).rejects.toThrow(FatalError);
+        expect(loggingTestTransport.logMessages.some(entry => entry.message.includes(FileService.fileDownloadedMessage))).toBe(false);
     });
 
     it("Should mark configuration node listings", async () => {

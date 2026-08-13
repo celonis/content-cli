@@ -13,8 +13,7 @@ describe("CuiFileService", () => {
 
     let cuiFileService: CuiFileService;
 
-    const coverResponse = (categories: Array<{ code: string; name: string }>) => ({
-        resolvedCuiMarking: { categories },
+    const coverResponse = () => ({
         coverPage: {
             pdfContent: PDF_BYTES.toString("base64"),
             encoding: "base64",
@@ -36,16 +35,9 @@ describe("CuiFileService", () => {
             expect(filename).toEqual("report.json");
             expect(readFile("report.json").toString()).toEqual(PAYLOAD);
         });
+    });
 
-        it("Should keep the original filename when the team has CUI disabled", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
-
-            const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "no-marking.json");
-
-            expect(filename).toEqual("no-marking.json");
-            expect(readFile("no-marking.json").toString()).toEqual(PAYLOAD);
-        });
-
+    describe("when the cover response cannot be used", () => {
         it("Should fail on an unexpected backend error", async () => {
             mockAxiosGetError(COVER_URL, 500, { message: "boom" });
 
@@ -59,23 +51,18 @@ describe("CuiFileService", () => {
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "empty-cover.json")).rejects.toThrow(FatalError);
             expect(() => accessSync(resolve(process.cwd(), "empty-cover.json"))).toThrow();
         });
-    });
 
-    describe("when the content is unclassified", () => {
-        it("Should only prefix the filename and write no cover sheet", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([]));
+        it("Should fail when the backend answers with no content", async () => {
+            mockAxiosGetWithStatus(COVER_URL, 204, "");
 
-            const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json");
-
-            expect(filename).toEqual("Unclassified - packages.json");
-            expect(readFile(filename).toString()).toEqual(PAYLOAD);
-            expect(() => accessSync(resolve(process.cwd(), CuiFileService.COVER_SHEET_FILE_NAME))).toThrow();
+            await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "no-content.json")).rejects.toThrow(FatalError);
+            expect(() => accessSync(resolve(process.cwd(), "no-content.json"))).toThrow();
         });
     });
 
     describe("when the content is classified", () => {
         it("Should wrap the payload and the decoded cover sheet into a CUI archive", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([{ code: "PRVCY", name: "Privacy" }]));
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
 
             const filename = await cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json");
 
@@ -89,7 +76,7 @@ describe("CuiFileService", () => {
         });
 
         it("Should fail when the cover page uses an unsupported encoding", async () => {
-            const response = coverResponse([{ code: "PRVCY", name: "Privacy" }]);
+            const response = coverResponse();
             response.coverPage.encoding = "hex";
             mockAxiosGetWithStatus(COVER_URL, 200, response);
 
@@ -98,9 +85,7 @@ describe("CuiFileService", () => {
         });
 
         it("Should fail when the marking applies but no cover page was returned", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, {
-                resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
-            });
+            mockAxiosGetWithStatus(COVER_URL, 200, { teamId: "team-1" });
 
             await expect(cuiFileService.writeToFileWithGivenName(PAYLOAD, "packages.json"))
                 .rejects.toThrow("CUI marking applies but the response contained no cover page.");
@@ -119,7 +104,7 @@ describe("CuiFileService", () => {
             new AdmZip(readFile(filename)).getEntries().map(entry => entry.entryName).sort();
 
         it("Should keep the archive untouched when no marking applies", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
+            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
             const exportZip = buildExportZip();
 
             const filename = await cuiFileService.writeZipToFileWithGivenName(exportZip, "export.zip");
@@ -128,18 +113,8 @@ describe("CuiFileService", () => {
             expect(readFile(filename).equals(exportZip)).toBe(true);
         });
 
-        it("Should only prefix the archive when the content is unclassified", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([]));
-            const exportZip = buildExportZip();
-
-            const filename = await cuiFileService.writeZipToFileWithGivenName(exportZip, "export.zip");
-
-            expect(filename).toEqual("Unclassified - export.zip");
-            expect(readFile(filename).equals(exportZip)).toBe(true);
-        });
-
         it("Should add the cover sheet into the given archive instead of nesting it", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([{ code: "PRVCY", name: "Privacy" }]));
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
 
             const filename = await cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip");
 
@@ -156,9 +131,7 @@ describe("CuiFileService", () => {
         });
 
         it("Should fail when the marking applies but no cover page was returned", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, {
-                resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
-            });
+            mockAxiosGetWithStatus(COVER_URL, 200, { teamId: "team-1" });
 
             await expect(cuiFileService.writeZipToFileWithGivenName(buildExportZip(), "export.zip"))
                 .rejects.toThrow("CUI marking applies but the response contained no cover page.");
@@ -175,7 +148,7 @@ describe("CuiFileService", () => {
         const exists = (...segments: string[]): boolean => existsSync(resolve(process.cwd(), ...segments));
 
         it("Should keep the original directory name when no marking applies", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 204, "");
+            mockAxiosGetError(COVER_URL, 403, { errorCode: "feature-disabled" });
 
             const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "unmarked-export");
 
@@ -184,19 +157,8 @@ describe("CuiFileService", () => {
             expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
         });
 
-        it("Should only prefix the directory when the content is unclassified", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([]));
-
-            const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "plain-export");
-
-            expect(directoryName).toEqual("Unclassified - plain-export");
-            expect(exists(directoryName, "nodes", "node-1.json")).toBe(true);
-            expect(exists(directoryName, CuiFileService.COVER_SHEET_FILE_NAME)).toBe(false);
-            expect(exists("plain-export")).toBe(false);
-        });
-
         it("Should prefix the directory and write the cover sheet into it", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse([{ code: "PRVCY", name: "Privacy" }]));
+            mockAxiosGetWithStatus(COVER_URL, 200, coverResponse());
 
             const directoryName = await cuiFileService.writeDirectoryWithGivenName(writeTree, "classified-export");
 
@@ -209,9 +171,7 @@ describe("CuiFileService", () => {
         });
 
         it("Should fail without writing anything when no cover page was returned", async () => {
-            mockAxiosGetWithStatus(COVER_URL, 200, {
-                resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
-            });
+            mockAxiosGetWithStatus(COVER_URL, 200, { teamId: "team-1" });
 
             await expect(cuiFileService.writeDirectoryWithGivenName(writeTree, "broken-export"))
                 .rejects.toThrow("CUI marking applies but the response contained no cover page.");

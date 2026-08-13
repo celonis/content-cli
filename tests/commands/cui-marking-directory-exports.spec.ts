@@ -23,7 +23,6 @@ const BRANCH = "feature-a";
 
 function markAsClassified(): void {
     mockAxiosGetWithStatus(COVER_URL, 200, {
-        resolvedCuiMarking: { categories: [{ code: "PRVCY", name: "Privacy" }] },
         coverPage: { pdfContent: PDF_BYTES.toString("base64"), encoding: "base64" },
     });
 }
