@@ -6,7 +6,8 @@ import {
     PackageDependencyTransport,
     PackageManagerVariableType,
 } from "../interfaces/package-manager.interfaces";
-import { FileService, fileService } from "../../../core/utils/file-service";
+import { FileService } from "../../../core/utils/file-service";
+import { CuiFileService } from "../../../core/utils/cui-file-service";
 import { BatchExportNodeTransport } from "../interfaces/batch-export-node.interfaces";
 import { PackageDependenciesApi } from "../api/package-dependencies-api";
 import { DataModelService } from "./data-model.service";
@@ -20,12 +21,14 @@ export class PackageService {
 
     private dataModelService: DataModelService;
     private variableService: StudioVariableService;
+    private readonly cuiFileService: CuiFileService;
 
     constructor(context: Context) {
         this.packageApi = new PackageApi(context);
         this.packageDependenciesApi = new PackageDependenciesApi(context);
         this.dataModelService = new DataModelService(context);
         this.variableService = new StudioVariableService(context);
+        this.cuiFileService = new CuiFileService(context);
     }
 
     public async listPackages(): Promise<void> {
@@ -66,7 +69,7 @@ export class PackageService {
                 return nodeToExport;
             })
         }
-        this.exportListOfPackages(nodesListToExport, fieldsToInclude);
+        await this.exportListOfPackages(nodesListToExport, fieldsToInclude);
     }
 
     public async getNodesWithActiveVersion(nodes: BatchExportNodeTransport[]): Promise<BatchExportNodeTransport[]> {
@@ -83,9 +86,9 @@ export class PackageService {
         return await this.packageDependenciesApi.findPackageDependenciesByIds(draftIdByNodeId);
     }
 
-    private exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): void {
+    private async exportListOfPackages(nodes: BatchExportNodeTransport[], fieldsToInclude: string[]): Promise<void> {
         const filename = uuidv4() + ".json";
-        fileService.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
-        logger.info(FileService.fileDownloadedMessage + filename);
+        const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(nodes, fieldsToInclude), filename);
+        logger.info(FileService.fileDownloadedMessage + writtenFilename);
     }
 }

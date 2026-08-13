@@ -4,7 +4,10 @@ import { AxiosInitializer } from "../../src/core/http/axios-initializer";
 
 const mockedAxiosInstance = {} as AxiosInstance;
 
+const CUI_PDF_COVER_PATH = "/api/team/cui-settings/cui-pdf-cover";
+
 const mockedGetResponseByUrl = new Map<string, any>();
+const mockedGetStatusByUrl = new Map<string, number>();
 const mockedGetErrorByUrl = new Map<string, { status: number; data: any }>();
 const mockedPostResponseByUrl = new Map<string, any>();
 const mockedPostErrorByUrl = new Map<string, { status: number; data: any }>();
@@ -25,19 +28,25 @@ const mockAxios = () : void => {
             return Promise.reject({ response: { status, data } });
         }
         if (mockedGetResponseByUrl.has(requestUrl)) {
-            const response = { data: mockedGetResponseByUrl.get(requestUrl) };
+            const data = mockedGetResponseByUrl.get(requestUrl);
+            const status = mockedGetStatusByUrl.get(requestUrl) ?? 200;
 
-            if (response.data instanceof Buffer) {
+            if (data instanceof Buffer) {
                 const readableStream = new Readable();
-                readableStream.push(response.data)
+                readableStream.push(data)
                 readableStream.push(null);
                 return Promise.resolve({
                     status: 200,
                     data: readableStream,
                 });
             } else {
-                return Promise.resolve(response);
+                return Promise.resolve({ status, data });
             }
+        }
+        // CUI marking is probed on every user-facing write. Unless a test opts in,
+        // answer 204 so the CLI keeps the original filename.
+        if (requestUrl.endsWith(CUI_PDF_COVER_PATH)) {
+            return Promise.resolve({ status: 204, data: "" });
         }
         fail("API call not mocked.")
     });
@@ -59,6 +68,13 @@ const mockAxios = () : void => {
 
 const mockAxiosGet = (url: string, responseData: any) => {
     mockedGetResponseByUrl.set(url, responseData);
+    mockedGetStatusByUrl.delete(url);
+    mockedGetErrorByUrl.delete(url);
+};
+
+const mockAxiosGetWithStatus = (url: string, status: number, responseData: any) => {
+    mockedGetResponseByUrl.set(url, responseData);
+    mockedGetStatusByUrl.set(url, status);
     mockedGetErrorByUrl.delete(url);
 };
 
@@ -104,6 +120,7 @@ const mockAxiosDelete = (url: string) => {
 
 afterEach(() => {
     mockedGetResponseByUrl.clear();
+    mockedGetStatusByUrl.clear();
     mockedGetErrorByUrl.clear();
     mockedPostResponseByUrl.clear();
     mockedPostErrorByUrl.clear();
@@ -115,6 +132,7 @@ export {
     mockedAxiosInstance,
     mockAxios,
     mockAxiosGet,
+    mockAxiosGetWithStatus,
     mockAxiosGetError,
     mockAxiosPost,
     mockAxiosPostError,
