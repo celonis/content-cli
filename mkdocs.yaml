@@ -18,6 +18,7 @@ nav:
       - Deployment Commands: './user-guide/deployment-commands.md'
       - Asset Registry Commands: './user-guide/asset-registry-commands.md'
       - Data Pool Commands: './user-guide/data-pool-commands.md'
+      - Data Model Migration Commands: './user-guide/data-model-migration-commands.md'
       - Action Flow Commands: './user-guide/action-flow-commands.md'
       - Bookmark Commands: './user-guide/bookmark-commands.md'
   - Development:
