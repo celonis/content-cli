@@ -101,6 +101,31 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(true);
     });
 
+    it("records a case-only move when the target resolves to the source file", () => {
+        writeWorkspace();
+        const source = path.join(process.cwd(), "Guides", "Guide.md");
+        const target = path.join(process.cwd(), "Guides", "guide.md");
+        const existsSync = fs.existsSync;
+        const lstatSync = fs.lstatSync;
+        const exists = jest.spyOn(fs, "existsSync").mockImplementation(candidate => {
+            return candidate.toString() === target || existsSync(candidate);
+        });
+        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation(candidate => {
+            return candidate.toString() === target ? lstatSync(source) : lstatSync(candidate);
+        });
+
+        try {
+            new WorkspaceService(testContext).move("Guides/Guide.md", "Guides/guide.md");
+
+            expect(JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "index.json"), "utf-8"))).toMatchObject({
+                files: [{ nodeKey: "node-1", currentPath: "Guides/guide.md" }],
+            });
+        } finally {
+            lstat.mockRestore();
+            exists.mockRestore();
+        }
+    });
+
     it("reports clean, modified, moved, and deleted files", () => {
         writeWorkspace();
         const service = new WorkspaceService(testContext);

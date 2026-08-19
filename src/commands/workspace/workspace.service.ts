@@ -136,7 +136,7 @@ export class WorkspaceService {
                 throw new GracefulError(`Moved file not found: ${targetPath}`);
             }
         } else {
-            if (fs.existsSync(absoluteTarget)) {
+            if (fs.existsSync(absoluteTarget) && !this.sameFile(absoluteSource, absoluteTarget)) {
                 throw new GracefulError(`Target already exists: ${targetPath}`);
             }
             fs.mkdirSync(path.dirname(absoluteTarget), { recursive: true });
@@ -145,6 +145,16 @@ export class WorkspaceService {
         tracked.currentPath = targetPath;
         this.writeIndex(root, index);
         logger.info(`Recorded move: ${sourcePath} -> ${targetPath}`);
+    }
+
+    private sameFile(source: string, target: string): boolean {
+        const sourceStat = fs.lstatSync(source);
+        const targetStat = fs.lstatSync(target);
+        return (
+            source.toLowerCase() === target.toLowerCase() &&
+            sourceStat.dev === targetStat.dev &&
+            sourceStat.ino === targetStat.ino
+        );
     }
 
     private root(directory?: string): string {
