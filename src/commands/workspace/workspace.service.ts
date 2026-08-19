@@ -645,7 +645,8 @@ export class WorkspaceService {
 
     private validateGitignore(root: string): void {
         const gitignore = path.join(root, ".pacman", ".gitignore");
-        if (!fs.existsSync(gitignore) || fs.readFileSync(gitignore, "utf-8") !== "local/\n") {
+        const content = fs.existsSync(gitignore) ? fs.readFileSync(gitignore, "utf-8") : undefined;
+        if (content !== "local/\n" && content !== "local/\r\n") {
             throw new GracefulError("Workspace .pacman/.gitignore must contain local/.");
         }
     }

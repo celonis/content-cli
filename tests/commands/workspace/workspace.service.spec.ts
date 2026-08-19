@@ -202,6 +202,22 @@ describe("Workspace service", () => {
         });
     });
 
+    it("hydrates a Git-restored workspace with CRLF metadata ignore rules", async () => {
+        writeWorkspace();
+        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
+        fs.writeFileSync(path.join(process.cwd(), ".pacman", ".gitignore"), "local/\r\n");
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+            { etag: eTag("revision-2") }
+        );
+
+        const service = new WorkspaceService(testContext);
+        await service.pull();
+
+        expect(service.status()).toEqual([]);
+    });
+
     it("keeps Git-restored path drift as a move for the next push", async () => {
         writeWorkspace([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
         fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
