@@ -45,7 +45,7 @@ function classifyExpectedFile(
         changes.push({ nodeKey: file.nodeKey, path: file.path, status: "added" });
         return;
     }
-    if (hint && hint !== file.path) {
+    if (hint) {
         classifyHintedFile(file, hint, visibleFiles, changes, consumedPaths);
         return;
     }
@@ -66,12 +66,13 @@ function classifyHintedFile(
     changes: ClassifiedWorkspaceChange[],
     consumedPaths: Set<string>
 ): void {
-    if (visibleFiles.has(file.path) || !visibleFiles.has(hint) || consumedPaths.has(hint)) {
+    const sourceStillPresent = hint !== file.path && visibleFiles.has(file.path);
+    if (sourceStillPresent || !visibleFiles.has(hint) || consumedPaths.has(hint)) {
         changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
         if (visibleFiles.has(hint)) {
             consumedPaths.add(hint);
         }
-        if (visibleFiles.has(file.path)) {
+        if (sourceStillPresent) {
             consumedPaths.add(file.path);
         }
         return;

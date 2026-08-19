@@ -31,6 +31,16 @@ describe("Workspace change classifier", () => {
         ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "moved, modified" }]);
     });
 
+    it("uses a reconciliation hint when metadata already names the destination", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Pages/Guide.md", digest: "sha256:one" }],
+                new Map([["Pages/Guide.md", "sha256:one"]]),
+                { "node-1": "Pages/Guide.md" }
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "moved" }]);
+    });
+
     it("keeps a distinct deletion and addition separate", () => {
         expect(
             classifyWorkspaceChanges(

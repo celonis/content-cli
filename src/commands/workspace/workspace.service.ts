@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import * as FormData from "form-data";
 import AdmZip = require("adm-zip");
@@ -348,7 +347,7 @@ export class WorkspaceService {
         packageKey: string
     ): void {
         const extracted = this.validatedArchive(download, packageKey);
-        const refreshRoot = fs.mkdtempSync(path.join(os.tmpdir(), "content-cli-pacman-refresh-"));
+        const refreshRoot = fs.mkdtempSync(path.join(root, ".pacman-refresh-"));
         const stagedMetadata = path.join(refreshRoot, "metadata");
         const previousMetadata = path.join(refreshRoot, "previous");
         const metadata = path.join(root, ".pacman");

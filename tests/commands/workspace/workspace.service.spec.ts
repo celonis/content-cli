@@ -202,6 +202,36 @@ describe("Workspace service", () => {
         });
     });
 
+    it("keeps Git-restored path drift as a move for the next push", async () => {
+        writeWorkspace([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
+        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+            { etag: eTag("revision-2") }
+        );
+        const service = new WorkspaceService(testContext);
+
+        await service.pull();
+
+        expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
+        expect(JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))).toMatchObject({
+            moveHints: { "node-1": "Pages/Guide.md" },
+        });
+
+        mockAxiosPost(PUSH_URL, {});
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]),
+            { etag: eTag("revision-3") }
+        );
+        await service.push();
+
+        const form = (mockedAxiosInstance.post as jest.Mock).mock.calls[0][1] as { _streams: unknown[] };
+        expect(form._streams).toContain(JSON.stringify({ moves: { "node-1": "Pages/Guide.md" } }));
+        expect(service.status()).toEqual([]);
+    });
+
     it("refuses to pull over local changes", async () => {
         writeWorkspace();
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "local");
@@ -509,6 +539,15 @@ describe("Workspace service", () => {
         const service = new WorkspaceService(testContext);
         service.move("Guides/Guide.md", "Pages/Guide.md", true);
         const zip = jest.spyOn(fileService, "zipDirectoryAsSinglePackage");
+        const originalRename = fs.renameSync;
+        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
+            const sourceInsideWorkspace = path.resolve(source.toString()).startsWith(`${process.cwd()}${path.sep}`);
+            const targetInsideWorkspace = path.resolve(target.toString()).startsWith(`${process.cwd()}${path.sep}`);
+            if (sourceInsideWorkspace !== targetInsideWorkspace) {
+                throw Object.assign(new Error("cross-device rename"), { code: "EXDEV" });
+            }
+            originalRename(source, target);
+        });
         mockAxiosPost(PUSH_URL, {});
         mockAxiosGet(
             ARCHIVE_URL,
@@ -516,7 +555,11 @@ describe("Workspace service", () => {
             { etag: eTag("revision-2") }
         );
 
-        await service.push(undefined, true);
+        try {
+            await service.push(undefined, true);
+        } finally {
+            rename.mockRestore();
+        }
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             PUSH_URL,
