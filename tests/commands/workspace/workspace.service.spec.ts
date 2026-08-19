@@ -204,6 +204,55 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(true);
     });
 
+    it("rejects circular node metadata", () => {
+        writeWorkspace();
+        const folderPath = path.join(process.cwd(), ".pacman", "nodes", "folder-1.json");
+        const folder = JSON.parse(fs.readFileSync(folderPath, "utf-8"));
+        folder.parentNodeKey = "folder-1";
+        fs.writeFileSync(folderPath, JSON.stringify(folder));
+
+        expect(() => new WorkspaceService(testContext).status()).toThrow("Circular node hierarchy");
+    });
+
+    it("rejects duplicate case-insensitive paths derived from node metadata", () => {
+        writeWorkspace([
+            { nodeKey: "node-1", path: "Guides/One.md", content: "one" },
+            { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
+        ]);
+        const secondPath = path.join(process.cwd(), ".pacman", "nodes", "node-2.json");
+        const second = JSON.parse(fs.readFileSync(secondPath, "utf-8"));
+        second.filesystemName = "one.md";
+        fs.writeFileSync(secondPath, JSON.stringify(second));
+
+        expect(() => new WorkspaceService(testContext).status()).toThrow("Duplicate workspace path");
+    });
+
+    it("rejects duplicate case-insensitive paths in the visible tree", () => {
+        writeWorkspace();
+        const originalReaddir = fs.readdirSync;
+        const fileEntry = (name: string) => ({
+            name,
+            isSymbolicLink: () => false,
+            isDirectory: () => false,
+            isFile: () => true,
+        });
+        const readdir = jest.spyOn(fs, "readdirSync").mockImplementation(((directory: fs.PathLike, options?: object) => {
+            if (path.resolve(directory.toString()) === process.cwd()) {
+                return [fileEntry("Visible.md"), fileEntry("visible.md")];
+            }
+            return originalReaddir(directory, options as never);
+        }) as never);
+        const service = new WorkspaceService(testContext);
+        const digestingService = service as unknown as { digest(file: string): string };
+        jest.spyOn(digestingService, "digest").mockReturnValue(digest("visible"));
+
+        try {
+            expect(() => service.status()).toThrow("duplicate case-insensitive paths");
+        } finally {
+            readdir.mockRestore();
+        }
+    });
+
     it("supports a case-only move when the target resolves to the source file", () => {
         writeWorkspace();
         const source = path.join(process.cwd(), "Guides", "Guide.md");

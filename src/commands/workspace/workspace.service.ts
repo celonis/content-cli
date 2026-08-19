@@ -136,10 +136,10 @@ export class WorkspaceService {
         if (!tracked) {
             throw new GracefulError(`Tracked file not found: ${sourcePath}`);
         }
-        const targetOwner = snapshot.expectedFiles.find(
+        const targetOwned = snapshot.expectedFiles.some(
             file => file.nodeKey !== tracked.nodeKey && file.path.toLowerCase() === targetPath.toLowerCase()
         );
-        if (targetOwner) {
+        if (targetOwned) {
             throw new GracefulError(`Target path is already tracked: ${targetPath}`);
         }
         const absoluteSource = this.resolveVisiblePath(root, sourcePath);
@@ -285,9 +285,10 @@ export class WorkspaceService {
             if (cached) {
                 return cached;
             }
-            if (!resolving.add(node.key)) {
+            if (resolving.has(node.key)) {
                 throw new GracefulError(`Circular node hierarchy at ${node.key}.`);
             }
+            resolving.add(node.key);
             const segment = this.filesystemName(node);
             let filePath = segment;
             if (node.parentNodeKey && node.parentNodeKey !== state.packageKey) {
@@ -312,9 +313,11 @@ export class WorkspaceService {
             });
         const foldedPaths = new Set<string>();
         expected.forEach(file => {
-            if (!foldedPaths.add(file.path.toLowerCase())) {
+            const foldedPath = file.path.toLowerCase();
+            if (foldedPaths.has(foldedPath)) {
                 throw new GracefulError(`Duplicate workspace path in node metadata: ${file.path}`);
             }
+            foldedPaths.add(foldedPath);
         });
         Object.entries(state.moveHints).forEach(([nodeKey, targetPath]) => {
             if (!byKey.has(nodeKey)) {
@@ -374,9 +377,11 @@ export class WorkspaceService {
                         throw new GracefulError(`Workspace contains an unsupported entry: ${relative}`);
                     }
                     const validated = this.validateRelative(relative);
-                    if (!foldedPaths.add(validated.toLowerCase())) {
+                    const foldedPath = validated.toLowerCase();
+                    if (foldedPaths.has(foldedPath)) {
                         throw new GracefulError(`Workspace contains duplicate case-insensitive paths: ${validated}`);
                     }
+                    foldedPaths.add(foldedPath);
                     files.set(validated, this.digest(absolute));
                 });
         };
