@@ -83,6 +83,24 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), "Pages", "Guide.md"))).toBe(true);
     });
 
+    it("rejects a move onto another tracked path", () => {
+        writeWorkspace();
+        const indexPath = path.join(process.cwd(), ".pacman", "index.json");
+        const workspaceIndex = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
+        workspaceIndex.files.push({
+            nodeKey: "node-2",
+            basePath: "Pages/Guide.md",
+            currentPath: "Pages/Guide.md",
+            digest: digest("other"),
+        });
+        fs.writeFileSync(indexPath, JSON.stringify(workspaceIndex));
+
+        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", "Pages/Guide.md")).toThrow(
+            "Target path is already tracked"
+        );
+        expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(true);
+    });
+
     it("reports clean, modified, moved, and deleted files", () => {
         writeWorkspace();
         const service = new WorkspaceService(testContext);

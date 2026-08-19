@@ -123,6 +123,12 @@ export class WorkspaceService {
         if (!tracked) {
             throw new GracefulError(`Tracked file not found: ${sourcePath}`);
         }
+        const trackedTarget = index.files.find(
+            file => file.nodeKey !== tracked.nodeKey && file.currentPath.toLowerCase() === targetPath.toLowerCase()
+        );
+        if (trackedTarget) {
+            throw new GracefulError(`Target path is already tracked: ${targetPath}`);
+        }
         const absoluteSource = this.resolveVisiblePath(root, sourcePath);
         const absoluteTarget = this.resolveVisiblePath(root, targetPath);
         if (recordOnly) {
