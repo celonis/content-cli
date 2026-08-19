@@ -5,6 +5,8 @@
 /src/core                                         @celonis/astro
 /src/commands/configuration-management/           @celonis/astro
 /tests/commands/configuration-management/         @celonis/astro
+/src/commands/workspace/                          @celonis/astro
+/tests/commands/workspace/                        @celonis/astro
 /src/commands/t2tc/                               @celonis/astro
 /tests/commands/t2tc/                             @celonis/astro
 /src/commands/profile/                            @celonis/astro
