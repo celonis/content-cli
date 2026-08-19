@@ -64,6 +64,24 @@ export class NodeApi {
             });
     }
 
+    public async findStagingNodesByPackage(packageKey: string, withConfiguration: boolean, limit: number, offset: number): Promise<NodeTransport[]> {
+        const queryParams = new URLSearchParams();
+        queryParams.set("withConfiguration", withConfiguration.toString());
+
+        if (limit) {
+            queryParams.set("limit", limit.toString());
+        }
+        if (offset) {
+            queryParams.set("offset", offset.toString());
+        }
+
+        return this.httpClient()
+            .get(`/pacman/api/core/staging/packages/${packageKey}/nodes?${queryParams.toString()}`)
+            .catch(e => {
+                throw new FatalError(`Problem fetching nodes from package ${packageKey}: ${e}`);
+            });
+    }
+
     public async findVersionedNodesByPackage(packageKey: string, version: string, withConfiguration: boolean, limit: number, offset: number): Promise<NodeTransport[]> {
         const queryParams = new URLSearchParams();
         queryParams.set("version", version);
