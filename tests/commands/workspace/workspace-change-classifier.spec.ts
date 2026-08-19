@@ -54,6 +54,23 @@ describe("Workspace change classifier", () => {
         ]);
     });
 
+    it("keeps ambiguous moved and edited basenames unresolved", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [
+                    { nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" },
+                    { nodeKey: "node-2", path: "Tutorials/Guide.md", digest: "sha256:two" },
+                ],
+                new Map([["Pages/Guide.md", "sha256:three"]]),
+                {}
+            )
+        ).toEqual([
+            { nodeKey: "node-1", path: "Guides/Guide.md", status: "unresolved" },
+            { path: "Pages/Guide.md", status: "unresolved" },
+            { nodeKey: "node-2", path: "Tutorials/Guide.md", status: "unresolved" },
+        ]);
+    });
+
     it("classifies a metadata-backed file without a baseline as added", () => {
         expect(
             classifyWorkspaceChanges(
@@ -62,6 +79,26 @@ describe("Workspace change classifier", () => {
                 {}
             )
         ).toEqual([{ nodeKey: "node-1", path: "Guides/New.md", status: "added" }]);
+    });
+
+    it("keeps an unrecorded move without a baseline unresolved once", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/New.md" }],
+                new Map([["Pages/New.md", "sha256:new"]]),
+                {}
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Pages/New.md", status: "unresolved" }]);
+    });
+
+    it("classifies a recorded move without a baseline as added", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/New.md" }],
+                new Map([["Pages/New.md", "sha256:new"]]),
+                { "node-1": "Pages/New.md" }
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Pages/New.md", status: "added" }]);
     });
 
     it("keeps an invalid recorded move unresolved", () => {

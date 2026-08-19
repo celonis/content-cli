@@ -17,12 +17,10 @@ export function classifyWorkspaceChanges(
     resolveDigestMoves(missing, visibleFiles, consumedPaths, changes);
 
     const newPaths = [...visibleFiles.keys()].filter(filePath => !consumedPaths.has(filePath));
-    possibleMovedAndEdited(missing, newPaths).forEach(([file, filePath]) => {
-        changes.push({ nodeKey: file.nodeKey, path: filePath, status: "unresolved" });
-        missing.splice(missing.indexOf(file), 1);
-        newPaths.splice(newPaths.indexOf(filePath), 1);
-    });
-    missing.forEach(file => changes.push({ nodeKey: file.nodeKey, path: file.path, status: "deleted" }));
+    resolveMovedAndEdited(missing, newPaths, changes);
+    missing.forEach(file =>
+        changes.push({ nodeKey: file.nodeKey, path: file.path, status: file.digest ? "deleted" : "unresolved" })
+    );
     newPaths.forEach(filePath => changes.push({ path: filePath, status: "added" }));
 
     return changes.sort((left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status));
@@ -37,12 +35,11 @@ function classifyExpectedFile(
     missing: ExpectedWorkspaceFile[]
 ): void {
     if (!file.digest) {
-        if (hint || !visibleFiles.has(file.path)) {
-            changes.push({ nodeKey: file.nodeKey, path: hint || file.path, status: "unresolved" });
-            return;
+        if (hint || visibleFiles.has(file.path)) {
+            classifyNewFile(file, hint, visibleFiles, changes, consumedPaths);
+        } else {
+            missing.push(file);
         }
-        consumedPaths.add(file.path);
-        changes.push({ nodeKey: file.nodeKey, path: file.path, status: "added" });
         return;
     }
     if (hint) {
@@ -57,6 +54,29 @@ function classifyExpectedFile(
         return;
     }
     missing.push(file);
+}
+
+function classifyNewFile(
+    file: ExpectedWorkspaceFile,
+    hint: string | undefined,
+    visibleFiles: Map<string, string>,
+    changes: ClassifiedWorkspaceChange[],
+    consumedPaths: Set<string>
+): void {
+    const target = hint || file.path;
+    const sourceStillPresent = Boolean(hint && hint !== file.path && visibleFiles.has(file.path));
+    if (sourceStillPresent || !visibleFiles.has(target) || consumedPaths.has(target)) {
+        changes.push({ nodeKey: file.nodeKey, path: target, status: "unresolved" });
+        if (visibleFiles.has(target)) {
+            consumedPaths.add(target);
+        }
+        if (sourceStillPresent) {
+            consumedPaths.add(file.path);
+        }
+        return;
+    }
+    consumedPaths.add(target);
+    changes.push({ nodeKey: file.nodeKey, path: target, status: "added" });
 }
 
 function classifyHintedFile(
@@ -91,7 +111,10 @@ function resolveDigestMoves(
     consumedPaths: Set<string>,
     changes: ClassifiedWorkspaceChange[]
 ): void {
-    groupBy(missing, file => file.digest!).forEach((files, digest) => {
+    groupBy(
+        missing.filter(file => file.digest),
+        file => file.digest!
+    ).forEach((files, digest) => {
         const candidates = [...visibleFiles.entries()]
             .filter(([filePath, visibleDigest]) => !consumedPaths.has(filePath) && visibleDigest === digest)
             .map(([filePath]) => filePath);
@@ -114,22 +137,27 @@ function resolveDigestMoves(
     });
 }
 
-function possibleMovedAndEdited(
+function resolveMovedAndEdited(
     missing: ExpectedWorkspaceFile[],
-    newPaths: string[]
-): Array<[ExpectedWorkspaceFile, string]> {
-    const pairs: Array<[ExpectedWorkspaceFile, string]> = [];
-    const remainingPaths = new Set(newPaths);
-    missing.forEach(file => {
-        const matchingBasenames = [...remainingPaths].filter(
-            filePath => path.posix.basename(filePath).toLowerCase() === path.posix.basename(file.path).toLowerCase()
-        );
-        if (matchingBasenames.length === 1) {
-            pairs.push([file, matchingBasenames[0]]);
-            remainingPaths.delete(matchingBasenames[0]);
+    newPaths: string[],
+    changes: ClassifiedWorkspaceChange[]
+): void {
+    const missingByBasename = groupBy(missing, file => path.posix.basename(file.path).toLowerCase());
+    const pathsByBasename = groupBy(newPaths, filePath => path.posix.basename(filePath).toLowerCase());
+    missingByBasename.forEach((files, basename) => {
+        const paths = pathsByBasename.get(basename);
+        if (!paths) {
+            return;
         }
+        if (files.length === 1 && paths.length === 1) {
+            changes.push({ nodeKey: files[0].nodeKey, path: paths[0], status: "unresolved" });
+        } else {
+            files.forEach(file => changes.push({ nodeKey: file.nodeKey, path: file.path, status: "unresolved" }));
+            paths.forEach(filePath => changes.push({ path: filePath, status: "unresolved" }));
+        }
+        files.forEach(file => missing.splice(missing.indexOf(file), 1));
+        paths.forEach(filePath => newPaths.splice(newPaths.indexOf(filePath), 1));
     });
-    return pairs;
 }
 
 function groupBy<T>(values: T[], key: (value: T) => string): Map<string, T[]> {
