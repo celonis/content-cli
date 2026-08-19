@@ -100,14 +100,6 @@ function possibleMovedAndEdited(
             remainingPaths.delete(matchingBasenames[0]);
         }
     });
-    const pairedKeys = new Set(pairs.map(([file]) => file.nodeKey));
-    const remainingMissing = missing.filter(file => !pairedKeys.has(file.nodeKey));
-    if (remainingMissing.length === 1 && remainingPaths.size === 1) {
-        const candidate = [...remainingPaths][0];
-        if (path.posix.extname(remainingMissing[0].path).toLowerCase() === path.posix.extname(candidate).toLowerCase()) {
-            pairs.push([remainingMissing[0], candidate]);
-        }
-    }
     return pairs;
 }
 

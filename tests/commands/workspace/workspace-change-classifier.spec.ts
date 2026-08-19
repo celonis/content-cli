@@ -30,4 +30,17 @@ describe("Workspace change classifier", () => {
             )
         ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "moved, modified" }]);
     });
+
+    it("keeps a distinct deletion and addition separate", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/Old.md", digest: "sha256:one" }],
+                new Map([["Pages/New.md", "sha256:two"]]),
+                {}
+            )
+        ).toEqual([
+            { nodeKey: "node-1", path: "Guides/Old.md", status: "deleted" },
+            { path: "Pages/New.md", status: "added" },
+        ]);
+    });
 });
