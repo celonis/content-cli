@@ -67,7 +67,10 @@ export class WorkspaceService {
             if (!moved && !modified) {
                 return [];
             }
-            const status = moved && modified ? "moved, modified" : moved ? "moved" : "modified";
+            let status: WorkspaceChange["status"] = "modified";
+            if (moved) {
+                status = modified ? "moved, modified" : "moved";
+            }
             return [{ path: file.currentPath, status } as WorkspaceChange];
         });
         if (changes.length === 0) {

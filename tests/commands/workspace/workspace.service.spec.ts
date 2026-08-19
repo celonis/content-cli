@@ -29,12 +29,15 @@ function writeWorkspace(): void {
     fs.writeFileSync(path.join(process.cwd(), ".pacman", "index.json"), JSON.stringify(index()));
 }
 
+function removeWorkspace(): void {
+    [".pacman", "Guides", "Pages", PACKAGE_KEY].forEach(entry =>
+        fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true })
+    );
+}
+
 describe("Workspace service", () => {
-    beforeEach(() => {
-        [".pacman", "Guides", "Pages", PACKAGE_KEY].forEach((entry) =>
-            fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true })
-        );
-    });
+    beforeEach(removeWorkspace);
+    afterEach(removeWorkspace);
 
     it("checks out a filesystem archive", async () => {
         const zip = new AdmZip();
@@ -68,6 +71,40 @@ describe("Workspace service", () => {
         new WorkspaceService(testContext).move("Guides/Guide.md", "Pages/Guide.md", true);
 
         expect(fs.existsSync(path.join(process.cwd(), "Pages", "Guide.md"))).toBe(true);
+    });
+
+    it("reports clean, modified, moved, and deleted files", () => {
+        writeWorkspace();
+        const service = new WorkspaceService(testContext);
+        expect(service.status()).toEqual([]);
+
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
+        expect(service.status()).toEqual([{ path: "Guides/Guide.md", status: "modified" }]);
+
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "original");
+        service.move("Guides/Guide.md", "Pages/Guide.md");
+        expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
+
+        fs.rmSync(path.join(process.cwd(), "Pages", "Guide.md"));
+        expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "deleted" }]);
+    });
+
+    it("rejects checkout over an existing destination", async () => {
+        fs.mkdirSync(path.join(process.cwd(), PACKAGE_KEY));
+
+        await expect(new WorkspaceService(testContext).checkout(PACKAGE_KEY)).rejects.toThrow(
+            "Destination already exists"
+        );
+    });
+
+    it("rejects an archive without a workspace index", async () => {
+        const zip = new AdmZip();
+        zip.addFile("Guides/Guide.md", Buffer.from("original"));
+        mockAxiosGet(CHECKOUT_URL, zip.toBuffer());
+
+        await expect(new WorkspaceService(testContext).checkout(PACKAGE_KEY)).rejects.toThrow(
+            "Archive does not contain .pacman/index.json"
+        );
     });
 
     it("pushes the workspace archive", async () => {
