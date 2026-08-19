@@ -5,7 +5,7 @@ import AdmZip = require("adm-zip");
 import { WorkspaceService } from "../../../src/commands/workspace/workspace.service";
 import { fileService } from "../../../src/core/utils/file-service";
 import { testContext } from "../../utls/test-context";
-import { mockAxiosGet, mockAxiosPost, mockedAxiosInstance } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosGetError, mockAxiosPost, mockedAxiosInstance } from "../../utls/http-requests-mock";
 
 const PACKAGE_KEY = "pkg-1";
 const ARCHIVE_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
@@ -376,6 +376,19 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), "Pages", "Guide.md"))).toBe(true);
     });
 
+    it("records an explicit move after the source was edited", () => {
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
+        const service = new WorkspaceService(testContext);
+
+        service.move("Guides/Guide.md", "Pages/Guide.md");
+
+        expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved, modified" }]);
+        expect(JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))).toMatchObject({
+            moveHints: { "node-1": "Pages/Guide.md" },
+        });
+    });
+
     it("rejects a move onto another metadata-derived path", () => {
         writeWorkspace([
             { nodeKey: "node-1", path: "Guides/Guide.md", content: "original" },
@@ -541,9 +554,18 @@ describe("Workspace service", () => {
         const zip = jest.spyOn(fileService, "zipDirectoryAsSinglePackage");
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
-            const sourceInsideWorkspace = path.resolve(source.toString()).startsWith(`${process.cwd()}${path.sep}`);
-            const targetInsideWorkspace = path.resolve(target.toString()).startsWith(`${process.cwd()}${path.sep}`);
-            if (sourceInsideWorkspace !== targetInsideWorkspace) {
+            const workspaceRoot = `${process.cwd()}${path.sep}`;
+            const refreshPrefix = path.join(
+                path.dirname(process.cwd()),
+                `.${path.basename(process.cwd())}-pacman-refresh-`
+            );
+            const sourcePath = path.resolve(source.toString());
+            const targetPath = path.resolve(target.toString());
+            const sourceOnWorkspaceFilesystem =
+                sourcePath.startsWith(workspaceRoot) || sourcePath.startsWith(refreshPrefix);
+            const targetOnWorkspaceFilesystem =
+                targetPath.startsWith(workspaceRoot) || targetPath.startsWith(refreshPrefix);
+            if (sourceOnWorkspaceFilesystem !== targetOnWorkspaceFilesystem) {
                 throw Object.assign(new Error("cross-device rename"), { code: "EXDEV" });
             }
             originalRename(source, target);
@@ -583,6 +605,25 @@ describe("Workspace service", () => {
         });
     });
 
+    it("invalidates local state when post-push refresh fails", async () => {
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
+        mockAxiosPost(PUSH_URL, {});
+        mockAxiosGetError(ARCHIVE_URL, 503, { message: "unavailable" });
+        const service = new WorkspaceService(testContext);
+
+        await expect(service.push()).rejects.toThrow("Push succeeded, but local state refresh failed");
+        expect(fs.existsSync(path.join(process.cwd(), ".pacman", "local", "state.json"))).toBe(false);
+
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }]),
+            { etag: eTag("revision-2") }
+        );
+        await service.pull();
+        expect(service.status()).toEqual([]);
+    });
+
     it("preserves the metadata backup when refresh and rollback both fail", async () => {
         writeWorkspace();
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
@@ -605,7 +646,7 @@ describe("Workspace service", () => {
             await new WorkspaceService(testContext).push();
         } catch (error) {
             expect(error).toBeInstanceOf(Error);
-            const match = (error as Error).message.match(/backup remains at (.+)\.$/);
+            const match = (error as Error).message.match(/backup remains at (.+?)\. Run workspace pull before retrying\.$/);
             backup = match?.[1];
         } finally {
             rename.mockRestore();
@@ -613,6 +654,7 @@ describe("Workspace service", () => {
 
         expect(backup).toBeDefined();
         expect(fs.existsSync(backup!)).toBe(true);
+        expect(backup!.startsWith(`${process.cwd()}${path.sep}`)).toBe(false);
         originalRename(backup!, path.join(process.cwd(), ".pacman"));
         fs.rmSync(path.dirname(backup!), { recursive: true, force: true });
     });

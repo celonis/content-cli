@@ -143,8 +143,18 @@ export class WorkspaceService {
                 form.append("moveMappings", JSON.stringify({ moves }), { contentType: "application/json" });
             }
             await this.api.push(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
-            const refreshedArchive = await this.api.download(snapshot.packageKey);
-            this.refreshMetadata(root, refreshedArchive, snapshot.packageKey);
+            fs.rmSync(this.statePath(root), { force: true });
+            try {
+                const refreshedArchive = await this.api.download(snapshot.packageKey);
+                this.refreshMetadata(root, refreshedArchive, snapshot.packageKey);
+            } catch (error) {
+                const detail = error instanceof GracefulError ? ` ${error.message}` : "";
+                const failure = new GracefulError(
+                    `Push succeeded, but local state refresh failed.${detail} Run workspace pull before retrying.`
+                );
+                failure.cause = error;
+                throw failure;
+            }
         } finally {
             fs.rmSync(zipPath, { force: true });
         }
@@ -185,6 +195,8 @@ export class WorkspaceService {
         }
         fs.mkdirSync(path.dirname(absoluteTarget), { recursive: true });
         fs.renameSync(absoluteSource, absoluteTarget);
+        snapshot.state.moveHints[tracked.nodeKey] = targetPath;
+        this.writeState(root, snapshot.state);
         logger.info(`Moved: ${sourcePath} -> ${targetPath}`);
     }
 
@@ -347,7 +359,9 @@ export class WorkspaceService {
         packageKey: string
     ): void {
         const extracted = this.validatedArchive(download, packageKey);
-        const refreshRoot = fs.mkdtempSync(path.join(root, ".pacman-refresh-"));
+        const refreshRoot = fs.mkdtempSync(
+            path.join(path.dirname(root), `.${path.basename(root)}-pacman-refresh-`)
+        );
         const stagedMetadata = path.join(refreshRoot, "metadata");
         const previousMetadata = path.join(refreshRoot, "previous");
         const metadata = path.join(root, ".pacman");
