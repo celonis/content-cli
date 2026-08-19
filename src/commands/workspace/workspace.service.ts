@@ -7,46 +7,44 @@ import { Context } from "../../core/command/cli-context";
 import { fileService } from "../../core/utils/file-service";
 import { GracefulError, logger } from "../../core/utils/logger";
 import { WorkspaceApi } from "./workspace-api";
+import { classifyWorkspaceChanges } from "./workspace-change-classifier";
+import {
+    ExpectedWorkspaceFile,
+    WorkspaceChange,
+    WorkspaceNodeMetadata,
+    WorkspacePackageIdentity,
+    WorkspaceSnapshot,
+    WorkspaceState,
+} from "./workspace.models";
 
-interface WorkspaceState {
-    schemaVersion: number;
-    packageKey: string;
-    serverRevision: string;
-    baselineDigests: Record<string, string>;
-    moveHints: Record<string, string>;
-}
+const NON_SEMANTIC_NODE_FIELDS = [
+    "configuration",
+    "invalidConfiguration",
+    "invalidContent",
+    "id",
+    "workingDraftId",
+    "activatedDraftId",
+    "stagingDraftId",
+    "prodDraftId",
+    "archivedDraftId",
+    "packageNodeId",
+    "creationDate",
+    "changeDate",
+    "deletedAt",
+    "archivedAt",
+    "createdBy",
+    "updatedBy",
+    "deletedBy",
+    "archivedBy",
+    "optimisticLockVersion",
+    "revision",
+    "serverRevision",
+    "lastModified",
+    "lastModifiedAt",
+    "lastModifiedBy",
+];
 
-interface WorkspaceNodeMetadata {
-    key: string;
-    name: string;
-    type: string;
-    parentNodeKey?: string | null;
-    filesystemName?: string;
-    metadata?: Record<string, unknown>;
-    additionalFields?: Record<string, unknown>;
-}
-
-interface ExpectedFile {
-    nodeKey: string;
-    path: string;
-    digest: string;
-}
-
-interface ClassifiedChange extends WorkspaceChange {
-    nodeKey?: string;
-}
-
-interface WorkspaceSnapshot {
-    state: WorkspaceState;
-    expectedFiles: ExpectedFile[];
-    visibleFiles: Map<string, string>;
-    changes: ClassifiedChange[];
-}
-
-export interface WorkspaceChange {
-    path: string;
-    status: "added" | "deleted" | "modified" | "moved" | "moved, modified" | "unresolved";
-}
+export { WorkspaceChange } from "./workspace.models";
 
 export class WorkspaceService {
     private readonly api: WorkspaceApi;
@@ -85,14 +83,18 @@ export class WorkspaceService {
 
     public async pull(directory?: string): Promise<void> {
         const root = this.root(directory);
-        const current = this.snapshot(root);
-        if (current.changes.length !== 0) {
+        const packageKey = this.packageIdentity(root).packageKey;
+        const hasLocalState = fs.existsSync(this.statePath(root));
+        if (hasLocalState && this.snapshot(root).changes.length !== 0) {
             throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
         }
-        const packageKey = current.state.packageKey;
         const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey);
         try {
-            this.replaceWorkspaceContents(root, temporary);
+            if (hasLocalState) {
+                this.replaceWorkspaceContents(root, temporary);
+            } else {
+                this.reconcileLocalState(root, temporary);
+            }
         } finally {
             fs.rmSync(temporary, { recursive: true, force: true });
         }
@@ -118,17 +120,35 @@ export class WorkspaceService {
         if (snapshot.changes.some(change => change.status === "unresolved")) {
             throw new GracefulError("Workspace has unresolved file identities. Record the intended moves before push.");
         }
-        const zipPath = fileService.zipDirectoryAsSinglePackage(root);
+        const zipPath = fileService.zipDirectoryAsSinglePackage(root, filePath => {
+            const folded = filePath.toLowerCase();
+            return (
+                folded !== ".git" &&
+                !folded.startsWith(".git/") &&
+                folded !== ".pacman/local" &&
+                !folded.startsWith(".pacman/local/")
+            );
+        });
         try {
             const form = new FormData();
             form.append("packageFile", fs.createReadStream(zipPath), { filename: "workspace.zip" });
-            await this.api.push(snapshot.state.packageKey, form, overwrite);
-            const refreshedArchive = await this.api.download(snapshot.state.packageKey);
-            this.refreshMetadata(root, refreshedArchive, snapshot.state.packageKey);
+            const moves = Object.fromEntries(
+                snapshot.changes
+                    .filter(change =>
+                        Boolean(change.nodeKey) && (change.status === "moved" || change.status === "moved, modified")
+                    )
+                    .map(change => [change.nodeKey!, change.path])
+            );
+            if (Object.keys(moves).length > 0) {
+                form.append("moveMappings", JSON.stringify({ moves }), { contentType: "application/json" });
+            }
+            await this.api.push(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
+            const refreshedArchive = await this.api.download(snapshot.packageKey);
+            this.refreshMetadata(root, refreshedArchive, snapshot.packageKey);
         } finally {
             fs.rmSync(zipPath, { force: true });
         }
-        logger.info(`Pushed ${snapshot.state.packageKey}.`);
+        logger.info(`Pushed ${snapshot.packageKey}.`);
     }
 
     public move(source: string, target: string, recordOnly: boolean = false): void {
@@ -169,117 +189,20 @@ export class WorkspaceService {
     }
 
     private snapshot(root: string): WorkspaceSnapshot {
+        const packageKey = this.packageIdentity(root).packageKey;
         const state = this.state(root);
-        const expectedFiles = this.expectedFiles(root, state);
+        const expectedFiles = this.expectedFiles(root, state, packageKey);
         const visibleFiles = this.visibleFiles(root);
         return {
+            packageKey,
             state,
             expectedFiles,
             visibleFiles,
-            changes: this.classify(expectedFiles, visibleFiles, state.moveHints),
+            changes: classifyWorkspaceChanges(expectedFiles, visibleFiles, state.moveHints),
         };
     }
 
-    private classify(
-        expectedFiles: ExpectedFile[],
-        visibleFiles: Map<string, string>,
-        moveHints: Record<string, string>
-    ): ClassifiedChange[] {
-        const changes: ClassifiedChange[] = [];
-        const consumedPaths = new Set<string>();
-        const missing: ExpectedFile[] = [];
-
-        expectedFiles.forEach(file => {
-            const hint = moveHints[file.nodeKey];
-            if (hint && hint !== file.path) {
-                if (visibleFiles.has(file.path) || !visibleFiles.has(hint) || consumedPaths.has(hint)) {
-                    changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
-                    if (visibleFiles.has(hint)) {
-                        consumedPaths.add(hint);
-                    }
-                    if (visibleFiles.has(file.path)) {
-                        consumedPaths.add(file.path);
-                    }
-                    return;
-                }
-                consumedPaths.add(hint);
-                changes.push({
-                    nodeKey: file.nodeKey,
-                    path: hint,
-                    status: visibleFiles.get(hint) === file.digest ? "moved" : "moved, modified",
-                });
-                return;
-            }
-            if (visibleFiles.has(file.path)) {
-                consumedPaths.add(file.path);
-                if (visibleFiles.get(file.path) !== file.digest) {
-                    changes.push({ nodeKey: file.nodeKey, path: file.path, status: "modified" });
-                }
-                return;
-            }
-            missing.push(file);
-        });
-
-        const missingByDigest = this.groupBy(missing, file => file.digest);
-        missingByDigest.forEach((files, digest) => {
-            const candidates = [...visibleFiles.entries()]
-                .filter(([filePath, visibleDigest]) => !consumedPaths.has(filePath) && visibleDigest === digest)
-                .map(([filePath]) => filePath);
-            if (files.length === 1 && candidates.length === 1) {
-                consumedPaths.add(candidates[0]);
-                changes.push({ nodeKey: files[0].nodeKey, path: candidates[0], status: "moved" });
-                missing.splice(missing.indexOf(files[0]), 1);
-                return;
-            }
-            if (candidates.length > 0) {
-                files.forEach(file => {
-                    changes.push({ nodeKey: file.nodeKey, path: file.path, status: "unresolved" });
-                    missing.splice(missing.indexOf(file), 1);
-                });
-                candidates.forEach(filePath => {
-                    consumedPaths.add(filePath);
-                    changes.push({ path: filePath, status: "unresolved" });
-                });
-            }
-        });
-
-        const newPaths = [...visibleFiles.keys()].filter(filePath => !consumedPaths.has(filePath));
-        const movedAndEdited = this.possibleMovedAndEdited(missing, newPaths);
-        movedAndEdited.forEach(([file, filePath]) => {
-            changes.push({ nodeKey: file.nodeKey, path: filePath, status: "unresolved" });
-            missing.splice(missing.indexOf(file), 1);
-            newPaths.splice(newPaths.indexOf(filePath), 1);
-        });
-        missing.forEach(file => changes.push({ nodeKey: file.nodeKey, path: file.path, status: "deleted" }));
-        newPaths.forEach(filePath => changes.push({ path: filePath, status: "added" }));
-
-        return changes.sort((left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status));
-    }
-
-    private possibleMovedAndEdited(missing: ExpectedFile[], newPaths: string[]): Array<[ExpectedFile, string]> {
-        const pairs: Array<[ExpectedFile, string]> = [];
-        const remainingPaths = new Set(newPaths);
-        missing.forEach(file => {
-            const matchingBasenames = [...remainingPaths].filter(
-                filePath => path.posix.basename(filePath).toLowerCase() === path.posix.basename(file.path).toLowerCase()
-            );
-            if (matchingBasenames.length === 1) {
-                pairs.push([file, matchingBasenames[0]]);
-                remainingPaths.delete(matchingBasenames[0]);
-            }
-        });
-        const pairedKeys = new Set(pairs.map(([file]) => file.nodeKey));
-        const remainingMissing = missing.filter(file => !pairedKeys.has(file.nodeKey));
-        if (remainingMissing.length === 1 && remainingPaths.size === 1) {
-            const candidate = [...remainingPaths][0];
-            if (path.posix.extname(remainingMissing[0].path).toLowerCase() === path.posix.extname(candidate).toLowerCase()) {
-                pairs.push([remainingMissing[0], candidate]);
-            }
-        }
-        return pairs;
-    }
-
-    private expectedFiles(root: string, state: WorkspaceState): ExpectedFile[] {
+    private expectedFiles(root: string, state: WorkspaceState, packageKey: string): ExpectedWorkspaceFile[] {
         const nodes = this.nodes(root);
         const byKey = new Map(nodes.map(node => [node.key, node]));
         const pathByKey = new Map<string, string>();
@@ -295,7 +218,7 @@ export class WorkspaceService {
             resolving.add(node.key);
             const segment = this.filesystemName(node);
             let filePath = segment;
-            if (node.parentNodeKey && node.parentNodeKey !== state.packageKey) {
+            if (node.parentNodeKey && node.parentNodeKey !== packageKey) {
                 const parent = byKey.get(node.parentNodeKey);
                 if (!parent || !this.isFolder(parent)) {
                     throw new GracefulError(`Invalid parent metadata for node ${node.key}.`);
@@ -310,8 +233,8 @@ export class WorkspaceService {
             .filter(node => !this.isFolder(node))
             .map(node => {
                 const baseline = state.baselineDigests[node.key];
-                if (!baseline || !/^sha256:[0-9a-f]{64}$/.test(baseline)) {
-                    throw new GracefulError(`Missing or invalid baseline digest for node ${node.key}.`);
+                if (baseline && !/^sha256:[0-9a-f]{64}$/.test(baseline)) {
+                    throw new GracefulError(`Invalid baseline digest for node ${node.key}.`);
                 }
                 return { nodeKey: node.key, path: resolvePath(node), digest: baseline };
             });
@@ -343,7 +266,14 @@ export class WorkspaceService {
             .sort((left, right) => left.name.localeCompare(right.name))
             .map(entry => {
                 const node = JSON.parse(fs.readFileSync(path.join(directory, entry.name), "utf-8")) as WorkspaceNodeMetadata;
-                if (!node.key || !node.name || !node.type || `${node.key}.json` !== entry.name) {
+                const fields = node as unknown as Record<string, unknown>;
+                if (
+                    !node.key ||
+                    !node.name ||
+                    !node.type ||
+                    `${node.key}.json` !== entry.name ||
+                    NON_SEMANTIC_NODE_FIELDS.some(field => field in fields)
+                ) {
                     throw new GracefulError(`Invalid node metadata file: ${entry.name}`);
                 }
                 return node;
@@ -365,7 +295,10 @@ export class WorkspaceService {
             fs.readdirSync(directory, { withFileTypes: true })
                 .sort((left, right) => left.name.localeCompare(right.name))
                 .forEach(entry => {
-                    if (!relativeDirectory && entry.name.toLowerCase() === ".pacman") {
+                    if (
+                        !relativeDirectory &&
+                        (entry.name.toLowerCase() === ".pacman" || entry.name.toLowerCase() === ".git")
+                    ) {
                         return;
                     }
                     const relative = relativeDirectory ? `${relativeDirectory}/${entry.name}` : entry.name;
@@ -393,7 +326,7 @@ export class WorkspaceService {
         return files;
     }
 
-    private trackedFile(snapshot: WorkspaceSnapshot, sourcePath: string): ExpectedFile | undefined {
+    private trackedFile(snapshot: WorkspaceSnapshot, sourcePath: string): ExpectedWorkspaceFile | undefined {
         const expected = snapshot.expectedFiles.find(file => file.path === sourcePath);
         if (expected) {
             return expected;
@@ -408,21 +341,17 @@ export class WorkspaceService {
         return classified ? snapshot.expectedFiles.find(file => file.nodeKey === classified.nodeKey) : undefined;
     }
 
-    private refreshMetadata(root: string, archive: Buffer, packageKey: string): void {
-        const zip = new AdmZip(archive);
-        if (!zip.getEntry(".pacman/state.json")) {
-            throw new GracefulError("Refreshed archive does not contain .pacman/state.json");
-        }
-        const extracted = fileService.extractZipBufferToTempDirectory(archive);
+    private refreshMetadata(
+        root: string,
+        download: { archive: Buffer; eTag: string },
+        packageKey: string
+    ): void {
+        const extracted = this.validatedArchive(download, packageKey);
         const refreshRoot = fs.mkdtempSync(path.join(root, ".pacman-refresh-"));
         const stagedMetadata = path.join(refreshRoot, "metadata");
         const previousMetadata = path.join(refreshRoot, "previous");
         const metadata = path.join(root, ".pacman");
         try {
-            const refreshed = this.snapshot(extracted);
-            if (refreshed.state.packageKey !== packageKey || refreshed.changes.length !== 0) {
-                throw new GracefulError("Refreshed archive metadata does not match its content.");
-            }
             fs.cpSync(path.join(extracted, ".pacman"), stagedMetadata, { recursive: true });
             fs.renameSync(metadata, previousMetadata);
             try {
@@ -437,17 +366,27 @@ export class WorkspaceService {
         }
     }
 
-    private validatedArchive(archive: Buffer, packageKey: string): string {
-        const zip = new AdmZip(archive);
-        if (!zip.getEntry(".pacman/state.json")) {
-            throw new GracefulError("Archive does not contain .pacman/state.json");
+    private validatedArchive(download: { archive: Buffer; eTag: string }, packageKey: string): string {
+        const zip = new AdmZip(download.archive);
+        if (!zip.getEntry(".pacman/package.json") || !zip.getEntry(".pacman/.gitignore")) {
+            throw new GracefulError("Archive does not contain Pacman package metadata.");
         }
-        const temporary = fileService.extractZipBufferToTempDirectory(archive);
+        if (
+            zip.getEntries().some(entry => {
+                const folded = entry.entryName.toLowerCase();
+                return folded === ".pacman/local" || folded.startsWith(".pacman/local/");
+            })
+        ) {
+            throw new GracefulError("Archive contains local Pacman workspace state.");
+        }
+        const temporary = fileService.extractZipBufferToTempDirectory(download.archive);
         try {
-            const snapshot = this.snapshot(temporary);
-            if (snapshot.state.packageKey !== packageKey) {
+            if (this.packageIdentity(temporary).packageKey !== packageKey) {
                 throw new GracefulError("Archive package key does not match the requested package.");
             }
+            this.validateGitignore(temporary);
+            this.hydrateState(temporary, download.eTag);
+            const snapshot = this.snapshot(temporary);
             if (snapshot.changes.length !== 0) {
                 throw new GracefulError("Archive content does not match its workspace baseline.");
             }
@@ -456,6 +395,66 @@ export class WorkspaceService {
             fs.rmSync(temporary, { recursive: true, force: true });
             throw error;
         }
+    }
+
+    private reconcileLocalState(root: string, remoteRoot: string): void {
+        const packageKey = this.packageIdentity(root).packageKey;
+        if (this.packageIdentity(remoteRoot).packageKey !== packageKey) {
+            throw new GracefulError("Remote archive package key does not match this workspace.");
+        }
+        this.validateGitignore(root);
+        const remoteState = this.state(remoteRoot);
+        const emptyState: WorkspaceState = {
+            schemaVersion: 1,
+            serverRevision: remoteState.serverRevision,
+            baselineDigests: remoteState.baselineDigests,
+            moveHints: {},
+        };
+        const remoteFiles = new Map(
+            this.expectedFiles(remoteRoot, emptyState, packageKey).map(file => [file.nodeKey, file])
+        );
+        const localFiles = this.expectedFiles(root, emptyState, packageKey);
+        const remoteNodes = new Map(this.nodes(remoteRoot).map(node => [node.key, node]));
+        this.nodes(root).forEach(node => {
+            const remote = remoteNodes.get(node.key);
+            if (remote && this.isFolder(remote) !== this.isFolder(node)) {
+                throw new GracefulError(`Node metadata type conflicts with the server for ${node.key}.`);
+            }
+        });
+        const moveHints = Object.fromEntries(
+            localFiles
+                .filter(file => remoteFiles.has(file.nodeKey) && remoteFiles.get(file.nodeKey)!.path !== file.path)
+                .map(file => [file.nodeKey, file.path])
+        );
+        const reconciledState = { ...remoteState, moveHints };
+        const expectedFiles = this.expectedFiles(root, reconciledState, packageKey);
+        classifyWorkspaceChanges(expectedFiles, this.visibleFiles(root), moveHints);
+        this.writeState(root, reconciledState);
+    }
+
+    private hydrateState(root: string, eTag: string): WorkspaceState {
+        if (!/^"sha256:[0-9a-f]{64}"$/.test(eTag)) {
+            throw new GracefulError("Filesystem archive response contains an invalid ETag.");
+        }
+        const packageKey = this.packageIdentity(root).packageKey;
+        const emptyState: WorkspaceState = {
+            schemaVersion: 1,
+            serverRevision: eTag,
+            baselineDigests: {},
+            moveHints: {},
+        };
+        const baselineDigests = Object.fromEntries(
+            this.expectedFiles(root, emptyState, packageKey).map(file => {
+                const absolute = this.resolveVisiblePath(root, file.path);
+                if (!fs.existsSync(absolute) || !fs.lstatSync(absolute).isFile()) {
+                    throw new GracefulError(`Archive is missing visible content for node ${file.nodeKey}.`);
+                }
+                return [file.nodeKey, this.digest(absolute)];
+            })
+        );
+        const state = { ...emptyState, baselineDigests };
+        this.writeState(root, state);
+        return state;
     }
 
     private replaceWorkspaceContents(root: string, source: string): void {
@@ -470,7 +469,7 @@ export class WorkspaceService {
         try {
             fs.cpSync(source, staging, { recursive: true, force: false, errorOnExist: true });
             try {
-                this.moveEntries(root, backup);
+                this.moveEntries(root, backup, new Set([".git"]));
             } catch (error) {
                 try {
                     this.moveEntries(backup, root);
@@ -484,9 +483,9 @@ export class WorkspaceService {
                 this.moveEntries(staging, root);
             } catch (error) {
                 try {
-                    fs.readdirSync(root).forEach(entry =>
-                        fs.rmSync(path.join(root, entry), { recursive: true, force: true })
-                    );
+                    fs.readdirSync(root)
+                        .filter(entry => entry !== ".git")
+                        .forEach(entry => fs.rmSync(path.join(root, entry), { recursive: true, force: true }));
                     this.moveEntries(backup, root);
                 } catch (restoreError) {
                     preserveBackup = true;
@@ -502,8 +501,9 @@ export class WorkspaceService {
         }
     }
 
-    private moveEntries(source: string, target: string): void {
+    private moveEntries(source: string, target: string, excluded: Set<string> = new Set()): void {
         fs.readdirSync(source)
+            .filter(entry => !excluded.has(entry))
             .sort()
             .forEach(entry => fs.renameSync(path.join(source, entry), path.join(target, entry)));
     }
@@ -520,7 +520,7 @@ export class WorkspaceService {
 
     private root(directory?: string): string {
         let current = path.resolve(process.cwd(), directory || ".");
-        while (!fs.existsSync(this.statePath(current))) {
+        while (!fs.existsSync(this.packageIdentityPath(current))) {
             const parent = path.dirname(current);
             if (parent === current) {
                 throw new GracefulError("No Pacman workspace found.");
@@ -531,16 +531,20 @@ export class WorkspaceService {
     }
 
     private state(root: string): WorkspaceState {
+        if (!fs.existsSync(this.statePath(root))) {
+            throw new GracefulError("Workspace synchronization state is missing. Run workspace pull.");
+        }
         const parsed = JSON.parse(fs.readFileSync(this.statePath(root), "utf-8")) as Partial<WorkspaceState>;
         if (
             parsed.schemaVersion !== 1 ||
-            !parsed.packageKey ||
             !parsed.serverRevision ||
-            !/^sha256:[0-9a-f]{64}$/.test(parsed.serverRevision) ||
+            !/^"sha256:[0-9a-f]{64}"$/.test(parsed.serverRevision) ||
             !parsed.baselineDigests ||
             typeof parsed.baselineDigests !== "object" ||
             Array.isArray(parsed.baselineDigests) ||
-            !Object.values(parsed.baselineDigests).every(value => typeof value === "string") ||
+            !Object.values(parsed.baselineDigests).every(
+                value => typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value)
+            ) ||
             (parsed.moveHints !== undefined &&
                 (typeof parsed.moveHints !== "object" ||
                     parsed.moveHints === null ||
@@ -551,7 +555,6 @@ export class WorkspaceService {
         }
         return {
             schemaVersion: parsed.schemaVersion,
-            packageKey: parsed.packageKey,
             serverRevision: parsed.serverRevision,
             baselineDigests: parsed.baselineDigests,
             moveHints: parsed.moveHints || {},
@@ -578,6 +581,8 @@ export class WorkspaceService {
             normalized === ".." ||
             folded === ".pacman" ||
             folded.startsWith(".pacman/") ||
+            folded === ".git" ||
+            folded.startsWith(".git/") ||
             normalized.startsWith("../") ||
             normalized.includes("/../") ||
             normalized.includes("/./")
@@ -588,11 +593,31 @@ export class WorkspaceService {
     }
 
     private statePath(root: string): string {
-        return path.join(root, ".pacman", "state.json");
+        return path.join(root, ".pacman", "local", "state.json");
     }
 
     private writeState(root: string, state: WorkspaceState): void {
+        fs.mkdirSync(path.dirname(this.statePath(root)), { recursive: true, mode: 0o700 });
         fs.writeFileSync(this.statePath(root), JSON.stringify(state, null, 2) + "\n", { mode: 0o600 });
+    }
+
+    private packageIdentity(root: string): WorkspacePackageIdentity {
+        const parsed = JSON.parse(fs.readFileSync(this.packageIdentityPath(root), "utf-8")) as Partial<WorkspacePackageIdentity>;
+        if (parsed.schemaVersion !== 1 || !parsed.packageKey || Object.keys(parsed).length !== 2) {
+            throw new GracefulError("Unsupported Pacman package metadata.");
+        }
+        return { schemaVersion: parsed.schemaVersion, packageKey: parsed.packageKey };
+    }
+
+    private packageIdentityPath(root: string): string {
+        return path.join(root, ".pacman", "package.json");
+    }
+
+    private validateGitignore(root: string): void {
+        const gitignore = path.join(root, ".pacman", ".gitignore");
+        if (!fs.existsSync(gitignore) || fs.readFileSync(gitignore, "utf-8") !== "local/\n") {
+            throw new GracefulError("Workspace .pacman/.gitignore must contain local/.");
+        }
     }
 
     private digest(file: string): string {
@@ -601,14 +626,5 @@ export class WorkspaceService {
 
     private isFolder(node: WorkspaceNodeMetadata): boolean {
         return node.type.toUpperCase() === "FOLDER";
-    }
-
-    private groupBy<T>(values: T[], key: (value: T) => string): Map<string, T[]> {
-        const groups = new Map<string, T[]>();
-        values.forEach(value => {
-            const groupKey = key(value);
-            groups.set(groupKey, [...(groups.get(groupKey) || []), value]);
-        });
-        return groups;
     }
 }

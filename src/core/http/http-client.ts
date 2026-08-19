@@ -53,6 +53,10 @@ export class HttpClient {
     }
 
     public async getFile(url: string): Promise<any> {
+        return (await this.getFileWithHeaders(url)).data;
+    }
+
+    public async getFileWithHeaders(url: string): Promise<{ data: Buffer; headers: Record<string, unknown> }> {
         return new Promise<any>((resolve, reject) => {
             this.axios.get(this.resolveUrl(url), {
                 headers: this.buildHeaders(),
@@ -69,7 +73,13 @@ export class HttpClient {
                         return;
                     }
 
-                    this.handleResponseStreamData(Buffer.concat(data as any), resolve, reject);
+                    const content = Buffer.concat(data as any);
+                    if (content) {
+                        resolve({ data: content, headers: response.headers || {} });
+                        return;
+                    }
+                    logger.error("Could not get file stream from response");
+                    reject();
                 });
             }).catch(err => {
                 this.handleError(err, resolve, reject);
@@ -77,7 +87,12 @@ export class HttpClient {
         });
     }
 
-    public async postFile(url: string, formData: FormData, parameters?: {}): Promise<any> {
+    public async postFile(
+        url: string,
+        formData: FormData,
+        parameters?: {},
+        additionalHeaders: RawAxiosRequestHeaders = {}
+    ): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.axios.post(
                 this.resolveUrl(url),
@@ -85,7 +100,8 @@ export class HttpClient {
                 {
                     headers: {
                         ...this.buildHeaders("multipart/form-data"),
-                        ...formData.getHeaders()
+                        ...formData.getHeaders(),
+                        ...additionalHeaders
                     },
                     params: parameters
                 }
@@ -164,15 +180,15 @@ export class HttpClient {
             }).then(response => {
                 if (this.checkBadRequest(response.status)) {
                     // For error responses, collect as text for readable error messages
-                    let errorData = '';
-                    response.data.setEncoding('utf8');
-                    response.data.on('data', (chunk: string) => {
+                    let errorData = "";
+                    response.data.setEncoding("utf8");
+                    response.data.on("data", (chunk: string) => {
                         errorData += chunk;
                     });
-                    response.data.on('end', () => {
+                    response.data.on("end", () => {
                         this.handleBadRequest(response.status, errorData, reject);
                     });
-                    response.data.on('error', (err: any) => {
+                    response.data.on("error", (err: any) => {
                         reject(`Error reading error response: ${err.message}`);
                     });
                 } else {
@@ -184,7 +200,7 @@ export class HttpClient {
                     response.data.on("end", () => {
                         this.handleResponseStreamData(Buffer.concat(data as any), resolve, reject);
                     });
-                    response.data.on('error', (err: any) => {
+                    response.data.on("error", (err: any) => {
                         reject(`Error reading file data: ${err.message}`);
                     });
                 }

@@ -8,6 +8,7 @@ const CUI_PDF_COVER_PATH = "/api/team/cui-settings/cui-pdf-cover";
 
 const mockedGetResponseByUrl = new Map<string, any>();
 const mockedGetStatusByUrl = new Map<string, number>();
+const mockedGetHeadersByUrl = new Map<string, Record<string, string>>();
 const mockedGetErrorByUrl = new Map<string, { status: number; data: any }>();
 const mockedPostResponseByUrl = new Map<string, any>();
 const mockedPostErrorByUrl = new Map<string, { status: number; data: any }>();
@@ -39,6 +40,7 @@ const mockAxios = () : void => {
                 return Promise.resolve({
                     status: 200,
                     data: readableStream,
+                    headers: mockedGetHeadersByUrl.get(requestUrl) || {},
                 });
             } else {
                 return Promise.resolve({ status, data });
@@ -81,8 +83,9 @@ const mockAxios = () : void => {
     });
 }
 
-const mockAxiosGet = (url: string, responseData: any) => {
+const mockAxiosGet = (url: string, responseData: any, headers: Record<string, string> = {}) => {
     mockedGetResponseByUrl.set(url, responseData);
+    mockedGetHeadersByUrl.set(url, headers);
     mockedGetStatusByUrl.delete(url);
     mockedGetErrorByUrl.delete(url);
 };
@@ -132,6 +135,7 @@ const mockAxiosDelete = (url: string) => {
 afterEach(() => {
     mockedGetResponseByUrl.clear();
     mockedGetStatusByUrl.clear();
+    mockedGetHeadersByUrl.clear();
     mockedGetErrorByUrl.clear();
     mockedPostResponseByUrl.clear();
     mockedPostErrorByUrl.clear();

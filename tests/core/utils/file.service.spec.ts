@@ -98,6 +98,22 @@ describe("FileService", () => {
             expect(entries).toContain("nodes/node-1.json");
             expect(entries.some(name => name.endsWith(".zip"))).toBe(false);
         });
+
+        test("Should exclude filtered workspace paths", () => {
+            const metadata = path.join(tempDir, ".pacman");
+            fs.mkdirSync(path.join(metadata, "local"), { recursive: true });
+            fs.writeFileSync(path.join(metadata, "package.json"), "{}");
+            fs.writeFileSync(path.join(metadata, "local", "state.json"), "{}");
+
+            const zipPath = fileService.zipDirectoryAsSinglePackage(
+                tempDir,
+                relativePath => !relativePath.startsWith(".pacman/local")
+            );
+            const entries = new AdmZip(zipPath).getEntries().map(entry => entry.entryName);
+
+            expect(entries).toContain(".pacman/package.json");
+            expect(entries).not.toContain(".pacman/local/state.json");
+        });
     });
 
     describe("writeBufferToFileWithGivenName", () => {

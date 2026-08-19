@@ -112,13 +112,18 @@ export class FileService {
         return zipFilePath;
     }
 
-    public zipDirectoryAsSinglePackage(sourceDir: string): string {
+    public zipDirectoryAsSinglePackage(sourceDir: string, include?: (relativePath: string) => boolean): string {
         if (fs.lstatSync(sourceDir).isSymbolicLink()) {
             throw new FatalError("Source directory cannot be a symbolic link.");
         }
 
         const zip = new AdmZip();
-        zip.addLocalFolder(sourceDir);
+        zip.addLocalFolder(sourceDir, "", filename => {
+            const relativePath = (path.isAbsolute(filename) ? path.relative(sourceDir, filename) : filename)
+                .split(path.sep)
+                .join("/");
+            return include ? include(relativePath) : true;
+        });
 
         const tempDir = path.join(os.tmpdir(), "content-cli-imports");
         this.mkdirRecursive(tempDir);
