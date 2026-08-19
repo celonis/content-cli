@@ -3,6 +3,7 @@ export interface WorkspaceState {
     serverRevision: string;
     baselineDigests: Record<string, string>;
     moveHints: Record<string, string>;
+    refreshRequired?: boolean;
 }
 
 export interface WorkspacePackageIdentity {

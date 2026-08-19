@@ -639,23 +639,32 @@ describe("Workspace service", () => {
         });
     });
 
-    it("invalidates local state when post-push refresh fails", async () => {
+    it("replaces the workspace on pull when post-push refresh fails", async () => {
         writeWorkspace();
-        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
+        fs.mkdirSync(path.join(process.cwd(), "Pages"));
+        fs.renameSync(
+            path.join(process.cwd(), "Guides", "Guide.md"),
+            path.join(process.cwd(), "Pages", "Guide.md")
+        );
         mockAxiosPost(PUSH_URL, {});
         mockAxiosGetError(ARCHIVE_URL, 503, { message: "unavailable" });
         const service = new WorkspaceService(testContext);
 
         await expect(service.push()).rejects.toThrow("Push succeeded, but local state refresh failed");
-        expect(fs.existsSync(path.join(process.cwd(), ".pacman", "local", "state.json"))).toBe(false);
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+        ).toMatchObject({ refreshRequired: true });
+        expect(() => service.status()).toThrow("Workspace synchronization state needs refresh");
 
         mockAxiosGet(
             ARCHIVE_URL,
-            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }]),
+            archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]),
             { etag: eTag("revision-2") }
         );
         await service.pull();
         expect(service.status()).toEqual([]);
+        expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(false);
+        expect(fs.readFileSync(path.join(process.cwd(), "Pages", "Guide.md"), "utf-8")).toBe("original");
     });
 
     it("preserves the metadata backup when refresh and rollback both fail", async () => {

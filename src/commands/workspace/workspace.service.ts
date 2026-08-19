@@ -85,12 +85,13 @@ export class WorkspaceService {
         const root = this.root(directory);
         const packageKey = this.packageIdentity(root).packageKey;
         const hasLocalState = fs.existsSync(this.statePath(root));
-        if (hasLocalState && this.snapshot(root).changes.length !== 0) {
+        const localState = hasLocalState ? this.state(root) : undefined;
+        if (localState && !localState.refreshRequired && this.snapshot(root).changes.length !== 0) {
             throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
         }
         const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey);
         try {
-            if (hasLocalState) {
+            if (localState) {
                 this.replaceWorkspaceContents(root, temporary);
             } else {
                 this.reconcileLocalState(root, temporary);
@@ -143,7 +144,7 @@ export class WorkspaceService {
                 form.append("moveMappings", JSON.stringify({ moves }), { contentType: "application/json" });
             }
             await this.api.push(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
-            fs.rmSync(this.statePath(root), { force: true });
+            this.writeState(root, { ...snapshot.state, refreshRequired: true });
             try {
                 const refreshedArchive = await this.api.download(snapshot.packageKey);
                 this.refreshMetadata(root, refreshedArchive, snapshot.packageKey);
@@ -203,6 +204,9 @@ export class WorkspaceService {
     private snapshot(root: string): WorkspaceSnapshot {
         const packageKey = this.packageIdentity(root).packageKey;
         const state = this.state(root);
+        if (state.refreshRequired) {
+            throw new GracefulError("Workspace synchronization state needs refresh. Run workspace pull.");
+        }
         const expectedFiles = this.expectedFiles(root, state, packageKey);
         const visibleFiles = this.visibleFiles(root);
         return {
@@ -585,16 +589,21 @@ export class WorkspaceService {
                 (typeof parsed.moveHints !== "object" ||
                     parsed.moveHints === null ||
                     Array.isArray(parsed.moveHints) ||
-                    !Object.values(parsed.moveHints).every(value => typeof value === "string")))
+                    !Object.values(parsed.moveHints).every(value => typeof value === "string"))) ||
+            (parsed.refreshRequired !== undefined && parsed.refreshRequired !== true)
         ) {
             throw new GracefulError("Unsupported Pacman workspace state.");
         }
-        return {
+        const state: WorkspaceState = {
             schemaVersion: parsed.schemaVersion,
             serverRevision: parsed.serverRevision,
             baselineDigests: parsed.baselineDigests,
             moveHints: parsed.moveHints || {},
         };
+        if (parsed.refreshRequired) {
+            state.refreshRequired = true;
+        }
+        return state;
     }
 
     private relativeVisiblePath(root: string, value: string): string {
