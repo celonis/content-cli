@@ -350,6 +350,23 @@ describe("Workspace service", () => {
         });
     });
 
+    it("records a move when the source casing differs from metadata", () => {
+        writeWorkspace();
+        fs.mkdirSync(path.join(process.cwd(), "Pages"));
+        fs.renameSync(
+            path.join(process.cwd(), "Guides", "Guide.md"),
+            path.join(process.cwd(), "Pages", "Guide.md")
+        );
+        const service = new WorkspaceService(testContext);
+
+        service.move("guides/guide.md", "Pages/Guide.md", true);
+
+        expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+        ).toMatchObject({ moveHints: { "node-1": "Pages/Guide.md" } });
+    });
+
     it("reports duplicate digest move candidates as unresolved", () => {
         writeWorkspace([
             { nodeKey: "node-1", path: "Guides/One.md", content: "same" },

@@ -339,16 +339,22 @@ export class WorkspaceService {
     }
 
     private trackedFile(snapshot: WorkspaceSnapshot, sourcePath: string): ExpectedWorkspaceFile | undefined {
-        const expected = snapshot.expectedFiles.find(file => file.path === sourcePath);
+        const foldedSourcePath = sourcePath.toLowerCase();
+        const expected = snapshot.expectedFiles.find(file => file.path.toLowerCase() === foldedSourcePath);
         if (expected) {
             return expected;
         }
-        const hinted = snapshot.expectedFiles.find(file => snapshot.state.moveHints[file.nodeKey] === sourcePath);
+        const hinted = snapshot.expectedFiles.find(
+            file => snapshot.state.moveHints[file.nodeKey]?.toLowerCase() === foldedSourcePath
+        );
         if (hinted) {
             return hinted;
         }
         const classified = snapshot.changes.find(
-            change => change.path === sourcePath && change.nodeKey && (change.status === "moved" || change.status === "moved, modified")
+            change =>
+                change.path.toLowerCase() === foldedSourcePath &&
+                change.nodeKey &&
+                (change.status === "moved" || change.status === "moved, modified")
         );
         return classified ? snapshot.expectedFiles.find(file => file.nodeKey === classified.nodeKey) : undefined;
     }
