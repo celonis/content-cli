@@ -145,6 +145,17 @@ describe("Workspace service", () => {
         }
     });
 
+    it("rejects a clone response without an ETag", async () => {
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }])
+        );
+
+        await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
+            "Filesystem archive response does not contain an ETag."
+        );
+    });
+
     it("pulls the latest archive into a clean existing workspace", async () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), ".git"));
@@ -345,6 +356,40 @@ describe("Workspace service", () => {
             "Target path is already tracked"
         );
         expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(true);
+    });
+
+    it("rejects a move for an untracked source", () => {
+        writeWorkspace();
+
+        expect(() => new WorkspaceService(testContext).move("Other.md", "Pages/Other.md")).toThrow(
+            "Tracked file not found"
+        );
+    });
+
+    it("rejects a recorded move when the target is missing", () => {
+        writeWorkspace();
+
+        expect(() =>
+            new WorkspaceService(testContext).move("Guides/Guide.md", "Pages/Guide.md", true)
+        ).toThrow("Moved file not found");
+    });
+
+    it("rejects a missing source and an existing untracked target", () => {
+        writeWorkspace();
+        const source = path.join(process.cwd(), "Guides", "Guide.md");
+        const target = path.join(process.cwd(), "Pages", "Guide.md");
+        fs.rmSync(source);
+
+        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", "Pages/Guide.md")).toThrow(
+            "Tracked file not found"
+        );
+
+        fs.mkdirSync(path.dirname(target));
+        fs.writeFileSync(source, "original");
+        fs.writeFileSync(target, "other");
+        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", "Pages/Guide.md")).toThrow(
+            "Target already exists"
+        );
     });
 
     it("rejects circular node metadata", () => {
