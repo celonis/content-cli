@@ -1,5 +1,5 @@
 export interface PackageValidationRequest {
-    layers: string[];
+    layers?: string[];
     nodeKeys?: string[];
 }
 

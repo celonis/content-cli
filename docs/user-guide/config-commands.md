@@ -271,7 +271,7 @@ info:      ERROR   my-knowledge-model (SEMANTIC_MODEL) - $.requiredField: is mis
 
 ### Validation Layers
 
-The `--layers` option selects which validation layers to run. Multiple layers can be passed and are executed in a single request; their findings are merged into one report.
+The `--layers` option selects which validation layers to run. Multiple layers can be passed and are executed in a single request; their findings are merged into one report. Omit `--layers` to run every layer available for the team, which is what the Studio problems panel reports; pass an explicit list only to narrow the run.
 
 | Layer | What it checks | Owner |
 |---|---|---|
@@ -281,12 +281,12 @@ The `--layers` option selects which validation layers to run. Multiple layers ca
 | `PIG_SEMANTICS` | Semantic-model validation delegated to the Process Intelligence Graph semantic-layer runtime (PIG-SL), surfacing the `list-problems` findings the live service reports for Knowledge Models. | Semantic layer (`cloud-semantic-layer`) |
 | `DATA_PIPELINES` | Validation delegated to the data-pipeline platform service for the package's data-integration assets. | Data pipeline service |
 
-`SCHEMA`, `BUSINESS`, `PACKAGE_SETTINGS`, `PIG_SEMANTICS`, and `DATA_PIPELINES` are the layers accepted by the Pacman API. Other values are rejected with a `400 layers.unsupported` error.
+`SCHEMA`, `BUSINESS`, `PACKAGE_SETTINGS`, `PIG_SEMANTICS`, and `DATA_PIPELINES` are the layers accepted by the Pacman API. Other values are rejected with a `400 layers.unsupported` error, and so is an empty `--layers`.
 
-To run all layers:
+To run all layers, omit the option:
 
 ```bash
-content-cli config package validate --packageKey <packageKey> --layers SCHEMA BUSINESS PACKAGE_SETTINGS PIG_SEMANTICS DATA_PIPELINES
+content-cli config package validate --packageKey <packageKey>
 ```
 
 Use `PACKAGE_SETTINGS` when you need to verify that the package's own settings are usable in the destination team before continuing authoring or import work. It reports issues such as missing dependency versions, duplicate dependency or variable keys, blank variable keys/types, missing Studio data model assignments, and OCDM package-settings problems when the corresponding backend validation is enabled.

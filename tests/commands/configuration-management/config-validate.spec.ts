@@ -28,6 +28,36 @@ describe("Config validate", () => {
         expect(mockedPostRequestBodyByUrl.get(VALIDATE_URL)).toEqual(JSON.stringify({ layers: ["SCHEMA"] }));
     })
 
+    it("Should omit layers from the request body when the option is not passed", async () => {
+        const response: SchemaValidationResponse = {
+            packageKey: "my-package",
+            valid: true,
+            summary: { errors: 0, warnings: 0, info: 0 },
+            results: []
+        };
+
+        mockAxiosPost(VALIDATE_URL, response);
+
+        await new PackageValidationService(testContext).validatePackage("my-package", undefined, null, false);
+
+        expect(mockedPostRequestBodyByUrl.get(VALIDATE_URL)).toEqual(JSON.stringify({}));
+    })
+
+    it("Should omit an empty layers list rather than send one the API rejects", async () => {
+        const response: SchemaValidationResponse = {
+            packageKey: "my-package",
+            valid: true,
+            summary: { errors: 0, warnings: 0, info: 0 },
+            results: []
+        };
+
+        mockAxiosPost(VALIDATE_URL, response);
+
+        await new PackageValidationService(testContext).validatePackage("my-package", [], ["node-1"], false);
+
+        expect(mockedPostRequestBodyByUrl.get(VALIDATE_URL)).toEqual(JSON.stringify({ nodeKeys: ["node-1"] }));
+    })
+
     it("Should include nodeKeys in request body when specified", async () => {
         const response: SchemaValidationResponse = {
             packageKey: "my-package",
