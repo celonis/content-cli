@@ -10,7 +10,11 @@ export class WorkspaceApi {
         );
     }
 
-    public push(data: FormData, overwrite: boolean): Promise<unknown> {
-        return this.context.httpClient.postFile("/pacman/api/core/staging/packages/file-archive", data, { overwrite });
+    public push(packageKey: string, data: FormData, overwrite: boolean): Promise<unknown> {
+        return this.context.httpClient.postFile(
+            `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/file-archive`,
+            data,
+            { overwrite }
+        );
     }
 }
