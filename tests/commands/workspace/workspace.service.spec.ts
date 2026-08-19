@@ -44,10 +44,20 @@ describe("Workspace service", () => {
         zip.addFile(".pacman/index.json", Buffer.from(JSON.stringify(index())));
         zip.addFile("Guides/Guide.md", Buffer.from("original"));
         mockAxiosGet(CHECKOUT_URL, zip.toBuffer());
+        const rename = jest.spyOn(fs, "renameSync");
 
-        await new WorkspaceService(testContext).checkout(PACKAGE_KEY);
+        try {
+            await new WorkspaceService(testContext).checkout(PACKAGE_KEY);
 
-        expect(fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, "Guides", "Guide.md"), "utf-8")).toBe("original");
+            expect(fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, "Guides", "Guide.md"), "utf-8")).toBe(
+                "original"
+            );
+            const checkoutRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
+            expect(checkoutRename).toBeDefined();
+            expect(path.dirname(checkoutRename![0].toString())).toBe(path.dirname(checkoutRename![1].toString()));
+        } finally {
+            rename.mockRestore();
+        }
     });
 
     it("records a move and reports later content changes together", () => {
@@ -110,13 +120,34 @@ describe("Workspace service", () => {
     it("pushes the workspace archive", async () => {
         writeWorkspace();
         mockAxiosPost(PUSH_URL, {});
+        const service = new WorkspaceService(testContext);
+        service.move("Guides/Guide.md", "Pages/Guide.md");
+        fs.writeFileSync(path.join(process.cwd(), "Pages", "Guide.md"), "changed");
 
-        await new WorkspaceService(testContext).push(undefined, true);
+        await service.push(undefined, true);
 
         expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
             PUSH_URL,
             expect.anything(),
             expect.objectContaining({ params: { overwrite: true } })
+        );
+        expect(service.status()).toEqual([]);
+        expect(JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "index.json"), "utf-8"))).toMatchObject({
+            files: [
+                {
+                    basePath: "Pages/Guide.md",
+                    currentPath: "Pages/Guide.md",
+                    digest: digest("changed"),
+                },
+            ],
+        });
+    });
+
+    it("reserves the metadata directory case-insensitively", () => {
+        writeWorkspace();
+
+        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", ".PACMAN/Guide.md")).toThrow(
+            "Invalid workspace path"
         );
     });
 });

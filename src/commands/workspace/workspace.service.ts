@@ -44,12 +44,24 @@ export class WorkspaceService {
             throw new GracefulError("Archive does not contain .pacman/index.json");
         }
         const temporary = fileService.extractZipBufferToTempDirectory(archive);
+        const parent = path.dirname(target);
+        let staging: string | undefined;
         try {
-            fs.mkdirSync(path.dirname(target), { recursive: true });
-            fs.renameSync(temporary, target);
+            fs.mkdirSync(parent, { recursive: true });
+            staging = fs.mkdtempSync(path.join(parent, ".pacman-checkout-"));
+            fs.rmSync(staging, { recursive: true });
+            fs.cpSync(temporary, staging, { recursive: true, force: false, errorOnExist: true });
+            if (fs.existsSync(target)) {
+                throw new GracefulError(`Destination already exists: ${target}`);
+            }
+            fs.renameSync(staging, target);
         } catch (error) {
-            fs.rmSync(temporary, { recursive: true, force: true });
+            if (staging) {
+                fs.rmSync(staging, { recursive: true, force: true });
+            }
             throw error;
+        } finally {
+            fs.rmSync(temporary, { recursive: true, force: true });
         }
         logger.info(`Checked out ${packageKey} to ${target}`);
     }
@@ -91,9 +103,11 @@ export class WorkspaceService {
         });
         const zipPath = fileService.zipDirectoryAsSinglePackage(root);
         try {
+            const pushedIndex = this.pushedIndex(index, zipPath);
             const form = new FormData();
             form.append("packageFile", fs.createReadStream(zipPath), { filename: "workspace.zip" });
             await this.api.push(form, overwrite);
+            this.writeIndex(root, pushedIndex);
         } finally {
             fs.rmSync(zipPath, { force: true });
         }
@@ -123,7 +137,7 @@ export class WorkspaceService {
             fs.renameSync(absoluteSource, absoluteTarget);
         }
         tracked.currentPath = targetPath;
-        fs.writeFileSync(this.indexPath(root), JSON.stringify(index, null, 2) + "\n", { mode: 0o600 });
+        this.writeIndex(root, index);
         logger.info(`Recorded move: ${sourcePath} -> ${targetPath}`);
     }
 
@@ -159,12 +173,13 @@ export class WorkspaceService {
 
     private validateRelative(value: string): string {
         const normalized = value.split(path.sep).join("/");
+        const folded = normalized.toLowerCase();
         if (
             !normalized ||
             path.isAbsolute(value) ||
             normalized === ".." ||
-            normalized === ".pacman" ||
-            normalized.startsWith(".pacman/") ||
+            folded === ".pacman" ||
+            folded.startsWith(".pacman/") ||
             normalized.startsWith("../")
         ) {
             throw new GracefulError(`Invalid workspace path: ${value}`);
@@ -176,7 +191,33 @@ export class WorkspaceService {
         return path.join(root, ".pacman", "index.json");
     }
 
+    private pushedIndex(index: WorkspaceIndex, zipPath: string): WorkspaceIndex {
+        const archive = new AdmZip(zipPath);
+        return {
+            ...index,
+            files: index.files.map(file => {
+                const entry = archive.getEntry(file.currentPath);
+                if (!entry || entry.isDirectory) {
+                    throw new GracefulError(`Tracked file is missing from archive: ${file.currentPath}`);
+                }
+                return {
+                    ...file,
+                    basePath: file.currentPath,
+                    digest: this.digestContent(entry.getData()),
+                };
+            }),
+        };
+    }
+
+    private writeIndex(root: string, index: WorkspaceIndex): void {
+        fs.writeFileSync(this.indexPath(root), JSON.stringify(index, null, 2) + "\n", { mode: 0o600 });
+    }
+
     private digest(file: string): string {
-        return `sha256:${createHash("sha256").update(fs.readFileSync(file)).digest("hex")}`;
+        return this.digestContent(fs.readFileSync(file));
+    }
+
+    private digestContent(content: Buffer): string {
+        return `sha256:${createHash("sha256").update(content).digest("hex")}`;
     }
 }
