@@ -307,7 +307,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, null, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages).toHaveLength(2);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
         expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(node2));
     });
@@ -332,7 +332,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, null, limit, offset, true, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(`${JSON.stringify(node1.configuration)}`);
     });
 
@@ -351,7 +351,7 @@ describe("Node list", () => {
 
         await new NodeService(testContext).listNodes(packageKey, null, limit, offset, false, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
     });
 
@@ -374,6 +374,6 @@ describe("Node list", () => {
         const nodes = getJsonFromDownloadedFile() as NodeTransport[];
 
         expect(nodes).toEqual([node1, node2]);
-        expect(nodes.length).toBe(2);
+        expect(nodes).toHaveLength(2);
     });
 });
