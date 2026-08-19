@@ -41,6 +41,16 @@ describe("Workspace change classifier", () => {
         ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "moved" }]);
     });
 
+    it("uses a recorded case-only move on a case-insensitive path", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                new Map([["Guides/Guide.md", "sha256:one"]]),
+                { "node-1": "Guides/guide.md" }
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Guides/guide.md", status: "moved" }]);
+    });
+
     it("keeps a distinct deletion and addition separate", () => {
         expect(
             classifyWorkspaceChanges(

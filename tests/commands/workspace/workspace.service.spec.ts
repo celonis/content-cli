@@ -524,8 +524,9 @@ describe("Workspace service", () => {
         });
 
         try {
-            new WorkspaceService(testContext).move("Guides/Guide.md", "Guides/guide.md");
-            expect(fs.renameSync).toBeDefined();
+            const service = new WorkspaceService(testContext);
+            service.move("Guides/Guide.md", "Guides/guide.md");
+            expect(service.status()).toEqual([{ path: "Guides/guide.md", status: "moved" }]);
         } finally {
             lstat.mockRestore();
             exists.mockRestore();

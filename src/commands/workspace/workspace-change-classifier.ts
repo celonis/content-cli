@@ -9,9 +9,18 @@ export function classifyWorkspaceChanges(
     const changes: ClassifiedWorkspaceChange[] = [];
     const consumedPaths = new Set<string>();
     const missing: ExpectedWorkspaceFile[] = [];
+    const visiblePathIndex = new Map([...visibleFiles.keys()].map(filePath => [filePath.toLowerCase(), filePath]));
 
     expectedFiles.forEach(file =>
-        classifyExpectedFile(file, visibleFiles, moveHints[file.nodeKey], changes, consumedPaths, missing)
+        classifyExpectedFile(
+            file,
+            visibleFiles,
+            visiblePathIndex,
+            moveHints[file.nodeKey],
+            changes,
+            consumedPaths,
+            missing
+        )
     );
 
     resolveDigestMoves(missing, visibleFiles, consumedPaths, changes);
@@ -29,27 +38,32 @@ export function classifyWorkspaceChanges(
 function classifyExpectedFile(
     file: ExpectedWorkspaceFile,
     visibleFiles: Map<string, string>,
+    visiblePathIndex: Map<string, string>,
     hint: string | undefined,
     changes: ClassifiedWorkspaceChange[],
     consumedPaths: Set<string>,
     missing: ExpectedWorkspaceFile[]
 ): void {
+    const currentPath = visiblePathIndex.get(file.path.toLowerCase());
     if (!file.digest) {
-        if (hint || visibleFiles.has(file.path)) {
-            classifyNewFile(file, hint, visibleFiles, changes, consumedPaths);
+        if (hint || currentPath) {
+            classifyNewFile(file, hint, visibleFiles, visiblePathIndex, changes, consumedPaths);
         } else {
             missing.push(file);
         }
         return;
     }
     if (hint) {
-        classifyHintedFile(file, hint, visibleFiles, changes, consumedPaths);
+        classifyHintedFile(file, hint, visibleFiles, visiblePathIndex, changes, consumedPaths);
         return;
     }
-    if (visibleFiles.has(file.path)) {
-        consumedPaths.add(file.path);
-        if (visibleFiles.get(file.path) !== file.digest) {
-            changes.push({ nodeKey: file.nodeKey, path: file.path, status: "modified" });
+    if (currentPath) {
+        consumedPaths.add(currentPath);
+        const changed = visibleFiles.get(currentPath) !== file.digest;
+        if (currentPath !== file.path) {
+            changes.push({ nodeKey: file.nodeKey, path: currentPath, status: changed ? "moved, modified" : "moved" });
+        } else if (changed) {
+            changes.push({ nodeKey: file.nodeKey, path: currentPath, status: "modified" });
         }
         return;
     }
@@ -60,22 +74,25 @@ function classifyNewFile(
     file: ExpectedWorkspaceFile,
     hint: string | undefined,
     visibleFiles: Map<string, string>,
+    visiblePathIndex: Map<string, string>,
     changes: ClassifiedWorkspaceChange[],
     consumedPaths: Set<string>
 ): void {
     const target = hint || file.path;
-    const sourceStillPresent = Boolean(hint && hint !== file.path && visibleFiles.has(file.path));
-    if (sourceStillPresent || !visibleFiles.has(target) || consumedPaths.has(target)) {
+    const targetPath = visiblePathIndex.get(target.toLowerCase());
+    const sourcePath = visiblePathIndex.get(file.path.toLowerCase());
+    const sourceStillPresent = Boolean(hint && hint.toLowerCase() !== file.path.toLowerCase() && sourcePath);
+    if (sourceStillPresent || !targetPath || consumedPaths.has(targetPath)) {
         changes.push({ nodeKey: file.nodeKey, path: target, status: "unresolved" });
-        if (visibleFiles.has(target)) {
-            consumedPaths.add(target);
+        if (targetPath) {
+            consumedPaths.add(targetPath);
         }
-        if (sourceStillPresent) {
-            consumedPaths.add(file.path);
+        if (sourceStillPresent && sourcePath) {
+            consumedPaths.add(sourcePath);
         }
         return;
     }
-    consumedPaths.add(target);
+    consumedPaths.add(targetPath);
     changes.push({ nodeKey: file.nodeKey, path: target, status: "added" });
 }
 
@@ -83,25 +100,28 @@ function classifyHintedFile(
     file: ExpectedWorkspaceFile,
     hint: string,
     visibleFiles: Map<string, string>,
+    visiblePathIndex: Map<string, string>,
     changes: ClassifiedWorkspaceChange[],
     consumedPaths: Set<string>
 ): void {
-    const sourceStillPresent = hint !== file.path && visibleFiles.has(file.path);
-    if (sourceStillPresent || !visibleFiles.has(hint) || consumedPaths.has(hint)) {
+    const targetPath = visiblePathIndex.get(hint.toLowerCase());
+    const sourcePath = visiblePathIndex.get(file.path.toLowerCase());
+    const sourceStillPresent = hint.toLowerCase() !== file.path.toLowerCase() && Boolean(sourcePath);
+    if (sourceStillPresent || !targetPath || consumedPaths.has(targetPath)) {
         changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
-        if (visibleFiles.has(hint)) {
-            consumedPaths.add(hint);
+        if (targetPath) {
+            consumedPaths.add(targetPath);
         }
-        if (sourceStillPresent) {
-            consumedPaths.add(file.path);
+        if (sourceStillPresent && sourcePath) {
+            consumedPaths.add(sourcePath);
         }
         return;
     }
-    consumedPaths.add(hint);
+    consumedPaths.add(targetPath);
     changes.push({
         nodeKey: file.nodeKey,
         path: hint,
-        status: visibleFiles.get(hint) === file.digest ? "moved" : "moved, modified",
+        status: visibleFiles.get(targetPath) === file.digest ? "moved" : "moved, modified",
     });
 }
 
