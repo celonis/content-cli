@@ -7,7 +7,7 @@ import { testContext } from "../../utls/test-context";
 import { mockAxiosGet, mockAxiosPost, mockedAxiosInstance } from "../../utls/http-requests-mock";
 
 const PACKAGE_KEY = "pkg-1";
-const CHECKOUT_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
+const ARCHIVE_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
 const PUSH_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
 
 interface TestFile {
@@ -99,25 +99,75 @@ describe("Workspace service", () => {
     beforeEach(removeWorkspace);
     afterEach(removeWorkspace);
 
-    it("checks out and validates a filesystem archive", async () => {
-        mockAxiosGet(
-            CHECKOUT_URL,
-            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }])
-        );
+    it("clones and validates a filesystem archive", async () => {
+        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]));
         const rename = jest.spyOn(fs, "renameSync");
 
         try {
-            await new WorkspaceService(testContext).checkout(PACKAGE_KEY);
+            await new WorkspaceService(testContext).clone(PACKAGE_KEY);
 
             expect(fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, "Guides", "Guide.md"), "utf-8")).toBe(
                 "original"
             );
-            const checkoutRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
-            expect(checkoutRename).toBeDefined();
-            expect(path.dirname(checkoutRename![0].toString())).toBe(path.dirname(checkoutRename![1].toString()));
+            const cloneRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
+            expect(cloneRename).toBeDefined();
+            expect(path.dirname(cloneRename![0].toString())).toBe(path.dirname(cloneRename![1].toString()));
         } finally {
             rename.mockRestore();
         }
+    });
+
+    it("pulls the latest archive into a clean existing workspace", async () => {
+        writeWorkspace();
+        const workspaceInode = fs.statSync(process.cwd()).ino;
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], "revision-2")
+        );
+
+        await new WorkspaceService(testContext).pull();
+
+        expect(fs.statSync(process.cwd()).ino).toBe(workspaceInode);
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("remote");
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+        expect(JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "state.json"), "utf-8"))).toMatchObject({
+            serverRevision: digest("revision-2"),
+            baselineDigests: { "node-1": digest("remote") },
+            moveHints: {},
+        });
+    });
+
+    it("refuses to pull over local changes", async () => {
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "local");
+
+        await expect(new WorkspaceService(testContext).pull()).rejects.toThrow("Workspace has local changes");
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalled();
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("local");
+    });
+
+    it("restores the existing workspace when applying a pull fails", async () => {
+        writeWorkspace();
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], "revision-2")
+        );
+        const originalRename = fs.renameSync;
+        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
+            const sourceParent = path.basename(path.dirname(source.toString()));
+            if (sourceParent.startsWith(".pacman-pull-") && !sourceParent.startsWith(".pacman-pull-backup-")) {
+                throw new Error("apply failed");
+            }
+            originalRename(source, target);
+        });
+
+        try {
+            await expect(new WorkspaceService(testContext).pull()).rejects.toThrow("apply failed");
+        } finally {
+            rename.mockRestore();
+        }
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("original");
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
     });
 
     it("infers an unchanged move performed by another tool without writing path state", () => {
@@ -275,10 +325,10 @@ describe("Workspace service", () => {
         }
     });
 
-    it("rejects checkout over an existing destination", async () => {
+    it("rejects clone over an existing destination", async () => {
         fs.mkdirSync(path.join(process.cwd(), PACKAGE_KEY));
 
-        await expect(new WorkspaceService(testContext).checkout(PACKAGE_KEY)).rejects.toThrow(
+        await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Destination already exists"
         );
     });
@@ -286,9 +336,9 @@ describe("Workspace service", () => {
     it("rejects an archive without workspace state", async () => {
         const zip = new AdmZip();
         zip.addFile("Guides/Guide.md", Buffer.from("original"));
-        mockAxiosGet(CHECKOUT_URL, zip.toBuffer());
+        mockAxiosGet(ARCHIVE_URL, zip.toBuffer());
 
-        await expect(new WorkspaceService(testContext).checkout(PACKAGE_KEY)).rejects.toThrow(
+        await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Archive does not contain .pacman/state.json"
         );
     });
@@ -302,7 +352,7 @@ describe("Workspace service", () => {
         service.move("Guides/Guide.md", "Pages/Guide.md", true);
         mockAxiosPost(PUSH_URL, {});
         mockAxiosGet(
-            CHECKOUT_URL,
+            ARCHIVE_URL,
             archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "changed" }], "revision-2")
         );
 

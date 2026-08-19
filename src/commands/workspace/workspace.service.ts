@@ -55,29 +55,17 @@ export class WorkspaceService {
         this.api = new WorkspaceApi(context);
     }
 
-    public async checkout(packageKey: string, directory?: string): Promise<void> {
+    public async clone(packageKey: string, directory?: string): Promise<void> {
         const target = path.resolve(process.cwd(), directory || packageKey);
         if (fs.existsSync(target)) {
             throw new GracefulError(`Destination already exists: ${target}`);
         }
-        const archive = await this.api.checkout(packageKey);
-        const zip = new AdmZip(archive);
-        if (!zip.getEntry(".pacman/state.json")) {
-            throw new GracefulError("Archive does not contain .pacman/state.json");
-        }
-        const temporary = fileService.extractZipBufferToTempDirectory(archive);
+        const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey);
         const parent = path.dirname(target);
         let staging: string | undefined;
         try {
-            const snapshot = this.snapshot(temporary);
-            if (snapshot.state.packageKey !== packageKey) {
-                throw new GracefulError("Archive package key does not match the requested package.");
-            }
-            if (snapshot.changes.length !== 0) {
-                throw new GracefulError("Archive content does not match its workspace baseline.");
-            }
             fs.mkdirSync(parent, { recursive: true });
-            staging = fs.mkdtempSync(path.join(parent, ".pacman-checkout-"));
+            staging = fs.mkdtempSync(path.join(parent, ".pacman-clone-"));
             fs.rmSync(staging, { recursive: true });
             fs.cpSync(temporary, staging, { recursive: true, force: false, errorOnExist: true });
             if (fs.existsSync(target)) {
@@ -92,7 +80,23 @@ export class WorkspaceService {
         } finally {
             fs.rmSync(temporary, { recursive: true, force: true });
         }
-        logger.info(`Checked out ${packageKey} to ${target}`);
+        logger.info(`Cloned ${packageKey} to ${target}`);
+    }
+
+    public async pull(directory?: string): Promise<void> {
+        const root = this.root(directory);
+        const current = this.snapshot(root);
+        if (current.changes.length !== 0) {
+            throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
+        }
+        const packageKey = current.state.packageKey;
+        const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey);
+        try {
+            this.replaceWorkspaceContents(root, temporary);
+        } finally {
+            fs.rmSync(temporary, { recursive: true, force: true });
+        }
+        logger.info(`Pulled ${packageKey}.`);
     }
 
     public status(directory?: string): WorkspaceChange[] {
@@ -119,7 +123,7 @@ export class WorkspaceService {
             const form = new FormData();
             form.append("packageFile", fs.createReadStream(zipPath), { filename: "workspace.zip" });
             await this.api.push(snapshot.state.packageKey, form, overwrite);
-            const refreshedArchive = await this.api.checkout(snapshot.state.packageKey);
+            const refreshedArchive = await this.api.download(snapshot.state.packageKey);
             this.refreshMetadata(root, refreshedArchive, snapshot.state.packageKey);
         } finally {
             fs.rmSync(zipPath, { force: true });
@@ -431,6 +435,77 @@ export class WorkspaceService {
             fs.rmSync(extracted, { recursive: true, force: true });
             fs.rmSync(refreshRoot, { recursive: true, force: true });
         }
+    }
+
+    private validatedArchive(archive: Buffer, packageKey: string): string {
+        const zip = new AdmZip(archive);
+        if (!zip.getEntry(".pacman/state.json")) {
+            throw new GracefulError("Archive does not contain .pacman/state.json");
+        }
+        const temporary = fileService.extractZipBufferToTempDirectory(archive);
+        try {
+            const snapshot = this.snapshot(temporary);
+            if (snapshot.state.packageKey !== packageKey) {
+                throw new GracefulError("Archive package key does not match the requested package.");
+            }
+            if (snapshot.changes.length !== 0) {
+                throw new GracefulError("Archive content does not match its workspace baseline.");
+            }
+            return temporary;
+        } catch (error) {
+            fs.rmSync(temporary, { recursive: true, force: true });
+            throw error;
+        }
+    }
+
+    private replaceWorkspaceContents(root: string, source: string): void {
+        if (root === path.parse(root).root) {
+            throw new GracefulError("Cannot pull into the filesystem root.");
+        }
+        const parent = path.dirname(root);
+        const backup = fs.mkdtempSync(path.join(parent, ".pacman-pull-backup-"));
+        const staging = fs.mkdtempSync(path.join(parent, ".pacman-pull-"));
+        let preserveBackup = false;
+        fs.rmSync(staging, { recursive: true });
+        try {
+            fs.cpSync(source, staging, { recursive: true, force: false, errorOnExist: true });
+            try {
+                this.moveEntries(root, backup);
+            } catch (error) {
+                try {
+                    this.moveEntries(backup, root);
+                } catch (restoreError) {
+                    preserveBackup = true;
+                    throw new GracefulError(`Pull failed; workspace backup remains at ${backup}.`);
+                }
+                throw error;
+            }
+            try {
+                this.moveEntries(staging, root);
+            } catch (error) {
+                try {
+                    fs.readdirSync(root).forEach(entry =>
+                        fs.rmSync(path.join(root, entry), { recursive: true, force: true })
+                    );
+                    this.moveEntries(backup, root);
+                } catch (restoreError) {
+                    preserveBackup = true;
+                    throw new GracefulError(`Pull failed; workspace backup remains at ${backup}.`);
+                }
+                throw error;
+            }
+        } finally {
+            fs.rmSync(staging, { recursive: true, force: true });
+            if (!preserveBackup) {
+                fs.rmSync(backup, { recursive: true, force: true });
+            }
+        }
+    }
+
+    private moveEntries(source: string, target: string): void {
+        fs.readdirSync(source)
+            .sort()
+            .forEach(entry => fs.renameSync(path.join(source, entry), path.join(target, entry)));
     }
 
     private sameFile(source: string, target: string): boolean {

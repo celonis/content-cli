@@ -9,11 +9,12 @@ describe("Workspace module", () => {
         new Module().register(testContext, configurator);
 
         expect(configurator.command).toHaveBeenCalledWith("workspace");
-        expect(configurator.command).toHaveBeenCalledWith("checkout <packageKey> [directory]");
+        expect(configurator.command).toHaveBeenCalledWith("clone <packageKey> [directory]");
+        expect(configurator.command).toHaveBeenCalledWith("pull [directory]");
         expect(configurator.command).toHaveBeenCalledWith("status [directory]");
         expect(configurator.command).toHaveBeenCalledWith("push [directory]");
         expect(configurator.command).toHaveBeenCalledWith("move <source> <target>");
-        expect(configurator.beta).toHaveBeenCalledTimes(5);
-        expect(configurator.action).toHaveBeenCalledTimes(4);
+        expect(configurator.beta).toHaveBeenCalledTimes(6);
+        expect(configurator.action).toHaveBeenCalledTimes(5);
     });
 });

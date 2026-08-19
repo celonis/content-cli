@@ -7,11 +7,9 @@ class Module extends IModule {
     public register(context: Context, configurator: Configurator): void {
         const workspace = configurator.command("workspace").beta().description("Manage a package workspace.");
 
-        workspace
-            .command("checkout <packageKey> [directory]")
-            .beta()
-            .description("Check out a package.")
-            .action(this.checkout);
+        workspace.command("clone <packageKey> [directory]").beta().description("Clone a package.").action(this.clone);
+
+        workspace.command("pull [directory]").beta().description("Pull remote changes.").action(this.pull);
 
         workspace.command("status [directory]").beta().description("Show local changes.").action(this.status);
 
@@ -30,8 +28,12 @@ class Module extends IModule {
             .action(this.move);
     }
 
-    private async checkout(context: Context, command: Command): Promise<void> {
-        await new WorkspaceService(context).checkout(command.args[0], command.args[1]);
+    private async clone(context: Context, command: Command): Promise<void> {
+        await new WorkspaceService(context).clone(command.args[0], command.args[1]);
+    }
+
+    private async pull(context: Context, command: Command): Promise<void> {
+        await new WorkspaceService(context).pull(command.args[0]);
     }
 
     private async status(context: Context, command: Command): Promise<void> {
