@@ -363,7 +363,11 @@ export class WorkspaceService {
                     fs.renameSync(previousMetadata, metadata);
                 } catch (restoreError) {
                     preserveBackup = true;
-                    throw new GracefulError(`Metadata refresh failed; workspace metadata backup remains at ${previousMetadata}.`);
+                    const failure = new GracefulError(
+                        `Metadata refresh failed; workspace metadata backup remains at ${previousMetadata}.`
+                    );
+                    failure.cause = restoreError;
+                    throw failure;
                 }
                 throw error;
             }
@@ -484,7 +488,9 @@ export class WorkspaceService {
                     this.moveEntries(backup, root);
                 } catch (restoreError) {
                     preserveBackup = true;
-                    throw new GracefulError(`Pull failed; workspace backup remains at ${backup}.`);
+                    const failure = new GracefulError(`Pull failed; workspace backup remains at ${backup}.`);
+                    failure.cause = restoreError;
+                    throw failure;
                 }
                 throw error;
             }
@@ -498,7 +504,9 @@ export class WorkspaceService {
                     this.moveEntries(backup, root);
                 } catch (restoreError) {
                     preserveBackup = true;
-                    throw new GracefulError(`Pull failed; workspace backup remains at ${backup}.`);
+                    const failure = new GracefulError(`Pull failed; workspace backup remains at ${backup}.`);
+                    failure.cause = restoreError;
+                    throw failure;
                 }
                 throw error;
             }
@@ -513,7 +521,7 @@ export class WorkspaceService {
     private moveEntries(source: string, target: string, excluded: Set<string> = new Set()): void {
         fs.readdirSync(source)
             .filter(entry => !excluded.has(entry))
-            .sort()
+            .sort((left, right) => left.localeCompare(right))
             .forEach(entry => fs.renameSync(path.join(source, entry), path.join(target, entry)));
     }
 

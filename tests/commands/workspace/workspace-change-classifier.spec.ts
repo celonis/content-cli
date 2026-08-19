@@ -43,4 +43,34 @@ describe("Workspace change classifier", () => {
             { path: "Pages/New.md", status: "added" },
         ]);
     });
+
+    it("classifies a metadata-backed file without a baseline as added", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/New.md" }],
+                new Map([["Guides/New.md", "sha256:new"]]),
+                {}
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Guides/New.md", status: "added" }]);
+    });
+
+    it("keeps an invalid recorded move unresolved", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                new Map([["Guides/Guide.md", "sha256:one"]]),
+                { "node-1": "Pages/Guide.md" }
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "unresolved" }]);
+    });
+
+    it("keeps an unrecorded same-name move and edit unresolved", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                new Map([["Pages/Guide.md", "sha256:two"]]),
+                {}
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "unresolved" }]);
+    });
 });

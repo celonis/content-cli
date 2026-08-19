@@ -69,7 +69,7 @@ export class HttpClient {
                 });
                 response.data.on("end", () => {
                     if (response.status !== 200) {
-                        reject(Buffer.concat(data as any).toString());
+                        reject(new Error(Buffer.concat(data as any).toString()));
                         return;
                     }
 
@@ -79,7 +79,7 @@ export class HttpClient {
                         return;
                     }
                     logger.error("Could not get file stream from response");
-                    reject();
+                    reject(new Error("Could not get file stream from response"));
                 });
             }).catch(err => {
                 this.handleError(err, resolve, reject);

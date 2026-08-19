@@ -10,48 +10,87 @@ export function classifyWorkspaceChanges(
     const consumedPaths = new Set<string>();
     const missing: ExpectedWorkspaceFile[] = [];
 
-    expectedFiles.forEach(file => {
-        const hint = moveHints[file.nodeKey];
-        if (!file.digest) {
-            if (hint || !visibleFiles.has(file.path)) {
-                changes.push({ nodeKey: file.nodeKey, path: hint || file.path, status: "unresolved" });
-                return;
-            }
-            consumedPaths.add(file.path);
-            changes.push({ nodeKey: file.nodeKey, path: file.path, status: "added" });
+    expectedFiles.forEach(file =>
+        classifyExpectedFile(file, visibleFiles, moveHints[file.nodeKey], changes, consumedPaths, missing)
+    );
+
+    resolveDigestMoves(missing, visibleFiles, consumedPaths, changes);
+
+    const newPaths = [...visibleFiles.keys()].filter(filePath => !consumedPaths.has(filePath));
+    possibleMovedAndEdited(missing, newPaths).forEach(([file, filePath]) => {
+        changes.push({ nodeKey: file.nodeKey, path: filePath, status: "unresolved" });
+        missing.splice(missing.indexOf(file), 1);
+        newPaths.splice(newPaths.indexOf(filePath), 1);
+    });
+    missing.forEach(file => changes.push({ nodeKey: file.nodeKey, path: file.path, status: "deleted" }));
+    newPaths.forEach(filePath => changes.push({ path: filePath, status: "added" }));
+
+    return changes.sort((left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status));
+}
+
+function classifyExpectedFile(
+    file: ExpectedWorkspaceFile,
+    visibleFiles: Map<string, string>,
+    hint: string | undefined,
+    changes: ClassifiedWorkspaceChange[],
+    consumedPaths: Set<string>,
+    missing: ExpectedWorkspaceFile[]
+): void {
+    if (!file.digest) {
+        if (hint || !visibleFiles.has(file.path)) {
+            changes.push({ nodeKey: file.nodeKey, path: hint || file.path, status: "unresolved" });
             return;
         }
-        if (hint && hint !== file.path) {
-            if (visibleFiles.has(file.path) || !visibleFiles.has(hint) || consumedPaths.has(hint)) {
-                changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
-                if (visibleFiles.has(hint)) {
-                    consumedPaths.add(hint);
-                }
-                if (visibleFiles.has(file.path)) {
-                    consumedPaths.add(file.path);
-                }
-                return;
-            }
+        consumedPaths.add(file.path);
+        changes.push({ nodeKey: file.nodeKey, path: file.path, status: "added" });
+        return;
+    }
+    if (hint && hint !== file.path) {
+        classifyHintedFile(file, hint, visibleFiles, changes, consumedPaths);
+        return;
+    }
+    if (visibleFiles.has(file.path)) {
+        consumedPaths.add(file.path);
+        if (visibleFiles.get(file.path) !== file.digest) {
+            changes.push({ nodeKey: file.nodeKey, path: file.path, status: "modified" });
+        }
+        return;
+    }
+    missing.push(file);
+}
+
+function classifyHintedFile(
+    file: ExpectedWorkspaceFile,
+    hint: string,
+    visibleFiles: Map<string, string>,
+    changes: ClassifiedWorkspaceChange[],
+    consumedPaths: Set<string>
+): void {
+    if (visibleFiles.has(file.path) || !visibleFiles.has(hint) || consumedPaths.has(hint)) {
+        changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
+        if (visibleFiles.has(hint)) {
             consumedPaths.add(hint);
-            changes.push({
-                nodeKey: file.nodeKey,
-                path: hint,
-                status: visibleFiles.get(hint) === file.digest ? "moved" : "moved, modified",
-            });
-            return;
         }
         if (visibleFiles.has(file.path)) {
             consumedPaths.add(file.path);
-            if (visibleFiles.get(file.path) !== file.digest) {
-                changes.push({ nodeKey: file.nodeKey, path: file.path, status: "modified" });
-            }
-            return;
         }
-        missing.push(file);
+        return;
+    }
+    consumedPaths.add(hint);
+    changes.push({
+        nodeKey: file.nodeKey,
+        path: hint,
+        status: visibleFiles.get(hint) === file.digest ? "moved" : "moved, modified",
     });
+}
 
-    const missingByDigest = groupBy(missing, file => file.digest!);
-    missingByDigest.forEach((files, digest) => {
+function resolveDigestMoves(
+    missing: ExpectedWorkspaceFile[],
+    visibleFiles: Map<string, string>,
+    consumedPaths: Set<string>,
+    changes: ClassifiedWorkspaceChange[]
+): void {
+    groupBy(missing, file => file.digest!).forEach((files, digest) => {
         const candidates = [...visibleFiles.entries()]
             .filter(([filePath, visibleDigest]) => !consumedPaths.has(filePath) && visibleDigest === digest)
             .map(([filePath]) => filePath);
@@ -72,17 +111,6 @@ export function classifyWorkspaceChanges(
             });
         }
     });
-
-    const newPaths = [...visibleFiles.keys()].filter(filePath => !consumedPaths.has(filePath));
-    possibleMovedAndEdited(missing, newPaths).forEach(([file, filePath]) => {
-        changes.push({ nodeKey: file.nodeKey, path: filePath, status: "unresolved" });
-        missing.splice(missing.indexOf(file), 1);
-        newPaths.splice(newPaths.indexOf(filePath), 1);
-    });
-    missing.forEach(file => changes.push({ nodeKey: file.nodeKey, path: file.path, status: "deleted" }));
-    newPaths.forEach(filePath => changes.push({ path: filePath, status: "added" }));
-
-    return changes.sort((left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status));
 }
 
 function possibleMovedAndEdited(

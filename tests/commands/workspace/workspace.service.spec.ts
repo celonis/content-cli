@@ -225,6 +225,42 @@ describe("Workspace service", () => {
         expect(new WorkspaceService(testContext).status()).toEqual([]);
     });
 
+    it("preserves the workspace backup when pull and rollback both fail", async () => {
+        writeWorkspace();
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]),
+            { etag: eTag("revision-2") }
+        );
+        const originalRename = fs.renameSync;
+        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
+            const sourceParent = path.basename(path.dirname(source.toString()));
+            if (sourceParent.startsWith(".pacman-pull-")) {
+                throw new Error("rename failed");
+            }
+            originalRename(source, target);
+        });
+        let backup: string | undefined;
+
+        try {
+            await new WorkspaceService(testContext).pull();
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            const match = (error as Error).message.match(/backup remains at (.+)\.$/);
+            backup = match?.[1];
+        } finally {
+            rename.mockRestore();
+        }
+
+        expect(backup).toBeDefined();
+        expect(fs.existsSync(backup!)).toBe(true);
+        fs.readdirSync(backup!).forEach(entry => {
+            originalRename(path.join(backup!, entry), path.join(process.cwd(), entry));
+        });
+        fs.rmSync(backup!, { recursive: true, force: true });
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+    });
+
     it("infers an unchanged move performed by another tool without writing path state", () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), "Pages"));
