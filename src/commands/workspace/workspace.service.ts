@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as FormData from "form-data";
 import AdmZip = require("adm-zip");
@@ -347,22 +348,30 @@ export class WorkspaceService {
         packageKey: string
     ): void {
         const extracted = this.validatedArchive(download, packageKey);
-        const refreshRoot = fs.mkdtempSync(path.join(root, ".pacman-refresh-"));
+        const refreshRoot = fs.mkdtempSync(path.join(os.tmpdir(), "content-cli-pacman-refresh-"));
         const stagedMetadata = path.join(refreshRoot, "metadata");
         const previousMetadata = path.join(refreshRoot, "previous");
         const metadata = path.join(root, ".pacman");
+        let preserveBackup = false;
         try {
             fs.cpSync(path.join(extracted, ".pacman"), stagedMetadata, { recursive: true });
             fs.renameSync(metadata, previousMetadata);
             try {
                 fs.renameSync(stagedMetadata, metadata);
             } catch (error) {
-                fs.renameSync(previousMetadata, metadata);
+                try {
+                    fs.renameSync(previousMetadata, metadata);
+                } catch (restoreError) {
+                    preserveBackup = true;
+                    throw new GracefulError(`Metadata refresh failed; workspace metadata backup remains at ${previousMetadata}.`);
+                }
                 throw error;
             }
         } finally {
             fs.rmSync(extracted, { recursive: true, force: true });
-            fs.rmSync(refreshRoot, { recursive: true, force: true });
+            if (!preserveBackup) {
+                fs.rmSync(refreshRoot, { recursive: true, force: true });
+            }
         }
     }
 

@@ -459,6 +459,40 @@ describe("Workspace service", () => {
         });
     });
 
+    it("preserves the metadata backup when refresh and rollback both fail", async () => {
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
+        mockAxiosPost(PUSH_URL, {});
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }]),
+            { etag: eTag("revision-2") }
+        );
+        const originalRename = fs.renameSync;
+        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
+            if (target.toString() === path.join(process.cwd(), ".pacman")) {
+                throw new Error("rename failed");
+            }
+            originalRename(source, target);
+        });
+        let backup: string | undefined;
+
+        try {
+            await new WorkspaceService(testContext).push();
+        } catch (error) {
+            expect(error).toBeInstanceOf(Error);
+            const match = (error as Error).message.match(/backup remains at (.+)\.$/);
+            backup = match?.[1];
+        } finally {
+            rename.mockRestore();
+        }
+
+        expect(backup).toBeDefined();
+        expect(fs.existsSync(backup!)).toBe(true);
+        originalRename(backup!, path.join(process.cwd(), ".pacman"));
+        fs.rmSync(path.dirname(backup!), { recursive: true, force: true });
+    });
+
     it("does not push unresolved file identities", async () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), "Pages"));
