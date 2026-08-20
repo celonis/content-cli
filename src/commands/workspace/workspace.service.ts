@@ -101,32 +101,13 @@ export class WorkspaceService {
         const branch = this.branch(branchValue);
         const hasLocalState = fs.existsSync(this.statePath(root));
         const current = hasLocalState ? this.state(root) : undefined;
-        let packageKey = this.packageKey(projectKey, branch);
-        if (options.create) {
-            if (!current) {
-                throw new GracefulError("Workspace synchronization state is missing. Select an existing branch first.");
-            }
-            if (branch === BranchUtils.MAIN_BRANCH_KEY) {
-                throw new GracefulError("The main branch already exists.");
-            }
-            const created = await this.api.createBranch(current.activePackageKey, branch);
-            if (created.projectKey !== projectKey || created.branchKey !== branch) {
-                throw new GracefulError("Created branch does not belong to this workspace project.");
-            }
-            packageKey = created.packageKey;
-        }
+        const packageKey = options.create
+            ? await this.createWorkspaceBranch(current, projectKey, branch)
+            : this.packageKey(projectKey, branch);
         const download = await this.api.download(packageKey);
         const temporary = this.validatedArchive(download, packageKey, projectKey);
         try {
-            if (options.create || options.linkGit) {
-                const observation = options.linkGit ? this.linkCurrentGitBranch(root, projectKey, branch) : undefined;
-                this.reconcileLocalState(root, temporary, packageKey, branch, observation);
-            } else {
-                if (!options.discard && (!current || this.snapshot(root).changes.length !== 0)) {
-                    throw new GracefulError("Workspace has local changes. Use --discard or push them before checkout.");
-                }
-                this.replaceWorkspaceContents(root, temporary);
-            }
+            await this.applyCheckout(root, temporary, packageKey, projectKey, branch, current, options);
         } finally {
             fs.rmSync(temporary, { recursive: true, force: true });
         }
@@ -145,23 +126,7 @@ export class WorkspaceService {
             }
         }
         const localState = hasLocalState ? this.state(root) : undefined;
-        let restoredObservation: WorkspaceGitObservation | undefined;
-        let packageKey = localState?.activePackageKey || projectKey;
-        if (!localState) {
-            restoredObservation = this.gitService.observe(root);
-            if (restoredObservation) {
-                if (!restoredObservation.branch) {
-                    throw new GracefulError("Detached Git HEAD cannot select a Pacman workspace branch.");
-                }
-                const mappedBranch = this.gitService.mappedPacmanBranch(root, projectKey, restoredObservation.branch);
-                if (!mappedBranch) {
-                    throw new GracefulError(
-                        `Git branch '${restoredObservation.branch}' is not mapped. Use workspace checkout --link-git.`
-                    );
-                }
-                packageKey = this.packageKey(projectKey, this.branch(mappedBranch));
-            }
-        }
+        const { packageKey, restoredObservation } = await this.pullTarget(root, projectKey, localState);
         if (localState && !localState.refreshRequired && this.snapshot(root).changes.length !== 0) {
             throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
         }
@@ -947,45 +912,102 @@ export class WorkspaceService {
         return path.join(root, ".pacman", "local", "state.json");
     }
 
+    private async createWorkspaceBranch(
+        current: WorkspaceState | undefined,
+        projectKey: string,
+        branch: string
+    ): Promise<string> {
+        if (!current) {
+            throw new GracefulError("Workspace synchronization state is missing. Select an existing branch first.");
+        }
+        if (branch === BranchUtils.MAIN_BRANCH_KEY) {
+            throw new GracefulError("The main branch already exists.");
+        }
+        const created = await this.api.createBranch(current.activePackageKey, branch);
+        if (created.projectKey !== projectKey || created.branchKey !== branch) {
+            throw new GracefulError("Created branch does not belong to this workspace project.");
+        }
+        return created.packageKey;
+    }
+
+    private async applyCheckout(
+        root: string,
+        temporary: string,
+        packageKey: string,
+        projectKey: string,
+        branch: string,
+        current: WorkspaceState | undefined,
+        options: WorkspaceCheckoutOptions
+    ): Promise<void> {
+        if (options.create || options.linkGit) {
+            const observation = options.linkGit ? await this.linkCurrentGitBranch(root, projectKey, branch) : undefined;
+            this.reconcileLocalState(root, temporary, packageKey, branch, observation);
+            return;
+        }
+        if (!options.discard && (!current || this.snapshot(root).changes.length !== 0)) {
+            throw new GracefulError("Workspace has local changes. Use --discard or push them before checkout.");
+        }
+        this.replaceWorkspaceContents(root, temporary);
+    }
+
+    private async pullTarget(
+        root: string,
+        projectKey: string,
+        localState: WorkspaceState | undefined
+    ): Promise<{ packageKey: string; restoredObservation?: WorkspaceGitObservation }> {
+        if (localState) {
+            return { packageKey: localState.activePackageKey };
+        }
+        const restoredObservation = await this.gitService.observe(root);
+        if (!restoredObservation) {
+            return { packageKey: projectKey };
+        }
+        if (!restoredObservation.branch) {
+            throw new GracefulError("Detached Git HEAD cannot select a Pacman workspace branch.");
+        }
+        const mappedBranch = await this.gitService.mappedPacmanBranch(root, projectKey, restoredObservation.branch);
+        if (!mappedBranch) {
+            throw new GracefulError(
+                `Git branch '${restoredObservation.branch}' is not mapped. Use workspace checkout --link-git.`
+            );
+        }
+        return {
+            packageKey: this.packageKey(projectKey, this.branch(mappedBranch)),
+            restoredObservation,
+        };
+    }
+
     private async synchronizeGitTarget(root: string, requirePushSafe: boolean): Promise<boolean> {
         const state = this.state(root);
-        const observation = this.gitService.observe(root);
+        const observation = await this.gitService.observe(root);
         if (!state.git) {
-            if (requirePushSafe && observation) {
-                const detail = observation.branch ? `Git branch '${observation.branch}'` : "Detached Git HEAD";
-                throw new GracefulError(
-                    `${detail} is not linked to a Pacman branch. Use workspace checkout --link-git.`
-                );
-            }
-            return false;
+            return this.handleUnlinkedGit(observation, requirePushSafe);
         }
         if (!observation) {
-            if (requirePushSafe) {
-                throw new GracefulError("The linked Git worktree is unavailable; workspace push is blocked.");
-            }
-            logger.warn("The linked Git worktree is unavailable; using the last Pacman baseline.");
-            return false;
+            return this.handleUnsafeGitState(
+                requirePushSafe,
+                "The linked Git worktree is unavailable; workspace push is blocked.",
+                "The linked Git worktree is unavailable; using the last Pacman baseline."
+            );
         }
         if (observation.branch === state.git.branch && observation.head === state.git.head) {
             return false;
         }
         if (!observation.branch) {
-            if (requirePushSafe) {
-                throw new GracefulError("Detached Git HEAD cannot push a Pacman workspace.");
-            }
-            logger.warn("Git HEAD is detached; using the last Pacman baseline.");
-            return false;
+            return this.handleUnsafeGitState(
+                requirePushSafe,
+                "Detached Git HEAD cannot push a Pacman workspace.",
+                "Git HEAD is detached; using the last Pacman baseline."
+            );
         }
         const projectKey = this.packageIdentity(root).projectKey;
-        const mappedBranch = this.gitService.mappedPacmanBranch(root, projectKey, observation.branch);
+        const mappedBranch = await this.gitService.mappedPacmanBranch(root, projectKey, observation.branch);
         if (!mappedBranch) {
-            if (requirePushSafe) {
-                throw new GracefulError(
-                    `Git branch '${observation.branch}' is not mapped to a Pacman branch. Use workspace checkout --link-git.`
-                );
-            }
-            logger.warn(`Git branch '${observation.branch}' is not mapped; using the last Pacman baseline.`);
-            return false;
+            return this.handleUnsafeGitState(
+                requirePushSafe,
+                `Git branch '${observation.branch}' is not mapped to a Pacman branch. Use workspace checkout --link-git.`,
+                `Git branch '${observation.branch}' is not mapped; using the last Pacman baseline.`
+            );
         }
         const branch = this.branch(mappedBranch);
         const packageKey = this.packageKey(projectKey, branch);
@@ -1004,8 +1026,28 @@ export class WorkspaceService {
         return true;
     }
 
-    private linkCurrentGitBranch(root: string, projectKey: string, pacmanBranch: string): WorkspaceGitObservation {
-        const observation = this.gitService.observe(root);
+    private handleUnlinkedGit(observation: WorkspaceGitObservation | undefined, requirePushSafe: boolean): boolean {
+        if (requirePushSafe && observation) {
+            const detail = observation.branch ? `Git branch '${observation.branch}'` : "Detached Git HEAD";
+            throw new GracefulError(`${detail} is not linked to a Pacman branch. Use workspace checkout --link-git.`);
+        }
+        return false;
+    }
+
+    private handleUnsafeGitState(requirePushSafe: boolean, error: string, warning: string): boolean {
+        if (requirePushSafe) {
+            throw new GracefulError(error);
+        }
+        logger.warn(warning);
+        return false;
+    }
+
+    private async linkCurrentGitBranch(
+        root: string,
+        projectKey: string,
+        pacmanBranch: string
+    ): Promise<WorkspaceGitObservation> {
+        const observation = await this.gitService.observe(root);
         if (!observation) {
             throw new GracefulError("Workspace is not inside a Git worktree.");
         }

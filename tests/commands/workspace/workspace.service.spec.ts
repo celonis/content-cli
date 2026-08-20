@@ -146,9 +146,9 @@ function mockGit(
     mappedBranch?: string
 ): jest.Mocked<WorkspaceGitService> {
     return {
-        observe: jest.fn().mockReturnValue(observation),
-        mappedPacmanBranch: jest.fn().mockReturnValue(mappedBranch),
-        link: jest.fn().mockReturnValue(observation),
+        observe: jest.fn().mockResolvedValue(observation),
+        mappedPacmanBranch: jest.fn().mockResolvedValue(mappedBranch),
+        link: jest.fn().mockResolvedValue(observation),
     } as unknown as jest.Mocked<WorkspaceGitService>;
 }
 

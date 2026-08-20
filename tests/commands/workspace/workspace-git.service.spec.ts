@@ -20,42 +20,79 @@ describe("Workspace Git service", () => {
 
     afterEach(() => fs.rmSync(repository, { recursive: true, force: true }));
 
-    it("observes the current Git branch and HEAD", () => {
-        const observation = new WorkspaceGitService().observe(workspace);
+    it("observes the current Git branch and HEAD", async () => {
+        const observation = await new WorkspaceGitService().observe(workspace);
 
         expect(observation).toEqual({ branch: "main", head: git("rev-parse", "HEAD") });
     });
 
-    it("stores explicit mappings scoped to the workspace and project", () => {
+    it("stores explicit mappings scoped to the workspace and project", async () => {
         const service = new WorkspaceGitService();
 
-        expect(service.link(workspace, "project-a", "main", "feature-a")).toEqual({
+        await expect(service.link(workspace, "project-a", "main", "feature-a")).resolves.toEqual({
             branch: "main",
             head: git("rev-parse", "HEAD"),
         });
-        expect(service.mappedPacmanBranch(workspace, "project-a", "main")).toBe("feature-a");
-        expect(service.mappedPacmanBranch(workspace, "project-b", "main")).toBeUndefined();
-        expect(service.mappedPacmanBranch(repository, "project-a", "main")).toBeUndefined();
+        await expect(service.mappedPacmanBranch(workspace, "project-a", "main")).resolves.toBe("feature-a");
+        await expect(service.mappedPacmanBranch(workspace, "project-b", "main")).resolves.toBeUndefined();
+        await expect(service.mappedPacmanBranch(repository, "project-a", "main")).resolves.toBeUndefined();
     });
 
-    it("reports detached HEAD without changing Git state", () => {
+    it("reports detached HEAD without changing Git state", async () => {
         const head = git("rev-parse", "HEAD");
         git("checkout", "--detach", head);
 
-        expect(new WorkspaceGitService().observe(workspace)).toEqual({ branch: "", head });
+        await expect(new WorkspaceGitService().observe(workspace)).resolves.toEqual({ branch: "", head });
     });
 
-    it("returns no observation outside a Git worktree", () => {
+    it("rejects linking after the Git branch changes", async () => {
+        await expect(new WorkspaceGitService().link(workspace, "project-a", "other", "feature-a")).rejects.toThrow(
+            "Git branch changed while linking the workspace."
+        );
+    });
+
+    it("rejects an invalid stored mapping", async () => {
+        const service = new WorkspaceGitService();
+        await service.link(workspace, "project-a", "main", "feature-a");
+        const mappingKey = git("config", "--local", "--name-only", "--get-regexp", "^content-cli-workspace\\.");
+        git("config", "--local", mappingKey, "[]");
+
+        await expect(service.mappedPacmanBranch(workspace, "project-a", "main")).rejects.toThrow(
+            "Git contains an invalid Content CLI workspace mapping."
+        );
+    });
+
+    it("returns no observation before a repository has a HEAD", async () => {
+        const emptyRepository = fs.mkdtempSync(path.join(os.tmpdir(), "content-cli-workspace-empty-git-"));
+        gitIn(emptyRepository, "init", "-b", "main");
+        try {
+            await expect(new WorkspaceGitService().observe(emptyRepository)).resolves.toBeUndefined();
+        } finally {
+            fs.rmSync(emptyRepository, { recursive: true, force: true });
+        }
+    });
+
+    it("returns no observation outside a Git worktree", async () => {
         const directory = fs.mkdtempSync(path.join(os.tmpdir(), "content-cli-workspace-no-git-"));
         try {
-            expect(new WorkspaceGitService().observe(directory)).toBeUndefined();
+            await expect(new WorkspaceGitService().observe(directory)).resolves.toBeUndefined();
+            await expect(
+                new WorkspaceGitService().mappedPacmanBranch(directory, "project-a", "main")
+            ).resolves.toBeUndefined();
+            await expect(new WorkspaceGitService().link(directory, "project-a", "main", "feature-a")).rejects.toThrow(
+                "Workspace is not inside a Git worktree."
+            );
         } finally {
             fs.rmSync(directory, { recursive: true, force: true });
         }
     });
 
     function git(...args: string[]): string {
-        return execFileSync("git", ["-C", repository, ...args], {
+        return gitIn(repository, ...args);
+    }
+
+    function gitIn(directory: string, ...args: string[]): string {
+        return execFileSync("git", ["-C", directory, ...args], {
             encoding: "utf-8",
             stdio: ["ignore", "pipe", "ignore"],
         }).trim();
