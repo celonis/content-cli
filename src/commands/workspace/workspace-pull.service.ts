@@ -306,34 +306,39 @@ export class WorkspacePullService {
         const source = operation.localPath ? this.resolve(root, operation.localPath) : undefined;
         const moved = Boolean(source && source.toLowerCase() !== target.toLowerCase());
         if (moved && fs.existsSync(target)) {
-            if (
-                source &&
-                !fs.existsSync(source) &&
-                fs.lstatSync(target).isFile() &&
-                this.digest(target) === entry.contentDigest
-            ) {
-                return;
-            }
-            throw new GracefulError(`Remote file move conflicts with an existing local path: ${entry.path}`);
-        }
-        const sourceDigest =
-            source && fs.existsSync(source) && fs.lstatSync(source).isFile() ? this.digest(source) : undefined;
-        const bodyChanged = sourceDigest !== entry.contentDigest;
-        fs.mkdirSync(path.dirname(target), { recursive: true });
-        if (bodyChanged) {
-            const remote = await this.api.readFile(packageKey, entry.path);
-            if (this.digestBuffer(remote.body) !== entry.contentDigest || remote.body.length !== entry.size) {
-                throw new GracefulError(`Remote file body does not match its manifest: ${entry.path}`);
-            }
-            fs.writeFileSync(target, remote.body);
-            if (moved && source && fs.existsSync(source)) {
-                fs.rmSync(source);
+            if (!this.movedTargetMatches(source, target, entry)) {
+                throw new GracefulError(`Remote file move conflicts with an existing local path: ${entry.path}`);
             }
             return;
         }
-        if (moved && source) {
-            fs.renameSync(source, target);
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        if (this.localFileDigest(source) === entry.contentDigest) {
+            if (moved && source) {
+                fs.renameSync(source, target);
+            }
+            return;
         }
+        const remote = await this.api.readFile(packageKey, entry.path);
+        if (this.digestBuffer(remote.body) !== entry.contentDigest || remote.body.length !== entry.size) {
+            throw new GracefulError(`Remote file body does not match its manifest: ${entry.path}`);
+        }
+        fs.writeFileSync(target, remote.body);
+        if (moved && source && fs.existsSync(source)) {
+            fs.rmSync(source);
+        }
+    }
+
+    private movedTargetMatches(source: string | undefined, target: string, entry: WorkspaceManifestNode): boolean {
+        return Boolean(
+            source &&
+                !fs.existsSync(source) &&
+                fs.lstatSync(target).isFile() &&
+                this.digest(target) === entry.contentDigest
+        );
+    }
+
+    private localFileDigest(source: string | undefined): string | undefined {
+        return source && fs.existsSync(source) && fs.lstatSync(source).isFile() ? this.digest(source) : undefined;
     }
 
     private applyFolder(root: string, operation: PullOperation, entry: WorkspaceManifestNode): void {
@@ -436,7 +441,7 @@ export class WorkspacePullService {
         const parentKey = entry.metadata.parentNodeKey;
         if (parentKey) {
             const parent = manifest.nodes.find(candidate => candidate.nodeKey === parentKey);
-            if (!parent || parent.kind !== "folder") {
+            if (parent?.kind !== "folder") {
                 throw new GracefulError(`Workspace manifest has an invalid parent for node ${entry.nodeKey}.`);
             }
             this.writeMetadataWithAncestors(root, parent, manifest, visited);
@@ -497,8 +502,7 @@ export class WorkspacePullService {
             if (
                 !entry.nodeKey ||
                 !this.validManifestPath(entry.path) ||
-                !entry.metadata ||
-                entry.metadata.key !== entry.nodeKey ||
+                entry.metadata?.key !== entry.nodeKey ||
                 FORBIDDEN_METADATA_FIELDS.some(field => field in metadata) ||
                 "body" in (entry as unknown as Record<string, unknown>) ||
                 (entry.kind !== "file" && entry.kind !== "folder") ||
@@ -531,7 +535,7 @@ export class WorkspacePullService {
             const parentKey = entry.metadata.parentNodeKey;
             if (parentKey) {
                 const parent = byKey.get(parentKey);
-                if (!parent || parent.kind !== "folder") {
+                if (parent?.kind !== "folder") {
                     throw new GracefulError("Workspace manifest contains an invalid parent relationship.");
                 }
                 resolve(parent, resolving);

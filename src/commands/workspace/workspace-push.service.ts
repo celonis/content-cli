@@ -15,8 +15,22 @@ interface WorkspacePushOperationError extends Error {
     remoteChanged: boolean;
 }
 
+function errorMessage(error: unknown): string {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    if (typeof error === "string") {
+        return error;
+    }
+    try {
+        return JSON.stringify(error) || "Unknown workspace push failure.";
+    } catch {
+        return "Unknown workspace push failure.";
+    }
+}
+
 function operationError(error: unknown, remoteChanged: boolean): WorkspacePushOperationError {
-    return Object.assign(new Error(error instanceof Error ? error.message : String(error)), { remoteChanged });
+    return Object.assign(new Error(errorMessage(error)), { remoteChanged });
 }
 
 function isOperationError(error: unknown): error is WorkspacePushOperationError {
@@ -44,7 +58,7 @@ export class WorkspacePushService {
                     ...change,
                     success: false,
                     remoteChanged: isOperationError(error) && error.remoteChanged,
-                    error: error instanceof Error ? error.message : String(error),
+                    error: errorMessage(error),
                 });
             }
         }

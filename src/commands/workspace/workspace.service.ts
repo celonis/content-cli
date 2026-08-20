@@ -264,7 +264,6 @@ export class WorkspaceService {
                     (outcome.error ? ` (${outcome.error})` : "")
             )
         );
-        const succeeded = outcomes.filter(outcome => outcome.success);
         const failed = outcomes.filter(outcome => !outcome.success);
         const remoteChanged = outcomes.some(outcome => outcome.remoteChanged);
         const retainedHints = this.retainedMoveHints(snapshot.state.moveHints, outcomes);
