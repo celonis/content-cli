@@ -10,6 +10,7 @@ import { BranchUtils } from "../../core/utils/branches";
 import { WorkspaceApi } from "./workspace-api";
 import { classifyWorkspaceChanges } from "./workspace-change-classifier";
 import { WorkspaceGitService } from "./workspace-git.service";
+import { WorkspacePullService } from "./workspace-pull.service";
 import { WorkspacePushService } from "./workspace-push.service";
 import {
     ExpectedWorkspaceFile,
@@ -17,9 +18,11 @@ import {
     WorkspaceCheckoutOptions,
     WorkspaceCloneOptions,
     WorkspaceGitObservation,
+    WorkspaceManifest,
     WorkspaceMoveHint,
     WorkspaceNodeMetadata,
     WorkspacePackageIdentity,
+    WorkspacePullOptions,
     WorkspacePushOptions,
     WorkspacePushOutcome,
     WorkspaceSnapshot,
@@ -104,6 +107,19 @@ export class WorkspaceService {
         const packageKey = options.create
             ? await this.createWorkspaceBranch(current, projectKey, branch)
             : this.packageKey(projectKey, branch);
+        if (options.linkGit) {
+            const observation = await this.linkCurrentGitBranch(root, projectKey, branch);
+            const base: WorkspaceState = current || {
+                schemaVersion: 1,
+                activePackageKey: packageKey,
+                activeBranch: branch,
+                baselineDigests: {},
+                moveHints: {},
+            };
+            await this.hydrateGitBaseline(root, { ...base, git: observation }, packageKey, branch, observation);
+            logger.info(`${options.create ? "Created and selected" : "Selected"} ${packageKey}.`);
+            return;
+        }
         const download = await this.api.download(packageKey);
         const temporary = this.validatedArchive(download, packageKey, projectKey);
         try {
@@ -114,8 +130,15 @@ export class WorkspaceService {
         logger.info(`${options.create ? "Created and selected" : "Selected"} ${packageKey}.`);
     }
 
-    public async pull(directory?: string): Promise<void> {
-        const root = this.root(directory);
+    public async pull(paths: string[] = [], options: WorkspacePullOptions = {}): Promise<void> {
+        if (options.full) {
+            if (paths.length > 0) {
+                throw new GracefulError("Workspace paths cannot be combined with --full.");
+            }
+            await this.pullFull();
+            return;
+        }
+        const root = this.root();
         const projectKey = this.packageIdentity(root).projectKey;
         const hasLocalState = fs.existsSync(this.statePath(root));
         if (hasLocalState) {
@@ -125,37 +148,77 @@ export class WorkspaceService {
                 return;
             }
         }
-        const localState = hasLocalState ? this.state(root) : undefined;
-        const { packageKey, restoredObservation } = await this.pullTarget(root, projectKey, localState);
-        if (localState && !localState.refreshRequired && this.snapshot(root).changes.length !== 0) {
-            throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
-        }
-        const download = await this.api.download(packageKey);
+        let localState = hasLocalState ? this.state(root) : undefined;
         if (localState?.refreshRequired) {
-            const moveHints = localState.moveHints;
-            this.refreshMetadata(root, download, packageKey, projectKey, localState.git);
-            const refreshed = this.state(root);
-            this.writeState(root, { ...refreshed, moveHints: this.reconciledMoveHints(root, moveHints) });
+            localState = { ...localState };
+            delete localState.refreshRequired;
+            this.writeState(root, localState);
+        }
+        if (localState?.serverRevision) {
+            localState = { ...localState };
+            delete localState.serverRevision;
+            this.writeState(root, localState);
+        }
+        const { packageKey, restoredObservation } = await this.pullTarget(root, projectKey, localState);
+        const remote = await this.api.manifest(packageKey);
+        const pullService = new WorkspacePullService(this.api);
+        if (!localState) {
+            const initial: WorkspaceState = {
+                schemaVersion: 1,
+                activePackageKey: packageKey,
+                activeBranch: this.branchFromPackageKey(projectKey, packageKey),
+                baselineDigests: {},
+                moveHints: {},
+            };
+            if (restoredObservation) {
+                initial.git = restoredObservation;
+            }
+            this.writeState(
+                root,
+                this.withRemotePathHints(
+                    root,
+                    pullService.hydrateBaseline(initial, packageKey, initial.activeBranch, remote.manifest),
+                    remote.manifest
+                )
+            );
             logger.info(`Pulled ${packageKey}.`);
             return;
         }
-        const temporary = this.validatedArchive(download, packageKey, projectKey, localState?.git);
+        const result = await pullService.pull(root, this.snapshot(root), this.nodes(root), paths, remote.manifest);
+        this.writeState(root, result.state);
+        result.outcomes.forEach(outcome =>
+            logger.info(
+                `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
+                    (outcome.error ? ` (${outcome.error})` : "")
+            )
+        );
+        const failed = result.outcomes.filter(outcome => !outcome.success);
+        if (failed.length > 0) {
+            throw new GracefulError(`Workspace pull failed for ${failed.length} node(s).`);
+        }
+        logger.info(`Pulled ${packageKey}.`);
+    }
+
+    private async pullFull(): Promise<void> {
+        const root = this.root();
+        await this.synchronizeGitTarget(root, false);
+        const state = this.state(root);
+        const projectKey = this.packageIdentity(root).projectKey;
+        if (!state.refreshRequired && this.snapshot(root).changes.length !== 0) {
+            throw new GracefulError("Workspace has local changes. Push or discard them before full pull.");
+        }
+        const temporary = this.validatedArchive(
+            await this.api.download(state.activePackageKey),
+            state.activePackageKey,
+            projectKey,
+            state.git
+        );
         try {
-            if (localState) {
-                this.replaceWorkspaceContents(root, temporary);
-            } else {
-                this.reconcileLocalState(
-                    root,
-                    temporary,
-                    packageKey,
-                    this.branchFromPackageKey(projectKey, packageKey),
-                    restoredObservation
-                );
-            }
+            this.replaceWorkspaceContents(root, temporary);
         } finally {
             fs.rmSync(temporary, { recursive: true, force: true });
         }
-        logger.info(`Pulled ${packageKey}.`);
+        logger.info(`Pulled ${state.activePackageKey}.`);
     }
 
     public status(directory?: string): WorkspaceChange[] {
@@ -191,14 +254,10 @@ export class WorkspaceService {
         const root = this.root();
         await this.synchronizeGitTarget(root, true);
         const snapshot = this.snapshot(root);
-        this.writeState(root, { ...snapshot.state, refreshRequired: true });
-        let outcomes: WorkspacePushOutcome[];
-        try {
-            outcomes = await new WorkspacePushService(this.api).push(root, snapshot, paths);
-        } catch (error) {
-            this.writeState(root, snapshot.state);
-            throw error;
-        }
+        const invalidatedBeforePush: WorkspaceState = { ...snapshot.state };
+        delete invalidatedBeforePush.serverRevision;
+        this.writeState(root, invalidatedBeforePush);
+        const outcomes: WorkspacePushOutcome[] = await new WorkspacePushService(this.api).push(root, snapshot, paths);
         outcomes.forEach(outcome =>
             logger.info(
                 `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
@@ -208,34 +267,29 @@ export class WorkspaceService {
         const succeeded = outcomes.filter(outcome => outcome.success);
         const failed = outcomes.filter(outcome => !outcome.success);
         const remoteChanged = outcomes.some(outcome => outcome.remoteChanged);
+        const retainedHints = this.retainedMoveHints(snapshot.state.moveHints, outcomes);
+        const invalidatedState: WorkspaceState = {
+            ...snapshot.state,
+            moveHints: retainedHints,
+        };
+        delete invalidatedState.serverRevision;
+        delete invalidatedState.refreshRequired;
         if (!remoteChanged) {
-            this.writeState(root, snapshot.state);
+            this.writeState(root, invalidatedState);
             if (failed.length > 0) {
                 throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
             }
             logger.info("Workspace is clean.");
             return;
         }
-        const retainedHints = this.retainedMoveHints(snapshot.state.moveHints, outcomes);
-        this.writeState(root, {
-            ...snapshot.state,
-            moveHints: retainedHints,
-            refreshRequired: true,
-        });
         try {
-            this.refreshMetadata(
+            const remote = await this.api.manifest(snapshot.packageKey);
+            this.writeState(
                 root,
-                await this.api.download(snapshot.packageKey),
-                snapshot.packageKey,
-                snapshot.projectKey,
-                snapshot.state.git
+                new WorkspacePullService(this.api).applyPushResults(root, invalidatedState, remote.manifest, outcomes)
             );
-            const refreshed = this.state(root);
-            this.writeState(root, {
-                ...refreshed,
-                moveHints: this.reconciledMoveHints(root, retainedHints),
-            });
         } catch (error) {
+            this.writeState(root, { ...invalidatedState, refreshRequired: true });
             const failure = new GracefulError(
                 "Workspace changes reached the server, but local synchronization state could not be refreshed. Run workspace pull before retrying."
             );
@@ -265,6 +319,9 @@ export class WorkspaceService {
             );
         });
         try {
+            if (!snapshot.state.serverRevision) {
+                throw new GracefulError("A full push requires a revision from workspace pull --full.");
+            }
             const form = new FormData();
             form.append("packageFile", fs.createReadStream(zipPath), { filename: "workspace.zip" });
             const moves = Object.fromEntries(
@@ -280,7 +337,9 @@ export class WorkspaceService {
                 form.append("moveMappings", JSON.stringify({ moves }), { contentType: "application/json" });
             }
             await this.api.pushArchive(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
-            this.writeState(root, { ...snapshot.state, refreshRequired: true });
+            const pendingRefresh: WorkspaceState = { ...snapshot.state, refreshRequired: true };
+            delete pendingRefresh.serverRevision;
+            this.writeState(root, pendingRefresh);
             try {
                 const refreshedArchive = await this.api.download(snapshot.packageKey);
                 this.refreshMetadata(
@@ -782,8 +841,7 @@ export class WorkspaceService {
             parsed.schemaVersion !== 1 ||
             !parsed.activePackageKey ||
             !parsed.activeBranch ||
-            !parsed.serverRevision ||
-            !/^"sha256:[0-9a-f]{64}"$/.test(parsed.serverRevision) ||
+            (parsed.serverRevision !== undefined && !/^"sha256:[0-9a-f]{64}"$/.test(parsed.serverRevision)) ||
             !parsed.baselineDigests ||
             typeof parsed.baselineDigests !== "object" ||
             Array.isArray(parsed.baselineDigests) ||
@@ -811,10 +869,12 @@ export class WorkspaceService {
             schemaVersion: parsed.schemaVersion,
             activePackageKey: parsed.activePackageKey,
             activeBranch: parsed.activeBranch,
-            serverRevision: parsed.serverRevision,
             baselineDigests: parsed.baselineDigests,
             moveHints: parsed.moveHints || {},
         };
+        if (parsed.serverRevision) {
+            state.serverRevision = parsed.serverRevision;
+        }
         if (parsed.refreshRequired) {
             state.refreshRequired = true;
         }
@@ -873,33 +933,6 @@ export class WorkspaceService {
                 typeof (value as WorkspaceMoveHint).sourcePath === "string" &&
                 typeof (value as WorkspaceMoveHint).targetPath === "string" &&
                 Object.keys(value).length === 2
-        );
-    }
-
-    private reconciledMoveHints(
-        root: string,
-        hints: Record<string, string | WorkspaceMoveHint>
-    ): Record<string, string | WorkspaceMoveHint> {
-        const refreshed = this.state(root);
-        const remotePathByNodeKey = new Map(
-            this.expectedFiles(root, refreshed, refreshed.activePackageKey).map(file => [file.nodeKey, file.path])
-        );
-        return Object.fromEntries(
-            Object.entries(hints).flatMap(([nodeKey, hint]) => {
-                const remotePath = remotePathByNodeKey.get(nodeKey);
-                const targetPath = this.moveHintTarget(hint);
-                if (!remotePath || !targetPath || remotePath.toLowerCase() === targetPath.toLowerCase()) {
-                    return [];
-                }
-                return [
-                    [
-                        nodeKey,
-                        this.isStructuredMoveHint(hint)
-                            ? { sourcePath: remotePath, targetPath: hint.targetPath }
-                            : hint,
-                    ],
-                ];
-            })
         );
     }
 
@@ -1013,7 +1046,15 @@ export class WorkspaceService {
         }
         if (observation.branch === state.git.branch) {
             if (observation.head !== state.git.head) {
-                this.writeState(root, { ...state, git: observation });
+                await this.hydrateGitBaseline(
+                    root,
+                    { ...state, git: observation },
+                    state.activePackageKey,
+                    state.activeBranch,
+                    observation
+                );
+                logger.info(`Reconciled Git branch '${observation.branch}' with ${state.activePackageKey}.`);
+                return true;
             }
             return false;
         }
@@ -1035,19 +1076,57 @@ export class WorkspaceService {
         }
         const branch = this.branch(mappedBranch);
         const packageKey = this.packageKey(projectKey, branch);
-        const temporary = this.validatedArchive(
-            await this.api.download(packageKey),
-            packageKey,
-            projectKey,
-            observation
-        );
-        try {
-            this.reconcileLocalState(root, temporary, packageKey, branch, observation);
-        } finally {
-            fs.rmSync(temporary, { recursive: true, force: true });
-        }
+        await this.hydrateGitBaseline(root, { ...state, git: observation }, packageKey, branch, observation);
         logger.info(`Reconciled Git branch '${observation.branch}' with ${packageKey}.`);
         return true;
+    }
+
+    private async hydrateGitBaseline(
+        root: string,
+        state: WorkspaceState,
+        packageKey: string,
+        branch: string,
+        observation: WorkspaceGitObservation
+    ): Promise<void> {
+        const remote = await this.api.manifest(packageKey);
+        const localByKey = new Map(this.nodes(root).map(node => [node.key, node]));
+        remote.manifest.nodes.forEach(entry => {
+            const local = localByKey.get(entry.nodeKey);
+            if (local && this.isFolder(local) !== (entry.kind === "folder")) {
+                throw new GracefulError(`Node metadata type conflicts with the server for ${entry.nodeKey}.`);
+            }
+        });
+        this.writeState(
+            root,
+            this.withRemotePathHints(
+                root,
+                new WorkspacePullService(this.api).hydrateBaseline(
+                    { ...state, git: observation },
+                    packageKey,
+                    branch,
+                    remote.manifest
+                ),
+                remote.manifest
+            )
+        );
+    }
+
+    private withRemotePathHints(root: string, state: WorkspaceState, manifest: WorkspaceManifest): WorkspaceState {
+        const remotePathByNodeKey = new Map(
+            manifest.nodes.filter(entry => entry.kind === "file").map(entry => [entry.nodeKey, entry.path])
+        );
+        const moveHints: Record<string, WorkspaceMoveHint> = Object.fromEntries(
+            this.expectedFiles(root, state, state.activePackageKey)
+                .filter(file => {
+                    const remotePath = remotePathByNodeKey.get(file.nodeKey);
+                    return remotePath && remotePath.toLowerCase() !== file.path.toLowerCase();
+                })
+                .map(file => [
+                    file.nodeKey,
+                    { sourcePath: remotePathByNodeKey.get(file.nodeKey)!, targetPath: file.path },
+                ])
+        );
+        return { ...state, moveHints };
     }
 
     private handleUnlinkedGit(observation: WorkspaceGitObservation | undefined, requirePushSafe: boolean): boolean {

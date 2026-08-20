@@ -14,7 +14,7 @@ describe("Workspace module", () => {
         expect(configurator.command).toHaveBeenCalledWith("workspace");
         expect(configurator.command).toHaveBeenCalledWith("clone <projectKey> [directory]");
         expect(configurator.command).toHaveBeenCalledWith("checkout [branch]");
-        expect(configurator.command).toHaveBeenCalledWith("pull [directory]");
+        expect(configurator.command).toHaveBeenCalledWith("pull [paths...]");
         expect(configurator.command).toHaveBeenCalledWith("status [directory]");
         expect(configurator.command).toHaveBeenCalledWith("push [paths...]");
         expect(configurator.command).toHaveBeenCalledWith("move <source> <target>");
@@ -39,7 +39,8 @@ describe("Workspace module", () => {
         await execute("workspace", "clone", "package-key", "target", "--branch", "feature-a");
         await execute("workspace", "checkout", "feature-a", "--link-git");
         await execute("workspace", "checkout", "-b", "feature-b");
-        await execute("workspace", "pull", "target");
+        await execute("workspace", "pull", "target", "other.md");
+        await execute("workspace", "pull", "--full");
         await execute("workspace", "status", "target");
         await execute("workspace", "push", "target", "other.md");
         await execute("workspace", "move", "old.md", "new.md", "--record");
@@ -55,7 +56,8 @@ describe("Workspace module", () => {
             discard: false,
             linkGit: false,
         });
-        expect(pull).toHaveBeenCalledWith("target");
+        expect(pull).toHaveBeenNthCalledWith(1, ["target", "other.md"], { full: false });
+        expect(pull).toHaveBeenNthCalledWith(2, [], { full: true });
         expect(status).toHaveBeenCalledWith("target");
         expect(push).toHaveBeenCalledWith(["target", "other.md"], { full: false, overwrite: false });
         expect(move).toHaveBeenCalledWith("old.md", "new.md", true);

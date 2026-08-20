@@ -23,7 +23,12 @@ class Module extends IModule {
             .option("--link-git", "Map the current Git branch", false)
             .action(this.checkout);
 
-        workspace.command("pull [directory]").beta().description("Pull remote changes.").action(this.pull);
+        workspace
+            .command("pull [paths...]")
+            .beta()
+            .description("Pull remote changes.")
+            .option("--full", "Pull and replace from the full workspace archive", false)
+            .action(this.pull);
 
         workspace.command("status [directory]").beta().description("Show local changes.").action(this.status);
 
@@ -59,8 +64,8 @@ class Module extends IModule {
         });
     }
 
-    private async pull(context: Context, command: Command): Promise<void> {
-        await new WorkspaceService(context).pull(command.args[0]);
+    private async pull(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new WorkspaceService(context).pull(command.args, { full: options.full });
     }
 
     private async status(context: Context, command: Command): Promise<void> {

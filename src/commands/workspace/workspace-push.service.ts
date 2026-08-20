@@ -3,17 +3,13 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { GracefulError } from "../../core/utils/logger";
 import { WorkspaceApi } from "./workspace-api";
+import { selectWorkspaceCandidates } from "./workspace-path-selection";
 import {
     ClassifiedWorkspaceChange,
     ExpectedWorkspaceFile,
     WorkspacePushOutcome,
     WorkspaceSnapshot,
 } from "./workspace.models";
-
-interface Selection {
-    path: string;
-    directory: boolean;
-}
 
 interface WorkspacePushOperationError extends Error {
     remoteChanged: boolean;
@@ -35,8 +31,14 @@ export class WorkspacePushService {
         const outcomes: WorkspacePushOutcome[] = [];
         for (const change of changes) {
             try {
-                await this.pushChange(root, snapshot, change);
-                outcomes.push({ ...change, success: true, remoteChanged: true });
+                const result = await this.pushChange(root, snapshot, change);
+                outcomes.push({
+                    ...change,
+                    nodeKey: result?.nodeKey || change.nodeKey,
+                    localNodeKey: result?.nodeKey !== change.nodeKey ? change.nodeKey : undefined,
+                    success: true,
+                    remoteChanged: true,
+                });
             } catch (error) {
                 outcomes.push({
                     ...change,
@@ -50,30 +52,14 @@ export class WorkspacePushService {
     }
 
     private select(root: string, snapshot: WorkspaceSnapshot, paths: string[]): ClassifiedWorkspaceChange[] {
-        if (paths.length === 0) {
-            return snapshot.changes;
-        }
         const expectedByNodeKey = new Map(snapshot.expectedFiles.map(file => [file.nodeKey, file]));
         const candidates = snapshot.changes.map(change => ({
-            change,
+            value: change,
             paths: [change.path, change.nodeKey ? expectedByNodeKey.get(change.nodeKey)?.path : undefined].filter(
                 (value): value is string => Boolean(value)
             ),
         }));
-        const selections = paths.map(value =>
-            this.selection(
-                root,
-                value,
-                candidates.flatMap(candidate => candidate.paths)
-            )
-        );
-        return candidates
-            .filter(candidate =>
-                selections.some(selection =>
-                    candidate.paths.some(candidatePath => this.matches(selection, candidatePath))
-                )
-            )
-            .map(candidate => candidate.change);
+        return selectWorkspaceCandidates(root, paths, candidates);
     }
 
     private order(changes: ClassifiedWorkspaceChange[]): ClassifiedWorkspaceChange[] {
@@ -97,43 +83,11 @@ export class WorkspacePushService {
         );
     }
 
-    private selection(root: string, value: string, candidatePaths: string[]): Selection {
-        const absolute = path.resolve(process.cwd(), value);
-        const relative = path.relative(root, absolute).split(path.sep).join("/");
-        if (
-            relative === ".." ||
-            relative.startsWith("../") ||
-            path.isAbsolute(relative) ||
-            relative.toLowerCase() === ".pacman" ||
-            relative.toLowerCase().startsWith(".pacman/") ||
-            relative.toLowerCase() === ".git" ||
-            relative.toLowerCase().startsWith(".git/")
-        ) {
-            throw new GracefulError(`Invalid workspace path: ${value}`);
-        }
-        const exists = fs.existsSync(absolute);
-        if (exists && fs.lstatSync(absolute).isSymbolicLink()) {
-            throw new GracefulError(`Workspace contains an unsupported symbolic link: ${value}`);
-        }
-        const directory = exists
-            ? fs.lstatSync(absolute).isDirectory()
-            : candidatePaths.some(candidate => candidate.toLowerCase().startsWith(`${relative.toLowerCase()}/`));
-        return { path: relative, directory };
-    }
-
-    private matches(selection: Selection, candidatePath: string): boolean {
-        const selected = selection.path.toLowerCase();
-        const candidate = candidatePath.toLowerCase();
-        return selection.directory
-            ? !selected || candidate === selected || candidate.startsWith(`${selected}/`)
-            : candidate === selected;
-    }
-
     private async pushChange(
         root: string,
         snapshot: WorkspaceSnapshot,
         change: ClassifiedWorkspaceChange
-    ): Promise<void> {
+    ): Promise<import("./workspace.models").NodeFileWriteResponse | undefined> {
         if (change.status === "unresolved") {
             throw new GracefulError("File identity is unresolved. Record the intended move before pushing.");
         }
@@ -142,30 +96,27 @@ export class WorkspacePushService {
             : undefined;
         switch (change.status) {
             case "added":
-                await this.api.putFile(
+                return this.api.putFile(
                     snapshot.packageKey,
                     change.path,
                     this.content(root, change.path),
                     this.contentType(change.path),
                     { "If-None-Match": "*" }
                 );
-                return;
             case "modified": {
                 const eTag = await this.currentETag(snapshot.packageKey, this.requireExpected(expected), change.path);
-                await this.api.putFile(
+                return this.api.putFile(
                     snapshot.packageKey,
                     change.path,
                     this.content(root, change.path),
                     this.contentType(change.path),
                     { "If-Match": eTag }
                 );
-                return;
             }
             case "moved": {
                 const tracked = this.requireExpected(expected);
                 const eTag = await this.currentETag(snapshot.packageKey, tracked, tracked.path);
-                await this.api.moveFile(snapshot.packageKey, tracked.path, change.path, eTag);
-                return;
+                return this.api.moveFile(snapshot.packageKey, tracked.path, change.path, eTag);
             }
             case "moved, modified": {
                 const tracked = this.requireExpected(expected);
@@ -176,7 +127,7 @@ export class WorkspacePushService {
                     moved = true;
                 }
                 try {
-                    await this.api.putFile(
+                    return await this.api.putFile(
                         snapshot.packageKey,
                         change.path,
                         this.content(root, change.path),
@@ -186,7 +137,6 @@ export class WorkspacePushService {
                 } catch (error) {
                     throw operationError(error, moved);
                 }
-                return;
             }
             case "deleted": {
                 const tracked = this.requireExpected(expected);

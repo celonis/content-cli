@@ -1,7 +1,7 @@
 import * as FormData from "form-data";
 import { Context } from "../../core/command/cli-context";
 import { GracefulError } from "../../core/utils/logger";
-import { NodeFileWriteResponse, WorkspaceBranch } from "./workspace.models";
+import { NodeFileWriteResponse, WorkspaceBranch, WorkspaceManifest } from "./workspace.models";
 
 export class WorkspaceApi {
     constructor(private readonly context: Context) {}
@@ -33,6 +33,23 @@ export class WorkspaceApi {
             throw new GracefulError(`File response does not contain an ETag: ${filePath}`);
         }
         return { body: response.data, eTag };
+    }
+
+    public async manifest(packageKey: string): Promise<{ manifest: WorkspaceManifest; eTag: string }> {
+        const response = await this.context.httpClient.getFileWithHeaders(
+            `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files`
+        );
+        const eTag = response.headers.etag;
+        if (typeof eTag !== "string" || !/^"sha256:[0-9a-f]{64}"$/.test(eTag)) {
+            throw new GracefulError("Workspace manifest response does not contain a valid package ETag.");
+        }
+        try {
+            return { manifest: JSON.parse(response.data.toString("utf-8")) as WorkspaceManifest, eTag };
+        } catch (error) {
+            const failure = new GracefulError("Workspace manifest response is invalid JSON.");
+            failure.cause = error;
+            throw failure;
+        }
     }
 
     public putFile(

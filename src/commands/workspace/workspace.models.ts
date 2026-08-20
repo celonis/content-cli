@@ -2,7 +2,7 @@ export interface WorkspaceState {
     schemaVersion: number;
     activePackageKey: string;
     activeBranch: string;
-    serverRevision: string;
+    serverRevision?: string;
     baselineDigests: Record<string, string>;
     moveHints: Record<string, string | WorkspaceMoveHint>;
     git?: WorkspaceGitObservation;
@@ -46,6 +46,9 @@ export interface WorkspaceNodeMetadata {
     type: string;
     parentNodeKey?: string | null;
     filesystemName?: string;
+    schemaVersion?: number;
+    serializedDocumentRef?: string;
+    dependenciesConfiguration?: unknown;
     metadata?: Record<string, unknown>;
     additionalFields?: Record<string, unknown>;
 }
@@ -81,10 +84,42 @@ export interface WorkspacePushOptions {
     overwrite?: boolean;
 }
 
+export interface WorkspacePullOptions {
+    full?: boolean;
+}
+
+export interface WorkspaceManifest {
+    nodes: WorkspaceManifestNode[];
+    documents: Record<string, string>;
+}
+
+export interface WorkspaceManifestNode {
+    nodeKey: string;
+    path: string;
+    kind: "file" | "folder";
+    assetType?: string | null;
+    mediaType?: string | null;
+    size?: number | null;
+    contentDigest?: string | null;
+    eTag?: string | null;
+    metadata: WorkspaceNodeMetadata;
+}
+
+export type WorkspacePullStatus = "added" | "deleted" | "modified" | "moved" | "conflict";
+
+export interface WorkspacePullOutcome {
+    path: string;
+    status: WorkspacePullStatus;
+    nodeKey: string;
+    success: boolean;
+    error?: string;
+}
+
 export interface WorkspacePushOutcome {
     path: string;
     status: WorkspaceChangeStatus;
     nodeKey?: string;
+    localNodeKey?: string;
     success: boolean;
     remoteChanged?: boolean;
     error?: string;
