@@ -1244,7 +1244,7 @@ describe("Workspace service", () => {
         ]);
     });
 
-    it("pushes a metadata-backed addition without a baseline", async () => {
+    it("lets Pacman select the Asset Type for a registered-extension addition", async () => {
         const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
         const remote = { ...local, nodeKey: "server-node" };
         writeWorkspace([local]);
@@ -1265,6 +1265,7 @@ describe("Workspace service", () => {
             Buffer.from("new"),
             expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": "*" }) })
         );
+        expect((mockedAxiosInstance.put as jest.Mock).mock.calls[0][0]).not.toContain("assetType=");
         expect(new WorkspaceService(testContext).status()).toEqual([]);
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/local-node.json"))).toBe(false);
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
