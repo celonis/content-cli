@@ -5,6 +5,7 @@ import AdmZip = require("adm-zip");
 import { WorkspaceService } from "../../../src/commands/workspace/workspace.service";
 import { WorkspaceGitService } from "../../../src/commands/workspace/workspace-git.service";
 import { fileService } from "../../../src/core/utils/file-service";
+import { logger } from "../../../src/core/utils/logger";
 import { testContext } from "../../utls/test-context";
 import {
     mockAxiosDelete,
@@ -1058,6 +1059,25 @@ describe("Workspace service", () => {
         expect(new WorkspaceService(testContext).status()).toEqual([
             { path: "Selected/Two.md", status: "modified" },
             { path: "Unselected/Three.md", status: "deleted" },
+        ]);
+    });
+
+    it("does not report the whole workspace clean when selected push paths have no changes", async () => {
+        const files = [
+            { nodeKey: "node-1", path: "Selected/Clean.md", content: "clean" },
+            { nodeKey: "node-2", path: "Unselected/Dirty.md", content: "original" },
+        ];
+        writeWorkspace(files);
+        fs.writeFileSync(path.join(process.cwd(), "Unselected/Dirty.md"), "changed");
+        const info = jest.spyOn(logger, "info");
+
+        await new WorkspaceService(testContext).push(["Selected/Clean.md"]);
+
+        expect(info).toHaveBeenCalledWith("Selected paths have no changes.");
+        expect(info).not.toHaveBeenCalledWith("Workspace is clean.");
+        expect(mockedAxiosInstance.put).not.toHaveBeenCalled();
+        expect(new WorkspaceService(testContext).status()).toEqual([
+            { path: "Unselected/Dirty.md", status: "modified" },
         ]);
     });
 

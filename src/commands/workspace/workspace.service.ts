@@ -279,7 +279,7 @@ export class WorkspaceService {
             if (failed.length > 0) {
                 throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
             }
-            logger.info("Workspace is clean.");
+            logger.info(paths.length > 0 ? "Selected paths have no changes." : "Workspace is clean.");
             return;
         }
         try {
