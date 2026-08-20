@@ -139,7 +139,7 @@ export class WorkspaceService {
             logger.info(`Pulled ${packageKey}.`);
             return;
         }
-        const temporary = this.validatedArchive(download, packageKey, projectKey);
+        const temporary = this.validatedArchive(download, packageKey, projectKey, localState?.git);
         try {
             if (localState) {
                 this.replaceWorkspaceContents(root, temporary);
@@ -990,7 +990,10 @@ export class WorkspaceService {
                 "The linked Git worktree is unavailable; using the last Pacman baseline."
             );
         }
-        if (observation.branch === state.git.branch && observation.head === state.git.head) {
+        if (observation.branch === state.git.branch) {
+            if (observation.head !== state.git.head) {
+                this.writeState(root, { ...state, git: observation });
+            }
             return false;
         }
         if (!observation.branch) {

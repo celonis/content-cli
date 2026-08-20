@@ -108,9 +108,6 @@ export class WorkspacePushService {
             : undefined;
         switch (change.status) {
             case "added":
-                if (expected) {
-                    throw new GracefulError("Tracked file is missing synchronization state. Run workspace pull.");
-                }
                 await this.api.putFile(
                     snapshot.packageKey,
                     change.path,

@@ -316,6 +316,55 @@ describe("Workspace service", () => {
         });
     });
 
+    it("preserves move hints when Git advances on the mapped branch", async () => {
+        writeWorkspace();
+        fs.mkdirSync(path.join(process.cwd(), "Pages"));
+        fs.renameSync(path.join(process.cwd(), "Guides/Guide.md"), path.join(process.cwd(), "Pages/Guide.md"));
+        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        fs.writeFileSync(
+            statePath,
+            JSON.stringify({
+                ...state([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+                git: { branch: "main", head: "a".repeat(40) },
+                moveHints: { "node-1": "Pages/Guide.md" },
+            })
+        );
+        const observation = { branch: "main", head: "b".repeat(40) };
+        const git = mockGit(observation);
+        const service = new WorkspaceService(testContext, git);
+
+        await expect(service.statusWithGit()).resolves.toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
+
+        expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
+            activePackageKey: PACKAGE_KEY,
+            moveHints: { "node-1": "Pages/Guide.md" },
+            git: observation,
+        });
+        expect(git.mappedPacmanBranch).not.toHaveBeenCalled();
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalled();
+    });
+
+    it("continues pulling remote files after Git advances on the mapped branch", async () => {
+        writeWorkspace();
+        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        fs.writeFileSync(
+            statePath,
+            JSON.stringify({
+                ...state([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+                git: { branch: "main", head: "a".repeat(40) },
+            })
+        );
+        const observation = { branch: "main", head: "b".repeat(40) };
+        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]), {
+            etag: eTag("revision-2"),
+        });
+
+        await new WorkspaceService(testContext, mockGit(observation)).pull();
+
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides/Guide.md"), "utf-8")).toBe("remote");
+        expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({ git: observation });
+    });
+
     it("blocks pushes from detached or unmapped switched Git branches", async () => {
         writeWorkspace();
         const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
@@ -892,6 +941,32 @@ describe("Workspace service", () => {
         expect(new WorkspaceService(testContext).status()).toEqual([
             { path: "Unselected/Three.md", status: "modified" },
         ]);
+    });
+
+    it("pushes a metadata-backed addition without a baseline", async () => {
+        const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
+        const remote = { ...local, nodeKey: "server-node" };
+        writeWorkspace([local]);
+        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        fs.writeFileSync(statePath, JSON.stringify({ ...state([local]), baselineDigests: {} }));
+        mockAxiosPut(fileUrl(local.path), {
+            path: local.path,
+            nodeKey: remote.nodeKey,
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("new"),
+        });
+        mockAxiosGet(ARCHIVE_URL, archive([remote]), { etag: eTag("revision-2") });
+
+        await new WorkspaceService(testContext).push();
+
+        expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
+            fileUrl(local.path),
+            Buffer.from("new"),
+            expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": "*" }) })
+        );
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/local-node.json"))).toBe(false);
+        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/server-node.json"))).toBe(true);
     });
 
     it("retains a stale file for retry when its conditional update fails", async () => {
