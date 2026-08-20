@@ -53,7 +53,7 @@ function eTag(value: string): string {
 function metadata(files: TestFile[]): Record<string, object> {
     const nodes: Record<string, object> = {};
     const folders = new Map<string, string>();
-    files.forEach(file => {
+    files.forEach((file) => {
         const segments = file.path.split("/");
         let parentNodeKey: string | null = null;
         for (let index = 0; index < segments.length - 1; index += 1) {
@@ -94,7 +94,7 @@ function state(
         activePackageKey: PACKAGE_KEY,
         activeBranch: "main",
         serverRevision,
-        baselineDigests: Object.fromEntries(files.map(file => [file.nodeKey, digest(file.content)])),
+        baselineDigests: Object.fromEntries(files.map((file) => [file.nodeKey, digest(file.content)])),
         moveHints,
     };
 }
@@ -107,7 +107,14 @@ function archive(files: TestFile[]): Buffer {
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
         zip.addFile(`.package/nodes/${nodeKey}.json`, Buffer.from(JSON.stringify(node)));
     });
-    files.forEach(file => zip.addFile(file.path, Buffer.from(file.content)));
+    files.forEach((file) => zip.addFile(file.path, Buffer.from(file.content)));
+    return zip.toBuffer();
+}
+
+function emptyArchiveWithoutNodeMetadata(): Buffer {
+    const zip = new AdmZip();
+    zip.addFile(".package/.gitignore", Buffer.from("local/\n"));
+    zip.addFile(".package/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })));
     return zip.toBuffer();
 }
 
@@ -132,8 +139,8 @@ function manifest(files: TestFile[]): Buffer {
     };
     return Buffer.from(
         JSON.stringify({
-            nodes: Object.values(nodes).map(node => {
-                const file = files.find(candidate => candidate.nodeKey === node.key);
+            nodes: Object.values(nodes).map((node) => {
+                const file = files.find((candidate) => candidate.nodeKey === node.key);
                 return file
                     ? {
                           nodeKey: node.key,
@@ -171,7 +178,7 @@ function writeWorkspace(
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
         fs.writeFileSync(path.join(process.cwd(), ".package", "nodes", `${nodeKey}.json`), JSON.stringify(node));
     });
-    files.forEach(file => {
+    files.forEach((file) => {
         fs.mkdirSync(path.dirname(path.join(process.cwd(), file.path)), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), file.path), file.content);
     });
@@ -185,6 +192,7 @@ function removeWorkspace(): void {
         "Pages",
         "Other",
         "New",
+        "New.md",
         "Bulk",
         "Added",
         "Deleted",
@@ -195,7 +203,8 @@ function removeWorkspace(): void {
         "Unselected",
         PACKAGE_KEY,
         "branch-workspace",
-    ].forEach(entry => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
+        "empty-workspace",
+    ].forEach((entry) => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
 }
 
 function mockGit(
@@ -240,7 +249,7 @@ describe("Workspace service", () => {
                 baselineDigests: { "node-1": digest("original") },
                 moveHints: {},
             });
-            const cloneRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
+            const cloneRename = rename.mock.calls.find((call) => call[1] === path.join(process.cwd(), PACKAGE_KEY));
             expect(cloneRename).toBeDefined();
             expect(path.dirname(cloneRename![0].toString())).toBe(path.dirname(cloneRename![1].toString()));
         } finally {
@@ -254,6 +263,23 @@ describe("Workspace service", () => {
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Filesystem archive response does not contain an ETag."
         );
+    });
+
+    it("clones an empty package and hydrates an empty nodes directory", async () => {
+        mockAxiosGet(ARCHIVE_URL, emptyArchiveWithoutNodeMetadata(), { etag: eTag("empty-revision") });
+
+        await new WorkspaceService(testContext).clone(PACKAGE_KEY, "empty-workspace");
+
+        const root = path.join(process.cwd(), "empty-workspace");
+        expect(fs.readdirSync(path.join(root, ".package", "nodes"))).toEqual([]);
+        expect(JSON.parse(fs.readFileSync(path.join(root, ".package", "local", "state.json"), "utf-8"))).toEqual({
+            schemaVersion: 1,
+            activePackageKey: PACKAGE_KEY,
+            activeBranch: "main",
+            serverRevision: eTag("empty-revision"),
+            baselineDigests: {},
+            moveHints: {},
+        });
     });
 
     it("clones a selected branch while keeping stable project identity", async () => {
@@ -489,7 +515,7 @@ describe("Workspace service", () => {
 
         const bodyReads = (mockedAxiosInstance.get as jest.Mock).mock.calls.filter(([url]) => url !== manifestUrl());
         expect(bodyReads).toHaveLength(3);
-        changedIndexes.forEach(index => {
+        changedIndexes.forEach((index) => {
             expect(fs.readFileSync(path.join(process.cwd(), remote[index].path), "utf-8")).toBe(`remote-${index}`);
         });
     });
@@ -500,10 +526,10 @@ describe("Workspace service", () => {
             { nodeKey: "node-2", path: "Selected/Nested/Two.md", content: "two" },
             { nodeKey: "node-3", path: "Unselected/Three.md", content: "three" },
         ];
-        const remote = original.map(file => ({ ...file, content: `${file.content} remote` }));
+        const remote = original.map((file) => ({ ...file, content: `${file.content} remote` }));
         writeWorkspace(original);
         mockManifest(remote);
-        remote.slice(0, 2).forEach(file => {
+        remote.slice(0, 2).forEach((file) => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.content) });
         });
 
@@ -553,10 +579,10 @@ describe("Workspace service", () => {
         writeWorkspace(original);
         const sharedKey = `folder-${createHash("sha256").update("Source/Shared").digest("hex").slice(0, 12)}`;
         const remoteManifest = JSON.parse(manifest(remote).toString("utf-8"));
-        const sharedFolder = remoteManifest.nodes.find(node => node.path === "Target/Shared");
+        const sharedFolder = remoteManifest.nodes.find((node) => node.path === "Target/Shared");
         sharedFolder.nodeKey = sharedKey;
         sharedFolder.metadata.key = sharedKey;
-        remoteManifest.nodes.find(node => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
+        remoteManifest.nodes.find((node) => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
         mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("manifest") });
         mockAxiosGet(fileUrl(remote[0].path), Buffer.from(remote[0].content), { etag: eTag(remote[0].content) });
 
@@ -799,7 +825,7 @@ describe("Workspace service", () => {
 
         expect(backup).toBeDefined();
         expect(fs.existsSync(backup!)).toBe(true);
-        fs.readdirSync(backup!).forEach(entry => {
+        fs.readdirSync(backup!).forEach((entry) => {
             originalRename(path.join(backup!, entry), path.join(process.cwd(), entry));
         });
         fs.rmSync(backup!, { recursive: true, force: true });
@@ -866,7 +892,7 @@ describe("Workspace service", () => {
         const changes = new WorkspaceService(testContext).status();
 
         expect(changes).toHaveLength(4);
-        expect(changes.every(change => change.status === "unresolved")).toBe(true);
+        expect(changes.every((change) => change.status === "unresolved")).toBe(true);
     });
 
     it("reports clean, modified, added, and deleted files", () => {
@@ -1057,10 +1083,10 @@ describe("Workspace service", () => {
         const target = path.join(process.cwd(), "Guides", "guide.md");
         const existsSync = fs.existsSync;
         const lstatSync = fs.lstatSync;
-        const exists = jest.spyOn(fs, "existsSync").mockImplementation(candidate => {
+        const exists = jest.spyOn(fs, "existsSync").mockImplementation((candidate) => {
             return candidate.toString() === target || existsSync(candidate);
         });
-        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation(candidate => {
+        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation((candidate) => {
             return candidate.toString() === target ? lstatSync(source) : lstatSync(candidate);
         });
 
@@ -1222,8 +1248,8 @@ describe("Workspace service", () => {
             { nodeKey: "node-3", path: "Unselected/Three.md", content: "three" },
         ];
         writeWorkspace(original);
-        original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
-        original.slice(0, 2).forEach(file => {
+        original.forEach((file) => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
+        original.slice(0, 2).forEach((file) => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.nodeKey) });
             mockAxiosPut(fileUrl(file.path), {
                 path: file.path,
@@ -1271,7 +1297,7 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
     });
 
-    it("recovers a server-assigned node key after post-create refresh fails", async () => {
+    it("retains refresh recovery when a server-created file no longer matches locally", async () => {
         const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
         const remote = { ...local, nodeKey: "server-node" };
         writeWorkspace([local]);
@@ -1290,15 +1316,52 @@ describe("Workspace service", () => {
         fs.writeFileSync(path.join(process.cwd(), local.path), "newer local edit");
         mockManifest([remote]);
 
-        await service.pull();
+        await expect(service.pull()).rejects.toThrow("Workspace pull failed for 1 node(s)");
 
         expect(fs.readFileSync(path.join(process.cwd(), local.path), "utf-8")).toBe("newer local edit");
+        expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
+            refreshRequired: true,
+            baselineDigests: {},
+        });
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/local-node.json"))).toBe(true);
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(false);
+
+        fs.writeFileSync(path.join(process.cwd(), local.path), "new");
+        mockManifest([remote]);
+        await service.pull();
+
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/local-node.json"))).toBe(false);
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
-        expect(service.status()).toEqual([{ path: local.path, status: "modified" }]);
+        expect(service.status()).toEqual([]);
         expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
             baselineDigests: { "server-node": digest("new") },
         });
+        expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).not.toHaveProperty("refreshRequired");
+    });
+
+    it("recovers an untracked server-created file by path and digest", async () => {
+        const remote = { nodeKey: "server-node", path: "New.md", content: "new" };
+        writeWorkspace([]);
+        fs.writeFileSync(path.join(process.cwd(), remote.path), remote.content);
+        mockAxiosPut(fileUrl(remote.path), {
+            path: remote.path,
+            nodeKey: remote.nodeKey,
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag(remote.content),
+        });
+        mockAxiosGetError(manifestUrl(), 503, { message: "unavailable" });
+        const service = new WorkspaceService(testContext, mockGit(undefined));
+
+        await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
+        mockManifest([remote]);
+        await service.pull();
+
+        expect(fs.readFileSync(path.join(process.cwd(), remote.path), "utf-8")).toBe(remote.content);
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
+        expect(service.status()).toEqual([]);
+        const refreshed = JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"));
+        expect(refreshed).toMatchObject({ baselineDigests: { "server-node": digest(remote.content) } });
+        expect(refreshed).not.toHaveProperty("refreshRequired");
     });
 
     it("retains a stale file for retry when its conditional update fails", async () => {
@@ -1321,7 +1384,7 @@ describe("Workspace service", () => {
             { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
         ];
         writeWorkspace(original);
-        original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
+        original.forEach((file) => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
         mockAxiosGet(fileUrl("Guides/One.md"), Buffer.from("one"), { etag: eTag("one") });
         mockAxiosGet(fileUrl("Guides/Two.md"), Buffer.from("two"), { etag: eTag("two") });
         mockAxiosPut(fileUrl("Guides/One.md"), {

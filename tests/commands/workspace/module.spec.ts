@@ -2,6 +2,7 @@ import { Command } from "commander";
 import Module = require("../../../src/commands/workspace/module");
 import { WorkspaceService } from "../../../src/commands/workspace/workspace.service";
 import { Configurator } from "../../../src/core/command/module-handler";
+import { GracefulError } from "../../../src/core/utils/logger";
 import { testContext } from "../../utls/test-context";
 import { createMockConfigurator } from "../../utls/configurator-mock";
 
@@ -61,5 +62,20 @@ describe("Workspace module", () => {
         expect(status).toHaveBeenCalledWith("target");
         expect(push).toHaveBeenCalledWith(["target", "other.md"], { full: false, overwrite: false });
         expect(move).toHaveBeenCalledWith("old.md", "new.md", true);
+    });
+
+    it("marks beta workspace command failures as non-zero", async () => {
+        const previousExitCode = process.exitCode;
+        process.exitCode = 0;
+        jest.spyOn(WorkspaceService.prototype, "clone").mockRejectedValueOnce(new GracefulError("clone failed"));
+        const program = new Command();
+        new Module().register(testContext, new Configurator(program, testContext));
+
+        try {
+            await program.parseAsync(["node", "content-cli", "workspace", "clone", "package-key"]);
+            expect(process.exitCode).toBe(1);
+        } finally {
+            process.exitCode = previousExitCode;
+        }
     });
 });

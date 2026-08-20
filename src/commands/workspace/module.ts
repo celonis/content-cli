@@ -3,6 +3,15 @@ import { Context } from "../../core/command/cli-context";
 import { Configurator, IModule } from "../../core/command/module-handler";
 import { WorkspaceService } from "./workspace.service";
 
+async function runWorkspaceCommand<T>(action: () => Promise<T> | T): Promise<void> {
+    try {
+        await action();
+    } catch (error) {
+        process.exitCode = 1;
+        throw error;
+    }
+}
+
 class Module extends IModule {
     public register(context: Context, configurator: Configurator): void {
         const workspace = configurator.command("workspace").beta().description("Manage a package workspace.");
@@ -49,38 +58,46 @@ class Module extends IModule {
     }
 
     private async clone(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new WorkspaceService(context).clone(command.args[0], command.args[1], { branch: options.branch });
+        await runWorkspaceCommand(() =>
+            new WorkspaceService(context).clone(command.args[0], command.args[1], { branch: options.branch })
+        );
     }
 
     private async checkout(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const branch = options.create || command.args[0];
-        if (!branch || (options.create && command.args[0])) {
-            throw new Error("Provide one branch name or use -b <branch>.");
-        }
-        await new WorkspaceService(context).checkout(branch, {
-            create: Boolean(options.create),
-            discard: options.discard,
-            linkGit: options.linkGit,
+        await runWorkspaceCommand(async () => {
+            const branch = options.create || command.args[0];
+            if (!branch || (options.create && command.args[0])) {
+                throw new Error("Provide one branch name or use -b <branch>.");
+            }
+            await new WorkspaceService(context).checkout(branch, {
+                create: Boolean(options.create),
+                discard: options.discard,
+                linkGit: options.linkGit,
+            });
         });
     }
 
     private async pull(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new WorkspaceService(context).pull(command.args, { full: options.full });
+        await runWorkspaceCommand(() => new WorkspaceService(context).pull(command.args, { full: options.full }));
     }
 
     private async status(context: Context, command: Command): Promise<void> {
-        await new WorkspaceService(context).statusWithGit(command.args[0]);
+        await runWorkspaceCommand(() => new WorkspaceService(context).statusWithGit(command.args[0]));
     }
 
     private async push(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new WorkspaceService(context).push(command.args, {
-            full: options.full,
-            overwrite: options.overwrite,
-        });
+        await runWorkspaceCommand(() =>
+            new WorkspaceService(context).push(command.args, {
+                full: options.full,
+                overwrite: options.overwrite,
+            })
+        );
     }
 
     private async move(context: Context, command: Command, options: OptionValues): Promise<void> {
-        new WorkspaceService(context).move(command.args[0], command.args[1], options.record);
+        await runWorkspaceCommand(() =>
+            new WorkspaceService(context).move(command.args[0], command.args[1], options.record)
+        );
     }
 }
 
