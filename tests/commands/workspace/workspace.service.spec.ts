@@ -363,7 +363,7 @@ describe("Workspace service", () => {
         });
     });
 
-    it("rehydrates the baseline when Git advances on the mapped branch", async () => {
+    it("observes a Git advance without replacing the Pacman baseline", async () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), "Pages"));
         fs.renameSync(path.join(process.cwd(), "Guides/Guide.md"), path.join(process.cwd(), "Pages/Guide.md"));
@@ -385,14 +385,14 @@ describe("Workspace service", () => {
 
         expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
             activePackageKey: PACKAGE_KEY,
-            moveHints: {},
+            moveHints: { "node-1": "Pages/Guide.md" },
             git: observation,
         });
         expect(git.mappedPacmanBranch).not.toHaveBeenCalled();
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(manifestUrl(), expect.anything());
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalled();
     });
 
-    it("rehydrates without overwriting files after Git advances on the mapped branch", async () => {
+    it("continues an incremental pull after Git advances on the mapped branch", async () => {
         writeWorkspace();
         const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
         fs.writeFileSync(
@@ -404,13 +404,12 @@ describe("Workspace service", () => {
         );
         const observation = { branch: "main", head: "b".repeat(40) };
         mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]);
+        mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("remote"), { etag: eTag("remote") });
 
         await new WorkspaceService(testContext, mockGit(observation)).pull();
 
-        expect(fs.readFileSync(path.join(process.cwd(), "Guides/Guide.md"), "utf-8")).toBe("original");
-        expect(new WorkspaceService(testContext, mockGit(observation)).status()).toEqual([
-            { path: "Guides/Guide.md", status: "modified" },
-        ]);
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides/Guide.md"), "utf-8")).toBe("remote");
+        expect(new WorkspaceService(testContext, mockGit(observation)).status()).toEqual([]);
         expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({ git: observation });
     });
 

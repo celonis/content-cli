@@ -1060,15 +1060,8 @@ export class WorkspaceService {
         }
         if (observation.branch === state.git.branch) {
             if (observation.head !== state.git.head) {
-                await this.hydrateGitBaseline(
-                    root,
-                    { ...state, git: observation },
-                    state.activePackageKey,
-                    state.activeBranch,
-                    observation
-                );
-                logger.info(`Reconciled Git branch '${observation.branch}' with ${state.activePackageKey}.`);
-                return true;
+                this.writeState(root, { ...state, git: observation });
+                logger.info(`Observed Git branch '${observation.branch}' at ${observation.head}.`);
             }
             return false;
         }
