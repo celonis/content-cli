@@ -735,14 +735,16 @@ Use `--force` with care: dependants are not archived for you, and the package ma
 
 ## Listing Nodes
 
-The **config nodes list** command allows you to retrieve all nodes within a specific package version.
+The **config nodes list** command retrieves all nodes in a package. By default it lists nodes in the **staging (draft) version**. Pass `--packageVersion` to list a published package version instead.
 
-### List Nodes in a Package Version
+This command requires **edit permission** on the target package (see [Permissions](#permissions)).
 
-To list all nodes in a specific package version, use the following command:
+### List Staging Nodes
+
+To list all nodes in the staging version of a package, omit `--packageVersion`:
 
 ```bash
-content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion>
+content-cli config nodes list --packageKey <packageKey>
 ```
 
 The command will display information for each node in the console as a JSON object:
@@ -753,13 +755,22 @@ info: {"id":"node-id-456","key":"node-key-2","name":"My Second Node","type":"KNO
 ...
 ```
 
+### List Nodes in a Package Version
+
+To list all nodes in a specific package version, use the `--packageVersion` option:
+
+```bash
+content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion>
+```
+
 ### Pagination
 
 The response is paginated, and the page size can be controlled with the `--limit` and `--offset` options (defaults to 100 and 0 respectively).
 
 ```bash
+content-cli config nodes list --packageKey my-package --limit 10
+content-cli config nodes list --packageKey my-package --limit 10 --offset 10
 content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 10
-content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 10 --offset 10
 ```
 
 ### List Nodes with Configuration
@@ -767,6 +778,7 @@ content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --l
 By default, the node configuration is not included in the response. To include each node's configuration, use the `--withConfiguration` flag:
 
 ```bash
+content-cli config nodes list --packageKey <packageKey> --withConfiguration
 content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --withConfiguration
 ```
 
@@ -775,13 +787,13 @@ content-cli config nodes list --packageKey <packageKey> --packageVersion <packag
 To export the nodes list as a JSON file, use the `--json` option:
 
 ```bash
-content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --json
+content-cli config nodes list --packageKey <packageKey> --json
 ```
 
 You can combine options:
 
 ```bash
-content-cli config nodes list --packageKey <packageKey> --packageVersion <packageVersion> --withConfiguration --json
+content-cli config nodes list --packageKey <packageKey> --withConfiguration --json
 content-cli config nodes list --packageKey my-package --packageVersion 1.2.3 --limit 50 --offset 100 --json
 ```
 

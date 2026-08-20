@@ -290,4 +290,90 @@ describe("Node list", () => {
         const parentKeyMessages = loggingTestTransport.logMessages.filter(log => log.message.includes("Parent Node Key"));
         expect(parentKeyMessages.length).toBe(0);
     });
+
+    it("Should list staging nodes when package version is omitted", async () => {
+        const packageKey = "package-key";
+        const limit = 10;
+        const offset = 0;
+
+        const node1 = createNode("node-id-1", "node-key-1", "Node 1", "parent-key");
+        const node2 = createNode("node-id-2", "node-key-2", "Node 2");
+        const response: NodeTransport[] = [node1, node2];
+
+        mockAxiosGet(
+            `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes?withConfiguration=false&limit=${limit}`,
+            response
+        );
+
+        await new NodeService(testContext).listNodes(packageKey, null, limit, offset, false, false);
+
+        expect(loggingTestTransport.logMessages).toHaveLength(2);
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
+        expect(loggingTestTransport.logMessages[1].message).toContain(JSON.stringify(node2));
+    });
+
+    it("Should list staging nodes with configuration", async () => {
+        const packageKey = "package-key";
+        const limit = 5;
+        const offset = 0;
+
+        const node1: NodeTransport = {
+            ...createNode("node-id-1", "node-key-1", "Node 1"),
+            configuration: {
+                setting1: "value1",
+            }
+        };
+        const response: NodeTransport[] = [node1];
+
+        mockAxiosGet(
+            `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes?withConfiguration=true&limit=${limit}`,
+            response
+        );
+
+        await new NodeService(testContext).listNodes(packageKey, null, limit, offset, true, false);
+
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${JSON.stringify(node1.configuration)}`);
+    });
+
+    it("Should list staging nodes with pagination", async () => {
+        const packageKey = "package-key";
+        const limit = 50;
+        const offset = 100;
+
+        const node1 = createNode("node-id-101", "node-key-101", "Node 101");
+        const response: NodeTransport[] = [node1];
+
+        mockAxiosGet(
+            `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes?withConfiguration=false&limit=${limit}&offset=${offset}`,
+            response
+        );
+
+        await new NodeService(testContext).listNodes(packageKey, null, limit, offset, false, false);
+
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(JSON.stringify(node1));
+    });
+
+    it("Should list staging nodes and return as JSON", async () => {
+        const packageKey = "package-key";
+        const limit = 10;
+        const offset = 0;
+
+        const node1 = createNode("node-id-1", "node-key-1", "Node 1");
+        const node2 = createNode("node-id-2", "node-key-2", "Node 2");
+        const response: NodeTransport[] = [node1, node2];
+
+        mockAxiosGet(
+            `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${packageKey}/nodes?withConfiguration=false&limit=${limit}`,
+            response
+        );
+
+        await new NodeService(testContext).listNodes(packageKey, null, limit, offset, false, true);
+
+        const nodes = getJsonFromDownloadedFile() as NodeTransport[];
+
+        expect(nodes).toEqual([node1, node2]);
+        expect(nodes).toHaveLength(2);
+    });
 });

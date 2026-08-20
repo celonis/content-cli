@@ -29,8 +29,10 @@ export class NodeService {
         }
     }
 
-    public async listNodes(packageKey: string, packageVersion: string, limit: number, offset: number, withConfiguration: boolean, jsonResponse: boolean): Promise<void> {
-        const nodes: NodeTransport[] = await this.nodeApi.findVersionedNodesByPackage(packageKey, packageVersion, withConfiguration, limit, offset);
+    public async listNodes(packageKey: string, packageVersion: string | null, limit: number, offset: number, withConfiguration: boolean, jsonResponse: boolean): Promise<void> {
+        const nodes: NodeTransport[] = packageVersion
+            ? await this.nodeApi.findVersionedNodesByPackage(packageKey, packageVersion, withConfiguration, limit, offset)
+            : await this.nodeApi.findStagingNodesByPackage(packageKey, withConfiguration, limit, offset);
 
         if (jsonResponse) {
             const filename = uuidv4() + ".json";

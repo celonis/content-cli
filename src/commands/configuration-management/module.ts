@@ -280,9 +280,9 @@ class Module extends IModule {
             .action(this.archiveNode);
 
         nodesCommand.command("list")
-            .description("List nodes in a specific package version")
+            .description("List nodes in a package. Lists staging nodes by default.")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
-            .requiredOption("--packageVersion <packageVersion>", "Version of the package")
+            .option("--packageVersion <packageVersion>", "Version of the package. If not sent, the staging state of the package will be used.")
             .option("--limit <limit>", "Limit the number of results returned")
             .option("--offset <offset>", "Offset for pagination")
             .option("--withConfiguration", "Include node configuration in the response", false)
@@ -546,7 +546,7 @@ class Module extends IModule {
     }
 
     private async listNodes(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new NodeService(context).listNodes(options.packageKey, options.packageVersion, options.limit, options.offset, options.withConfiguration, options.json);
+        await new NodeService(context).listNodes(options.packageKey, options.packageVersion ?? null, options.limit, options.offset, options.withConfiguration, options.json);
     }
 
     private async diffNode(context: Context, command: Command, options: OptionValues): Promise<void> {
