@@ -21,6 +21,16 @@ describe("Workspace change classifier", () => {
         ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "moved" }]);
     });
 
+    it("keeps a uniquely matching filename rename unresolved", () => {
+        expect(
+            classifyWorkspaceChanges(
+                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                new Map([["Pages/Renamed.md", "sha256:one"]]),
+                {}
+            )
+        ).toEqual([{ nodeKey: "node-1", path: "Pages/Renamed.md", status: "unresolved" }]);
+    });
+
     it("uses a recorded hint for a move followed by an edit", () => {
         expect(
             classifyWorkspaceChanges(
@@ -41,14 +51,14 @@ describe("Workspace change classifier", () => {
         ).toEqual([{ nodeKey: "node-1", path: "Pages/Guide.md", status: "moved" }]);
     });
 
-    it("uses a recorded case-only move on a case-insensitive path", () => {
+    it("keeps a recorded case-only filename rename unresolved", () => {
         expect(
             classifyWorkspaceChanges(
                 [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
                 new Map([["Guides/Guide.md", "sha256:one"]]),
                 { "node-1": "Guides/guide.md" }
             )
-        ).toEqual([{ nodeKey: "node-1", path: "Guides/guide.md", status: "moved" }]);
+        ).toEqual([{ nodeKey: "node-1", path: "Guides/guide.md", status: "unresolved" }]);
     });
 
     it("keeps a distinct deletion and addition separate", () => {

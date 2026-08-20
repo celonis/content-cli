@@ -10,6 +10,7 @@ import { BranchUtils } from "../../core/utils/branches";
 import { WorkspaceApi } from "./workspace-api";
 import { classifyWorkspaceChanges } from "./workspace-change-classifier";
 import { WorkspaceGitService } from "./workspace-git.service";
+import { projectedLeafAfterMove, projectWorkspacePaths } from "./workspace-path-projector";
 import { WorkspacePullService } from "./workspace-pull.service";
 import { WorkspacePushService } from "./workspace-push.service";
 import {
@@ -54,6 +55,7 @@ const NON_SEMANTIC_NODE_FIELDS = [
     "lastModified",
     "lastModifiedAt",
     "lastModifiedBy",
+    "filesystemName",
 ];
 
 export { WorkspaceChange } from "./workspace.models";
@@ -377,6 +379,7 @@ export class WorkspaceService {
         if (targetOwned) {
             throw new GracefulError(`Target path is already tracked: ${targetPath}`);
         }
+        this.validateParentMove(root, snapshot, tracked, targetPath);
         const absoluteSource = this.resolveVisiblePath(root, sourcePath);
         const absoluteTarget = this.resolveVisiblePath(root, targetPath);
         if (recordOnly) {
@@ -425,30 +428,7 @@ export class WorkspaceService {
     private expectedFiles(root: string, state: WorkspaceState, packageKey: string): ExpectedWorkspaceFile[] {
         const nodes = this.nodes(root);
         const byKey = new Map(nodes.map(node => [node.key, node]));
-        const pathByKey = new Map<string, string>();
-        const resolving = new Set<string>();
-        const resolvePath = (node: WorkspaceNodeMetadata): string => {
-            const cached = pathByKey.get(node.key);
-            if (cached) {
-                return cached;
-            }
-            if (resolving.has(node.key)) {
-                throw new GracefulError(`Circular node hierarchy at ${node.key}.`);
-            }
-            resolving.add(node.key);
-            const segment = this.filesystemName(node);
-            let filePath = segment;
-            if (node.parentNodeKey && node.parentNodeKey !== packageKey) {
-                const parent = byKey.get(node.parentNodeKey);
-                if (!parent || !this.isFolder(parent)) {
-                    throw new GracefulError(`Invalid parent metadata for node ${node.key}.`);
-                }
-                filePath = `${resolvePath(parent)}/${segment}`;
-            }
-            resolving.delete(node.key);
-            pathByKey.set(node.key, filePath);
-            return filePath;
-        };
+        const pathByKey = projectWorkspacePaths(nodes, packageKey);
         const expected = nodes
             .filter(node => !this.isFolder(node))
             .map(node => {
@@ -456,7 +436,7 @@ export class WorkspaceService {
                 if (baseline && !/^sha256:[0-9a-f]{64}$/.test(baseline)) {
                     throw new GracefulError(`Invalid baseline digest for node ${node.key}.`);
                 }
-                const metadataPath = resolvePath(node);
+                const metadataPath = pathByKey.get(node.key)!;
                 const hint = state.moveHints[node.key];
                 const sourcePath = this.isStructuredMoveHint(hint)
                     ? this.validateRelative(hint.sourcePath)
@@ -506,20 +486,13 @@ export class WorkspaceService {
                     !node.name ||
                     !node.type ||
                     `${node.key}.json` !== entry.name ||
-                    NON_SEMANTIC_NODE_FIELDS.some(field => field in fields)
+                    NON_SEMANTIC_NODE_FIELDS.some(field => field in fields) ||
+                    this.hasLegacyFilesystemName(node)
                 ) {
                     throw new GracefulError(`Invalid node metadata file: ${entry.name}`);
                 }
                 return node;
             });
-    }
-
-    private filesystemName(node: WorkspaceNodeMetadata): string {
-        const value = node.filesystemName || node.metadata?.filesystemName || node.additionalFields?.filesystemName;
-        if (typeof value !== "string" || !value || value.includes("/") || value.includes("\\")) {
-            throw new GracefulError(`Invalid filesystem name for node ${node.key}.`);
-        }
-        return this.validateRelative(value);
     }
 
     private visibleFiles(root: string): Map<string, string> {
@@ -579,6 +552,37 @@ export class WorkspaceService {
                 (change.status === "moved" || change.status === "moved, modified")
         );
         return classified ? snapshot.expectedFiles.find(file => file.nodeKey === classified.nodeKey) : undefined;
+    }
+
+    private validateParentMove(
+        root: string,
+        snapshot: WorkspaceSnapshot,
+        tracked: ExpectedWorkspaceFile,
+        targetPath: string
+    ): void {
+        const currentLeaf = path.posix.basename(tracked.path);
+        if (path.posix.basename(targetPath) !== currentLeaf) {
+            throw new GracefulError("Filename-only rename is not supported; move the Node to another parent.");
+        }
+        const nodes = this.nodes(root);
+        const paths = projectWorkspacePaths(nodes, snapshot.packageKey);
+        const targetParentPath = path.posix.dirname(targetPath) === "." ? "" : path.posix.dirname(targetPath);
+        const targetParent = nodes.find(node => this.isFolder(node) && paths.get(node.key) === targetParentPath);
+        const targetParentKey = targetParentPath
+            ? targetParent?.key || `__workspace_target__:${targetParentPath}`
+            : undefined;
+        if (projectedLeafAfterMove(nodes, tracked.nodeKey, targetParentKey, snapshot.packageKey) !== currentLeaf) {
+            throw new GracefulError("This parent move would change the Node's derived filename.");
+        }
+    }
+
+    private hasLegacyFilesystemName(node: WorkspaceNodeMetadata): boolean {
+        const fields = node as unknown as Record<string, unknown>;
+        return (
+            "filesystemName" in fields ||
+            Boolean(node.metadata && "filesystemName" in node.metadata) ||
+            Boolean(node.additionalFields && "filesystemName" in node.additionalFields)
+        );
     }
 
     private refreshMetadata(

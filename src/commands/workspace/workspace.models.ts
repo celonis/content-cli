@@ -45,7 +45,6 @@ export interface WorkspaceNodeMetadata {
     name: string;
     type: string;
     parentNodeKey?: string | null;
-    filesystemName?: string;
     schemaVersion?: number;
     serializedDocumentRef?: string;
     dependenciesConfiguration?: unknown;

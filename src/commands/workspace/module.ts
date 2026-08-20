@@ -43,7 +43,7 @@ class Module extends IModule {
         workspace
             .command("move <source> <target>")
             .beta()
-            .description("Move a tracked file.")
+            .description("Move a tracked file to another parent.")
             .option("--record", "Record an existing move", false)
             .action(this.move);
     }

@@ -129,11 +129,13 @@ export class WorkspacePushService {
             }
             case "moved": {
                 const tracked = this.requireExpected(expected);
+                this.requireParentOnlyMove(tracked.path, change.path);
                 const eTag = await this.currentETag(snapshot.packageKey, tracked, tracked.path);
                 return this.api.moveFile(snapshot.packageKey, tracked.path, change.path, eTag);
             }
             case "moved, modified": {
                 const tracked = this.requireExpected(expected);
+                this.requireParentOnlyMove(tracked.path, change.path);
                 let eTag = await this.currentETag(snapshot.packageKey, tracked, tracked.path);
                 let moved = false;
                 if (tracked.path !== change.path) {
@@ -177,6 +179,12 @@ export class WorkspacePushService {
             throw new GracefulError("Tracked file metadata is missing.");
         }
         return expected;
+    }
+
+    private requireParentOnlyMove(source: string, target: string): void {
+        if (path.posix.basename(source) !== path.posix.basename(target)) {
+            throw new GracefulError("Filename-only rename is not supported; move the Node to another parent.");
+        }
     }
 
     private content(root: string, filePath: string): Buffer {

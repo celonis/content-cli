@@ -63,7 +63,11 @@ function classifyExpectedFile(
         consumedPaths.add(currentPath);
         const changed = visibleFiles.get(currentPath) !== file.digest;
         if (currentPath !== file.path) {
-            changes.push({ nodeKey: file.nodeKey, path: currentPath, status: changed ? "moved, modified" : "moved" });
+            changes.push({
+                nodeKey: file.nodeKey,
+                path: currentPath,
+                status: sameLeaf(file.path, currentPath) ? (changed ? "moved, modified" : "moved") : "unresolved",
+            });
         } else if (changed) {
             changes.push({ nodeKey: file.nodeKey, path: currentPath, status: "modified" });
         }
@@ -84,7 +88,7 @@ function classifyNewFile(
     const targetPath = visiblePathIndex.get(target.toLowerCase());
     const sourcePath = visiblePathIndex.get(file.path.toLowerCase());
     const sourceStillPresent = Boolean(hint && hint.toLowerCase() !== file.path.toLowerCase() && sourcePath);
-    if (sourceStillPresent || !targetPath || consumedPaths.has(targetPath)) {
+    if (sourceStillPresent || !sameLeaf(file.path, target) || !targetPath || consumedPaths.has(targetPath)) {
         changes.push({ nodeKey: file.nodeKey, path: target, status: "unresolved" });
         if (targetPath) {
             consumedPaths.add(targetPath);
@@ -108,7 +112,7 @@ function classifyHintedFile(
 ): void {
     const targetPath = visiblePathIndex.get(hint.toLowerCase());
     const sourcePath = visiblePathIndex.get(file.path.toLowerCase());
-    if (!targetPath || consumedPaths.has(targetPath)) {
+    if (!sameLeaf(file.path, hint) || !targetPath || consumedPaths.has(targetPath)) {
         changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
         if (targetPath) {
             consumedPaths.add(targetPath);
@@ -141,7 +145,11 @@ function resolveDigestMoves(
             .map(([filePath]) => filePath);
         if (files.length === 1 && candidates.length === 1) {
             consumedPaths.add(candidates[0]);
-            changes.push({ nodeKey: files[0].nodeKey, path: candidates[0], status: "moved" });
+            changes.push({
+                nodeKey: files[0].nodeKey,
+                path: candidates[0],
+                status: sameLeaf(files[0].path, candidates[0]) ? "moved" : "unresolved",
+            });
             missing.splice(missing.indexOf(files[0]), 1);
             return;
         }
@@ -179,6 +187,10 @@ function resolveMovedAndEdited(
         files.forEach(file => missing.splice(missing.indexOf(file), 1));
         paths.forEach(filePath => newPaths.splice(newPaths.indexOf(filePath), 1));
     });
+}
+
+function sameLeaf(source: string, target: string): boolean {
+    return path.posix.basename(source) === path.posix.basename(target);
 }
 
 function groupBy<T>(values: T[], key: (value: T) => string): Map<string, T[]> {

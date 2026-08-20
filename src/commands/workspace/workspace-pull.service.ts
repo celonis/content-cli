@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { GracefulError } from "../../core/utils/logger";
 import { WorkspaceApi } from "./workspace-api";
 import { selectWorkspaceCandidates } from "./workspace-path-selection";
+import { projectWorkspacePaths } from "./workspace-path-projector";
 import {
     ClassifiedWorkspaceChange,
     ExpectedWorkspaceFile,
@@ -25,6 +26,7 @@ const FORBIDDEN_METADATA_FIELDS = [
     "changeDate",
     "revision",
     "serverRevision",
+    "filesystemName",
 ];
 
 interface PullOperation {
@@ -467,27 +469,7 @@ export class WorkspacePullService {
     }
 
     private localPaths(nodes: WorkspaceNodeMetadata[]): Map<string, string> {
-        const byKey = new Map(nodes.map(node => [node.key, node]));
-        const paths = new Map<string, string>();
-        const resolving = new Set<string>();
-        const resolve = (node: WorkspaceNodeMetadata): string => {
-            const cached = paths.get(node.key);
-            if (cached) {
-                return cached;
-            }
-            if (resolving.has(node.key)) {
-                throw new GracefulError(`Circular node hierarchy at ${node.key}.`);
-            }
-            resolving.add(node.key);
-            const segment = this.filesystemName(node);
-            const parent = node.parentNodeKey ? byKey.get(node.parentNodeKey) : undefined;
-            const value = parent ? `${resolve(parent)}/${segment}` : segment;
-            resolving.delete(node.key);
-            paths.set(node.key, value);
-            return value;
-        };
-        nodes.forEach(resolve);
-        return paths;
+        return projectWorkspacePaths(nodes);
     }
 
     private validateManifest(manifest: WorkspaceManifest): void {
@@ -504,6 +486,7 @@ export class WorkspacePullService {
                 !this.validManifestPath(entry.path) ||
                 entry.metadata?.key !== entry.nodeKey ||
                 FORBIDDEN_METADATA_FIELDS.some(field => field in metadata) ||
+                this.hasLegacyFilesystemName(entry.metadata) ||
                 "body" in (entry as unknown as Record<string, unknown>) ||
                 (entry.kind !== "file" && entry.kind !== "folder") ||
                 this.isFolder(entry.metadata) !== (entry.kind === "folder") ||
@@ -529,9 +512,10 @@ export class WorkspacePullService {
             if (resolved.has(entry.nodeKey)) {
                 return;
             }
-            if (!resolving.add(entry.nodeKey)) {
+            if (resolving.has(entry.nodeKey)) {
                 throw new GracefulError("Workspace manifest contains a circular hierarchy.");
             }
+            resolving.add(entry.nodeKey);
             const parentKey = entry.metadata.parentNodeKey;
             if (parentKey) {
                 const parent = byKey.get(parentKey);
@@ -547,6 +531,10 @@ export class WorkspacePullService {
             resolve(entry, new Set());
             this.validateDocument(entry, manifest);
         });
+        const projectedPaths = projectWorkspacePaths(manifest.nodes.map(entry => entry.metadata));
+        if (manifest.nodes.some(entry => projectedPaths.get(entry.nodeKey) !== entry.path)) {
+            throw new GracefulError("Workspace manifest contains a path that does not match Node metadata.");
+        }
         if (!Object.values(manifest.documents).every(value => typeof value === "string")) {
             throw new GracefulError("Unsupported workspace manifest.");
         }
@@ -600,12 +588,13 @@ export class WorkspacePullService {
         return value;
     }
 
-    private filesystemName(node: WorkspaceNodeMetadata): string {
-        const value = node.filesystemName || node.metadata?.filesystemName || node.additionalFields?.filesystemName;
-        if (typeof value !== "string" || !value || value.includes("/") || value.includes("\\")) {
-            throw new GracefulError(`Invalid filesystem name for node ${node.key}.`);
-        }
-        return value;
+    private hasLegacyFilesystemName(node: WorkspaceNodeMetadata): boolean {
+        const fields = node as unknown as Record<string, unknown>;
+        return (
+            "filesystemName" in fields ||
+            Boolean(node.metadata && "filesystemName" in node.metadata) ||
+            Boolean(node.additionalFields && "filesystemName" in node.additionalFields)
+        );
     }
 
     private resolve(root: string, filePath: string): string {

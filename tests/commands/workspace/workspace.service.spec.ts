@@ -70,7 +70,6 @@ function metadata(files: TestFile[]): Record<string, object> {
                     name: segments[index],
                     type: "FOLDER",
                     parentNodeKey,
-                    filesystemName: segments[index],
                 };
             }
             parentNodeKey = folderKey;
@@ -80,7 +79,6 @@ function metadata(files: TestFile[]): Record<string, object> {
             name: path.posix.basename(file.path, path.posix.extname(file.path)),
             type: "MARKDOWN_FILE",
             parentNodeKey,
-            filesystemName: segments[segments.length - 1],
         };
     });
     return nodes;
@@ -116,7 +114,7 @@ function archive(files: TestFile[]): Buffer {
 function manifest(files: TestFile[]): Buffer {
     const nodes = metadata(files) as Record<
         string,
-        { key: string; type: string; parentNodeKey?: string | null; filesystemName: string }
+        { key: string; name: string; type: string; parentNodeKey?: string | null }
     >;
     const byKey = new Map(Object.entries(nodes));
     const paths = new Map<string, string>();
@@ -127,7 +125,8 @@ function manifest(files: TestFile[]): Buffer {
         }
         const metadataNode = nodes[node.key];
         const parent = metadataNode.parentNodeKey ? byKey.get(metadataNode.parentNodeKey) : undefined;
-        const filePath = parent ? `${resolvePath(parent)}/${metadataNode.filesystemName}` : metadataNode.filesystemName;
+        const segment = `${metadataNode.name}${metadataNode.type === "FOLDER" ? "" : ".md"}`;
+        const filePath = parent ? `${resolvePath(parent)}/${segment}` : segment;
         paths.set(node.key, filePath);
         return filePath;
     };
@@ -674,6 +673,32 @@ describe("Workspace service", () => {
         expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("local");
     });
 
+    it("rejects manifest metadata containing a legacy filesystem name", async () => {
+        writeWorkspace();
+        const body = JSON.parse(
+            manifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]).toString()
+        );
+        body.nodes.find((node: { nodeKey: string }) => node.nodeKey === "node-1").metadata.additionalFields = {
+            filesystemName: "Renamed.md",
+        };
+        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(body)), { etag: eTag("manifest") });
+
+        await expect(new WorkspaceService(testContext).pull()).rejects.toThrow("Unsupported workspace manifest");
+    });
+
+    it("rejects a manifest path that does not match derived Node metadata", async () => {
+        writeWorkspace();
+        const body = JSON.parse(
+            manifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]).toString()
+        );
+        body.nodes.find((node: { nodeKey: string }) => node.nodeKey === "node-1").path = "Guides/Renamed.md";
+        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(body)), { etag: eTag("manifest") });
+
+        await expect(new WorkspaceService(testContext).pull()).rejects.toThrow(
+            "path that does not match Node metadata"
+        );
+    });
+
     it("restores the existing workspace when applying a pull fails", async () => {
         writeWorkspace();
         mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]), {
@@ -821,6 +846,24 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), "Pages", "Guide.md"))).toBe(true);
     });
 
+    it("rejects an explicit filename-only rename", () => {
+        writeWorkspace();
+
+        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", "Pages/Renamed.md")).toThrow(
+            "Filename-only rename is not supported"
+        );
+        expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(true);
+    });
+
+    it("reports an unchanged filename rename by another tool as unresolved", () => {
+        writeWorkspace();
+        fs.renameSync(path.join(process.cwd(), "Guides", "Guide.md"), path.join(process.cwd(), "Guides", "Renamed.md"));
+
+        expect(new WorkspaceService(testContext).status()).toEqual([
+            { path: "Guides/Renamed.md", status: "unresolved" },
+        ]);
+    });
+
     it("records an explicit move after the source was edited", () => {
         writeWorkspace();
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
@@ -902,17 +945,31 @@ describe("Workspace service", () => {
         expect(() => new WorkspaceService(testContext).status()).toThrow("Invalid node metadata file");
     });
 
-    it("rejects duplicate case-insensitive paths derived from node metadata", () => {
+    it("derives stable Node-key suffixes for colliding display names", () => {
         writeWorkspace([
             { nodeKey: "node-1", path: "Guides/One.md", content: "one" },
             { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
         ]);
         const secondPath = path.join(process.cwd(), ".pacman", "nodes", "node-2.json");
         const second = JSON.parse(fs.readFileSync(secondPath, "utf-8"));
-        second.filesystemName = "one.md";
+        second.name = "One";
         fs.writeFileSync(secondPath, JSON.stringify(second));
+        const firstLeaf = `One~${createHash("sha256").update("node-1").digest("hex").slice(0, 12)}.md`;
+        const secondLeaf = `One~${createHash("sha256").update("node-2").digest("hex").slice(0, 12)}.md`;
+        fs.renameSync(path.join(process.cwd(), "Guides", "One.md"), path.join(process.cwd(), "Guides", firstLeaf));
+        fs.renameSync(path.join(process.cwd(), "Guides", "Two.md"), path.join(process.cwd(), "Guides", secondLeaf));
 
-        expect(() => new WorkspaceService(testContext).status()).toThrow("Duplicate workspace path");
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+    });
+
+    it("rejects legacy filesystem names in stable Node metadata", () => {
+        writeWorkspace();
+        const nodePath = path.join(process.cwd(), ".pacman", "nodes", "node-1.json");
+        const node = JSON.parse(fs.readFileSync(nodePath, "utf-8"));
+        node.additionalFields = { filesystemName: "Renamed.md" };
+        fs.writeFileSync(nodePath, JSON.stringify(node));
+
+        expect(() => new WorkspaceService(testContext).status()).toThrow("Invalid node metadata file");
     });
 
     it("rejects duplicate case-insensitive paths in the visible tree", () => {
@@ -944,7 +1001,7 @@ describe("Workspace service", () => {
         }
     });
 
-    it("supports a case-only move when the target resolves to the source file", () => {
+    it("rejects a case-only filename rename", () => {
         writeWorkspace();
         const source = path.join(process.cwd(), "Guides", "Guide.md");
         const target = path.join(process.cwd(), "Guides", "guide.md");
@@ -959,8 +1016,9 @@ describe("Workspace service", () => {
 
         try {
             const service = new WorkspaceService(testContext);
-            service.move("Guides/Guide.md", "Guides/guide.md");
-            expect(service.status()).toEqual([{ path: "Guides/guide.md", status: "moved" }]);
+            expect(() => service.move("Guides/Guide.md", "Guides/guide.md")).toThrow(
+                "Filename-only rename is not supported"
+            );
         } finally {
             lstat.mockRestore();
             exists.mockRestore();
