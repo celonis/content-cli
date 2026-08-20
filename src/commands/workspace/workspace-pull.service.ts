@@ -42,6 +42,22 @@ interface PullOperation {
     converged?: boolean;
 }
 
+interface PullOperationContext {
+    snapshot: WorkspaceSnapshot;
+    localByKey: Map<string, WorkspaceNodeMetadata>;
+    localPaths: Map<string, string>;
+    localByPath: Map<string, WorkspaceNodeMetadata>;
+    expectedByKey: Map<string, ExpectedWorkspaceFile>;
+    changeByKey: Map<string, ClassifiedWorkspaceChange>;
+    replacedLocalKeys: Set<string>;
+    recoveringCreateKeys: boolean;
+}
+
+interface AppliedFolderMove {
+    sourcePath: string;
+    targetPath: string;
+}
+
 export interface WorkspacePullResult {
     outcomes: WorkspacePullOutcome[];
     state: WorkspaceState;
@@ -72,12 +88,13 @@ export class WorkspacePullService {
         delete state.serverRevision;
         delete state.refreshRequired;
         const outcomes: WorkspacePullOutcome[] = [];
+        const appliedFolderMoves: AppliedFolderMove[] = [];
         for (const operation of this.order(operations)) {
             try {
                 if (operation.conflict) {
                     throw new GracefulError(operation.conflict);
                 }
-                await this.apply(root, snapshot.packageKey, operation, manifest, state);
+                await this.apply(root, snapshot.packageKey, operation, manifest, state, appliedFolderMoves);
                 outcomes.push({
                     path: operation.path,
                     status: operation.status,
@@ -186,86 +203,122 @@ export class WorkspacePullService {
         );
         const remoteByKey = new Map(manifest.nodes.map(entry => [entry.nodeKey, entry]));
         const replacedLocalKeys = new Set<string>();
-        const operations: PullOperation[] = [];
-        manifest.nodes.forEach(entry => {
-            const localNode = localByKey.get(entry.nodeKey);
-            const localPath = localPaths.get(entry.nodeKey);
-            const expected = expectedByKey.get(entry.nodeKey);
-            const localChange = changeByKey.get(entry.nodeKey);
-            if (!localNode) {
-                const provisional = recoveringCreateKeys ? localByPath.get(entry.path.toLowerCase()) : undefined;
-                const provisionalChange = provisional ? changeByKey.get(provisional.key) : undefined;
-                const provisionalPath = provisional ? localPaths.get(provisional.key) : undefined;
-                if (
-                    entry.kind === "file" &&
-                    provisional &&
-                    !this.isFolder(provisional) &&
-                    provisional.type.toUpperCase() === entry.assetType?.toUpperCase() &&
-                    provisionalChange?.status === "added" &&
-                    !expectedByKey.get(provisional.key)?.digest &&
-                    provisionalPath
-                ) {
-                    const localDigest = snapshot.visibleFiles.get(provisionalPath);
-                    operations.push({
-                        nodeKey: entry.nodeKey,
-                        path: entry.path,
-                        localPath: provisionalPath,
-                        status: localDigest === entry.contentDigest ? "added" : "modified",
-                        entry,
-                        localNode: provisional,
-                        localChange: provisionalChange,
-                        replacedNodeKey: provisional.key,
-                        converged: true,
-                    });
-                    replacedLocalKeys.add(provisional.key);
-                    return;
-                }
-                const occupied = entry.kind === "file" && this.visibleAt(snapshot, entry.path);
-                operations.push({
-                    nodeKey: entry.nodeKey,
-                    path: entry.path,
-                    status: "added",
-                    entry,
-                    conflict: occupied
-                        ? `Remote file conflicts with an untracked local path: ${entry.path}`
-                        : undefined,
-                });
-                return;
-            }
-            const remoteChanged = this.remoteChanged(entry, localNode, localPath, expected);
-            if (!remoteChanged) {
-                return;
-            }
-            const operation: PullOperation = {
+        const context: PullOperationContext = {
+            snapshot,
+            localByKey,
+            localPaths,
+            localByPath,
+            expectedByKey,
+            changeByKey,
+            replacedLocalKeys,
+            recoveringCreateKeys,
+        };
+        const operations = manifest.nodes.flatMap(entry => {
+            const operation = this.remoteOperation(entry, context);
+            return operation ? [operation] : [];
+        });
+        operations.push(...this.deletedOperations(localNodes, remoteByKey, context));
+        return operations;
+    }
+
+    private remoteOperation(entry: WorkspaceManifestNode, context: PullOperationContext): PullOperation | undefined {
+        const localNode = context.localByKey.get(entry.nodeKey);
+        if (!localNode) {
+            return this.missingLocalOperation(entry, context);
+        }
+        const localPath = context.localPaths.get(entry.nodeKey);
+        const expected = context.expectedByKey.get(entry.nodeKey);
+        if (!this.remoteChanged(entry, localNode, localPath, expected)) {
+            return undefined;
+        }
+        return this.changedRemoteOperation(entry, localNode, localPath, context);
+    }
+
+    private missingLocalOperation(entry: WorkspaceManifestNode, context: PullOperationContext): PullOperation {
+        const provisional = context.recoveringCreateKeys
+            ? context.localByPath.get(entry.path.toLowerCase())
+            : undefined;
+        const provisionalChange = provisional ? context.changeByKey.get(provisional.key) : undefined;
+        const provisionalPath = provisional ? context.localPaths.get(provisional.key) : undefined;
+        if (
+            entry.kind === "file" &&
+            provisional &&
+            !this.isFolder(provisional) &&
+            provisional.type.toUpperCase() === entry.assetType?.toUpperCase() &&
+            provisionalChange?.status === "added" &&
+            !context.expectedByKey.get(provisional.key)?.digest &&
+            provisionalPath
+        ) {
+            context.replacedLocalKeys.add(provisional.key);
+            return {
                 nodeKey: entry.nodeKey,
                 path: entry.path,
-                localPath,
-                status: localPath && localPath.toLowerCase() !== entry.path.toLowerCase() ? "moved" : "modified",
+                localPath: provisionalPath,
+                status:
+                    context.snapshot.visibleFiles.get(provisionalPath) === entry.contentDigest ? "added" : "modified",
                 entry,
-                localNode,
-                localChange,
+                localNode: provisional,
+                localChange: provisionalChange,
+                replacedNodeKey: provisional.key,
+                converged: true,
             };
-            if (localChange) {
-                const localDigest = snapshot.visibleFiles.get(localChange.path);
-                operation.converged =
-                    entry.kind === "file" &&
-                    localChange.path.toLowerCase() === entry.path.toLowerCase() &&
-                    localDigest === entry.contentDigest;
-                if (!operation.converged) {
-                    operation.conflict = `Local and remote changes conflict for node ${entry.nodeKey}.`;
-                }
+        }
+        const occupied = entry.kind === "file" && this.visibleAt(context.snapshot, entry.path);
+        return {
+            nodeKey: entry.nodeKey,
+            path: entry.path,
+            status: "added",
+            entry,
+            conflict: occupied ? `Remote file conflicts with an untracked local path: ${entry.path}` : undefined,
+        };
+    }
+
+    private changedRemoteOperation(
+        entry: WorkspaceManifestNode,
+        localNode: WorkspaceNodeMetadata,
+        localPath: string | undefined,
+        context: PullOperationContext
+    ): PullOperation {
+        const localChange = context.changeByKey.get(entry.nodeKey);
+        const operation: PullOperation = {
+            nodeKey: entry.nodeKey,
+            path: entry.path,
+            localPath,
+            status: localPath && localPath.toLowerCase() !== entry.path.toLowerCase() ? "moved" : "modified",
+            entry,
+            localNode,
+            localChange,
+        };
+        if (!localChange) {
+            return operation;
+        }
+        const localDigest = context.snapshot.visibleFiles.get(localChange.path);
+        operation.converged =
+            entry.kind === "file" &&
+            localChange.path.toLowerCase() === entry.path.toLowerCase() &&
+            localDigest === entry.contentDigest;
+        if (!operation.converged) {
+            operation.conflict = `Local and remote changes conflict for node ${entry.nodeKey}.`;
+        }
+        return operation;
+    }
+
+    private deletedOperations(
+        localNodes: WorkspaceNodeMetadata[],
+        remoteByKey: Map<string, WorkspaceManifestNode>,
+        context: PullOperationContext
+    ): PullOperation[] {
+        return localNodes.flatMap(node => {
+            if (remoteByKey.has(node.key) || context.replacedLocalKeys.has(node.key)) {
+                return [];
             }
-            operations.push(operation);
-        });
-        localNodes
-            .filter(node => !remoteByKey.has(node.key) && !replacedLocalKeys.has(node.key))
-            .forEach(node => {
-                const localPath = localPaths.get(node.key);
-                if (!localPath) {
-                    return;
-                }
-                const localChange = changeByKey.get(node.key);
-                operations.push({
+            const localPath = context.localPaths.get(node.key);
+            if (!localPath) {
+                return [];
+            }
+            const localChange = context.changeByKey.get(node.key);
+            return [
+                {
                     nodeKey: node.key,
                     path: localPath,
                     localPath,
@@ -277,9 +330,9 @@ export class WorkspacePullService {
                         localChange && localChange.status !== "deleted"
                             ? `Remote deletion conflicts with local changes for node ${node.key}.`
                             : undefined,
-                });
-            });
-        return operations;
+                },
+            ];
+        });
     }
 
     private select(root: string, paths: string[], operations: PullOperation[]): PullOperation[] {
@@ -324,7 +377,8 @@ export class WorkspacePullService {
         packageKey: string,
         operation: PullOperation,
         manifest: WorkspaceManifest,
-        state: WorkspaceState
+        state: WorkspaceState,
+        appliedFolderMoves: AppliedFolderMove[]
     ): Promise<void> {
         if (operation.status === "deleted") {
             this.applyDelete(root, operation);
@@ -335,10 +389,13 @@ export class WorkspacePullService {
         }
         const entry = operation.entry!;
         if (entry.kind === "folder") {
-            this.applyFolder(root, operation, entry);
+            const appliedMove = this.applyFolder(root, operation, entry);
+            if (appliedMove) {
+                appliedFolderMoves.push(appliedMove);
+            }
         }
         if (entry.kind === "file" && !operation.converged) {
-            await this.applyFile(root, packageKey, operation, entry);
+            await this.applyFile(root, packageKey, operation, entry, appliedFolderMoves);
         }
         if (operation.replacedNodeKey) {
             this.removeMetadata(root, operation.replacedNodeKey);
@@ -356,16 +413,23 @@ export class WorkspacePullService {
         root: string,
         packageKey: string,
         operation: PullOperation,
-        entry: WorkspaceManifestNode
+        entry: WorkspaceManifestNode,
+        appliedFolderMoves: AppliedFolderMove[]
     ): Promise<void> {
         const target = this.resolve(root, entry.path);
         const source = operation.localPath ? this.resolve(root, operation.localPath) : undefined;
         const moved = Boolean(source && source.toLowerCase() !== target.toLowerCase());
         if (moved && fs.existsSync(target)) {
-            if (!this.movedTargetMatches(source, target, entry)) {
+            if (this.movedTargetMatches(source, target, entry)) {
+                return;
+            }
+            if (
+                !fs.lstatSync(target).isFile() ||
+                !operation.localPath ||
+                !this.coveredByFolderMove(operation.localPath, entry.path, appliedFolderMoves)
+            ) {
                 throw new GracefulError(`Remote file move conflicts with an existing local path: ${entry.path}`);
             }
-            return;
         }
         fs.mkdirSync(path.dirname(target), { recursive: true });
         if (this.localFileDigest(source) === entry.contentDigest) {
@@ -397,7 +461,28 @@ export class WorkspacePullService {
         return source && fs.existsSync(source) && fs.lstatSync(source).isFile() ? this.digest(source) : undefined;
     }
 
-    private applyFolder(root: string, operation: PullOperation, entry: WorkspaceManifestNode): void {
+    private coveredByFolderMove(
+        sourcePath: string,
+        targetPath: string,
+        appliedFolderMoves: AppliedFolderMove[]
+    ): boolean {
+        const source = sourcePath.toLowerCase();
+        const target = targetPath.toLowerCase();
+        return appliedFolderMoves.some(move => {
+            const sourceRoot = move.sourcePath.toLowerCase();
+            if (!source.startsWith(`${sourceRoot}/`)) {
+                return false;
+            }
+            const relative = source.slice(sourceRoot.length);
+            return target === `${move.targetPath.toLowerCase()}${relative}`;
+        });
+    }
+
+    private applyFolder(
+        root: string,
+        operation: PullOperation,
+        entry: WorkspaceManifestNode
+    ): AppliedFolderMove | undefined {
         const target = this.resolve(root, entry.path);
         const source = operation.localPath ? this.resolve(root, operation.localPath) : undefined;
         const moved = Boolean(source && source.toLowerCase() !== target.toLowerCase());
@@ -406,23 +491,25 @@ export class WorkspacePullService {
                 throw new GracefulError(`Remote folder conflicts with an existing local path: ${entry.path}`);
             }
             fs.mkdirSync(target, { recursive: true });
-            return;
+            return undefined;
         }
+        const appliedMove = { sourcePath: operation.localPath!, targetPath: entry.path };
         if (fs.existsSync(target)) {
             if (source && !fs.existsSync(source) && fs.lstatSync(target).isDirectory()) {
-                return;
+                return appliedMove;
             }
             throw new GracefulError(`Remote folder move conflicts with an existing local path: ${entry.path}`);
         }
         if (!source || !fs.existsSync(source)) {
             fs.mkdirSync(target, { recursive: true });
-            return;
+            return appliedMove;
         }
         if (!fs.lstatSync(source).isDirectory()) {
             throw new GracefulError(`Remote folder move source is not a directory: ${operation.localPath}`);
         }
         fs.mkdirSync(path.dirname(target), { recursive: true });
         fs.renameSync(source, target);
+        return appliedMove;
     }
 
     private applyDelete(root: string, operation: PullOperation): void {

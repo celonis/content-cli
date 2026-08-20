@@ -60,20 +60,32 @@ function classifyExpectedFile(
         return;
     }
     if (currentPath) {
-        consumedPaths.add(currentPath);
-        const changed = visibleFiles.get(currentPath) !== file.digest;
-        if (currentPath !== file.path) {
-            changes.push({
-                nodeKey: file.nodeKey,
-                path: currentPath,
-                status: sameLeaf(file.path, currentPath) ? (changed ? "moved, modified" : "moved") : "unresolved",
-            });
-        } else if (changed) {
+        classifyCurrentFile(file, currentPath, visibleFiles, changes, consumedPaths);
+        return;
+    }
+    missing.push(file);
+}
+
+function classifyCurrentFile(
+    file: ExpectedWorkspaceFile,
+    currentPath: string,
+    visibleFiles: Map<string, string>,
+    changes: ClassifiedWorkspaceChange[],
+    consumedPaths: Set<string>
+): void {
+    consumedPaths.add(currentPath);
+    const changed = visibleFiles.get(currentPath) !== file.digest;
+    if (currentPath === file.path) {
+        if (changed) {
             changes.push({ nodeKey: file.nodeKey, path: currentPath, status: "modified" });
         }
         return;
     }
-    missing.push(file);
+    let status: ClassifiedWorkspaceChange["status"] = "unresolved";
+    if (sameLeaf(file.path, currentPath)) {
+        status = changed ? "moved, modified" : "moved";
+    }
+    changes.push({ nodeKey: file.nodeKey, path: currentPath, status });
 }
 
 function classifyNewFile(

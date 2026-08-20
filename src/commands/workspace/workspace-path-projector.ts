@@ -48,8 +48,7 @@ export function projectedLeafAfterMove(
     targetParentKey: string | undefined,
     packageKey?: string
 ): string {
-    const source = nodes.find(node => node.key === nodeKey);
-    if (!source) {
+    if (!nodes.some(node => node.key === nodeKey)) {
         throw new GracefulError(`Tracked node metadata is missing: ${nodeKey}.`);
     }
     const moved = nodes.map(node =>
@@ -123,7 +122,10 @@ function candidateSegment(node: WorkspaceNodeMetadata): string {
         segment === ".." ||
         segment.includes("/") ||
         segment.includes("\\") ||
-        [...segment].some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
+        [...segment].some(character => {
+            const codePoint = character.codePointAt(0)!;
+            return codePoint < 32 || codePoint === 127;
+        })
     ) {
         throw new GracefulError(`Invalid derived filesystem name for node ${node.key}.`);
     }

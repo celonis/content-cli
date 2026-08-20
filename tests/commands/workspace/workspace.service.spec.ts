@@ -190,6 +190,8 @@ function removeWorkspace(): void {
         "Deleted",
         "Old",
         "Selected",
+        "Source",
+        "Target",
         "Unselected",
         PACKAGE_KEY,
         "branch-workspace",
@@ -542,6 +544,26 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), "Deleted"))).toBe(false);
         expect(fs.statSync(path.join(process.cwd(), "New")).isDirectory()).toBe(true);
         expect(fs.statSync(path.join(process.cwd(), "Added")).isDirectory()).toBe(true);
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+    });
+
+    it("updates a file after its parent folder moves remotely", async () => {
+        const original = [{ nodeKey: "node-1", path: "Source/Shared/Guide.md", content: "original" }];
+        const remote = [{ nodeKey: "node-1", path: "Target/Shared/Guide.md", content: "remote" }];
+        writeWorkspace(original);
+        const sharedKey = `folder-${createHash("sha256").update("Source/Shared").digest("hex").slice(0, 12)}`;
+        const remoteManifest = JSON.parse(manifest(remote).toString("utf-8"));
+        const sharedFolder = remoteManifest.nodes.find(node => node.path === "Target/Shared");
+        sharedFolder.nodeKey = sharedKey;
+        sharedFolder.metadata.key = sharedKey;
+        remoteManifest.nodes.find(node => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
+        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("manifest") });
+        mockAxiosGet(fileUrl(remote[0].path), Buffer.from(remote[0].content), { etag: eTag(remote[0].content) });
+
+        await new WorkspaceService(testContext).pull();
+
+        expect(fs.existsSync(path.join(process.cwd(), "Source"))).toBe(false);
+        expect(fs.readFileSync(path.join(process.cwd(), remote[0].path), "utf-8")).toBe("remote");
         expect(new WorkspaceService(testContext).status()).toEqual([]);
     });
 
