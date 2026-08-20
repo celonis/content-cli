@@ -45,3 +45,23 @@ export interface WorkspaceSnapshot {
     visibleFiles: Map<string, string>;
     changes: ClassifiedWorkspaceChange[];
 }
+
+export interface WorkspacePushOptions {
+    full?: boolean;
+    overwrite?: boolean;
+}
+
+export interface WorkspacePushOutcome {
+    path: string;
+    status: WorkspaceChangeStatus;
+    nodeKey?: string;
+    success: boolean;
+    error?: string;
+}
+
+export interface NodeFileWriteResponse {
+    path: string;
+    nodeKey: string;
+    assetType: string;
+    eTag: string;
+}

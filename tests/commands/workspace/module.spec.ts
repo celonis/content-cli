@@ -15,7 +15,7 @@ describe("Workspace module", () => {
         expect(configurator.command).toHaveBeenCalledWith("clone <packageKey> [directory]");
         expect(configurator.command).toHaveBeenCalledWith("pull [directory]");
         expect(configurator.command).toHaveBeenCalledWith("status [directory]");
-        expect(configurator.command).toHaveBeenCalledWith("push [directory]");
+        expect(configurator.command).toHaveBeenCalledWith("push [paths...]");
         expect(configurator.command).toHaveBeenCalledWith("move <source> <target>");
         expect(configurator.beta).toHaveBeenCalledTimes(6);
         expect(configurator.action).toHaveBeenCalledTimes(5);
@@ -37,13 +37,13 @@ describe("Workspace module", () => {
         await execute("workspace", "clone", "package-key", "target");
         await execute("workspace", "pull", "target");
         await execute("workspace", "status", "target");
-        await execute("workspace", "push", "target", "--overwrite");
+        await execute("workspace", "push", "target", "other.md");
         await execute("workspace", "move", "old.md", "new.md", "--record");
 
         expect(clone).toHaveBeenCalledWith("package-key", "target");
         expect(pull).toHaveBeenCalledWith("target");
         expect(status).toHaveBeenCalledWith("target");
-        expect(push).toHaveBeenCalledWith("target", true);
+        expect(push).toHaveBeenCalledWith(["target", "other.md"], { full: false, overwrite: false });
         expect(move).toHaveBeenCalledWith("old.md", "new.md", true);
     });
 });

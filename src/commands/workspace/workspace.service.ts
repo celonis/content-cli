@@ -8,11 +8,13 @@ import { fileService } from "../../core/utils/file-service";
 import { GracefulError, logger } from "../../core/utils/logger";
 import { WorkspaceApi } from "./workspace-api";
 import { classifyWorkspaceChanges } from "./workspace-change-classifier";
+import { WorkspacePushService } from "./workspace-push.service";
 import {
     ExpectedWorkspaceFile,
     WorkspaceChange,
     WorkspaceNodeMetadata,
     WorkspacePackageIdentity,
+    WorkspacePushOptions,
     WorkspaceSnapshot,
     WorkspaceState,
 } from "./workspace.models";
@@ -89,7 +91,16 @@ export class WorkspaceService {
         if (localState && !localState.refreshRequired && this.snapshot(root).changes.length !== 0) {
             throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
         }
-        const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey);
+        const download = await this.api.download(packageKey);
+        if (localState?.refreshRequired) {
+            const moveHints = localState.moveHints;
+            this.refreshMetadata(root, download, packageKey);
+            const refreshed = this.state(root);
+            this.writeState(root, { ...refreshed, moveHints: { ...refreshed.moveHints, ...moveHints } });
+            logger.info(`Pulled ${packageKey}.`);
+            return;
+        }
+        const temporary = this.validatedArchive(download, packageKey);
         try {
             if (localState) {
                 this.replaceWorkspaceContents(root, temporary);
@@ -115,8 +126,69 @@ export class WorkspaceService {
         return changes;
     }
 
-    public async push(directory?: string, overwrite: boolean = false): Promise<void> {
-        const root = this.root(directory);
+    public async push(paths: string[] = [], options: WorkspacePushOptions = {}): Promise<void> {
+        if (options.full) {
+            if (paths.length > 0) {
+                throw new GracefulError("Workspace paths cannot be combined with --full.");
+            }
+            await this.pushFull(Boolean(options.overwrite));
+            return;
+        }
+        if (options.overwrite) {
+            throw new GracefulError("--overwrite requires --full.");
+        }
+        const root = this.root();
+        const snapshot = this.snapshot(root);
+        const outcomes = await new WorkspacePushService(this.api).push(root, snapshot, paths);
+        outcomes.forEach(outcome =>
+            logger.info(
+                `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
+                    (outcome.error ? ` (${outcome.error})` : "")
+            )
+        );
+        const succeeded = outcomes.filter(outcome => outcome.success);
+        const failed = outcomes.filter(outcome => !outcome.success);
+        if (succeeded.length === 0) {
+            if (failed.length > 0) {
+                throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
+            }
+            logger.info("Workspace is clean.");
+            return;
+        }
+        const retainedHints = Object.fromEntries(
+            failed
+                .filter(
+                    outcome => outcome.nodeKey && (outcome.status === "moved" || outcome.status === "moved, modified")
+                )
+                .map(outcome => [outcome.nodeKey!, outcome.path])
+        );
+        try {
+            this.refreshMetadata(root, await this.api.download(snapshot.packageKey), snapshot.packageKey);
+            const refreshed = this.state(root);
+            this.writeState(root, {
+                ...refreshed,
+                moveHints: { ...refreshed.moveHints, ...retainedHints },
+            });
+        } catch (error) {
+            this.writeState(root, {
+                ...snapshot.state,
+                moveHints: { ...snapshot.state.moveHints, ...retainedHints },
+                refreshRequired: true,
+            });
+            const failure = new GracefulError(
+                "Workspace changes reached the server, but local synchronization state could not be refreshed. Run workspace pull before retrying."
+            );
+            failure.cause = error;
+            throw failure;
+        }
+        if (failed.length > 0) {
+            throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
+        }
+        logger.info(`Pushed ${snapshot.packageKey}.`);
+    }
+
+    private async pushFull(overwrite: boolean): Promise<void> {
+        const root = this.root();
         const snapshot = this.snapshot(root);
         if (snapshot.changes.some(change => change.status === "unresolved")) {
             throw new GracefulError("Workspace has unresolved file identities. Record the intended moves before push.");
@@ -135,15 +207,17 @@ export class WorkspaceService {
             form.append("packageFile", fs.createReadStream(zipPath), { filename: "workspace.zip" });
             const moves = Object.fromEntries(
                 snapshot.changes
-                    .filter(change =>
-                        Boolean(change.nodeKey) && (change.status === "moved" || change.status === "moved, modified")
+                    .filter(
+                        change =>
+                            Boolean(change.nodeKey) &&
+                            (change.status === "moved" || change.status === "moved, modified")
                     )
                     .map(change => [change.nodeKey!, change.path])
             );
             if (Object.keys(moves).length > 0) {
                 form.append("moveMappings", JSON.stringify({ moves }), { contentType: "application/json" });
             }
-            await this.api.push(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
+            await this.api.pushArchive(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
             this.writeState(root, { ...snapshot.state, refreshRequired: true });
             try {
                 const refreshedArchive = await this.api.download(snapshot.packageKey);
@@ -281,7 +355,9 @@ export class WorkspaceService {
             .filter(entry => entry.isFile() && entry.name.endsWith(".json"))
             .sort((left, right) => left.name.localeCompare(right.name))
             .map(entry => {
-                const node = JSON.parse(fs.readFileSync(path.join(directory, entry.name), "utf-8")) as WorkspaceNodeMetadata;
+                const node = JSON.parse(
+                    fs.readFileSync(path.join(directory, entry.name), "utf-8")
+                ) as WorkspaceNodeMetadata;
                 const fields = node as unknown as Record<string, unknown>;
                 if (
                     !node.key ||
@@ -363,21 +439,23 @@ export class WorkspaceService {
         return classified ? snapshot.expectedFiles.find(file => file.nodeKey === classified.nodeKey) : undefined;
     }
 
-    private refreshMetadata(
-        root: string,
-        download: { archive: Buffer; eTag: string },
-        packageKey: string
-    ): void {
+    private refreshMetadata(root: string, download: { archive: Buffer; eTag: string }, packageKey: string): void {
         const extracted = this.validatedArchive(download, packageKey);
-        const refreshRoot = fs.mkdtempSync(
-            path.join(path.dirname(root), `.${path.basename(root)}-pacman-refresh-`)
-        );
+        try {
+            this.replaceMetadataDirectory(root, path.join(extracted, ".pacman"));
+        } finally {
+            fs.rmSync(extracted, { recursive: true, force: true });
+        }
+    }
+
+    private replaceMetadataDirectory(root: string, sourceMetadata: string): void {
+        const refreshRoot = fs.mkdtempSync(path.join(path.dirname(root), `.${path.basename(root)}-pacman-refresh-`));
         const stagedMetadata = path.join(refreshRoot, "metadata");
         const previousMetadata = path.join(refreshRoot, "previous");
         const metadata = path.join(root, ".pacman");
         let preserveBackup = false;
         try {
-            fs.cpSync(path.join(extracted, ".pacman"), stagedMetadata, { recursive: true });
+            fs.cpSync(sourceMetadata, stagedMetadata, { recursive: true });
             fs.renameSync(metadata, previousMetadata);
             try {
                 fs.renameSync(stagedMetadata, metadata);
@@ -395,7 +473,6 @@ export class WorkspaceService {
                 throw error;
             }
         } finally {
-            fs.rmSync(extracted, { recursive: true, force: true });
             if (!preserveBackup) {
                 fs.rmSync(refreshRoot, { recursive: true, force: true });
             }
@@ -465,6 +542,7 @@ export class WorkspaceService {
         const reconciledState = { ...remoteState, moveHints };
         const expectedFiles = this.expectedFiles(root, reconciledState, packageKey);
         classifyWorkspaceChanges(expectedFiles, this.visibleFiles(root), moveHints);
+        this.replaceMetadataDirectory(root, path.join(remoteRoot, ".pacman"));
         this.writeState(root, reconciledState);
     }
 
@@ -647,7 +725,9 @@ export class WorkspaceService {
     }
 
     private packageIdentity(root: string): WorkspacePackageIdentity {
-        const parsed = JSON.parse(fs.readFileSync(this.packageIdentityPath(root), "utf-8")) as Partial<WorkspacePackageIdentity>;
+        const parsed = JSON.parse(
+            fs.readFileSync(this.packageIdentityPath(root), "utf-8")
+        ) as Partial<WorkspacePackageIdentity>;
         if (parsed.schemaVersion !== 1 || !parsed.packageKey || Object.keys(parsed).length !== 2) {
             throw new GracefulError("Unsupported Pacman package metadata.");
         }

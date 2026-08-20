@@ -14,10 +14,11 @@ class Module extends IModule {
         workspace.command("status [directory]").beta().description("Show local changes.").action(this.status);
 
         workspace
-            .command("push [directory]")
+            .command("push [paths...]")
             .beta()
             .description("Push local changes.")
-            .option("--overwrite", "Replace missing remote files", false)
+            .option("--full", "Push the full workspace archive", false)
+            .option("--overwrite", "Replace missing remote files during a full push", false)
             .action(this.push);
 
         workspace
@@ -41,7 +42,10 @@ class Module extends IModule {
     }
 
     private async push(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new WorkspaceService(context).push(command.args[0], options.overwrite);
+        await new WorkspaceService(context).push(command.args, {
+            full: options.full,
+            overwrite: options.overwrite,
+        });
     }
 
     private async move(context: Context, command: Command, options: OptionValues): Promise<void> {

@@ -157,10 +157,49 @@ export class HttpClient {
         })
     }
 
-    public async delete(url: string): Promise<any> {
+    public async putFile(
+        url: string,
+        body: Buffer,
+        contentType: string,
+        parameters?: {},
+        additionalHeaders: RawAxiosRequestHeaders = {}
+    ): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.axios.put(this.resolveUrl(url), body, {
+                headers: { ...this.buildHeaders(contentType), ...additionalHeaders },
+                params: parameters,
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async patch(
+        url: string,
+        body: object,
+        additionalHeaders: RawAxiosRequestHeaders = {}
+    ): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.axios.patch(this.resolveUrl(url), JSON.stringify(body), {
+                headers: { ...this.buildHeaders("application/json;charset=utf-8"), ...additionalHeaders },
+            }).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            });
+        }).catch(e => {
+            throw new FatalError(e);
+        });
+    }
+
+    public async delete(url: string, additionalHeaders: RawAxiosRequestHeaders = {}): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.axios.delete(this.resolveUrl(url), {
-                headers: this.buildHeaders("application/json;charset=utf-8")
+                headers: { ...this.buildHeaders("application/json;charset=utf-8"), ...additionalHeaders }
             }).then(response => {
                 this.handleResponse(response, resolve, reject);
             }).catch(err => {
