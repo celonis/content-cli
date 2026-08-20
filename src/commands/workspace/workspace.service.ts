@@ -165,28 +165,7 @@ export class WorkspaceService {
         const remote = await this.api.manifest(packageKey);
         const pullService = new WorkspacePullService(this.api);
         if (!localState) {
-            if (remote.manifest.nodes.length === 0) {
-                fs.mkdirSync(path.join(root, ".package", "nodes"), { recursive: true });
-            }
-            const initial: WorkspaceState = {
-                schemaVersion: 1,
-                activePackageKey: packageKey,
-                activeBranch: this.branchFromPackageKey(projectKey, packageKey),
-                baselineDigests: {},
-                moveHints: {},
-            };
-            if (restoredObservation) {
-                initial.git = restoredObservation;
-            }
-            this.writeState(
-                root,
-                this.withRemotePathHints(
-                    root,
-                    pullService.hydrateBaseline(initial, packageKey, initial.activeBranch, remote.manifest),
-                    remote.manifest
-                )
-            );
-            logger.info(`Pulled ${packageKey}.`);
+            this.hydrateInitialPull(root, projectKey, packageKey, restoredObservation, remote.manifest, pullService);
             return;
         }
         const result = await pullService.pull(
@@ -211,6 +190,38 @@ export class WorkspaceService {
         if (failed.length > 0) {
             throw new GracefulError(`Workspace pull failed for ${failed.length} node(s).`);
         }
+        logger.info(`Pulled ${packageKey}.`);
+    }
+
+    private hydrateInitialPull(
+        root: string,
+        projectKey: string,
+        packageKey: string,
+        restoredObservation: WorkspaceGitObservation | undefined,
+        manifest: WorkspaceManifest,
+        pullService: WorkspacePullService
+    ): void {
+        if (manifest.nodes.length === 0) {
+            fs.mkdirSync(path.join(root, ".package", "nodes"), { recursive: true });
+        }
+        const initial: WorkspaceState = {
+            schemaVersion: 1,
+            activePackageKey: packageKey,
+            activeBranch: this.branchFromPackageKey(projectKey, packageKey),
+            baselineDigests: {},
+            moveHints: {},
+        };
+        if (restoredObservation) {
+            initial.git = restoredObservation;
+        }
+        this.writeState(
+            root,
+            this.withRemotePathHints(
+                root,
+                pullService.hydrateBaseline(initial, packageKey, initial.activeBranch, manifest),
+                manifest
+            )
+        );
         logger.info(`Pulled ${packageKey}.`);
     }
 
