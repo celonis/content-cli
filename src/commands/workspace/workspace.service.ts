@@ -82,7 +82,7 @@ export class WorkspaceService {
         let staging: string | undefined;
         try {
             fs.mkdirSync(parent, { recursive: true });
-            staging = fs.mkdtempSync(path.join(parent, ".pacman-clone-"));
+            staging = fs.mkdtempSync(path.join(parent, ".package-clone-"));
             fs.rmSync(staging, { recursive: true });
             fs.cpSync(temporary, staging, { recursive: true, force: false, errorOnExist: true });
             if (fs.existsSync(target)) {
@@ -326,8 +326,8 @@ export class WorkspaceService {
             return (
                 folded !== ".git" &&
                 !folded.startsWith(".git/") &&
-                folded !== ".pacman/local" &&
-                !folded.startsWith(".pacman/local/")
+                folded !== ".package/local" &&
+                !folded.startsWith(".package/local/")
             );
         });
         try {
@@ -479,9 +479,9 @@ export class WorkspaceService {
     }
 
     private nodes(root: string): WorkspaceNodeMetadata[] {
-        const directory = path.join(root, ".pacman", "nodes");
+        const directory = path.join(root, ".package", "nodes");
         if (!fs.existsSync(directory)) {
-            throw new GracefulError("Workspace does not contain .pacman/nodes metadata.");
+            throw new GracefulError("Workspace does not contain .package/nodes metadata.");
         }
         return fs
             .readdirSync(directory, { withFileTypes: true })
@@ -515,7 +515,7 @@ export class WorkspaceService {
                 .forEach(entry => {
                     if (
                         !relativeDirectory &&
-                        (entry.name.toLowerCase() === ".pacman" || entry.name.toLowerCase() === ".git")
+                        (entry.name.toLowerCase() === ".package" || entry.name.toLowerCase() === ".git")
                     ) {
                         return;
                     }
@@ -605,7 +605,7 @@ export class WorkspaceService {
     ): void {
         const extracted = this.validatedArchive(download, packageKey, projectKey, observation);
         try {
-            this.replaceMetadataDirectory(root, path.join(extracted, ".pacman"));
+            this.replaceMetadataDirectory(root, path.join(extracted, ".package"));
         } finally {
             fs.rmSync(extracted, { recursive: true, force: true });
         }
@@ -615,7 +615,7 @@ export class WorkspaceService {
         const refreshRoot = fs.mkdtempSync(path.join(path.dirname(root), `.${path.basename(root)}-pacman-refresh-`));
         const stagedMetadata = path.join(refreshRoot, "metadata");
         const previousMetadata = path.join(refreshRoot, "previous");
-        const metadata = path.join(root, ".pacman");
+        const metadata = path.join(root, ".package");
         let preserveBackup = false;
         try {
             fs.cpSync(sourceMetadata, stagedMetadata, { recursive: true });
@@ -649,13 +649,13 @@ export class WorkspaceService {
         observation?: WorkspaceGitObservation
     ): string {
         const zip = new AdmZip(download.archive);
-        if (!zip.getEntry(".pacman/package.json") || !zip.getEntry(".pacman/.gitignore")) {
+        if (!zip.getEntry(".package/package.json") || !zip.getEntry(".package/.gitignore")) {
             throw new GracefulError("Archive does not contain Pacman package metadata.");
         }
         if (
             zip.getEntries().some(entry => {
                 const folded = entry.entryName.toLowerCase();
-                return folded === ".pacman/local" || folded.startsWith(".pacman/local/");
+                return folded === ".package/local" || folded.startsWith(".package/local/");
             })
         ) {
             throw new GracefulError("Archive contains local Pacman workspace state.");
@@ -774,8 +774,8 @@ export class WorkspaceService {
             throw new GracefulError("Cannot pull into the filesystem root.");
         }
         const parent = path.dirname(root);
-        const backup = fs.mkdtempSync(path.join(parent, ".pacman-pull-backup-"));
-        const staging = fs.mkdtempSync(path.join(parent, ".pacman-pull-"));
+        const backup = fs.mkdtempSync(path.join(parent, ".package-pull-backup-"));
+        const staging = fs.mkdtempSync(path.join(parent, ".package-pull-"));
         let preserveBackup = false;
         fs.rmSync(staging, { recursive: true });
         try {
@@ -916,8 +916,8 @@ export class WorkspaceService {
             path.isAbsolute(value) ||
             normalized === "." ||
             normalized === ".." ||
-            folded === ".pacman" ||
-            folded.startsWith(".pacman/") ||
+            folded === ".package" ||
+            folded.startsWith(".package/") ||
             folded === ".git" ||
             folded.startsWith(".git/") ||
             normalized.startsWith("../") ||
@@ -977,7 +977,7 @@ export class WorkspaceService {
     }
 
     private statePath(root: string): string {
-        return path.join(root, ".pacman", "local", "state.json");
+        return path.join(root, ".package", "local", "state.json");
     }
 
     private async createWorkspaceBranch(
@@ -1206,14 +1206,14 @@ export class WorkspaceService {
     }
 
     private packageIdentityPath(root: string): string {
-        return path.join(root, ".pacman", "package.json");
+        return path.join(root, ".package", "package.json");
     }
 
     private validateGitignore(root: string): void {
-        const gitignore = path.join(root, ".pacman", ".gitignore");
+        const gitignore = path.join(root, ".package", ".gitignore");
         const content = fs.existsSync(gitignore) ? fs.readFileSync(gitignore, "utf-8") : undefined;
         if (content !== "local/\n" && content !== "local/\r\n") {
-            throw new GracefulError("Workspace .pacman/.gitignore must contain local/.");
+            throw new GracefulError("Workspace .package/.gitignore must contain local/.");
         }
     }
 

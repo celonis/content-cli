@@ -101,11 +101,11 @@ function state(
 
 function archive(files: TestFile[]): Buffer {
     const zip = new AdmZip();
-    zip.addFile(".pacman/.gitignore", Buffer.from("local/\n"));
-    zip.addFile(".pacman/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })));
-    zip.addFile(".pacman/nodes/", Buffer.alloc(0));
+    zip.addFile(".package/.gitignore", Buffer.from("local/\n"));
+    zip.addFile(".package/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })));
+    zip.addFile(".package/nodes/", Buffer.alloc(0));
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
-        zip.addFile(`.pacman/nodes/${nodeKey}.json`, Buffer.from(JSON.stringify(node)));
+        zip.addFile(`.package/nodes/${nodeKey}.json`, Buffer.from(JSON.stringify(node)));
     });
     files.forEach(file => zip.addFile(file.path, Buffer.from(file.content)));
     return zip.toBuffer();
@@ -160,16 +160,16 @@ function mockManifest(files: TestFile[], packageKey: string = PACKAGE_KEY): void
 function writeWorkspace(
     files: TestFile[] = [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]
 ): void {
-    fs.mkdirSync(path.join(process.cwd(), ".pacman", "nodes"), { recursive: true });
-    fs.mkdirSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
-    fs.writeFileSync(path.join(process.cwd(), ".pacman", ".gitignore"), "local/\n");
+    fs.mkdirSync(path.join(process.cwd(), ".package", "nodes"), { recursive: true });
+    fs.mkdirSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
+    fs.writeFileSync(path.join(process.cwd(), ".package", ".gitignore"), "local/\n");
     fs.writeFileSync(
-        path.join(process.cwd(), ".pacman", "package.json"),
+        path.join(process.cwd(), ".package", "package.json"),
         JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })
     );
-    fs.writeFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), JSON.stringify(state(files)));
+    fs.writeFileSync(path.join(process.cwd(), ".package", "local", "state.json"), JSON.stringify(state(files)));
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
-        fs.writeFileSync(path.join(process.cwd(), ".pacman", "nodes", `${nodeKey}.json`), JSON.stringify(node));
+        fs.writeFileSync(path.join(process.cwd(), ".package", "nodes", `${nodeKey}.json`), JSON.stringify(node));
     });
     files.forEach(file => {
         fs.mkdirSync(path.dirname(path.join(process.cwd(), file.path)), { recursive: true });
@@ -180,7 +180,7 @@ function writeWorkspace(
 function removeWorkspace(): void {
     [
         ".git",
-        ".pacman",
+        ".package",
         "Guides",
         "Pages",
         "Other",
@@ -225,12 +225,12 @@ describe("Workspace service", () => {
             expect(fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, "Guides", "Guide.md"), "utf-8")).toBe(
                 "original"
             );
-            expect(fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".pacman", ".gitignore"), "utf-8")).toBe(
+            expect(fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".package", ".gitignore"), "utf-8")).toBe(
                 "local/\n"
             );
             expect(
                 JSON.parse(
-                    fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".pacman", "local", "state.json"), "utf-8")
+                    fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".package", "local", "state.json"), "utf-8")
                 )
             ).toEqual({
                 schemaVersion: 1,
@@ -266,11 +266,11 @@ describe("Workspace service", () => {
         await new WorkspaceService(testContext).clone(PACKAGE_KEY, "branch-workspace", { branch: BRANCH });
 
         const root = path.join(process.cwd(), "branch-workspace");
-        expect(JSON.parse(fs.readFileSync(path.join(root, ".pacman", "package.json"), "utf-8"))).toEqual({
+        expect(JSON.parse(fs.readFileSync(path.join(root, ".package", "package.json"), "utf-8"))).toEqual({
             schemaVersion: 1,
             projectKey: PACKAGE_KEY,
         });
-        expect(JSON.parse(fs.readFileSync(path.join(root, ".pacman", "local", "state.json"), "utf-8"))).toMatchObject({
+        expect(JSON.parse(fs.readFileSync(path.join(root, ".package", "local", "state.json"), "utf-8"))).toMatchObject({
             activePackageKey: BRANCH_PACKAGE_KEY,
             activeBranch: BRANCH,
         });
@@ -289,7 +289,7 @@ describe("Workspace service", () => {
 
         expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("branch");
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({
             activePackageKey: BRANCH_PACKAGE_KEY,
             activeBranch: BRANCH,
@@ -340,7 +340,7 @@ describe("Workspace service", () => {
 
     it("rehydrates a mapped Pacman baseline after an external Git branch switch", async () => {
         writeWorkspace();
-        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(
             statePath,
             JSON.stringify({
@@ -369,7 +369,7 @@ describe("Workspace service", () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), "Pages"));
         fs.renameSync(path.join(process.cwd(), "Guides/Guide.md"), path.join(process.cwd(), "Pages/Guide.md"));
-        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(
             statePath,
             JSON.stringify({
@@ -396,7 +396,7 @@ describe("Workspace service", () => {
 
     it("continues an incremental pull after Git advances on the mapped branch", async () => {
         writeWorkspace();
-        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(
             statePath,
             JSON.stringify({
@@ -417,7 +417,7 @@ describe("Workspace service", () => {
 
     it("blocks pushes from detached or unmapped switched Git branches", async () => {
         writeWorkspace();
-        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(
             statePath,
             JSON.stringify({
@@ -457,13 +457,13 @@ describe("Workspace service", () => {
         expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("remote");
         expect(new WorkspaceService(testContext).status()).toEqual([]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({
             baselineDigests: { "node-1": digest("remote") },
             moveHints: {},
         });
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).not.toHaveProperty("serverRevision");
     });
 
@@ -570,7 +570,7 @@ describe("Workspace service", () => {
     it("pulls a workspace whose root metadata still names the concrete Package parent", async () => {
         const original = [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }];
         writeWorkspace(original);
-        const folderMetadataPath = path.join(process.cwd(), ".pacman", "nodes", "folder-1.json");
+        const folderMetadataPath = path.join(process.cwd(), ".package", "nodes", "folder-1.json");
         const folderMetadata = JSON.parse(fs.readFileSync(folderMetadataPath, "utf-8"));
         fs.writeFileSync(folderMetadataPath, JSON.stringify({ ...folderMetadata, parentNodeKey: PACKAGE_KEY }));
         mockManifest(original);
@@ -592,7 +592,7 @@ describe("Workspace service", () => {
         await new WorkspaceService(testContext).pull();
 
         expect(fs.existsSync(path.join(process.cwd(), "Deleted"))).toBe(false);
-        expect(fs.readdirSync(path.join(process.cwd(), ".pacman", "nodes"))).toEqual([]);
+        expect(fs.readdirSync(path.join(process.cwd(), ".package", "nodes"))).toEqual([]);
         expect(new WorkspaceService(testContext).status()).toEqual([]);
     });
 
@@ -614,7 +614,7 @@ describe("Workspace service", () => {
 
         expect(fs.readFileSync(path.join(process.cwd(), original[0].path), "utf-8")).toBe("one local");
         expect(fs.readFileSync(path.join(process.cwd(), original[1].path), "utf-8")).toBe("two remote");
-        const localState = JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"));
+        const localState = JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"));
         expect(localState.baselineDigests).toEqual({
             "node-1": digest("one"),
             "node-2": digest("two remote"),
@@ -633,7 +633,7 @@ describe("Workspace service", () => {
 
     it("hydrates local state after an external Git restore without overwriting files", async () => {
         writeWorkspace();
-        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
+        fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git change");
         mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]);
 
@@ -642,13 +642,13 @@ describe("Workspace service", () => {
         expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("git change");
         expect(new WorkspaceService(testContext).status()).toEqual([{ path: "Guides/Guide.md", status: "modified" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({ baselineDigests: { "node-1": digest("remote") } });
     });
 
     it("restores the mapped Pacman branch after an external Git restore", async () => {
         writeWorkspace();
-        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
+        fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git branch content");
         const observation = { branch: "git-feature", head: "b".repeat(40) };
         const git = mockGit(observation, BRANCH);
@@ -658,7 +658,7 @@ describe("Workspace service", () => {
 
         expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("git branch content");
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({
             activePackageKey: BRANCH_PACKAGE_KEY,
             activeBranch: BRANCH,
@@ -668,8 +668,8 @@ describe("Workspace service", () => {
 
     it("hydrates a Git-restored workspace with CRLF metadata ignore rules", async () => {
         writeWorkspace();
-        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
-        fs.writeFileSync(path.join(process.cwd(), ".pacman", ".gitignore"), "local/\r\n");
+        fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
+        fs.writeFileSync(path.join(process.cwd(), ".package", ".gitignore"), "local/\r\n");
         mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
 
         const service = new WorkspaceService(testContext);
@@ -680,7 +680,7 @@ describe("Workspace service", () => {
 
     it("keeps Git-restored path drift as a move for the next push", async () => {
         writeWorkspace([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
-        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
+        fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
         mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
         const service = new WorkspaceService(testContext);
 
@@ -688,7 +688,7 @@ describe("Workspace service", () => {
 
         expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({
             moveHints: {
                 "node-1": { sourcePath: "Guides/Guide.md", targetPath: "Pages/Guide.md" },
@@ -757,7 +757,7 @@ describe("Workspace service", () => {
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
             const sourceParent = path.basename(path.dirname(source.toString()));
-            if (sourceParent.startsWith(".pacman-pull-") && !sourceParent.startsWith(".pacman-pull-backup-")) {
+            if (sourceParent.startsWith(".package-pull-") && !sourceParent.startsWith(".package-pull-backup-")) {
                 throw new Error("apply failed");
             }
             originalRename(source, target);
@@ -780,7 +780,7 @@ describe("Workspace service", () => {
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
             const sourceParent = path.basename(path.dirname(source.toString()));
-            if (sourceParent.startsWith(".pacman-pull-")) {
+            if (sourceParent.startsWith(".package-pull-")) {
                 throw new Error("rename failed");
             }
             originalRename(source, target);
@@ -813,7 +813,7 @@ describe("Workspace service", () => {
 
         expect(new WorkspaceService(testContext).status()).toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
         const workspaceState = JSON.parse(
-            fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8")
+            fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8")
         );
         expect(workspaceState).not.toHaveProperty("files");
         expect(workspaceState).not.toHaveProperty("basePath");
@@ -834,7 +834,7 @@ describe("Workspace service", () => {
 
         expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved, modified" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({
             moveHints: { "node-1": "Pages/Guide.md" },
         });
@@ -850,7 +850,7 @@ describe("Workspace service", () => {
 
         expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({ moveHints: { "node-1": "Pages/Guide.md" } });
     });
 
@@ -923,7 +923,7 @@ describe("Workspace service", () => {
 
         expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "moved, modified" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({
             moveHints: { "node-1": "Pages/Guide.md" },
         });
@@ -977,7 +977,7 @@ describe("Workspace service", () => {
 
     it("rejects circular node metadata", () => {
         writeWorkspace();
-        const folderPath = path.join(process.cwd(), ".pacman", "nodes", "folder-1.json");
+        const folderPath = path.join(process.cwd(), ".package", "nodes", "folder-1.json");
         const folder = JSON.parse(fs.readFileSync(folderPath, "utf-8"));
         folder.parentNodeKey = "folder-1";
         fs.writeFileSync(folderPath, JSON.stringify(folder));
@@ -987,7 +987,7 @@ describe("Workspace service", () => {
 
     it("rejects volatile fields in stable node metadata", () => {
         writeWorkspace();
-        const nodePath = path.join(process.cwd(), ".pacman", "nodes", "node-1.json");
+        const nodePath = path.join(process.cwd(), ".package", "nodes", "node-1.json");
         const node = JSON.parse(fs.readFileSync(nodePath, "utf-8"));
         node.changeDate = "2026-08-19T12:00:00Z";
         fs.writeFileSync(nodePath, JSON.stringify(node));
@@ -1000,7 +1000,7 @@ describe("Workspace service", () => {
             { nodeKey: "node-1", path: "Guides/One.md", content: "one" },
             { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
         ]);
-        const secondPath = path.join(process.cwd(), ".pacman", "nodes", "node-2.json");
+        const secondPath = path.join(process.cwd(), ".package", "nodes", "node-2.json");
         const second = JSON.parse(fs.readFileSync(secondPath, "utf-8"));
         second.name = "One";
         fs.writeFileSync(secondPath, JSON.stringify(second));
@@ -1014,7 +1014,7 @@ describe("Workspace service", () => {
 
     it("rejects legacy filesystem names in stable Node metadata", () => {
         writeWorkspace();
-        const nodePath = path.join(process.cwd(), ".pacman", "nodes", "node-1.json");
+        const nodePath = path.join(process.cwd(), ".package", "nodes", "node-1.json");
         const node = JSON.parse(fs.readFileSync(nodePath, "utf-8"));
         node.additionalFields = { filesystemName: "Renamed.md" };
         fs.writeFileSync(nodePath, JSON.stringify(node));
@@ -1095,7 +1095,7 @@ describe("Workspace service", () => {
 
     it("rejects downloaded archives containing local workspace state", async () => {
         const zip = new AdmZip(archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]));
-        zip.addFile(".pacman/local/state.json", Buffer.from("{}"));
+        zip.addFile(".package/local/state.json", Buffer.from("{}"));
         mockAxiosGet(ARCHIVE_URL, zip.toBuffer(), { etag: eTag("revision-1") });
 
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
@@ -1137,7 +1137,7 @@ describe("Workspace service", () => {
         expect(mockedAxiosInstance.delete).not.toHaveBeenCalled();
         expect(new WorkspaceService(testContext).status()).toEqual([]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"))
         ).not.toHaveProperty("serverRevision");
     });
 
@@ -1211,7 +1211,7 @@ describe("Workspace service", () => {
 
         expect(service.status()).toEqual([{ path: "Pages/Two.md", status: "moved" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"))
         ).toMatchObject({ moveHints: { "node-2": "Pages/Two.md" } });
     });
 
@@ -1248,7 +1248,7 @@ describe("Workspace service", () => {
         const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
         const remote = { ...local, nodeKey: "server-node" };
         writeWorkspace([local]);
-        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(statePath, JSON.stringify({ ...state([local]), baselineDigests: {} }));
         mockAxiosPut(fileUrl(local.path), {
             path: local.path,
@@ -1266,15 +1266,15 @@ describe("Workspace service", () => {
             expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": "*" }) })
         );
         expect(new WorkspaceService(testContext).status()).toEqual([]);
-        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/local-node.json"))).toBe(false);
-        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/server-node.json"))).toBe(true);
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/local-node.json"))).toBe(false);
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
     });
 
     it("recovers a server-assigned node key after post-create refresh fails", async () => {
         const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
         const remote = { ...local, nodeKey: "server-node" };
         writeWorkspace([local]);
-        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(statePath, JSON.stringify({ ...state([local]), baselineDigests: {} }));
         mockAxiosPut(fileUrl(local.path), {
             path: local.path,
@@ -1292,8 +1292,8 @@ describe("Workspace service", () => {
         await service.pull();
 
         expect(fs.readFileSync(path.join(process.cwd(), local.path), "utf-8")).toBe("newer local edit");
-        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/local-node.json"))).toBe(false);
-        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/server-node.json"))).toBe(true);
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/local-node.json"))).toBe(false);
+        expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
         expect(service.status()).toEqual([{ path: local.path, status: "modified" }]);
         expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
             baselineDigests: { "server-node": digest("new") },
@@ -1310,7 +1310,7 @@ describe("Workspace service", () => {
 
         expect(new WorkspaceService(testContext).status()).toEqual([{ path: "Guides/Guide.md", status: "modified" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"))
         ).toMatchObject({ baselineDigests: { "node-1": digest("original") } });
     });
 
@@ -1336,7 +1336,7 @@ describe("Workspace service", () => {
 
         expect(new WorkspaceService(testContext).status()).toEqual([{ path: "Guides/Two.md", status: "modified" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"))
         ).toMatchObject({
             baselineDigests: { "node-1": digest("one changed"), "node-2": digest("two") },
         });
@@ -1452,7 +1452,7 @@ describe("Workspace service", () => {
 
         expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "modified" }]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/local/state.json"), "utf-8"))
         ).toMatchObject({
             baselineDigests: { "node-1": digest("original") },
             moveHints: {},
@@ -1516,13 +1516,13 @@ describe("Workspace service", () => {
             })
         );
         const include = zip.mock.calls[0][1]!;
-        expect(include(".pacman/local/state.json")).toBe(false);
-        expect(include(".pacman/nodes/node-1.json")).toBe(true);
+        expect(include(".package/local/state.json")).toBe(false);
+        expect(include(".package/nodes/node-1.json")).toBe(true);
         const form = (mockedAxiosInstance.post as jest.Mock).mock.calls[0][1] as { _streams: unknown[] };
         expect(form._streams).toContain(JSON.stringify({ moves: { "node-1": "Pages/Guide.md" } }));
         expect(service.status()).toEqual([]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toEqual({
             schemaVersion: 1,
             activePackageKey: PACKAGE_KEY,
@@ -1545,7 +1545,7 @@ describe("Workspace service", () => {
             "Push succeeded, but local state refresh failed"
         );
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({ refreshRequired: true });
         expect(() => service.status()).toThrow("Workspace synchronization state needs refresh");
 
@@ -1576,14 +1576,14 @@ describe("Workspace service", () => {
         await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
 
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({ refreshRequired: true, moveHints: {} });
         mockManifest([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
         await service.pull();
 
         expect(service.status()).toEqual([]);
         expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({ moveHints: {} });
     });
 
@@ -1596,7 +1596,7 @@ describe("Workspace service", () => {
         });
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
-            if (target.toString() === path.join(process.cwd(), ".pacman")) {
+            if (target.toString() === path.join(process.cwd(), ".package")) {
                 throw new Error("rename failed");
             }
             originalRename(source, target);
@@ -1618,7 +1618,7 @@ describe("Workspace service", () => {
         expect(backup).toBeDefined();
         expect(fs.existsSync(backup!)).toBe(true);
         expect(backup!.startsWith(`${process.cwd()}${path.sep}`)).toBe(false);
-        originalRename(backup!, path.join(process.cwd(), ".pacman"));
+        originalRename(backup!, path.join(process.cwd(), ".package"));
         fs.rmSync(path.dirname(backup!), { recursive: true, force: true });
     });
 
@@ -1635,7 +1635,7 @@ describe("Workspace service", () => {
     it("reserves the metadata directory case-insensitively", () => {
         writeWorkspace();
 
-        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", ".PACMAN/Guide.md")).toThrow(
+        expect(() => new WorkspaceService(testContext).move("Guides/Guide.md", ".PACKAGE/Guide.md")).toThrow(
             "Invalid workspace path"
         );
     });

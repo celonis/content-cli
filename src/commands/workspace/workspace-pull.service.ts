@@ -514,7 +514,7 @@ export class WorkspacePullService {
 
     private applyDelete(root: string, operation: PullOperation): void {
         if (operation.localNode && this.isFolder(operation.localNode)) {
-            const metadataDirectory = path.join(root, ".pacman", "nodes");
+            const metadataDirectory = path.join(root, ".package", "nodes");
             const hasChildren = fs
                 .readdirSync(metadataDirectory)
                 .filter(file => file.endsWith(".json") && file !== `${operation.nodeKey}.json`)
@@ -541,7 +541,7 @@ export class WorkspacePullService {
 
     private writeMetadata(root: string, entry: WorkspaceManifestNode, manifest: WorkspaceManifest): void {
         this.writeDocument(root, entry, manifest);
-        const metadataDirectory = path.join(root, ".pacman", "nodes");
+        const metadataDirectory = path.join(root, ".package", "nodes");
         fs.mkdirSync(metadataDirectory, { recursive: true });
         fs.writeFileSync(
             path.join(metadataDirectory, `${entry.nodeKey}.json`),
@@ -554,7 +554,7 @@ export class WorkspacePullService {
         if (!reference) {
             return;
         }
-        const match = /^\.pacman\/documents\/([0-9a-f]{64})\.bin$/.exec(reference);
+        const match = /^\.package\/documents\/([0-9a-f]{64})\.bin$/.exec(reference);
         if (!match) {
             throw new GracefulError(`Invalid document reference for node ${entry.nodeKey}.`);
         }
@@ -594,7 +594,7 @@ export class WorkspacePullService {
     }
 
     private removeMetadata(root: string, nodeKey: string): void {
-        fs.rmSync(path.join(root, ".pacman", "nodes", `${nodeKey}.json`), { force: true });
+        fs.rmSync(path.join(root, ".package", "nodes", `${nodeKey}.json`), { force: true });
     }
 
     private remoteChanged(
@@ -686,7 +686,7 @@ export class WorkspacePullService {
         if (!reference) {
             return;
         }
-        const match = /^\.pacman\/documents\/([0-9a-f]{64})\.bin$/.exec(reference);
+        const match = /^\.package\/documents\/([0-9a-f]{64})\.bin$/.exec(reference);
         const digest = match ? `sha256:${match[1]}` : undefined;
         const encoded = digest ? manifest.documents[digest] : undefined;
         if (!digest || typeof encoded !== "string" || this.digestBuffer(Buffer.from(encoded, "base64")) !== digest) {
@@ -701,7 +701,7 @@ export class WorkspacePullService {
         const segments = value.split("/");
         const first = segments[0].toLowerCase();
         return (
-            first !== ".pacman" &&
+            first !== ".package" &&
             first !== ".git" &&
             segments.every(segment => Boolean(segment) && segment !== "." && segment !== "..")
         );

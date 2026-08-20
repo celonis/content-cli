@@ -37,8 +37,8 @@ function selection(root: string, value: string, candidatePaths: string[]): Selec
         relative === ".." ||
         relative.startsWith("../") ||
         path.isAbsolute(relative) ||
-        folded === ".pacman" ||
-        folded.startsWith(".pacman/") ||
+        folded === ".package" ||
+        folded.startsWith(".package/") ||
         folded === ".git" ||
         folded.startsWith(".git/")
     ) {

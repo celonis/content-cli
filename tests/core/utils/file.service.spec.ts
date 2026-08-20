@@ -100,19 +100,19 @@ describe("FileService", () => {
         });
 
         test("Should exclude filtered workspace paths", () => {
-            const metadata = path.join(tempDir, ".pacman");
+            const metadata = path.join(tempDir, ".package");
             fs.mkdirSync(path.join(metadata, "local"), { recursive: true });
             fs.writeFileSync(path.join(metadata, "package.json"), "{}");
             fs.writeFileSync(path.join(metadata, "local", "state.json"), "{}");
 
             const zipPath = fileService.zipDirectoryAsSinglePackage(
                 tempDir,
-                relativePath => !relativePath.startsWith(".pacman/local")
+                relativePath => !relativePath.startsWith(".package/local")
             );
             const entries = new AdmZip(zipPath).getEntries().map(entry => entry.entryName);
 
-            expect(entries).toContain(".pacman/package.json");
-            expect(entries).not.toContain(".pacman/local/state.json");
+            expect(entries).toContain(".package/package.json");
+            expect(entries).not.toContain(".package/local/state.json");
         });
     });
 

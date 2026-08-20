@@ -154,7 +154,7 @@ function addSuffix(segment: string, folder: boolean, suffix: string): string {
 function validateVisiblePath(value: string): void {
     const segments = value.split("/");
     const first = segments[0].toLowerCase();
-    if (first === ".pacman" || first === ".git") {
+    if (first === ".package" || first === ".git") {
         throw new GracefulError(`Invalid derived workspace path: ${value}.`);
     }
 }
