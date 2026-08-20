@@ -57,13 +57,7 @@ export class WorkspacePushService {
         return candidates
             .filter(candidate =>
                 selections.some(selection =>
-                    candidate.paths.some(candidatePath =>
-                        selection.directory
-                            ? !selection.path ||
-                              candidatePath === selection.path ||
-                              candidatePath.startsWith(`${selection.path}/`)
-                            : candidatePath === selection.path
-                    )
+                    candidate.paths.some(candidatePath => this.matches(selection, candidatePath))
                 )
             )
             .map(candidate => candidate.change);
@@ -89,8 +83,16 @@ export class WorkspacePushService {
         }
         const directory = exists
             ? fs.lstatSync(absolute).isDirectory()
-            : candidatePaths.some(candidate => candidate.startsWith(`${relative}/`));
+            : candidatePaths.some(candidate => candidate.toLowerCase().startsWith(`${relative.toLowerCase()}/`));
         return { path: relative, directory };
+    }
+
+    private matches(selection: Selection, candidatePath: string): boolean {
+        const selected = selection.path.toLowerCase();
+        const candidate = candidatePath.toLowerCase();
+        return selection.directory
+            ? !selected || candidate === selected || candidate.startsWith(`${selected}/`)
+            : candidate === selected;
     }
 
     private async pushChange(

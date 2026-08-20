@@ -1,13 +1,42 @@
 export interface WorkspaceState {
     schemaVersion: number;
+    activePackageKey: string;
+    activeBranch: string;
     serverRevision: string;
     baselineDigests: Record<string, string>;
-    moveHints: Record<string, string>;
+    moveHints: Record<string, string | WorkspaceMoveHint>;
+    git?: WorkspaceGitObservation;
     refreshRequired?: boolean;
+}
+
+export interface WorkspaceMoveHint {
+    sourcePath: string;
+    targetPath: string;
 }
 
 export interface WorkspacePackageIdentity {
     schemaVersion: number;
+    projectKey: string;
+}
+
+export interface WorkspaceGitObservation {
+    branch: string;
+    head: string;
+}
+
+export interface WorkspaceCloneOptions {
+    branch?: string;
+}
+
+export interface WorkspaceCheckoutOptions {
+    create?: boolean;
+    discard?: boolean;
+    linkGit?: boolean;
+}
+
+export interface WorkspaceBranch {
+    projectKey: string;
+    branchKey: string;
     packageKey: string;
 }
 
@@ -39,6 +68,7 @@ export interface ClassifiedWorkspaceChange extends WorkspaceChange {
 }
 
 export interface WorkspaceSnapshot {
+    projectKey: string;
     packageKey: string;
     state: WorkspaceState;
     expectedFiles: ExpectedWorkspaceFile[];

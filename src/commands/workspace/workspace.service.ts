@@ -6,15 +6,22 @@ import AdmZip = require("adm-zip");
 import { Context } from "../../core/command/cli-context";
 import { fileService } from "../../core/utils/file-service";
 import { GracefulError, logger } from "../../core/utils/logger";
+import { BranchUtils } from "../../core/utils/branches";
 import { WorkspaceApi } from "./workspace-api";
 import { classifyWorkspaceChanges } from "./workspace-change-classifier";
+import { WorkspaceGitService } from "./workspace-git.service";
 import { WorkspacePushService } from "./workspace-push.service";
 import {
     ExpectedWorkspaceFile,
     WorkspaceChange,
+    WorkspaceCheckoutOptions,
+    WorkspaceCloneOptions,
+    WorkspaceGitObservation,
+    WorkspaceMoveHint,
     WorkspaceNodeMetadata,
     WorkspacePackageIdentity,
     WorkspacePushOptions,
+    WorkspacePushOutcome,
     WorkspaceSnapshot,
     WorkspaceState,
 } from "./workspace.models";
@@ -51,16 +58,21 @@ export { WorkspaceChange } from "./workspace.models";
 export class WorkspaceService {
     private readonly api: WorkspaceApi;
 
-    constructor(context: Context) {
+    constructor(
+        context: Context,
+        private readonly gitService: WorkspaceGitService = new WorkspaceGitService()
+    ) {
         this.api = new WorkspaceApi(context);
     }
 
-    public async clone(packageKey: string, directory?: string): Promise<void> {
-        const target = path.resolve(process.cwd(), directory || packageKey);
+    public async clone(projectKey: string, directory?: string, options: WorkspaceCloneOptions = {}): Promise<void> {
+        const branch = this.branch(options.branch);
+        const packageKey = this.packageKey(projectKey, branch);
+        const target = path.resolve(process.cwd(), directory || projectKey);
         if (fs.existsSync(target)) {
             throw new GracefulError(`Destination already exists: ${target}`);
         }
-        const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey);
+        const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey, projectKey);
         const parent = path.dirname(target);
         let staging: string | undefined;
         try {
@@ -83,29 +95,97 @@ export class WorkspaceService {
         logger.info(`Cloned ${packageKey} to ${target}`);
     }
 
+    public async checkout(branchValue: string, options: WorkspaceCheckoutOptions = {}): Promise<void> {
+        const root = this.root();
+        const projectKey = this.packageIdentity(root).projectKey;
+        const branch = this.branch(branchValue);
+        const hasLocalState = fs.existsSync(this.statePath(root));
+        const current = hasLocalState ? this.state(root) : undefined;
+        let packageKey = this.packageKey(projectKey, branch);
+        if (options.create) {
+            if (!current) {
+                throw new GracefulError("Workspace synchronization state is missing. Select an existing branch first.");
+            }
+            if (branch === BranchUtils.MAIN_BRANCH_KEY) {
+                throw new GracefulError("The main branch already exists.");
+            }
+            const created = await this.api.createBranch(current.activePackageKey, branch);
+            if (created.projectKey !== projectKey || created.branchKey !== branch) {
+                throw new GracefulError("Created branch does not belong to this workspace project.");
+            }
+            packageKey = created.packageKey;
+        }
+        const download = await this.api.download(packageKey);
+        const temporary = this.validatedArchive(download, packageKey, projectKey);
+        try {
+            if (options.create || options.linkGit) {
+                const observation = options.linkGit ? this.linkCurrentGitBranch(root, projectKey, branch) : undefined;
+                this.reconcileLocalState(root, temporary, packageKey, branch, observation);
+            } else {
+                if (!options.discard && (!current || this.snapshot(root).changes.length !== 0)) {
+                    throw new GracefulError("Workspace has local changes. Use --discard or push them before checkout.");
+                }
+                this.replaceWorkspaceContents(root, temporary);
+            }
+        } finally {
+            fs.rmSync(temporary, { recursive: true, force: true });
+        }
+        logger.info(`${options.create ? "Created and selected" : "Selected"} ${packageKey}.`);
+    }
+
     public async pull(directory?: string): Promise<void> {
         const root = this.root(directory);
-        const packageKey = this.packageIdentity(root).packageKey;
+        const projectKey = this.packageIdentity(root).projectKey;
         const hasLocalState = fs.existsSync(this.statePath(root));
+        if (hasLocalState) {
+            const reconciled = await this.synchronizeGitTarget(root, false);
+            if (reconciled) {
+                logger.info(`Pulled ${this.state(root).activePackageKey}.`);
+                return;
+            }
+        }
         const localState = hasLocalState ? this.state(root) : undefined;
+        let restoredObservation: WorkspaceGitObservation | undefined;
+        let packageKey = localState?.activePackageKey || projectKey;
+        if (!localState) {
+            restoredObservation = this.gitService.observe(root);
+            if (restoredObservation) {
+                if (!restoredObservation.branch) {
+                    throw new GracefulError("Detached Git HEAD cannot select a Pacman workspace branch.");
+                }
+                const mappedBranch = this.gitService.mappedPacmanBranch(root, projectKey, restoredObservation.branch);
+                if (!mappedBranch) {
+                    throw new GracefulError(
+                        `Git branch '${restoredObservation.branch}' is not mapped. Use workspace checkout --link-git.`
+                    );
+                }
+                packageKey = this.packageKey(projectKey, this.branch(mappedBranch));
+            }
+        }
         if (localState && !localState.refreshRequired && this.snapshot(root).changes.length !== 0) {
             throw new GracefulError("Workspace has local changes. Push or discard them before pull.");
         }
         const download = await this.api.download(packageKey);
         if (localState?.refreshRequired) {
             const moveHints = localState.moveHints;
-            this.refreshMetadata(root, download, packageKey);
+            this.refreshMetadata(root, download, packageKey, projectKey, localState.git);
             const refreshed = this.state(root);
-            this.writeState(root, { ...refreshed, moveHints: { ...refreshed.moveHints, ...moveHints } });
+            this.writeState(root, { ...refreshed, moveHints: this.reconciledMoveHints(root, moveHints) });
             logger.info(`Pulled ${packageKey}.`);
             return;
         }
-        const temporary = this.validatedArchive(download, packageKey);
+        const temporary = this.validatedArchive(download, packageKey, projectKey);
         try {
             if (localState) {
                 this.replaceWorkspaceContents(root, temporary);
             } else {
-                this.reconcileLocalState(root, temporary);
+                this.reconcileLocalState(
+                    root,
+                    temporary,
+                    packageKey,
+                    this.branchFromPackageKey(projectKey, packageKey),
+                    restoredObservation
+                );
             }
         } finally {
             fs.rmSync(temporary, { recursive: true, force: true });
@@ -126,6 +206,12 @@ export class WorkspaceService {
         return changes;
     }
 
+    public async statusWithGit(directory?: string): Promise<WorkspaceChange[]> {
+        const root = this.root(directory);
+        await this.synchronizeGitTarget(root, false);
+        return this.status(root);
+    }
+
     public async push(paths: string[] = [], options: WorkspacePushOptions = {}): Promise<void> {
         if (options.full) {
             if (paths.length > 0) {
@@ -138,8 +224,16 @@ export class WorkspaceService {
             throw new GracefulError("--overwrite requires --full.");
         }
         const root = this.root();
+        await this.synchronizeGitTarget(root, true);
         const snapshot = this.snapshot(root);
-        const outcomes = await new WorkspacePushService(this.api).push(root, snapshot, paths);
+        this.writeState(root, { ...snapshot.state, refreshRequired: true });
+        let outcomes: WorkspacePushOutcome[];
+        try {
+            outcomes = await new WorkspacePushService(this.api).push(root, snapshot, paths);
+        } catch (error) {
+            this.writeState(root, snapshot.state);
+            throw error;
+        }
         outcomes.forEach(outcome =>
             logger.info(
                 `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
@@ -149,6 +243,7 @@ export class WorkspaceService {
         const succeeded = outcomes.filter(outcome => outcome.success);
         const failed = outcomes.filter(outcome => !outcome.success);
         if (succeeded.length === 0) {
+            this.writeState(root, snapshot.state);
             if (failed.length > 0) {
                 throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
             }
@@ -160,21 +255,27 @@ export class WorkspaceService {
                 .filter(
                     outcome => outcome.nodeKey && (outcome.status === "moved" || outcome.status === "moved, modified")
                 )
-                .map(outcome => [outcome.nodeKey!, outcome.path])
+                .map(outcome => [outcome.nodeKey!, snapshot.state.moveHints[outcome.nodeKey!] || outcome.path])
         );
+        this.writeState(root, {
+            ...snapshot.state,
+            moveHints: retainedHints,
+            refreshRequired: true,
+        });
         try {
-            this.refreshMetadata(root, await this.api.download(snapshot.packageKey), snapshot.packageKey);
+            this.refreshMetadata(
+                root,
+                await this.api.download(snapshot.packageKey),
+                snapshot.packageKey,
+                snapshot.projectKey,
+                snapshot.state.git
+            );
             const refreshed = this.state(root);
             this.writeState(root, {
                 ...refreshed,
-                moveHints: { ...refreshed.moveHints, ...retainedHints },
+                moveHints: this.reconciledMoveHints(root, retainedHints),
             });
         } catch (error) {
-            this.writeState(root, {
-                ...snapshot.state,
-                moveHints: { ...snapshot.state.moveHints, ...retainedHints },
-                refreshRequired: true,
-            });
             const failure = new GracefulError(
                 "Workspace changes reached the server, but local synchronization state could not be refreshed. Run workspace pull before retrying."
             );
@@ -189,6 +290,7 @@ export class WorkspaceService {
 
     private async pushFull(overwrite: boolean): Promise<void> {
         const root = this.root();
+        await this.synchronizeGitTarget(root, true);
         const snapshot = this.snapshot(root);
         if (snapshot.changes.some(change => change.status === "unresolved")) {
             throw new GracefulError("Workspace has unresolved file identities. Record the intended moves before push.");
@@ -221,7 +323,13 @@ export class WorkspaceService {
             this.writeState(root, { ...snapshot.state, refreshRequired: true });
             try {
                 const refreshedArchive = await this.api.download(snapshot.packageKey);
-                this.refreshMetadata(root, refreshedArchive, snapshot.packageKey);
+                this.refreshMetadata(
+                    root,
+                    refreshedArchive,
+                    snapshot.packageKey,
+                    snapshot.projectKey,
+                    snapshot.state.git
+                );
             } catch (error) {
                 const detail = error instanceof GracefulError ? ` ${error.message}` : "";
                 const failure = new GracefulError(
@@ -276,19 +384,23 @@ export class WorkspaceService {
     }
 
     private snapshot(root: string): WorkspaceSnapshot {
-        const packageKey = this.packageIdentity(root).packageKey;
+        const projectKey = this.packageIdentity(root).projectKey;
         const state = this.state(root);
         if (state.refreshRequired) {
             throw new GracefulError("Workspace synchronization state needs refresh. Run workspace pull.");
         }
-        const expectedFiles = this.expectedFiles(root, state, packageKey);
+        if (BranchUtils.extractProjectKey(state.activePackageKey) !== projectKey) {
+            throw new GracefulError("Active Pacman package does not belong to this workspace project.");
+        }
+        const expectedFiles = this.expectedFiles(root, state, state.activePackageKey);
         const visibleFiles = this.visibleFiles(root);
         return {
-            packageKey,
+            projectKey,
+            packageKey: state.activePackageKey,
             state,
             expectedFiles,
             visibleFiles,
-            changes: classifyWorkspaceChanges(expectedFiles, visibleFiles, state.moveHints),
+            changes: classifyWorkspaceChanges(expectedFiles, visibleFiles, this.moveHintTargets(state.moveHints)),
         };
     }
 
@@ -326,7 +438,12 @@ export class WorkspaceService {
                 if (baseline && !/^sha256:[0-9a-f]{64}$/.test(baseline)) {
                     throw new GracefulError(`Invalid baseline digest for node ${node.key}.`);
                 }
-                return { nodeKey: node.key, path: resolvePath(node), digest: baseline };
+                const metadataPath = resolvePath(node);
+                const hint = state.moveHints[node.key];
+                const sourcePath = this.isStructuredMoveHint(hint)
+                    ? this.validateRelative(hint.sourcePath)
+                    : metadataPath;
+                return { nodeKey: node.key, path: sourcePath, digest: baseline };
             });
         const foldedPaths = new Set<string>();
         expected.forEach(file => {
@@ -340,7 +457,14 @@ export class WorkspaceService {
             if (!byKey.has(nodeKey)) {
                 throw new GracefulError(`Move hint references unknown node ${nodeKey}.`);
             }
-            state.moveHints[nodeKey] = this.validateRelative(targetPath);
+            if (this.isStructuredMoveHint(targetPath)) {
+                state.moveHints[nodeKey] = {
+                    sourcePath: this.validateRelative(targetPath.sourcePath),
+                    targetPath: this.validateRelative(targetPath.targetPath),
+                };
+            } else {
+                state.moveHints[nodeKey] = this.validateRelative(targetPath);
+            }
         });
         return expected.sort((left, right) => left.path.localeCompare(right.path));
     }
@@ -425,7 +549,7 @@ export class WorkspaceService {
             return expected;
         }
         const hinted = snapshot.expectedFiles.find(
-            file => snapshot.state.moveHints[file.nodeKey]?.toLowerCase() === foldedSourcePath
+            file => this.moveHintTarget(snapshot.state.moveHints[file.nodeKey])?.toLowerCase() === foldedSourcePath
         );
         if (hinted) {
             return hinted;
@@ -439,8 +563,14 @@ export class WorkspaceService {
         return classified ? snapshot.expectedFiles.find(file => file.nodeKey === classified.nodeKey) : undefined;
     }
 
-    private refreshMetadata(root: string, download: { archive: Buffer; eTag: string }, packageKey: string): void {
-        const extracted = this.validatedArchive(download, packageKey);
+    private refreshMetadata(
+        root: string,
+        download: { archive: Buffer; eTag: string },
+        packageKey: string,
+        projectKey: string,
+        observation?: WorkspaceGitObservation
+    ): void {
+        const extracted = this.validatedArchive(download, packageKey, projectKey, observation);
         try {
             this.replaceMetadataDirectory(root, path.join(extracted, ".pacman"));
         } finally {
@@ -479,7 +609,12 @@ export class WorkspaceService {
         }
     }
 
-    private validatedArchive(download: { archive: Buffer; eTag: string }, packageKey: string): string {
+    private validatedArchive(
+        download: { archive: Buffer; eTag: string },
+        packageKey: string,
+        projectKey: string = BranchUtils.extractProjectKey(packageKey),
+        observation?: WorkspaceGitObservation
+    ): string {
         const zip = new AdmZip(download.archive);
         if (!zip.getEntry(".pacman/package.json") || !zip.getEntry(".pacman/.gitignore")) {
             throw new GracefulError("Archive does not contain Pacman package metadata.");
@@ -494,11 +629,11 @@ export class WorkspaceService {
         }
         const temporary = fileService.extractZipBufferToTempDirectory(download.archive);
         try {
-            if (this.packageIdentity(temporary).packageKey !== packageKey) {
-                throw new GracefulError("Archive package key does not match the requested package.");
+            if (this.packageIdentity(temporary).projectKey !== projectKey) {
+                throw new GracefulError("Archive project key does not match the requested project.");
             }
             this.validateGitignore(temporary);
-            this.hydrateState(temporary, download.eTag);
+            this.hydrateState(temporary, download.eTag, packageKey, observation);
             const snapshot = this.snapshot(temporary);
             if (snapshot.changes.length !== 0) {
                 throw new GracefulError("Archive content does not match its workspace baseline.");
@@ -510,15 +645,23 @@ export class WorkspaceService {
         }
     }
 
-    private reconcileLocalState(root: string, remoteRoot: string): void {
-        const packageKey = this.packageIdentity(root).packageKey;
-        if (this.packageIdentity(remoteRoot).packageKey !== packageKey) {
-            throw new GracefulError("Remote archive package key does not match this workspace.");
+    private reconcileLocalState(
+        root: string,
+        remoteRoot: string,
+        packageKey: string,
+        branch: string,
+        observation?: WorkspaceGitObservation
+    ): void {
+        const projectKey = this.packageIdentity(root).projectKey;
+        if (this.packageIdentity(remoteRoot).projectKey !== projectKey) {
+            throw new GracefulError("Remote archive project key does not match this workspace.");
         }
         this.validateGitignore(root);
         const remoteState = this.state(remoteRoot);
         const emptyState: WorkspaceState = {
             schemaVersion: 1,
+            activePackageKey: packageKey,
+            activeBranch: branch,
             serverRevision: remoteState.serverRevision,
             baselineDigests: remoteState.baselineDigests,
             moveHints: {},
@@ -534,25 +677,44 @@ export class WorkspaceService {
                 throw new GracefulError(`Node metadata type conflicts with the server for ${node.key}.`);
             }
         });
-        const moveHints = Object.fromEntries(
+        const moveHints: Record<string, WorkspaceMoveHint> = Object.fromEntries(
             localFiles
                 .filter(file => remoteFiles.has(file.nodeKey) && remoteFiles.get(file.nodeKey)!.path !== file.path)
-                .map(file => [file.nodeKey, file.path])
+                .map(file => [file.nodeKey, { sourcePath: remoteFiles.get(file.nodeKey)!.path, targetPath: file.path }])
         );
-        const reconciledState = { ...remoteState, moveHints };
+        const reconciledState: WorkspaceState = {
+            ...remoteState,
+            activePackageKey: packageKey,
+            activeBranch: branch,
+            moveHints,
+        };
+        if (observation) {
+            reconciledState.git = observation;
+        } else {
+            delete reconciledState.git;
+        }
         const expectedFiles = this.expectedFiles(root, reconciledState, packageKey);
-        classifyWorkspaceChanges(expectedFiles, this.visibleFiles(root), moveHints);
-        this.replaceMetadataDirectory(root, path.join(remoteRoot, ".pacman"));
+        classifyWorkspaceChanges(expectedFiles, this.visibleFiles(root), this.moveHintTargets(moveHints));
         this.writeState(root, reconciledState);
     }
 
-    private hydrateState(root: string, eTag: string): WorkspaceState {
+    private hydrateState(
+        root: string,
+        eTag: string,
+        packageKey: string,
+        observation?: WorkspaceGitObservation
+    ): WorkspaceState {
         if (!/^"sha256:[0-9a-f]{64}"$/.test(eTag)) {
             throw new GracefulError("Filesystem archive response contains an invalid ETag.");
         }
-        const packageKey = this.packageIdentity(root).packageKey;
+        const projectKey = this.packageIdentity(root).projectKey;
+        if (BranchUtils.extractProjectKey(packageKey) !== projectKey) {
+            throw new GracefulError("Active Pacman package does not belong to the archive project.");
+        }
         const emptyState: WorkspaceState = {
             schemaVersion: 1,
+            activePackageKey: packageKey,
+            activeBranch: this.branchFromPackageKey(projectKey, packageKey),
             serverRevision: eTag,
             baselineDigests: {},
             moveHints: {},
@@ -566,7 +728,10 @@ export class WorkspaceService {
                 return [file.nodeKey, this.digest(absolute)];
             })
         );
-        const state = { ...emptyState, baselineDigests };
+        const state: WorkspaceState = { ...emptyState, baselineDigests };
+        if (observation) {
+            state.git = observation;
+        }
         this.writeState(root, state);
         return state;
     }
@@ -655,6 +820,8 @@ export class WorkspaceService {
         const parsed = JSON.parse(fs.readFileSync(this.statePath(root), "utf-8")) as Partial<WorkspaceState>;
         if (
             parsed.schemaVersion !== 1 ||
+            !parsed.activePackageKey ||
+            !parsed.activeBranch ||
             !parsed.serverRevision ||
             !/^"sha256:[0-9a-f]{64}"$/.test(parsed.serverRevision) ||
             !parsed.baselineDigests ||
@@ -667,19 +834,32 @@ export class WorkspaceService {
                 (typeof parsed.moveHints !== "object" ||
                     parsed.moveHints === null ||
                     Array.isArray(parsed.moveHints) ||
-                    !Object.values(parsed.moveHints).every(value => typeof value === "string"))) ||
+                    !Object.values(parsed.moveHints).every(
+                        value => typeof value === "string" || this.isStructuredMoveHint(value)
+                    ))) ||
+            (parsed.git !== undefined &&
+                (!parsed.git ||
+                    typeof parsed.git !== "object" ||
+                    typeof parsed.git.branch !== "string" ||
+                    typeof parsed.git.head !== "string" ||
+                    !/^[0-9a-f]{40,64}$/.test(parsed.git.head))) ||
             (parsed.refreshRequired !== undefined && parsed.refreshRequired !== true)
         ) {
             throw new GracefulError("Unsupported Pacman workspace state.");
         }
         const state: WorkspaceState = {
             schemaVersion: parsed.schemaVersion,
+            activePackageKey: parsed.activePackageKey,
+            activeBranch: parsed.activeBranch,
             serverRevision: parsed.serverRevision,
             baselineDigests: parsed.baselineDigests,
             moveHints: parsed.moveHints || {},
         };
         if (parsed.refreshRequired) {
             state.refreshRequired = true;
+        }
+        if (parsed.git) {
+            state.git = parsed.git;
         }
         return state;
     }
@@ -715,8 +895,147 @@ export class WorkspaceService {
         return normalized;
     }
 
+    private moveHintTargets(hints: Record<string, string | WorkspaceMoveHint>): Record<string, string> {
+        return Object.fromEntries(
+            Object.entries(hints).map(([nodeKey, hint]) => [nodeKey, this.moveHintTarget(hint)!])
+        );
+    }
+
+    private moveHintTarget(hint: string | WorkspaceMoveHint | undefined): string | undefined {
+        return this.isStructuredMoveHint(hint) ? hint.targetPath : hint;
+    }
+
+    private isStructuredMoveHint(value: unknown): value is WorkspaceMoveHint {
+        return Boolean(
+            value &&
+                typeof value === "object" &&
+                !Array.isArray(value) &&
+                typeof (value as WorkspaceMoveHint).sourcePath === "string" &&
+                typeof (value as WorkspaceMoveHint).targetPath === "string" &&
+                Object.keys(value).length === 2
+        );
+    }
+
+    private reconciledMoveHints(
+        root: string,
+        hints: Record<string, string | WorkspaceMoveHint>
+    ): Record<string, string | WorkspaceMoveHint> {
+        const refreshed = this.state(root);
+        const remotePathByNodeKey = new Map(
+            this.expectedFiles(root, refreshed, refreshed.activePackageKey).map(file => [file.nodeKey, file.path])
+        );
+        return Object.fromEntries(
+            Object.entries(hints).flatMap(([nodeKey, hint]) => {
+                const remotePath = remotePathByNodeKey.get(nodeKey);
+                const targetPath = this.moveHintTarget(hint);
+                if (!remotePath || !targetPath || remotePath.toLowerCase() === targetPath.toLowerCase()) {
+                    return [];
+                }
+                return [
+                    [
+                        nodeKey,
+                        this.isStructuredMoveHint(hint)
+                            ? { sourcePath: remotePath, targetPath: hint.targetPath }
+                            : hint,
+                    ],
+                ];
+            })
+        );
+    }
+
     private statePath(root: string): string {
         return path.join(root, ".pacman", "local", "state.json");
+    }
+
+    private async synchronizeGitTarget(root: string, requirePushSafe: boolean): Promise<boolean> {
+        const state = this.state(root);
+        const observation = this.gitService.observe(root);
+        if (!state.git) {
+            if (requirePushSafe && observation) {
+                const detail = observation.branch ? `Git branch '${observation.branch}'` : "Detached Git HEAD";
+                throw new GracefulError(
+                    `${detail} is not linked to a Pacman branch. Use workspace checkout --link-git.`
+                );
+            }
+            return false;
+        }
+        if (!observation) {
+            if (requirePushSafe) {
+                throw new GracefulError("The linked Git worktree is unavailable; workspace push is blocked.");
+            }
+            logger.warn("The linked Git worktree is unavailable; using the last Pacman baseline.");
+            return false;
+        }
+        if (observation.branch === state.git.branch && observation.head === state.git.head) {
+            return false;
+        }
+        if (!observation.branch) {
+            if (requirePushSafe) {
+                throw new GracefulError("Detached Git HEAD cannot push a Pacman workspace.");
+            }
+            logger.warn("Git HEAD is detached; using the last Pacman baseline.");
+            return false;
+        }
+        const projectKey = this.packageIdentity(root).projectKey;
+        const mappedBranch = this.gitService.mappedPacmanBranch(root, projectKey, observation.branch);
+        if (!mappedBranch) {
+            if (requirePushSafe) {
+                throw new GracefulError(
+                    `Git branch '${observation.branch}' is not mapped to a Pacman branch. Use workspace checkout --link-git.`
+                );
+            }
+            logger.warn(`Git branch '${observation.branch}' is not mapped; using the last Pacman baseline.`);
+            return false;
+        }
+        const branch = this.branch(mappedBranch);
+        const packageKey = this.packageKey(projectKey, branch);
+        const temporary = this.validatedArchive(
+            await this.api.download(packageKey),
+            packageKey,
+            projectKey,
+            observation
+        );
+        try {
+            this.reconcileLocalState(root, temporary, packageKey, branch, observation);
+        } finally {
+            fs.rmSync(temporary, { recursive: true, force: true });
+        }
+        logger.info(`Reconciled Git branch '${observation.branch}' with ${packageKey}.`);
+        return true;
+    }
+
+    private linkCurrentGitBranch(root: string, projectKey: string, pacmanBranch: string): WorkspaceGitObservation {
+        const observation = this.gitService.observe(root);
+        if (!observation) {
+            throw new GracefulError("Workspace is not inside a Git worktree.");
+        }
+        if (!observation.branch) {
+            throw new GracefulError("Detached Git HEAD cannot be linked to a Pacman branch.");
+        }
+        return this.gitService.link(root, projectKey, observation.branch, pacmanBranch);
+    }
+
+    private branch(value?: string): string {
+        const branch = (value || BranchUtils.MAIN_BRANCH_KEY).trim();
+        if (!branch || branch.includes("@") || /[\u0000-\u001f\u007f]/.test(branch)) {
+            throw new GracefulError(`Invalid Pacman branch: ${value || ""}`);
+        }
+        return branch.toLowerCase() === BranchUtils.MAIN_BRANCH_KEY ? BranchUtils.MAIN_BRANCH_KEY : branch;
+    }
+
+    private packageKey(projectKey: string, branch: string): string {
+        return branch === BranchUtils.MAIN_BRANCH_KEY ? projectKey : BranchUtils.constructBranchKey(projectKey, branch);
+    }
+
+    private branchFromPackageKey(projectKey: string, packageKey: string): string {
+        if (packageKey === projectKey) {
+            return BranchUtils.MAIN_BRANCH_KEY;
+        }
+        const prefix = `${projectKey}@`;
+        if (!packageKey.startsWith(prefix)) {
+            throw new GracefulError("Active Pacman package does not belong to this workspace project.");
+        }
+        return this.branch(packageKey.slice(prefix.length));
     }
 
     private writeState(root: string, state: WorkspaceState): void {
@@ -728,10 +1047,10 @@ export class WorkspaceService {
         const parsed = JSON.parse(
             fs.readFileSync(this.packageIdentityPath(root), "utf-8")
         ) as Partial<WorkspacePackageIdentity>;
-        if (parsed.schemaVersion !== 1 || !parsed.packageKey || Object.keys(parsed).length !== 2) {
+        if (parsed.schemaVersion !== 1 || !parsed.projectKey || Object.keys(parsed).length !== 2) {
             throw new GracefulError("Unsupported Pacman package metadata.");
         }
-        return { schemaVersion: parsed.schemaVersion, packageKey: parsed.packageKey };
+        return { schemaVersion: parsed.schemaVersion, projectKey: parsed.projectKey };
     }
 
     private packageIdentityPath(root: string): string {

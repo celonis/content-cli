@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import AdmZip = require("adm-zip");
 import { WorkspaceService } from "../../../src/commands/workspace/workspace.service";
+import { WorkspaceGitService } from "../../../src/commands/workspace/workspace-git.service";
 import { fileService } from "../../../src/core/utils/file-service";
 import { testContext } from "../../utls/test-context";
 import {
@@ -17,8 +18,14 @@ import {
 } from "../../utls/http-requests-mock";
 
 const PACKAGE_KEY = "pkg-1";
+const BRANCH = "feature-a";
+const BRANCH_PACKAGE_KEY = `${PACKAGE_KEY}@${BRANCH}`;
 const ARCHIVE_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
 const PUSH_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
+
+function archiveUrl(packageKey: string): string {
+    return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/file-archive`;
+}
 
 function fileUrl(filePath: string): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/files/${filePath}`;
@@ -78,6 +85,8 @@ function state(
 ): object {
     return {
         schemaVersion: 1,
+        activePackageKey: PACKAGE_KEY,
+        activeBranch: "main",
         serverRevision,
         baselineDigests: Object.fromEntries(files.map(file => [file.nodeKey, digest(file.content)])),
         moveHints,
@@ -87,7 +96,7 @@ function state(
 function archive(files: TestFile[]): Buffer {
     const zip = new AdmZip();
     zip.addFile(".pacman/.gitignore", Buffer.from("local/\n"));
-    zip.addFile(".pacman/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, packageKey: PACKAGE_KEY })));
+    zip.addFile(".pacman/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })));
     zip.addFile(".pacman/nodes/", Buffer.alloc(0));
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
         zip.addFile(`.pacman/nodes/${nodeKey}.json`, Buffer.from(JSON.stringify(node)));
@@ -104,7 +113,7 @@ function writeWorkspace(
     fs.writeFileSync(path.join(process.cwd(), ".pacman", ".gitignore"), "local/\n");
     fs.writeFileSync(
         path.join(process.cwd(), ".pacman", "package.json"),
-        JSON.stringify({ schemaVersion: 1, packageKey: PACKAGE_KEY })
+        JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })
     );
     fs.writeFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), JSON.stringify(state(files)));
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
@@ -117,9 +126,30 @@ function writeWorkspace(
 }
 
 function removeWorkspace(): void {
-    [".git", ".pacman", "Guides", "Pages", "Other", "New", "Bulk", "Selected", "Unselected", PACKAGE_KEY].forEach(
-        entry => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true })
-    );
+    [
+        ".git",
+        ".pacman",
+        "Guides",
+        "Pages",
+        "Other",
+        "New",
+        "Bulk",
+        "Selected",
+        "Unselected",
+        PACKAGE_KEY,
+        "branch-workspace",
+    ].forEach(entry => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
+}
+
+function mockGit(
+    observation: { branch: string; head: string } | undefined,
+    mappedBranch?: string
+): jest.Mocked<WorkspaceGitService> {
+    return {
+        observe: jest.fn().mockReturnValue(observation),
+        mappedPacmanBranch: jest.fn().mockReturnValue(mappedBranch),
+        link: jest.fn().mockReturnValue(observation),
+    } as unknown as jest.Mocked<WorkspaceGitService>;
 }
 
 describe("Workspace service", () => {
@@ -147,6 +177,8 @@ describe("Workspace service", () => {
                 )
             ).toEqual({
                 schemaVersion: 1,
+                activePackageKey: PACKAGE_KEY,
+                activeBranch: "main",
                 serverRevision: eTag("revision-1"),
                 baselineDigests: { "node-1": digest("original") },
                 moveHints: {},
@@ -165,6 +197,150 @@ describe("Workspace service", () => {
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Filesystem archive response does not contain an ETag."
         );
+    });
+
+    it("clones a selected branch while keeping stable project identity", async () => {
+        mockAxiosGet(
+            archiveUrl(BRANCH_PACKAGE_KEY),
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }]),
+            { etag: eTag("branch-revision") }
+        );
+
+        await new WorkspaceService(testContext).clone(PACKAGE_KEY, "branch-workspace", { branch: BRANCH });
+
+        const root = path.join(process.cwd(), "branch-workspace");
+        expect(JSON.parse(fs.readFileSync(path.join(root, ".pacman", "package.json"), "utf-8"))).toEqual({
+            schemaVersion: 1,
+            projectKey: PACKAGE_KEY,
+        });
+        expect(JSON.parse(fs.readFileSync(path.join(root, ".pacman", "local", "state.json"), "utf-8"))).toMatchObject({
+            activePackageKey: BRANCH_PACKAGE_KEY,
+            activeBranch: BRANCH,
+        });
+        fs.rmSync(root, { recursive: true, force: true });
+    });
+
+    it("checks out an existing branch atomically", async () => {
+        writeWorkspace();
+        mockAxiosGet(
+            archiveUrl(BRANCH_PACKAGE_KEY),
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }]),
+            { etag: eTag("branch-revision") }
+        );
+
+        await new WorkspaceService(testContext).checkout(BRANCH);
+
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("branch");
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+        ).toMatchObject({
+            activePackageKey: BRANCH_PACKAGE_KEY,
+            activeBranch: BRANCH,
+            moveHints: {},
+        });
+    });
+
+    it("creates a branch from the active remote target and retains local edits", async () => {
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "local edit");
+        mockAxiosPost(`https://myTeam.celonis.cloud/pacman/api/core/packages/${PACKAGE_KEY}/branches`, {
+            projectKey: PACKAGE_KEY,
+            branchKey: BRANCH,
+            packageKey: BRANCH_PACKAGE_KEY,
+        });
+        mockAxiosGet(
+            archiveUrl(BRANCH_PACKAGE_KEY),
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+            { etag: eTag("branch-revision") }
+        );
+        const service = new WorkspaceService(testContext);
+
+        await service.checkout(BRANCH, { create: true });
+
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("local edit");
+        expect(service.status()).toEqual([{ path: "Guides/Guide.md", status: "modified" }]);
+        expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
+            `https://myTeam.celonis.cloud/pacman/api/core/packages/${PACKAGE_KEY}/branches`,
+            JSON.stringify({ branchKey: BRANCH, version: "STAGING" }),
+            expect.anything()
+        );
+    });
+
+    it("links a Git branch without overwriting checked-out files", async () => {
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git content");
+        const observation = { branch: "git-feature", head: "a".repeat(40) };
+        const git = mockGit(observation);
+        mockAxiosGet(
+            archiveUrl(BRANCH_PACKAGE_KEY),
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]),
+            { etag: eTag("branch-revision") }
+        );
+        const service = new WorkspaceService(testContext, git);
+
+        await service.checkout(BRANCH, { linkGit: true });
+
+        expect(git.link).toHaveBeenCalledWith(process.cwd(), PACKAGE_KEY, "git-feature", BRANCH);
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("git content");
+        expect(service.status()).toEqual([{ path: "Guides/Guide.md", status: "modified" }]);
+    });
+
+    it("rehydrates a mapped Pacman baseline after an external Git branch switch", async () => {
+        writeWorkspace();
+        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        fs.writeFileSync(
+            statePath,
+            JSON.stringify({
+                ...state([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+                git: { branch: "main", head: "a".repeat(40) },
+                moveHints: { "node-1": "Old.md" },
+            })
+        );
+        const observation = { branch: "git-feature", head: "b".repeat(40) };
+        const git = mockGit(observation, BRANCH);
+        mockAxiosGet(
+            archiveUrl(BRANCH_PACKAGE_KEY),
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+            { etag: eTag("branch-revision") }
+        );
+        const service = new WorkspaceService(testContext, git);
+
+        await expect(service.statusWithGit()).resolves.toEqual([]);
+
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("original");
+        expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
+            activePackageKey: BRANCH_PACKAGE_KEY,
+            activeBranch: BRANCH,
+            moveHints: {},
+            git: observation,
+        });
+    });
+
+    it("blocks pushes from detached or unmapped switched Git branches", async () => {
+        writeWorkspace();
+        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        fs.writeFileSync(
+            statePath,
+            JSON.stringify({
+                ...state([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
+                git: { branch: "main", head: "a".repeat(40) },
+            })
+        );
+
+        await expect(
+            new WorkspaceService(testContext, mockGit({ branch: "", head: "b".repeat(40) })).push()
+        ).rejects.toThrow("Detached Git HEAD");
+        await expect(
+            new WorkspaceService(testContext, mockGit({ branch: "unmapped", head: "c".repeat(40) })).push()
+        ).rejects.toThrow("is not mapped to a Pacman branch");
+    });
+
+    it("blocks pushes from a Git worktree that has not been linked", async () => {
+        writeWorkspace();
+
+        await expect(
+            new WorkspaceService(testContext, mockGit({ branch: "main", head: "a".repeat(40) })).push()
+        ).rejects.toThrow("is not linked to a Pacman branch");
     });
 
     it("pulls the latest archive into a clean existing workspace", async () => {
@@ -211,6 +387,31 @@ describe("Workspace service", () => {
         });
     });
 
+    it("restores the mapped Pacman branch after an external Git restore", async () => {
+        writeWorkspace();
+        fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
+        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git branch content");
+        const observation = { branch: "git-feature", head: "b".repeat(40) };
+        const git = mockGit(observation, BRANCH);
+        mockAxiosGet(
+            archiveUrl(BRANCH_PACKAGE_KEY),
+            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch baseline" }]),
+            { etag: eTag("branch-revision") }
+        );
+
+        await new WorkspaceService(testContext, git).pull();
+
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("git branch content");
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+        ).toMatchObject({
+            activePackageKey: BRANCH_PACKAGE_KEY,
+            activeBranch: BRANCH,
+            serverRevision: eTag("branch-revision"),
+            git: observation,
+        });
+    });
+
     it("hydrates a Git-restored workspace with CRLF metadata ignore rules", async () => {
         writeWorkspace();
         fs.rmSync(path.join(process.cwd(), ".pacman", "local"), { recursive: true });
@@ -239,7 +440,9 @@ describe("Workspace service", () => {
         expect(
             JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
         ).toMatchObject({
-            moveHints: { "node-1": "Pages/Guide.md" },
+            moveHints: {
+                "node-1": { sourcePath: "Guides/Guide.md", targetPath: "Pages/Guide.md" },
+            },
         });
 
         mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: eTag("file-1") });
@@ -658,7 +861,7 @@ describe("Workspace service", () => {
         ]);
     });
 
-    it("expands a selected directory to its changed descendants", async () => {
+    it("expands a case-insensitive selected directory to its changed descendants", async () => {
         const original = [
             { nodeKey: "node-1", path: "Selected/One.md", content: "one" },
             { nodeKey: "node-2", path: "Selected/Nested/Two.md", content: "two" },
@@ -683,7 +886,7 @@ describe("Workspace service", () => {
             { etag: eTag("revision-2") }
         );
 
-        await new WorkspaceService(testContext).push(["Selected"]);
+        await new WorkspaceService(testContext).push(["selected"]);
 
         expect(mockedAxiosInstance.put).toHaveBeenCalledTimes(2);
         expect(new WorkspaceService(testContext).status()).toEqual([
@@ -860,6 +1063,8 @@ describe("Workspace service", () => {
             JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
         ).toEqual({
             schemaVersion: 1,
+            activePackageKey: PACKAGE_KEY,
+            activeBranch: "main",
             serverRevision: eTag("revision-2"),
             baselineDigests: { "node-1": digest("changed") },
             moveHints: {},
@@ -889,6 +1094,37 @@ describe("Workspace service", () => {
         expect(service.status()).toEqual([]);
         expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(false);
         expect(fs.readFileSync(path.join(process.cwd(), "Pages", "Guide.md"), "utf-8")).toBe("original");
+    });
+
+    it("clears an applied move hint when an incremental push refresh is recovered by pull", async () => {
+        writeWorkspace();
+        fs.mkdirSync(path.join(process.cwd(), "Pages"));
+        fs.renameSync(path.join(process.cwd(), "Guides", "Guide.md"), path.join(process.cwd(), "Pages", "Guide.md"));
+        const service = new WorkspaceService(testContext);
+        service.move("Guides/Guide.md", "Pages/Guide.md", true);
+        mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: eTag("file-1") });
+        mockAxiosPatch(fileUrl("Guides/Guide.md"), {
+            path: "Pages/Guide.md",
+            nodeKey: "node-1",
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("file-2"),
+        });
+        mockAxiosGetError(ARCHIVE_URL, 503, { message: "unavailable" });
+
+        await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
+
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+        ).toMatchObject({ refreshRequired: true, moveHints: {} });
+        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]), {
+            etag: eTag("revision-2"),
+        });
+        await service.pull();
+
+        expect(service.status()).toEqual([]);
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman", "local", "state.json"), "utf-8"))
+        ).toMatchObject({ moveHints: {} });
     });
 
     it("preserves the metadata backup when refresh and rollback both fail", async () => {

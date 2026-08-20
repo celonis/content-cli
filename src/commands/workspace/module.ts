@@ -7,7 +7,21 @@ class Module extends IModule {
     public register(context: Context, configurator: Configurator): void {
         const workspace = configurator.command("workspace").beta().description("Manage a package workspace.");
 
-        workspace.command("clone <packageKey> [directory]").beta().description("Clone a package.").action(this.clone);
+        workspace
+            .command("clone <projectKey> [directory]")
+            .beta()
+            .description("Clone a package workspace.")
+            .option("--branch <branch>", "Clone a branch")
+            .action(this.clone);
+
+        workspace
+            .command("checkout [branch]")
+            .beta()
+            .description("Select a package branch.")
+            .option("-b, --create <branch>", "Create and select a branch")
+            .option("--discard", "Discard local workspace changes", false)
+            .option("--link-git", "Map the current Git branch", false)
+            .action(this.checkout);
 
         workspace.command("pull [directory]").beta().description("Pull remote changes.").action(this.pull);
 
@@ -29,8 +43,20 @@ class Module extends IModule {
             .action(this.move);
     }
 
-    private async clone(context: Context, command: Command): Promise<void> {
-        await new WorkspaceService(context).clone(command.args[0], command.args[1]);
+    private async clone(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new WorkspaceService(context).clone(command.args[0], command.args[1], { branch: options.branch });
+    }
+
+    private async checkout(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const branch = options.create || command.args[0];
+        if (!branch || (options.create && command.args[0])) {
+            throw new Error("Provide one branch name or use -b <branch>.");
+        }
+        await new WorkspaceService(context).checkout(branch, {
+            create: Boolean(options.create),
+            discard: options.discard,
+            linkGit: options.linkGit,
+        });
     }
 
     private async pull(context: Context, command: Command): Promise<void> {
@@ -38,7 +64,7 @@ class Module extends IModule {
     }
 
     private async status(context: Context, command: Command): Promise<void> {
-        new WorkspaceService(context).status(command.args[0]);
+        await new WorkspaceService(context).statusWithGit(command.args[0]);
     }
 
     private async push(context: Context, command: Command, options: OptionValues): Promise<void> {

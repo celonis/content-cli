@@ -1,7 +1,7 @@
 import * as FormData from "form-data";
 import { Context } from "../../core/command/cli-context";
 import { GracefulError } from "../../core/utils/logger";
-import { NodeFileWriteResponse } from "./workspace.models";
+import { NodeFileWriteResponse, WorkspaceBranch } from "./workspace.models";
 
 export class WorkspaceApi {
     constructor(private readonly context: Context) {}
@@ -66,6 +66,13 @@ export class WorkspaceApi {
 
     public deleteFile(packageKey: string, filePath: string, eTag: string): Promise<void> {
         return this.context.httpClient.delete(this.fileUrl(packageKey, filePath), { "If-Match": eTag });
+    }
+
+    public createBranch(packageKey: string, branchKey: string): Promise<WorkspaceBranch> {
+        return this.context.httpClient.post(`/pacman/api/core/packages/${encodeURIComponent(packageKey)}/branches`, {
+            branchKey,
+            version: "STAGING",
+        });
     }
 
     private fileUrl(packageKey: string, filePath: string): string {
