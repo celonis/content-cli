@@ -177,8 +177,7 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
             .option(
                 "--layers <layers...>",
-                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES (can be combined, e.g. --layers SCHEMA BUSINESS PACKAGE_SETTINGS PIG_SEMANTICS DATA_PIPELINES). Defaults to SCHEMA.",
-                ["SCHEMA"]
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES (can be combined, e.g. --layers SCHEMA BUSINESS). Omit to run every layer available for the team."
             )
             .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
             .option("--json", "Return the response as a JSON file")
@@ -196,8 +195,7 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Key of the package to validate")
             .option(
                 "--layers <layers...>",
-                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES (can be combined, e.g. --layers SCHEMA BUSINESS PACKAGE_SETTINGS PIG_SEMANTICS DATA_PIPELINES). Defaults to SCHEMA.",
-                ["SCHEMA"]
+                "Validation layers to run. Allowed values: SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES (can be combined, e.g. --layers SCHEMA BUSINESS). Omit to run every layer available for the team."
             )
             .option("--nodeKeys <nodeKeys...>", "Specific node keys to validate (default: all nodes)")
             .option("--json", "Return the response as a JSON file")

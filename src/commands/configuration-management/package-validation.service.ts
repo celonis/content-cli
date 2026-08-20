@@ -16,7 +16,12 @@ export class PackageValidationService {
     }
 
     public async validatePackage(packageKey: string, layers: string[], nodeKeys: string[], jsonOutput: boolean): Promise<void> {
-        const request: PackageValidationRequest = { layers };
+        const request: PackageValidationRequest = {};
+        // Omitted rather than defaulted here: the API reads an absent "layers" as every layer available for
+        // the team, and rejects an empty list.
+        if (layers && layers.length > 0) {
+            request.layers = layers;
+        }
         if (nodeKeys && nodeKeys.length > 0) {
             request.nodeKeys = nodeKeys;
         }
