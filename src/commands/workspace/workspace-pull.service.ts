@@ -176,7 +176,7 @@ export class WorkspacePullService {
         recoveringCreateKeys: boolean
     ): PullOperation[] {
         const localByKey = new Map(localNodes.map(node => [node.key, node]));
-        const localPaths = this.localPaths(localNodes);
+        const localPaths = this.localPaths(localNodes, snapshot.packageKey);
         const localByPath = new Map(
             [...localPaths].map(([nodeKey, localPath]) => [localPath.toLowerCase(), localByKey.get(nodeKey)!])
         );
@@ -522,8 +522,8 @@ export class WorkspacePullService {
         return entry.kind === "file" && entry.contentDigest !== expected?.digest;
     }
 
-    private localPaths(nodes: WorkspaceNodeMetadata[]): Map<string, string> {
-        return projectWorkspacePaths(nodes);
+    private localPaths(nodes: WorkspaceNodeMetadata[], packageKey: string): Map<string, string> {
+        return projectWorkspacePaths(nodes, packageKey);
     }
 
     private validateManifest(manifest: WorkspaceManifest): void {

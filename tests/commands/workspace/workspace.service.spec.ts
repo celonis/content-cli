@@ -546,6 +546,23 @@ describe("Workspace service", () => {
         expect(new WorkspaceService(testContext).status()).toEqual([]);
     });
 
+    it("pulls a workspace whose root metadata still names the concrete Package parent", async () => {
+        const original = [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }];
+        writeWorkspace(original);
+        const folderMetadataPath = path.join(process.cwd(), ".pacman", "nodes", "folder-1.json");
+        const folderMetadata = JSON.parse(fs.readFileSync(folderMetadataPath, "utf-8"));
+        fs.writeFileSync(folderMetadataPath, JSON.stringify({ ...folderMetadata, parentNodeKey: PACKAGE_KEY }));
+        mockManifest(original);
+
+        await new WorkspaceService(testContext).pull();
+
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+        expect(JSON.parse(fs.readFileSync(folderMetadataPath, "utf-8"))).toMatchObject({
+            key: "folder-1",
+            parentNodeKey: null,
+        });
+    });
+
     it("deletes nested remote folders deepest first", async () => {
         const original = [{ nodeKey: "node-1", path: "Deleted/Parent/Child/Guide.md", content: "one" }];
         writeWorkspace(original);
