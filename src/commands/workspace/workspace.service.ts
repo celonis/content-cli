@@ -151,11 +151,7 @@ export class WorkspaceService {
             }
         }
         let localState = hasLocalState ? this.state(root) : undefined;
-        if (localState?.refreshRequired) {
-            localState = { ...localState };
-            delete localState.refreshRequired;
-            this.writeState(root, localState);
-        }
+        const recoveringCreateKeys = Boolean(localState?.refreshRequired);
         if (localState?.serverRevision) {
             localState = { ...localState };
             delete localState.serverRevision;
@@ -163,6 +159,11 @@ export class WorkspaceService {
         }
         const { packageKey, restoredObservation } = await this.pullTarget(root, projectKey, localState);
         const remote = await this.api.manifest(packageKey);
+        if (localState?.refreshRequired) {
+            localState = { ...localState };
+            delete localState.refreshRequired;
+            this.writeState(root, localState);
+        }
         const pullService = new WorkspacePullService(this.api);
         if (!localState) {
             const initial: WorkspaceState = {
@@ -186,7 +187,17 @@ export class WorkspaceService {
             logger.info(`Pulled ${packageKey}.`);
             return;
         }
-        const result = await pullService.pull(root, this.snapshot(root), this.nodes(root), paths, remote.manifest);
+        const result = await pullService.pull(
+            root,
+            this.snapshot(root),
+            this.nodes(root),
+            paths,
+            remote.manifest,
+            recoveringCreateKeys
+        );
+        if (recoveringCreateKeys && paths.length > 0) {
+            result.state.refreshRequired = true;
+        }
         this.writeState(root, result.state);
         result.outcomes.forEach(outcome =>
             logger.info(

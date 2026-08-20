@@ -546,6 +546,18 @@ describe("Workspace service", () => {
         expect(new WorkspaceService(testContext).status()).toEqual([]);
     });
 
+    it("deletes nested remote folders deepest first", async () => {
+        const original = [{ nodeKey: "node-1", path: "Deleted/Parent/Child/Guide.md", content: "one" }];
+        writeWorkspace(original);
+        mockManifest([]);
+
+        await new WorkspaceService(testContext).pull();
+
+        expect(fs.existsSync(path.join(process.cwd(), "Deleted"))).toBe(false);
+        expect(fs.readdirSync(path.join(process.cwd(), ".pacman", "nodes"))).toEqual([]);
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+    });
+
     it("reports a local and remote conflict while advancing an independent successful node", async () => {
         const original = [
             { nodeKey: "node-1", path: "Guides/Conflict.md", content: "one" },
@@ -1218,6 +1230,36 @@ describe("Workspace service", () => {
         expect(new WorkspaceService(testContext).status()).toEqual([]);
         expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/local-node.json"))).toBe(false);
         expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/server-node.json"))).toBe(true);
+    });
+
+    it("recovers a server-assigned node key after post-create refresh fails", async () => {
+        const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
+        const remote = { ...local, nodeKey: "server-node" };
+        writeWorkspace([local]);
+        const statePath = path.join(process.cwd(), ".pacman", "local", "state.json");
+        fs.writeFileSync(statePath, JSON.stringify({ ...state([local]), baselineDigests: {} }));
+        mockAxiosPut(fileUrl(local.path), {
+            path: local.path,
+            nodeKey: remote.nodeKey,
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("new"),
+        });
+        mockAxiosGetError(manifestUrl(), 503, { message: "unavailable" });
+        const service = new WorkspaceService(testContext, mockGit(undefined));
+
+        await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
+        fs.writeFileSync(path.join(process.cwd(), local.path), "newer local edit");
+        mockManifest([remote]);
+
+        await service.pull();
+
+        expect(fs.readFileSync(path.join(process.cwd(), local.path), "utf-8")).toBe("newer local edit");
+        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/local-node.json"))).toBe(false);
+        expect(fs.existsSync(path.join(process.cwd(), ".pacman/nodes/server-node.json"))).toBe(true);
+        expect(service.status()).toEqual([{ path: local.path, status: "modified" }]);
+        expect(JSON.parse(fs.readFileSync(statePath, "utf-8"))).toMatchObject({
+            baselineDigests: { "server-node": digest("new") },
+        });
     });
 
     it("retains a stale file for retry when its conditional update fails", async () => {

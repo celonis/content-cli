@@ -37,6 +37,7 @@ interface PullOperation {
     entry?: WorkspaceManifestNode;
     localNode?: WorkspaceNodeMetadata;
     localChange?: ClassifiedWorkspaceChange;
+    replacedNodeKey?: string;
     conflict?: string;
     converged?: boolean;
 }
@@ -54,10 +55,15 @@ export class WorkspacePullService {
         snapshot: WorkspaceSnapshot,
         localNodes: WorkspaceNodeMetadata[],
         paths: string[],
-        manifest: WorkspaceManifest
+        manifest: WorkspaceManifest,
+        recoveringCreateKeys: boolean = false
     ): Promise<WorkspacePullResult> {
         this.validateManifest(manifest);
-        const operations = this.select(root, paths, this.operations(snapshot, localNodes, manifest));
+        const operations = this.select(
+            root,
+            paths,
+            this.operations(snapshot, localNodes, manifest, recoveringCreateKeys)
+        );
         const state: WorkspaceState = {
             ...snapshot.state,
             baselineDigests: { ...snapshot.state.baselineDigests },
@@ -166,15 +172,20 @@ export class WorkspacePullService {
     private operations(
         snapshot: WorkspaceSnapshot,
         localNodes: WorkspaceNodeMetadata[],
-        manifest: WorkspaceManifest
+        manifest: WorkspaceManifest,
+        recoveringCreateKeys: boolean
     ): PullOperation[] {
         const localByKey = new Map(localNodes.map(node => [node.key, node]));
         const localPaths = this.localPaths(localNodes);
+        const localByPath = new Map(
+            [...localPaths].map(([nodeKey, localPath]) => [localPath.toLowerCase(), localByKey.get(nodeKey)!])
+        );
         const expectedByKey = new Map(snapshot.expectedFiles.map(file => [file.nodeKey, file]));
         const changeByKey = new Map(
             snapshot.changes.flatMap(change => (change.nodeKey ? [[change.nodeKey, change] as const] : []))
         );
         const remoteByKey = new Map(manifest.nodes.map(entry => [entry.nodeKey, entry]));
+        const replacedLocalKeys = new Set<string>();
         const operations: PullOperation[] = [];
         manifest.nodes.forEach(entry => {
             const localNode = localByKey.get(entry.nodeKey);
@@ -182,6 +193,33 @@ export class WorkspacePullService {
             const expected = expectedByKey.get(entry.nodeKey);
             const localChange = changeByKey.get(entry.nodeKey);
             if (!localNode) {
+                const provisional = recoveringCreateKeys ? localByPath.get(entry.path.toLowerCase()) : undefined;
+                const provisionalChange = provisional ? changeByKey.get(provisional.key) : undefined;
+                const provisionalPath = provisional ? localPaths.get(provisional.key) : undefined;
+                if (
+                    entry.kind === "file" &&
+                    provisional &&
+                    !this.isFolder(provisional) &&
+                    provisional.type.toUpperCase() === entry.assetType?.toUpperCase() &&
+                    provisionalChange?.status === "added" &&
+                    !expectedByKey.get(provisional.key)?.digest &&
+                    provisionalPath
+                ) {
+                    const localDigest = snapshot.visibleFiles.get(provisionalPath);
+                    operations.push({
+                        nodeKey: entry.nodeKey,
+                        path: entry.path,
+                        localPath: provisionalPath,
+                        status: localDigest === entry.contentDigest ? "added" : "modified",
+                        entry,
+                        localNode: provisional,
+                        localChange: provisionalChange,
+                        replacedNodeKey: provisional.key,
+                        converged: true,
+                    });
+                    replacedLocalKeys.add(provisional.key);
+                    return;
+                }
                 const occupied = entry.kind === "file" && this.visibleAt(snapshot, entry.path);
                 operations.push({
                     nodeKey: entry.nodeKey,
@@ -220,7 +258,7 @@ export class WorkspacePullService {
             operations.push(operation);
         });
         localNodes
-            .filter(node => !remoteByKey.has(node.key))
+            .filter(node => !remoteByKey.has(node.key) && !replacedLocalKeys.has(node.key))
             .forEach(node => {
                 const localPath = localPaths.get(node.key);
                 if (!localPath) {
@@ -265,9 +303,20 @@ export class WorkspacePullService {
             }
             return 1;
         };
-        return [...operations].sort(
-            (left, right) => priority(left) - priority(right) || left.path.localeCompare(right.path)
-        );
+        return [...operations].sort((left, right) => {
+            const leftPriority = priority(left);
+            const rightPriority = priority(right);
+            if (leftPriority !== rightPriority) {
+                return leftPriority - rightPriority;
+            }
+            if (leftPriority === 2) {
+                const depth = right.path.split("/").length - left.path.split("/").length;
+                if (depth !== 0) {
+                    return depth;
+                }
+            }
+            return left.path.localeCompare(right.path);
+        });
     }
 
     private async apply(
@@ -290,6 +339,11 @@ export class WorkspacePullService {
         }
         if (entry.kind === "file" && !operation.converged) {
             await this.applyFile(root, packageKey, operation, entry);
+        }
+        if (operation.replacedNodeKey) {
+            this.removeMetadata(root, operation.replacedNodeKey);
+            delete state.baselineDigests[operation.replacedNodeKey];
+            delete state.moveHints[operation.replacedNodeKey];
         }
         this.writeMetadataWithAncestors(root, entry, manifest);
         if (entry.kind === "file") {
