@@ -910,6 +910,34 @@ describe("Workspace service", () => {
         ]);
     });
 
+    it("preserves move hints for files omitted from a path-selected push", async () => {
+        const original = [
+            { nodeKey: "node-1", path: "Guides/One.md", content: "one" },
+            { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
+        ];
+        writeWorkspace(original);
+        const service = new WorkspaceService(testContext);
+        service.move("Guides/One.md", "Pages/One.md");
+        service.move("Guides/Two.md", "Pages/Two.md");
+        mockAxiosGet(fileUrl("Guides/One.md"), Buffer.from("one"), { etag: eTag("one") });
+        mockAxiosPatch(fileUrl("Guides/One.md"), {
+            path: "Pages/One.md",
+            nodeKey: "node-1",
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("one-moved"),
+        });
+        mockAxiosGet(ARCHIVE_URL, archive([{ ...original[0], path: "Pages/One.md" }, original[1]]), {
+            etag: eTag("revision-2"),
+        });
+
+        await service.push(["Pages/One.md"]);
+
+        expect(service.status()).toEqual([{ path: "Pages/Two.md", status: "moved" }]);
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+        ).toMatchObject({ moveHints: { "node-2": "Pages/Two.md" } });
+    });
+
     it("expands a case-insensitive selected directory to its changed descendants", async () => {
         const original = [
             { nodeKey: "node-1", path: "Selected/One.md", content: "one" },
@@ -1070,6 +1098,74 @@ describe("Workspace service", () => {
             (mockedAxiosInstance.put as jest.Mock).mock.invocationCallOrder[0]
         );
         expect(service.status()).toEqual([]);
+    });
+
+    it("moves a tracked file before creating a replacement at its old path", async () => {
+        writeWorkspace();
+        const service = new WorkspaceService(testContext);
+        service.move("Guides/Guide.md", "Pages/Guide.md");
+        fs.writeFileSync(path.join(process.cwd(), "Guides/Guide.md"), "replacement");
+        expect(service.status()).toEqual([
+            { path: "Guides/Guide.md", status: "added" },
+            { path: "Pages/Guide.md", status: "moved" },
+        ]);
+        mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: eTag("file-1") });
+        mockAxiosPatch(fileUrl("Guides/Guide.md"), {
+            path: "Pages/Guide.md",
+            nodeKey: "node-1",
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("file-2"),
+        });
+        mockAxiosPut(fileUrl("Guides/Guide.md"), {
+            path: "Guides/Guide.md",
+            nodeKey: "node-2",
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("file-3"),
+        });
+        mockAxiosGet(
+            ARCHIVE_URL,
+            archive([
+                { nodeKey: "node-1", path: "Pages/Guide.md", content: "original" },
+                { nodeKey: "node-2", path: "Guides/Guide.md", content: "replacement" },
+            ]),
+            { etag: eTag("revision-2") }
+        );
+
+        await service.push();
+
+        expect((mockedAxiosInstance.patch as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+            (mockedAxiosInstance.put as jest.Mock).mock.invocationCallOrder[0]
+        );
+        expect(service.status()).toEqual([]);
+    });
+
+    it("refreshes after a moved file is relocated but its content update fails", async () => {
+        writeWorkspace();
+        const service = new WorkspaceService(testContext);
+        service.move("Guides/Guide.md", "Pages/Guide.md");
+        fs.writeFileSync(path.join(process.cwd(), "Pages/Guide.md"), "changed");
+        mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: eTag("file-1") });
+        mockAxiosPatch(fileUrl("Guides/Guide.md"), {
+            path: "Pages/Guide.md",
+            nodeKey: "node-1",
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("file-2"),
+        });
+        mockAxiosPutError(fileUrl("Pages/Guide.md"), 412, { message: "stale" });
+        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]), {
+            etag: eTag("revision-2"),
+        });
+
+        await expect(service.push()).rejects.toThrow("Workspace push failed for 1 file(s)");
+
+        expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "modified" }]);
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".pacman/local/state.json"), "utf-8"))
+        ).toMatchObject({
+            serverRevision: eTag("revision-2"),
+            baselineDigests: { "node-1": digest("original") },
+            moveHints: {},
+        });
     });
 
     it("rejects paths with a full push and overwrite without a full push", async () => {

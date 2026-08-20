@@ -207,7 +207,8 @@ export class WorkspaceService {
         );
         const succeeded = outcomes.filter(outcome => outcome.success);
         const failed = outcomes.filter(outcome => !outcome.success);
-        if (succeeded.length === 0) {
+        const remoteChanged = outcomes.some(outcome => outcome.remoteChanged);
+        if (!remoteChanged) {
             this.writeState(root, snapshot.state);
             if (failed.length > 0) {
                 throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
@@ -215,13 +216,7 @@ export class WorkspaceService {
             logger.info("Workspace is clean.");
             return;
         }
-        const retainedHints = Object.fromEntries(
-            failed
-                .filter(
-                    outcome => outcome.nodeKey && (outcome.status === "moved" || outcome.status === "moved, modified")
-                )
-                .map(outcome => [outcome.nodeKey!, snapshot.state.moveHints[outcome.nodeKey!] || outcome.path])
-        );
+        const retainedHints = this.retainedMoveHints(snapshot.state.moveHints, outcomes);
         this.writeState(root, {
             ...snapshot.state,
             moveHints: retainedHints,
@@ -906,6 +901,32 @@ export class WorkspaceService {
                 ];
             })
         );
+    }
+
+    private retainedMoveHints(
+        hints: Record<string, string | WorkspaceMoveHint>,
+        outcomes: WorkspacePushOutcome[]
+    ): Record<string, string | WorkspaceMoveHint> {
+        const completedNodeKeys = new Set(
+            outcomes
+                .filter(outcome => outcome.success || outcome.remoteChanged)
+                .flatMap(outcome => (outcome.nodeKey ? [outcome.nodeKey] : []))
+        );
+        const retained = Object.fromEntries(
+            Object.entries(hints).filter(([nodeKey]) => !completedNodeKeys.has(nodeKey))
+        );
+        outcomes
+            .filter(
+                outcome =>
+                    !outcome.success &&
+                    !outcome.remoteChanged &&
+                    outcome.nodeKey &&
+                    (outcome.status === "moved" || outcome.status === "moved, modified")
+            )
+            .forEach(outcome => {
+                retained[outcome.nodeKey!] ||= hints[outcome.nodeKey!] || outcome.path;
+            });
+        return retained;
     }
 
     private statePath(root: string): string {

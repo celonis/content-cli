@@ -32,7 +32,9 @@ export function classifyWorkspaceChanges(
     );
     newPaths.forEach(filePath => changes.push({ path: filePath, status: "added" }));
 
-    return changes.sort((left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status));
+    return changes.sort(
+        (left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status)
+    );
 }
 
 function classifyExpectedFile(
@@ -106,13 +108,12 @@ function classifyHintedFile(
 ): void {
     const targetPath = visiblePathIndex.get(hint.toLowerCase());
     const sourcePath = visiblePathIndex.get(file.path.toLowerCase());
-    const sourceStillPresent = hint.toLowerCase() !== file.path.toLowerCase() && Boolean(sourcePath);
-    if (sourceStillPresent || !targetPath || consumedPaths.has(targetPath)) {
+    if (!targetPath || consumedPaths.has(targetPath)) {
         changes.push({ nodeKey: file.nodeKey, path: hint, status: "unresolved" });
         if (targetPath) {
             consumedPaths.add(targetPath);
         }
-        if (sourceStillPresent && sourcePath) {
+        if (sourcePath) {
             consumedPaths.add(sourcePath);
         }
         return;

@@ -15,20 +15,33 @@ interface Selection {
     directory: boolean;
 }
 
+interface WorkspacePushOperationError extends Error {
+    remoteChanged: boolean;
+}
+
+function operationError(error: unknown, remoteChanged: boolean): WorkspacePushOperationError {
+    return Object.assign(new Error(error instanceof Error ? error.message : String(error)), { remoteChanged });
+}
+
+function isOperationError(error: unknown): error is WorkspacePushOperationError {
+    return error instanceof Error && "remoteChanged" in error && typeof error.remoteChanged === "boolean";
+}
+
 export class WorkspacePushService {
     constructor(private readonly api: WorkspaceApi) {}
 
     public async push(root: string, snapshot: WorkspaceSnapshot, paths: string[]): Promise<WorkspacePushOutcome[]> {
-        const changes = this.select(root, snapshot, paths);
+        const changes = this.order(this.select(root, snapshot, paths));
         const outcomes: WorkspacePushOutcome[] = [];
         for (const change of changes) {
             try {
                 await this.pushChange(root, snapshot, change);
-                outcomes.push({ ...change, success: true });
+                outcomes.push({ ...change, success: true, remoteChanged: true });
             } catch (error) {
                 outcomes.push({
                     ...change,
                     success: false,
+                    remoteChanged: isOperationError(error) && error.remoteChanged,
                     error: error instanceof Error ? error.message : String(error),
                 });
             }
@@ -61,6 +74,27 @@ export class WorkspacePushService {
                 )
             )
             .map(candidate => candidate.change);
+    }
+
+    private order(changes: ClassifiedWorkspaceChange[]): ClassifiedWorkspaceChange[] {
+        const priority = (change: ClassifiedWorkspaceChange): number => {
+            switch (change.status) {
+                case "deleted":
+                    return 0;
+                case "moved":
+                case "moved, modified":
+                    return 1;
+                case "modified":
+                    return 2;
+                case "added":
+                    return 3;
+                case "unresolved":
+                    return 4;
+            }
+        };
+        return [...changes].sort(
+            (left, right) => priority(left) - priority(right) || left.path.localeCompare(right.path)
+        );
     }
 
     private selection(root: string, value: string, candidatePaths: string[]): Selection {
@@ -136,16 +170,22 @@ export class WorkspacePushService {
             case "moved, modified": {
                 const tracked = this.requireExpected(expected);
                 let eTag = await this.currentETag(snapshot.packageKey, tracked, tracked.path);
+                let moved = false;
                 if (tracked.path !== change.path) {
                     eTag = (await this.api.moveFile(snapshot.packageKey, tracked.path, change.path, eTag)).eTag;
+                    moved = true;
                 }
-                await this.api.putFile(
-                    snapshot.packageKey,
-                    change.path,
-                    this.content(root, change.path),
-                    this.contentType(change.path),
-                    { "If-Match": eTag }
-                );
+                try {
+                    await this.api.putFile(
+                        snapshot.packageKey,
+                        change.path,
+                        this.content(root, change.path),
+                        this.contentType(change.path),
+                        { "If-Match": eTag }
+                    );
+                } catch (error) {
+                    throw operationError(error, moved);
+                }
                 return;
             }
             case "deleted": {

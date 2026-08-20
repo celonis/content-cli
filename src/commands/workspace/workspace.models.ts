@@ -86,6 +86,7 @@ export interface WorkspacePushOutcome {
     status: WorkspaceChangeStatus;
     nodeKey?: string;
     success: boolean;
+    remoteChanged?: boolean;
     error?: string;
 }
 
