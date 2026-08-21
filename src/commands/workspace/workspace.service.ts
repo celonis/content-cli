@@ -141,9 +141,7 @@ export class WorkspaceService {
 
     public async pull(paths: string[] = [], options: WorkspacePullOptions = {}): Promise<void> {
         if (options.full) {
-            if (paths.length > 0) {
-                throw new GracefulError("Workspace paths cannot be combined with --full.");
-            }
+            this.validateFullPullPaths(paths);
             await this.pullFull();
             return;
         }
@@ -212,6 +210,12 @@ export class WorkspaceService {
             throw new GracefulError(`Workspace pull failed for ${failed.length} node(s).`);
         }
         logger.info(`Pulled ${packageKey}.`);
+    }
+
+    private validateFullPullPaths(paths: string[]): void {
+        if (paths.length > 0) {
+            throw new GracefulError("Workspace paths cannot be combined with --full.");
+        }
     }
 
     private async hydrateInitialPull(

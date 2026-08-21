@@ -488,35 +488,24 @@ export class WorkspacePullService {
         const target = this.resolve(root, entry.path);
         const source = operation.localPath ? this.resolve(root, operation.localPath) : undefined;
         const moved = Boolean(source && source.toLowerCase() !== target.toLowerCase());
-        if (moved && fs.existsSync(target)) {
-            if (!operation.downloadBody && source && !fs.existsSync(source) && fs.lstatSync(target).isFile()) {
-                return this.digest(target);
-            }
-            if (
-                !fs.lstatSync(target).isFile() ||
-                !operation.localPath ||
-                !this.coveredByFolderMove(operation.localPath, entry.path, appliedFolderMoves)
-            ) {
-                throw new GracefulError(`Remote file move conflicts with an existing local path: ${entry.path}`);
-            }
+        const existingTargetDigest = this.validateMovedTarget(
+            target,
+            source,
+            moved,
+            operation,
+            entry,
+            appliedFolderMoves
+        );
+        if (existingTargetDigest) {
+            return existingTargetDigest;
         }
         fs.mkdirSync(path.dirname(target), { recursive: true });
         if (!operation.downloadBody) {
-            if (moved && source && fs.existsSync(source)) {
-                fs.renameSync(source, target);
-            }
-            return this.digest(target);
+            return this.moveWithoutDownload(source, target, moved);
         }
         const remote = await this.api.readFile(packageKey, entry.path);
         const remoteDigest = this.digestBuffer(remote.body);
-        if (operation.verifyConvergence) {
-            const localDigest = this.localFileDigest(source || target);
-            if (localDigest !== remoteDigest) {
-                throw new GracefulError(`Server-created file no longer matches the local workspace: ${entry.path}`);
-            }
-        } else {
-            fs.writeFileSync(target, remote.body);
-        }
+        this.applyDownloadedFile(source, target, operation, entry, remote.body, remoteDigest);
         if (operation.verifyConvergence && moved && source && fs.existsSync(source)) {
             fs.renameSync(source, target);
         }
@@ -524,6 +513,55 @@ export class WorkspacePullService {
             fs.rmSync(source);
         }
         return remoteDigest;
+    }
+
+    private validateMovedTarget(
+        target: string,
+        source: string | undefined,
+        moved: boolean,
+        operation: PullOperation,
+        entry: WorkspaceManifestNode,
+        appliedFolderMoves: AppliedFolderMove[]
+    ): string | undefined {
+        if (!moved || !fs.existsSync(target)) {
+            return undefined;
+        }
+        if (!operation.downloadBody && source && !fs.existsSync(source) && fs.lstatSync(target).isFile()) {
+            return this.digest(target);
+        }
+        if (
+            !fs.lstatSync(target).isFile() ||
+            !operation.localPath ||
+            !this.coveredByFolderMove(operation.localPath, entry.path, appliedFolderMoves)
+        ) {
+            throw new GracefulError(`Remote file move conflicts with an existing local path: ${entry.path}`);
+        }
+        return undefined;
+    }
+
+    private moveWithoutDownload(source: string | undefined, target: string, moved: boolean): string {
+        if (moved && source && fs.existsSync(source)) {
+            fs.renameSync(source, target);
+        }
+        return this.digest(target);
+    }
+
+    private applyDownloadedFile(
+        source: string | undefined,
+        target: string,
+        operation: PullOperation,
+        entry: WorkspaceManifestNode,
+        body: Buffer,
+        remoteDigest: string
+    ): void {
+        if (!operation.verifyConvergence) {
+            fs.writeFileSync(target, body);
+            return;
+        }
+        const localDigest = this.localFileDigest(source || target);
+        if (localDigest !== remoteDigest) {
+            throw new GracefulError(`Server-created file no longer matches the local workspace: ${entry.path}`);
+        }
     }
 
     private localFileDigest(source: string | undefined): string | undefined {
