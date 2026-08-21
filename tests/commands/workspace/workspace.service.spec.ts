@@ -75,7 +75,7 @@ function metadata(files: TestFile[]): Record<string, object> {
         }
         nodes[file.nodeKey] = {
             name: path.posix.basename(file.path, path.posix.extname(file.path)),
-            type: "MARKDOWN_FILE",
+            type: "md",
             parentNodeKey,
         };
     });
@@ -245,7 +245,7 @@ describe("Workspace service", () => {
                 JSON.parse(
                     fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".package", "nodes", "node-1.json"), "utf-8")
                 )
-            ).toEqual({ name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder-1" });
+            ).toEqual({ name: "Guide", type: "md", parentNodeKey: "folder-1" });
             const cloneRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
             expect(cloneRename).toBeDefined();
             expect(path.dirname(cloneRename![0].toString())).toBe(path.dirname(cloneRename![1].toString()));

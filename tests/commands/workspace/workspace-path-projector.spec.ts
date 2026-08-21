@@ -9,7 +9,7 @@ describe("Workspace path projector", () => {
     it("derives registered and fallback extensions from Asset Type", () => {
         const nodes: WorkspaceNode[] = [
             { nodeKey: "folder", name: "Guides", type: "FOLDER" },
-            { nodeKey: "markdown", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
+            { nodeKey: "markdown", name: "Guide", type: "md", parentNodeKey: "folder" },
             { nodeKey: "html", name: "Landing", type: "HTML_CANVAS" },
             { nodeKey: "board", name: "Metrics", type: "BOARD_V2" },
         ];
@@ -20,6 +20,12 @@ describe("Workspace path projector", () => {
             html: "Landing.html",
             board: "Metrics.json",
         });
+    });
+
+    it("keeps the legacy Markdown Asset Type alias compatible", () => {
+        const nodes: WorkspaceNode[] = [{ nodeKey: "markdown", name: "Guide", type: "MARKDOWN_FILE" }];
+
+        expect(projectWorkspacePaths(nodes).get("markdown")).toBe("Guide.md");
     });
 
     it("adds stable Node-key suffixes to every colliding sibling", () => {

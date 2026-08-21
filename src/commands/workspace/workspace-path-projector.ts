@@ -134,6 +134,7 @@ function candidateSegment(node: WorkspaceNode): string {
 
 function fileExtension(assetType: string): string {
     switch (assetType.toUpperCase()) {
+        case "MD":
         case "MARKDOWN_FILE":
             return "md";
         case "HTML_CANVAS":
