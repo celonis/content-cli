@@ -145,7 +145,7 @@ function manifest(files: TestFile[]): Buffer {
                           eTag: eTag(file.content),
                           metadata: node,
                       }
-                    : { nodeKey, path: resolvePath(nodeKey), metadata: node };
+                    : { nodeKey, path: resolvePath(nodeKey), eTag: eTag(nodeKey), metadata: node };
             }),
             documents: {},
         })

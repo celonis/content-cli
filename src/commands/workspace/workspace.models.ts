@@ -100,7 +100,7 @@ export interface WorkspaceManifestNode {
     path: string;
     mediaType?: string | null;
     contentDigest?: string | null;
-    eTag?: string | null;
+    eTag: string;
     metadata: WorkspaceNodeMetadata;
 }
 

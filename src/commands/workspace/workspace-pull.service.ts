@@ -671,9 +671,10 @@ export class WorkspacePullService {
                 ["body", "kind", "assetType", "size"].some(field => field in fields) ||
                 keys.has(entry.nodeKey) ||
                 paths.has(foldedPath) ||
+                !entry.eTag ||
                 (folder
-                    ? entry.mediaType !== undefined || entry.contentDigest !== undefined || entry.eTag !== undefined
-                    : !entry.mediaType || !/^sha256:[0-9a-f]{64}$/.test(entry.contentDigest || "") || !entry.eTag)
+                    ? entry.mediaType !== undefined || entry.contentDigest !== undefined
+                    : !entry.mediaType || !/^sha256:[0-9a-f]{64}$/.test(entry.contentDigest || ""))
             ) {
                 throw new GracefulError("Unsupported workspace manifest.");
             }
