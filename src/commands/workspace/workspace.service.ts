@@ -21,6 +21,7 @@ import {
     WorkspaceGitObservation,
     WorkspaceManifest,
     WorkspaceMoveHint,
+    WorkspaceNode,
     WorkspaceNodeMetadata,
     WorkspacePackageIdentity,
     WorkspacePullOptions,
@@ -176,12 +177,12 @@ export class WorkspaceService {
             remote.manifest,
             recoveringCreateKeys
         );
-        const failed = result.outcomes.filter((outcome) => !outcome.success);
+        const failed = result.outcomes.filter(outcome => !outcome.success);
         if (recoveringCreateKeys && (paths.length > 0 || failed.length > 0)) {
             result.state.refreshRequired = true;
         }
         this.writeState(root, result.state);
-        result.outcomes.forEach((outcome) =>
+        result.outcomes.forEach(outcome =>
             logger.info(
                 `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
                     (outcome.error ? ` (${outcome.error})` : "")
@@ -255,7 +256,7 @@ export class WorkspaceService {
         if (changes.length === 0) {
             logger.info("Workspace is clean.");
         } else {
-            changes.forEach((change) => logger.info(`${change.status}: ${change.path}`));
+            changes.forEach(change => logger.info(`${change.status}: ${change.path}`));
         }
         return changes;
     }
@@ -284,14 +285,14 @@ export class WorkspaceService {
         delete invalidatedBeforePush.serverRevision;
         this.writeState(root, invalidatedBeforePush);
         const outcomes: WorkspacePushOutcome[] = await new WorkspacePushService(this.api).push(root, snapshot, paths);
-        outcomes.forEach((outcome) =>
+        outcomes.forEach(outcome =>
             logger.info(
                 `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
                     (outcome.error ? ` (${outcome.error})` : "")
             )
         );
-        const failed = outcomes.filter((outcome) => !outcome.success);
-        const remoteChanged = outcomes.some((outcome) => outcome.remoteChanged);
+        const failed = outcomes.filter(outcome => !outcome.success);
+        const remoteChanged = outcomes.some(outcome => outcome.remoteChanged);
         const retainedHints = this.retainedMoveHints(snapshot.state.moveHints, outcomes);
         const invalidatedState: WorkspaceState = {
             ...snapshot.state,
@@ -331,10 +332,10 @@ export class WorkspaceService {
         const root = this.root();
         await this.synchronizeGitTarget(root, true);
         const snapshot = this.snapshot(root);
-        if (snapshot.changes.some((change) => change.status === "unresolved")) {
+        if (snapshot.changes.some(change => change.status === "unresolved")) {
             throw new GracefulError("Workspace has unresolved file identities. Record the intended moves before push.");
         }
-        const zipPath = fileService.zipDirectoryAsSinglePackage(root, (filePath) => {
+        const zipPath = fileService.zipDirectoryAsSinglePackage(root, filePath => {
             const folded = filePath.toLowerCase();
             return (
                 folded !== ".git" &&
@@ -352,11 +353,11 @@ export class WorkspaceService {
             const moves = Object.fromEntries(
                 snapshot.changes
                     .filter(
-                        (change) =>
+                        change =>
                             Boolean(change.nodeKey) &&
                             (change.status === "moved" || change.status === "moved, modified")
                     )
-                    .map((change) => [change.nodeKey!, change.path])
+                    .map(change => [change.nodeKey!, change.path])
             );
             if (Object.keys(moves).length > 0) {
                 form.append("moveMappings", JSON.stringify({ moves }), { contentType: "application/json" });
@@ -398,7 +399,7 @@ export class WorkspaceService {
             throw new GracefulError(`Tracked file not found: ${sourcePath}`);
         }
         const targetOwned = snapshot.expectedFiles.some(
-            (file) => file.nodeKey !== tracked.nodeKey && file.path.toLowerCase() === targetPath.toLowerCase()
+            file => file.nodeKey !== tracked.nodeKey && file.path.toLowerCase() === targetPath.toLowerCase()
         );
         if (targetOwned) {
             throw new GracefulError(`Target path is already tracked: ${targetPath}`);
@@ -451,24 +452,24 @@ export class WorkspaceService {
 
     private expectedFiles(root: string, state: WorkspaceState, packageKey: string): ExpectedWorkspaceFile[] {
         const nodes = this.nodes(root);
-        const byKey = new Map(nodes.map((node) => [node.key, node]));
+        const byKey = new Map(nodes.map(node => [node.nodeKey, node]));
         const pathByKey = projectWorkspacePaths(nodes, packageKey);
         const expected = nodes
-            .filter((node) => !this.isFolder(node))
-            .map((node) => {
-                const baseline = state.baselineDigests[node.key];
+            .filter(node => !this.isFolder(node))
+            .map(node => {
+                const baseline = state.baselineDigests[node.nodeKey];
                 if (baseline && !/^sha256:[0-9a-f]{64}$/.test(baseline)) {
-                    throw new GracefulError(`Invalid baseline digest for node ${node.key}.`);
+                    throw new GracefulError(`Invalid baseline digest for node ${node.nodeKey}.`);
                 }
-                const metadataPath = pathByKey.get(node.key)!;
-                const hint = state.moveHints[node.key];
+                const metadataPath = pathByKey.get(node.nodeKey)!;
+                const hint = state.moveHints[node.nodeKey];
                 const sourcePath = this.isStructuredMoveHint(hint)
                     ? this.validateRelative(hint.sourcePath)
                     : metadataPath;
-                return { nodeKey: node.key, path: sourcePath, digest: baseline };
+                return { nodeKey: node.nodeKey, path: sourcePath, digest: baseline };
             });
         const foldedPaths = new Set<string>();
-        expected.forEach((file) => {
+        expected.forEach(file => {
             const foldedPath = file.path.toLowerCase();
             if (foldedPaths.has(foldedPath)) {
                 throw new GracefulError(`Duplicate workspace path in node metadata: ${file.path}`);
@@ -491,31 +492,33 @@ export class WorkspaceService {
         return expected.sort((left, right) => left.path.localeCompare(right.path));
     }
 
-    private nodes(root: string): WorkspaceNodeMetadata[] {
+    private nodes(root: string): WorkspaceNode[] {
         const directory = path.join(root, ".package", "nodes");
         if (!fs.existsSync(directory)) {
             throw new GracefulError("Workspace does not contain .package/nodes metadata.");
         }
         return fs
             .readdirSync(directory, { withFileTypes: true })
-            .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+            .filter(entry => entry.isFile() && entry.name.endsWith(".json"))
             .sort((left, right) => left.name.localeCompare(right.name))
-            .map((entry) => {
-                const node = JSON.parse(
+            .map(entry => {
+                const nodeKey = entry.name.slice(0, -".json".length);
+                const metadata = JSON.parse(
                     fs.readFileSync(path.join(directory, entry.name), "utf-8")
                 ) as WorkspaceNodeMetadata;
-                const fields = node as unknown as Record<string, unknown>;
+                const fields = metadata as unknown as Record<string, unknown>;
                 if (
-                    !node.key ||
-                    !node.name ||
-                    !node.type ||
-                    `${node.key}.json` !== entry.name ||
-                    NON_SEMANTIC_NODE_FIELDS.some((field) => field in fields) ||
-                    this.hasLegacyFilesystemName(node)
+                    !nodeKey ||
+                    !metadata.name ||
+                    !metadata.type ||
+                    "key" in fields ||
+                    "nodeKey" in fields ||
+                    NON_SEMANTIC_NODE_FIELDS.some(field => field in fields) ||
+                    this.hasLegacyFilesystemName(metadata)
                 ) {
                     throw new GracefulError(`Invalid node metadata file: ${entry.name}`);
                 }
-                return node;
+                return { nodeKey, ...metadata };
             });
     }
 
@@ -525,7 +528,7 @@ export class WorkspaceService {
         const visit = (directory: string, relativeDirectory: string): void => {
             fs.readdirSync(directory, { withFileTypes: true })
                 .sort((left, right) => left.name.localeCompare(right.name))
-                .forEach((entry) => {
+                .forEach(entry => {
                     if (
                         !relativeDirectory &&
                         (entry.name.toLowerCase() === ".package" || entry.name.toLowerCase() === ".git")
@@ -559,23 +562,23 @@ export class WorkspaceService {
 
     private trackedFile(snapshot: WorkspaceSnapshot, sourcePath: string): ExpectedWorkspaceFile | undefined {
         const foldedSourcePath = sourcePath.toLowerCase();
-        const expected = snapshot.expectedFiles.find((file) => file.path.toLowerCase() === foldedSourcePath);
+        const expected = snapshot.expectedFiles.find(file => file.path.toLowerCase() === foldedSourcePath);
         if (expected) {
             return expected;
         }
         const hinted = snapshot.expectedFiles.find(
-            (file) => this.moveHintTarget(snapshot.state.moveHints[file.nodeKey])?.toLowerCase() === foldedSourcePath
+            file => this.moveHintTarget(snapshot.state.moveHints[file.nodeKey])?.toLowerCase() === foldedSourcePath
         );
         if (hinted) {
             return hinted;
         }
         const classified = snapshot.changes.find(
-            (change) =>
+            change =>
                 change.path.toLowerCase() === foldedSourcePath &&
                 change.nodeKey &&
                 (change.status === "moved" || change.status === "moved, modified")
         );
-        return classified ? snapshot.expectedFiles.find((file) => file.nodeKey === classified.nodeKey) : undefined;
+        return classified ? snapshot.expectedFiles.find(file => file.nodeKey === classified.nodeKey) : undefined;
     }
 
     private validateParentMove(
@@ -591,9 +594,9 @@ export class WorkspaceService {
         const nodes = this.nodes(root);
         const paths = projectWorkspacePaths(nodes, snapshot.packageKey);
         const targetParentPath = path.posix.dirname(targetPath) === "." ? "" : path.posix.dirname(targetPath);
-        const targetParent = nodes.find((node) => this.isFolder(node) && paths.get(node.key) === targetParentPath);
+        const targetParent = nodes.find(node => this.isFolder(node) && paths.get(node.nodeKey) === targetParentPath);
         const targetParentKey = targetParentPath
-            ? targetParent?.key || `__workspace_target__:${targetParentPath}`
+            ? targetParent?.nodeKey || `__workspace_target__:${targetParentPath}`
             : undefined;
         if (projectedLeafAfterMove(nodes, tracked.nodeKey, targetParentKey, snapshot.packageKey) !== currentLeaf) {
             throw new GracefulError("This parent move would change the Node's derived filename.");
@@ -666,7 +669,7 @@ export class WorkspaceService {
             throw new GracefulError("Archive does not contain Pacman package metadata.");
         }
         if (
-            zip.getEntries().some((entry) => {
+            zip.getEntries().some(entry => {
                 const folded = entry.entryName.toLowerCase();
                 return folded === ".package/local" || folded.startsWith(".package/local/");
             })
@@ -714,23 +717,20 @@ export class WorkspaceService {
             moveHints: {},
         };
         const remoteFiles = new Map(
-            this.expectedFiles(remoteRoot, emptyState, packageKey).map((file) => [file.nodeKey, file])
+            this.expectedFiles(remoteRoot, emptyState, packageKey).map(file => [file.nodeKey, file])
         );
         const localFiles = this.expectedFiles(root, emptyState, packageKey);
-        const remoteNodes = new Map(this.nodes(remoteRoot).map((node) => [node.key, node]));
-        this.nodes(root).forEach((node) => {
-            const remote = remoteNodes.get(node.key);
+        const remoteNodes = new Map(this.nodes(remoteRoot).map(node => [node.nodeKey, node]));
+        this.nodes(root).forEach(node => {
+            const remote = remoteNodes.get(node.nodeKey);
             if (remote && this.isFolder(remote) !== this.isFolder(node)) {
-                throw new GracefulError(`Node metadata type conflicts with the server for ${node.key}.`);
+                throw new GracefulError(`Node metadata type conflicts with the server for ${node.nodeKey}.`);
             }
         });
         const moveHints: Record<string, WorkspaceMoveHint> = Object.fromEntries(
             localFiles
-                .filter((file) => remoteFiles.has(file.nodeKey) && remoteFiles.get(file.nodeKey)!.path !== file.path)
-                .map((file) => [
-                    file.nodeKey,
-                    { sourcePath: remoteFiles.get(file.nodeKey)!.path, targetPath: file.path },
-                ])
+                .filter(file => remoteFiles.has(file.nodeKey) && remoteFiles.get(file.nodeKey)!.path !== file.path)
+                .map(file => [file.nodeKey, { sourcePath: remoteFiles.get(file.nodeKey)!.path, targetPath: file.path }])
         );
         const reconciledState: WorkspaceState = {
             ...remoteState,
@@ -754,7 +754,7 @@ export class WorkspaceService {
         packageKey: string,
         observation?: WorkspaceGitObservation
     ): WorkspaceState {
-        if (!/^"sha256:[0-9a-f]{64}"$/.test(eTag)) {
+        if (!eTag) {
             throw new GracefulError("Filesystem archive response contains an invalid ETag.");
         }
         const projectKey = this.packageIdentity(root).projectKey;
@@ -770,7 +770,7 @@ export class WorkspaceService {
             moveHints: {},
         };
         const baselineDigests = Object.fromEntries(
-            this.expectedFiles(root, emptyState, packageKey).map((file) => {
+            this.expectedFiles(root, emptyState, packageKey).map(file => {
                 const absolute = this.resolveVisiblePath(root, file.path);
                 if (!fs.existsSync(absolute) || !fs.lstatSync(absolute).isFile()) {
                     throw new GracefulError(`Archive is missing visible content for node ${file.nodeKey}.`);
@@ -815,8 +815,8 @@ export class WorkspaceService {
             } catch (error) {
                 try {
                     fs.readdirSync(root)
-                        .filter((entry) => entry !== ".git")
-                        .forEach((entry) => fs.rmSync(path.join(root, entry), { recursive: true, force: true }));
+                        .filter(entry => entry !== ".git")
+                        .forEach(entry => fs.rmSync(path.join(root, entry), { recursive: true, force: true }));
                     this.moveEntries(backup, root);
                 } catch (restoreError) {
                     preserveBackup = true;
@@ -836,9 +836,9 @@ export class WorkspaceService {
 
     private moveEntries(source: string, target: string, excluded: Set<string> = new Set()): void {
         fs.readdirSync(source)
-            .filter((entry) => !excluded.has(entry))
+            .filter(entry => !excluded.has(entry))
             .sort((left, right) => left.localeCompare(right))
-            .forEach((entry) => fs.renameSync(path.join(source, entry), path.join(target, entry)));
+            .forEach(entry => fs.renameSync(path.join(source, entry), path.join(target, entry)));
     }
 
     private sameFile(source: string, target: string): boolean {
@@ -872,19 +872,20 @@ export class WorkspaceService {
             parsed.schemaVersion !== 1 ||
             !parsed.activePackageKey ||
             !parsed.activeBranch ||
-            (parsed.serverRevision !== undefined && !/^"sha256:[0-9a-f]{64}"$/.test(parsed.serverRevision)) ||
+            (parsed.serverRevision !== undefined &&
+                (typeof parsed.serverRevision !== "string" || !parsed.serverRevision)) ||
             !parsed.baselineDigests ||
             typeof parsed.baselineDigests !== "object" ||
             Array.isArray(parsed.baselineDigests) ||
             !Object.values(parsed.baselineDigests).every(
-                (value) => typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value)
+                value => typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value)
             ) ||
             (parsed.moveHints !== undefined &&
                 (typeof parsed.moveHints !== "object" ||
                     parsed.moveHints === null ||
                     Array.isArray(parsed.moveHints) ||
                     !Object.values(parsed.moveHints).every(
-                        (value) => typeof value === "string" || this.isStructuredMoveHint(value)
+                        value => typeof value === "string" || this.isStructuredMoveHint(value)
                     ))) ||
             (parsed.git !== undefined &&
                 (!parsed.git ||
@@ -973,21 +974,21 @@ export class WorkspaceService {
     ): Record<string, string | WorkspaceMoveHint> {
         const completedNodeKeys = new Set(
             outcomes
-                .filter((outcome) => outcome.success || outcome.remoteChanged)
-                .flatMap((outcome) => (outcome.nodeKey ? [outcome.nodeKey] : []))
+                .filter(outcome => outcome.success || outcome.remoteChanged)
+                .flatMap(outcome => (outcome.nodeKey ? [outcome.nodeKey] : []))
         );
         const retained = Object.fromEntries(
             Object.entries(hints).filter(([nodeKey]) => !completedNodeKeys.has(nodeKey))
         );
         outcomes
             .filter(
-                (outcome) =>
+                outcome =>
                     !outcome.success &&
                     !outcome.remoteChanged &&
                     outcome.nodeKey &&
                     (outcome.status === "moved" || outcome.status === "moved, modified")
             )
-            .forEach((outcome) => {
+            .forEach(outcome => {
                 retained[outcome.nodeKey!] ||= hints[outcome.nodeKey!] || outcome.path;
             });
         return retained;
@@ -1113,10 +1114,10 @@ export class WorkspaceService {
         observation: WorkspaceGitObservation
     ): Promise<void> {
         const remote = await this.api.manifest(packageKey);
-        const localByKey = new Map(this.nodes(root).map((node) => [node.key, node]));
-        remote.manifest.nodes.forEach((entry) => {
+        const localByKey = new Map(this.nodes(root).map(node => [node.nodeKey, node]));
+        remote.manifest.nodes.forEach(entry => {
             const local = localByKey.get(entry.nodeKey);
-            if (local && this.isFolder(local) !== (entry.kind === "folder")) {
+            if (local && this.isFolder(local) !== this.isFolder(entry.metadata)) {
                 throw new GracefulError(`Node metadata type conflicts with the server for ${entry.nodeKey}.`);
             }
         });
@@ -1137,15 +1138,15 @@ export class WorkspaceService {
 
     private withRemotePathHints(root: string, state: WorkspaceState, manifest: WorkspaceManifest): WorkspaceState {
         const remotePathByNodeKey = new Map(
-            manifest.nodes.filter((entry) => entry.kind === "file").map((entry) => [entry.nodeKey, entry.path])
+            manifest.nodes.filter(entry => !this.isFolder(entry.metadata)).map(entry => [entry.nodeKey, entry.path])
         );
         const moveHints: Record<string, WorkspaceMoveHint> = Object.fromEntries(
             this.expectedFiles(root, state, state.activePackageKey)
-                .filter((file) => {
+                .filter(file => {
                     const remotePath = remotePathByNodeKey.get(file.nodeKey);
                     return remotePath && remotePath.toLowerCase() !== file.path.toLowerCase();
                 })
-                .map((file) => [
+                .map(file => [
                     file.nodeKey,
                     { sourcePath: remotePathByNodeKey.get(file.nodeKey)!, targetPath: file.path },
                 ])

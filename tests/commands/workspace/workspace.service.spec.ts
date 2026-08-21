@@ -47,13 +47,13 @@ function digest(value: string): string {
 }
 
 function eTag(value: string): string {
-    return `"${digest(value)}"`;
+    return `"${createHash("sha256").update(value).digest("hex")}"`;
 }
 
 function metadata(files: TestFile[]): Record<string, object> {
     const nodes: Record<string, object> = {};
     const folders = new Map<string, string>();
-    files.forEach((file) => {
+    files.forEach(file => {
         const segments = file.path.split("/");
         let parentNodeKey: string | null = null;
         for (let index = 0; index < segments.length - 1; index += 1) {
@@ -66,7 +66,6 @@ function metadata(files: TestFile[]): Record<string, object> {
                         : `folder-${createHash("sha256").update(folderPath).digest("hex").slice(0, 12)}`;
                 folders.set(folderPath, folderKey);
                 nodes[folderKey] = {
-                    key: folderKey,
                     name: segments[index],
                     type: "FOLDER",
                     parentNodeKey,
@@ -75,7 +74,6 @@ function metadata(files: TestFile[]): Record<string, object> {
             parentNodeKey = folderKey;
         }
         nodes[file.nodeKey] = {
-            key: file.nodeKey,
             name: path.posix.basename(file.path, path.posix.extname(file.path)),
             type: "MARKDOWN_FILE",
             parentNodeKey,
@@ -94,7 +92,7 @@ function state(
         activePackageKey: PACKAGE_KEY,
         activeBranch: "main",
         serverRevision,
-        baselineDigests: Object.fromEntries(files.map((file) => [file.nodeKey, digest(file.content)])),
+        baselineDigests: Object.fromEntries(files.map(file => [file.nodeKey, digest(file.content)])),
         moveHints,
     };
 }
@@ -107,7 +105,7 @@ function archive(files: TestFile[]): Buffer {
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
         zip.addFile(`.package/nodes/${nodeKey}.json`, Buffer.from(JSON.stringify(node)));
     });
-    files.forEach((file) => zip.addFile(file.path, Buffer.from(file.content)));
+    files.forEach(file => zip.addFile(file.path, Buffer.from(file.content)));
     return zip.toBuffer();
 }
 
@@ -119,41 +117,35 @@ function emptyArchiveWithoutNodeMetadata(): Buffer {
 }
 
 function manifest(files: TestFile[]): Buffer {
-    const nodes = metadata(files) as Record<
-        string,
-        { key: string; name: string; type: string; parentNodeKey?: string | null }
-    >;
+    const nodes = metadata(files) as Record<string, { name: string; type: string; parentNodeKey?: string | null }>;
     const byKey = new Map(Object.entries(nodes));
     const paths = new Map<string, string>();
-    const resolvePath = (node: { key: string; parentNodeKey?: string | null }): string => {
-        const cached = paths.get(node.key);
+    const resolvePath = (nodeKey: string): string => {
+        const cached = paths.get(nodeKey);
         if (cached) {
             return cached;
         }
-        const metadataNode = nodes[node.key];
-        const parent = metadataNode.parentNodeKey ? byKey.get(metadataNode.parentNodeKey) : undefined;
+        const metadataNode = nodes[nodeKey];
+        const parentKey = metadataNode.parentNodeKey;
         const segment = `${metadataNode.name}${metadataNode.type === "FOLDER" ? "" : ".md"}`;
-        const filePath = parent ? `${resolvePath(parent)}/${segment}` : segment;
-        paths.set(node.key, filePath);
+        const filePath = parentKey && byKey.has(parentKey) ? `${resolvePath(parentKey)}/${segment}` : segment;
+        paths.set(nodeKey, filePath);
         return filePath;
     };
     return Buffer.from(
         JSON.stringify({
-            nodes: Object.values(nodes).map((node) => {
-                const file = files.find((candidate) => candidate.nodeKey === node.key);
+            nodes: Object.entries(nodes).map(([nodeKey, node]) => {
+                const file = files.find(candidate => candidate.nodeKey === nodeKey);
                 return file
                     ? {
-                          nodeKey: node.key,
-                          path: resolvePath(node),
-                          kind: "file",
-                          assetType: node.type,
+                          nodeKey,
+                          path: resolvePath(nodeKey),
                           mediaType: "text/markdown",
-                          size: Buffer.byteLength(file.content),
                           contentDigest: digest(file.content),
                           eTag: eTag(file.content),
                           metadata: node,
                       }
-                    : { nodeKey: node.key, path: resolvePath(node), kind: "folder", metadata: node };
+                    : { nodeKey, path: resolvePath(nodeKey), metadata: node };
             }),
             documents: {},
         })
@@ -178,7 +170,7 @@ function writeWorkspace(
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
         fs.writeFileSync(path.join(process.cwd(), ".package", "nodes", `${nodeKey}.json`), JSON.stringify(node));
     });
-    files.forEach((file) => {
+    files.forEach(file => {
         fs.mkdirSync(path.dirname(path.join(process.cwd(), file.path)), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), file.path), file.content);
     });
@@ -204,7 +196,7 @@ function removeWorkspace(): void {
         PACKAGE_KEY,
         "branch-workspace",
         "empty-workspace",
-    ].forEach((entry) => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
+    ].forEach(entry => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
 }
 
 function mockGit(
@@ -249,7 +241,12 @@ describe("Workspace service", () => {
                 baselineDigests: { "node-1": digest("original") },
                 moveHints: {},
             });
-            const cloneRename = rename.mock.calls.find((call) => call[1] === path.join(process.cwd(), PACKAGE_KEY));
+            expect(
+                JSON.parse(
+                    fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".package", "nodes", "node-1.json"), "utf-8")
+                )
+            ).toEqual({ name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder-1" });
+            const cloneRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
             expect(cloneRename).toBeDefined();
             expect(path.dirname(cloneRename![0].toString())).toBe(path.dirname(cloneRename![1].toString()));
         } finally {
@@ -515,7 +512,7 @@ describe("Workspace service", () => {
 
         const bodyReads = (mockedAxiosInstance.get as jest.Mock).mock.calls.filter(([url]) => url !== manifestUrl());
         expect(bodyReads).toHaveLength(3);
-        changedIndexes.forEach((index) => {
+        changedIndexes.forEach(index => {
             expect(fs.readFileSync(path.join(process.cwd(), remote[index].path), "utf-8")).toBe(`remote-${index}`);
         });
     });
@@ -526,10 +523,10 @@ describe("Workspace service", () => {
             { nodeKey: "node-2", path: "Selected/Nested/Two.md", content: "two" },
             { nodeKey: "node-3", path: "Unselected/Three.md", content: "three" },
         ];
-        const remote = original.map((file) => ({ ...file, content: `${file.content} remote` }));
+        const remote = original.map(file => ({ ...file, content: `${file.content} remote` }));
         writeWorkspace(original);
         mockManifest(remote);
-        remote.slice(0, 2).forEach((file) => {
+        remote.slice(0, 2).forEach(file => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.content) });
         });
 
@@ -579,10 +576,9 @@ describe("Workspace service", () => {
         writeWorkspace(original);
         const sharedKey = `folder-${createHash("sha256").update("Source/Shared").digest("hex").slice(0, 12)}`;
         const remoteManifest = JSON.parse(manifest(remote).toString("utf-8"));
-        const sharedFolder = remoteManifest.nodes.find((node) => node.path === "Target/Shared");
+        const sharedFolder = remoteManifest.nodes.find(node => node.path === "Target/Shared");
         sharedFolder.nodeKey = sharedKey;
-        sharedFolder.metadata.key = sharedKey;
-        remoteManifest.nodes.find((node) => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
+        remoteManifest.nodes.find(node => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
         mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("manifest") });
         mockAxiosGet(fileUrl(remote[0].path), Buffer.from(remote[0].content), { etag: eTag(remote[0].content) });
 
@@ -605,7 +601,6 @@ describe("Workspace service", () => {
 
         expect(new WorkspaceService(testContext).status()).toEqual([]);
         expect(JSON.parse(fs.readFileSync(folderMetadataPath, "utf-8"))).toMatchObject({
-            key: "folder-1",
             parentNodeKey: null,
         });
     });
@@ -762,6 +757,21 @@ describe("Workspace service", () => {
         await expect(new WorkspaceService(testContext).pull()).rejects.toThrow("Unsupported workspace manifest");
     });
 
+    it("rejects legacy manifest shape and nested Node identity", async () => {
+        writeWorkspace();
+        const body = JSON.parse(
+            manifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]).toString()
+        );
+        const file = body.nodes.find((node: { nodeKey: string }) => node.nodeKey === "node-1");
+        file.kind = "file";
+        file.assetType = file.metadata.type;
+        file.size = 8;
+        file.metadata.key = file.nodeKey;
+        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(body)), { etag: eTag("manifest") });
+
+        await expect(new WorkspaceService(testContext).pull()).rejects.toThrow("Unsupported workspace manifest");
+    });
+
     it("rejects a manifest path that does not match derived Node metadata", async () => {
         writeWorkspace();
         const body = JSON.parse(
@@ -825,7 +835,7 @@ describe("Workspace service", () => {
 
         expect(backup).toBeDefined();
         expect(fs.existsSync(backup!)).toBe(true);
-        fs.readdirSync(backup!).forEach((entry) => {
+        fs.readdirSync(backup!).forEach(entry => {
             originalRename(path.join(backup!, entry), path.join(process.cwd(), entry));
         });
         fs.rmSync(backup!, { recursive: true, force: true });
@@ -892,7 +902,7 @@ describe("Workspace service", () => {
         const changes = new WorkspaceService(testContext).status();
 
         expect(changes).toHaveLength(4);
-        expect(changes.every((change) => change.status === "unresolved")).toBe(true);
+        expect(changes.every(change => change.status === "unresolved")).toBe(true);
     });
 
     it("reports clean, modified, added, and deleted files", () => {
@@ -1083,10 +1093,10 @@ describe("Workspace service", () => {
         const target = path.join(process.cwd(), "Guides", "guide.md");
         const existsSync = fs.existsSync;
         const lstatSync = fs.lstatSync;
-        const exists = jest.spyOn(fs, "existsSync").mockImplementation((candidate) => {
+        const exists = jest.spyOn(fs, "existsSync").mockImplementation(candidate => {
             return candidate.toString() === target || existsSync(candidate);
         });
-        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation((candidate) => {
+        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation(candidate => {
             return candidate.toString() === target ? lstatSync(source) : lstatSync(candidate);
         });
 
@@ -1248,8 +1258,8 @@ describe("Workspace service", () => {
             { nodeKey: "node-3", path: "Unselected/Three.md", content: "three" },
         ];
         writeWorkspace(original);
-        original.forEach((file) => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
-        original.slice(0, 2).forEach((file) => {
+        original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
+        original.slice(0, 2).forEach(file => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.nodeKey) });
             mockAxiosPut(fileUrl(file.path), {
                 path: file.path,
@@ -1378,13 +1388,35 @@ describe("Workspace service", () => {
         ).toMatchObject({ baselineDigests: { "node-1": digest("original") } });
     });
 
+    it("replays a weak file ETag unchanged for an incremental update", async () => {
+        const weakETag = `W/${eTag("file-1")}`;
+        writeWorkspace();
+        fs.writeFileSync(path.join(process.cwd(), "Guides/Guide.md"), "changed");
+        mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: weakETag });
+        mockAxiosPut(fileUrl("Guides/Guide.md"), {
+            path: "Guides/Guide.md",
+            nodeKey: "node-1",
+            assetType: "MARKDOWN_FILE",
+            eTag: eTag("changed"),
+        });
+        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }]);
+
+        await new WorkspaceService(testContext).push();
+
+        expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
+            fileUrl("Guides/Guide.md"),
+            expect.any(Buffer),
+            expect.objectContaining({ headers: expect.objectContaining({ "If-Match": weakETag }) })
+        );
+    });
+
     it("refreshes successful files while retaining partial failures for retry", async () => {
         const original = [
             { nodeKey: "node-1", path: "Guides/One.md", content: "one" },
             { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
         ];
         writeWorkspace(original);
-        original.forEach((file) => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
+        original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
         mockAxiosGet(fileUrl("Guides/One.md"), Buffer.from("one"), { etag: eTag("one") });
         mockAxiosGet(fileUrl("Guides/Two.md"), Buffer.from("two"), { etag: eTag("two") });
         mockAxiosPut(fileUrl("Guides/One.md"), {

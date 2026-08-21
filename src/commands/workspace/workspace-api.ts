@@ -40,8 +40,8 @@ export class WorkspaceApi {
             `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files`
         );
         const eTag = response.headers.etag;
-        if (typeof eTag !== "string" || !/^"sha256:[0-9a-f]{64}"$/.test(eTag)) {
-            throw new GracefulError("Workspace manifest response does not contain a valid package ETag.");
+        if (typeof eTag !== "string" || !eTag) {
+            throw new GracefulError("Workspace manifest response does not contain a package ETag.");
         }
         try {
             return { manifest: JSON.parse(response.data.toString("utf-8")) as WorkspaceManifest, eTag };

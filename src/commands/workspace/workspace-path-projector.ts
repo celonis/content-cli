@@ -1,41 +1,41 @@
 import { createHash } from "node:crypto";
 import * as path from "node:path";
 import { GracefulError } from "../../core/utils/logger";
-import { WorkspaceNodeMetadata } from "./workspace.models";
+import { WorkspaceNode } from "./workspace.models";
 
 const ROOT = "\u0000root";
 
-export function projectWorkspacePaths(nodes: WorkspaceNodeMetadata[], packageKey?: string): Map<string, string> {
-    const byKey = new Map<string, WorkspaceNodeMetadata>();
+export function projectWorkspacePaths(nodes: WorkspaceNode[], packageKey?: string): Map<string, string> {
+    const byKey = new Map<string, WorkspaceNode>();
     nodes.forEach(node => {
-        if (byKey.has(node.key)) {
-            throw new GracefulError(`Duplicate node metadata key: ${node.key}.`);
+        if (byKey.has(node.nodeKey)) {
+            throw new GracefulError(`Duplicate node metadata key: ${node.nodeKey}.`);
         }
-        byKey.set(node.key, node);
+        byKey.set(node.nodeKey, node);
     });
-    const candidates = new Map(nodes.map(node => [node.key, candidateSegment(node)]));
+    const candidates = new Map(nodes.map(node => [node.nodeKey, candidateSegment(node)]));
     const projected = projectedSegments(nodes, candidates, packageKey);
     const paths = new Map<string, string>();
     const resolving = new Set<string>();
-    const resolve = (node: WorkspaceNodeMetadata): string => {
-        const cached = paths.get(node.key);
+    const resolve = (node: WorkspaceNode): string => {
+        const cached = paths.get(node.nodeKey);
         if (cached) {
             return cached;
         }
-        if (resolving.has(node.key)) {
-            throw new GracefulError(`Circular node hierarchy at ${node.key}.`);
+        if (resolving.has(node.nodeKey)) {
+            throw new GracefulError(`Circular node hierarchy at ${node.nodeKey}.`);
         }
-        resolving.add(node.key);
+        resolving.add(node.nodeKey);
         const parentKey = normalizedParent(node.parentNodeKey, packageKey);
         const parent = parentKey === ROOT ? undefined : byKey.get(parentKey);
         if (parentKey !== ROOT && (!parent || !isFolder(parent))) {
-            throw new GracefulError(`Invalid parent metadata for node ${node.key}.`);
+            throw new GracefulError(`Invalid parent metadata for node ${node.nodeKey}.`);
         }
-        const segment = projected.get(node.key)!;
+        const segment = projected.get(node.nodeKey)!;
         const value = parent ? `${resolve(parent)}/${segment}` : segment;
         validateVisiblePath(value);
-        resolving.delete(node.key);
-        paths.set(node.key, value);
+        resolving.delete(node.nodeKey);
+        paths.set(node.nodeKey, value);
         return value;
     };
     nodes.forEach(resolve);
@@ -43,30 +43,30 @@ export function projectWorkspacePaths(nodes: WorkspaceNodeMetadata[], packageKey
 }
 
 export function projectedLeafAfterMove(
-    nodes: WorkspaceNodeMetadata[],
+    nodes: WorkspaceNode[],
     nodeKey: string,
     targetParentKey: string | undefined,
     packageKey?: string
 ): string {
-    if (!nodes.some(node => node.key === nodeKey)) {
+    if (!nodes.some(node => node.nodeKey === nodeKey)) {
         throw new GracefulError(`Tracked node metadata is missing: ${nodeKey}.`);
     }
     const moved = nodes.map(node =>
-        node.key === nodeKey ? { ...node, parentNodeKey: targetParentKey || null } : node
+        node.nodeKey === nodeKey ? { ...node, parentNodeKey: targetParentKey || null } : node
     );
-    const candidates = new Map(moved.map(node => [node.key, candidateSegment(node)]));
+    const candidates = new Map(moved.map(node => [node.nodeKey, candidateSegment(node)]));
     return projectedSegments(moved, candidates, packageKey).get(nodeKey)!;
 }
 
 function projectedSegments(
-    nodes: WorkspaceNodeMetadata[],
+    nodes: WorkspaceNode[],
     candidates: Map<string, string>,
     packageKey?: string
 ): Map<string, string> {
     const projected = new Map(candidates);
     const byParent = groupBy(nodes, node => normalizedParent(node.parentNodeKey, packageKey));
     byParent.forEach(siblings => {
-        groupBy(siblings, node => candidates.get(node.key)!.toLowerCase()).forEach(group => {
+        groupBy(siblings, node => candidates.get(node.nodeKey)!.toLowerCase()).forEach(group => {
             if (group.length > 1) {
                 disambiguate(group, siblings, candidates, projected);
             }
@@ -76,27 +76,27 @@ function projectedSegments(
 }
 
 function disambiguate(
-    group: WorkspaceNodeMetadata[],
-    siblings: WorkspaceNodeMetadata[],
+    group: WorkspaceNode[],
+    siblings: WorkspaceNode[],
     candidates: Map<string, string>,
     projected: Map<string, string>
 ): void {
-    const hashes = new Map(group.map(node => [node.key, sha256(node.key)]));
-    const groupKeys = new Set(group.map(node => node.key));
+    const hashes = new Map(group.map(node => [node.nodeKey, sha256(node.nodeKey)]));
+    const groupKeys = new Set(group.map(node => node.nodeKey));
     const occupied = new Set(
-        siblings.filter(node => !groupKeys.has(node.key)).map(node => candidates.get(node.key)!.toLowerCase())
+        siblings.filter(node => !groupKeys.has(node.nodeKey)).map(node => candidates.get(node.nodeKey)!.toLowerCase())
     );
     let length = 12;
     while (length < 64) {
         const prefixes = new Set<string>();
-        const uniquePrefixes = group.every(node => prefixes.add(hashes.get(node.key)!.slice(0, length)));
+        const uniquePrefixes = group.every(node => prefixes.add(hashes.get(node.nodeKey)!.slice(0, length)));
         const available = group.every(
             node =>
                 !occupied.has(
                     addSuffix(
-                        candidates.get(node.key)!,
+                        candidates.get(node.nodeKey)!,
                         isFolder(node),
-                        hashes.get(node.key)!.slice(0, length)
+                        hashes.get(node.nodeKey)!.slice(0, length)
                     ).toLowerCase()
                 )
         );
@@ -107,13 +107,13 @@ function disambiguate(
     }
     group.forEach(node =>
         projected.set(
-            node.key,
-            addSuffix(candidates.get(node.key)!, isFolder(node), hashes.get(node.key)!.slice(0, length))
+            node.nodeKey,
+            addSuffix(candidates.get(node.nodeKey)!, isFolder(node), hashes.get(node.nodeKey)!.slice(0, length))
         )
     );
 }
 
-function candidateSegment(node: WorkspaceNodeMetadata): string {
+function candidateSegment(node: WorkspaceNode): string {
     const extension = isFolder(node) ? "" : `.${fileExtension(node.type)}`;
     const segment = `${node.name}${extension}`;
     if (
@@ -127,7 +127,7 @@ function candidateSegment(node: WorkspaceNodeMetadata): string {
             return codePoint < 32 || codePoint === 127;
         })
     ) {
-        throw new GracefulError(`Invalid derived filesystem name for node ${node.key}.`);
+        throw new GracefulError(`Invalid derived filesystem name for node ${node.nodeKey}.`);
     }
     return segment;
 }
@@ -163,7 +163,7 @@ function normalizedParent(parentNodeKey: string | null | undefined, packageKey?:
     return !parentNodeKey || parentNodeKey === packageKey ? ROOT : parentNodeKey;
 }
 
-function isFolder(node: WorkspaceNodeMetadata): boolean {
+function isFolder(node: WorkspaceNode): boolean {
     return node.type.toUpperCase() === "FOLDER";
 }
 

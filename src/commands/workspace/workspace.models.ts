@@ -41,7 +41,6 @@ export interface WorkspaceBranch {
 }
 
 export interface WorkspaceNodeMetadata {
-    key: string;
     name: string;
     type: string;
     parentNodeKey?: string | null;
@@ -50,6 +49,10 @@ export interface WorkspaceNodeMetadata {
     dependenciesConfiguration?: unknown;
     metadata?: Record<string, unknown>;
     additionalFields?: Record<string, unknown>;
+}
+
+export interface WorkspaceNode extends WorkspaceNodeMetadata {
+    nodeKey: string;
 }
 
 export interface ExpectedWorkspaceFile {
@@ -95,10 +98,7 @@ export interface WorkspaceManifest {
 export interface WorkspaceManifestNode {
     nodeKey: string;
     path: string;
-    kind: "file" | "folder";
-    assetType?: string | null;
     mediaType?: string | null;
-    size?: number | null;
     contentDigest?: string | null;
     eTag?: string | null;
     metadata: WorkspaceNodeMetadata;

@@ -3,15 +3,15 @@ import {
     projectedLeafAfterMove,
     projectWorkspacePaths,
 } from "../../../src/commands/workspace/workspace-path-projector";
-import { WorkspaceNodeMetadata } from "../../../src/commands/workspace/workspace.models";
+import { WorkspaceNode } from "../../../src/commands/workspace/workspace.models";
 
 describe("Workspace path projector", () => {
     it("derives registered and fallback extensions from Asset Type", () => {
-        const nodes: WorkspaceNodeMetadata[] = [
-            { key: "folder", name: "Guides", type: "FOLDER" },
-            { key: "markdown", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
-            { key: "html", name: "Landing", type: "HTML_CANVAS" },
-            { key: "board", name: "Metrics", type: "BOARD_V2" },
+        const nodes: WorkspaceNode[] = [
+            { nodeKey: "folder", name: "Guides", type: "FOLDER" },
+            { nodeKey: "markdown", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
+            { nodeKey: "html", name: "Landing", type: "HTML_CANVAS" },
+            { nodeKey: "board", name: "Metrics", type: "BOARD_V2" },
         ];
 
         expect(Object.fromEntries(projectWorkspacePaths(nodes))).toEqual({
@@ -23,10 +23,10 @@ describe("Workspace path projector", () => {
     });
 
     it("adds stable Node-key suffixes to every colliding sibling", () => {
-        const nodes: WorkspaceNodeMetadata[] = [
-            { key: "folder", name: "Guides", type: "FOLDER" },
-            { key: "node-1", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
-            { key: "node-2", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
+        const nodes: WorkspaceNode[] = [
+            { nodeKey: "folder", name: "Guides", type: "FOLDER" },
+            { nodeKey: "node-1", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
+            { nodeKey: "node-2", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "folder" },
         ];
 
         const paths = projectWorkspacePaths(nodes);
@@ -36,11 +36,11 @@ describe("Workspace path projector", () => {
     });
 
     it("projects the leaf against target siblings before a parent move", () => {
-        const nodes: WorkspaceNodeMetadata[] = [
-            { key: "guides", name: "Guides", type: "FOLDER" },
-            { key: "pages", name: "Pages", type: "FOLDER" },
-            { key: "source", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "guides" },
-            { key: "target", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "pages" },
+        const nodes: WorkspaceNode[] = [
+            { nodeKey: "guides", name: "Guides", type: "FOLDER" },
+            { nodeKey: "pages", name: "Pages", type: "FOLDER" },
+            { nodeKey: "source", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "guides" },
+            { nodeKey: "target", name: "Guide", type: "MARKDOWN_FILE", parentNodeKey: "pages" },
         ];
 
         expect(projectedLeafAfterMove(nodes, "source", "pages")).toBe(`Guide~${shortHash("source")}.md`);
