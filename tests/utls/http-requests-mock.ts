@@ -42,7 +42,7 @@ const mockAxios = (): void => {
                 readableStream.push(data);
                 readableStream.push(null);
                 return Promise.resolve({
-                    status: 200,
+                    status,
                     data: readableStream,
                     headers: mockedGetHeadersByUrl.get(requestUrl) || {},
                 });
@@ -116,9 +116,15 @@ const mockAxiosGet = (url: string, responseData: any, headers: Record<string, st
     mockedGetErrorByUrl.delete(url);
 };
 
-const mockAxiosGetWithStatus = (url: string, status: number, responseData: any) => {
+const mockAxiosGetWithStatus = (
+    url: string,
+    status: number,
+    responseData: any,
+    headers: Record<string, string> = {}
+) => {
     mockedGetResponseByUrl.set(url, responseData);
     mockedGetStatusByUrl.set(url, status);
+    mockedGetHeadersByUrl.set(url, headers);
     mockedGetErrorByUrl.delete(url);
 };
 

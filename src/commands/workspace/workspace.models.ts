@@ -3,7 +3,9 @@ export interface WorkspaceState {
     activePackageKey: string;
     activeBranch: string;
     serverRevision?: string;
+    manifestETag?: string;
     baselineDigests: Record<string, string>;
+    baselineNodeETags: Record<string, string>;
     moveHints: Record<string, string | WorkspaceMoveHint>;
     git?: WorkspaceGitObservation;
     refreshRequired?: boolean;
@@ -92,14 +94,12 @@ export interface WorkspacePullOptions {
 
 export interface WorkspaceManifest {
     nodes: WorkspaceManifestNode[];
-    documents: Record<string, string>;
 }
 
 export interface WorkspaceManifestNode {
     nodeKey: string;
     path: string;
     mediaType?: string | null;
-    contentDigest?: string | null;
     eTag: string;
     metadata: WorkspaceNodeMetadata;
 }

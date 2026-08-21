@@ -11,6 +11,7 @@ import {
     mockAxiosDelete,
     mockAxiosGet,
     mockAxiosGetError,
+    mockAxiosGetWithStatus,
     mockAxiosPatch,
     mockAxiosPost,
     mockAxiosPut,
@@ -28,8 +29,8 @@ function archiveUrl(packageKey: string): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/file-archive`;
 }
 
-function fileUrl(filePath: string): string {
-    return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/files/${filePath}`;
+function fileUrl(filePath: string, packageKey: string = PACKAGE_KEY): string {
+    return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files/${filePath}`;
 }
 
 function manifestUrl(packageKey: string = PACKAGE_KEY): string {
@@ -87,12 +88,20 @@ function state(
     serverRevision: string = eTag("revision-1"),
     moveHints: Record<string, string> = {}
 ): object {
+    const nodes = metadata(files);
     return {
         schemaVersion: 1,
         activePackageKey: PACKAGE_KEY,
         activeBranch: "main",
         serverRevision,
+        manifestETag: eTag("manifest"),
         baselineDigests: Object.fromEntries(files.map(file => [file.nodeKey, digest(file.content)])),
+        baselineNodeETags: Object.fromEntries(
+            Object.keys(nodes).map(nodeKey => {
+                const file = files.find(candidate => candidate.nodeKey === nodeKey);
+                return [nodeKey, eTag(file ? file.content : nodeKey)];
+            })
+        ),
         moveHints,
     };
 }
@@ -141,19 +150,37 @@ function manifest(files: TestFile[]): Buffer {
                           nodeKey,
                           path: resolvePath(nodeKey),
                           mediaType: "text/markdown",
-                          contentDigest: digest(file.content),
                           eTag: eTag(file.content),
                           metadata: node,
                       }
                     : { nodeKey, path: resolvePath(nodeKey), eTag: eTag(nodeKey), metadata: node };
             }),
-            documents: {},
         })
     );
 }
 
-function mockManifest(files: TestFile[], packageKey: string = PACKAGE_KEY): void {
-    mockAxiosGet(manifestUrl(packageKey), manifest(files), { etag: eTag("manifest") });
+function mockManifest(
+    files: TestFile[],
+    packageKey: string = PACKAGE_KEY,
+    manifestETag: string = eTag("manifest"),
+    mockBodies: boolean = false
+): void {
+    mockAxiosGet(manifestUrl(packageKey), manifest(files), { etag: manifestETag });
+    if (mockBodies) {
+        files.forEach(file =>
+            mockAxiosGet(fileUrl(file.path, packageKey), Buffer.from(file.content), { etag: eTag(file.content) })
+        );
+    }
+}
+
+function mockWorkspaceDownload(
+    files: TestFile[],
+    revision: string = eTag("revision-1"),
+    packageKey: string = PACKAGE_KEY,
+    body: Buffer = archive(files)
+): void {
+    mockAxiosGet(archiveUrl(packageKey), body, { etag: revision });
+    mockManifest(files, packageKey, revision);
 }
 
 function writeWorkspace(
@@ -215,9 +242,7 @@ describe("Workspace service", () => {
     afterEach(removeWorkspace);
 
     it("clones and validates a filesystem archive", async () => {
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]), {
-            etag: eTag("revision-1"),
-        });
+        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
         const rename = jest.spyOn(fs, "renameSync");
 
         try {
@@ -238,7 +263,12 @@ describe("Workspace service", () => {
                 activePackageKey: PACKAGE_KEY,
                 activeBranch: "main",
                 serverRevision: eTag("revision-1"),
+                manifestETag: eTag("revision-1"),
                 baselineDigests: { "node-1": digest("original") },
+                baselineNodeETags: {
+                    "folder-1": eTag("folder-1"),
+                    "node-1": eTag("original"),
+                },
                 moveHints: {},
             });
             expect(
@@ -263,7 +293,7 @@ describe("Workspace service", () => {
     });
 
     it("clones an empty package and hydrates an empty nodes directory", async () => {
-        mockAxiosGet(ARCHIVE_URL, emptyArchiveWithoutNodeMetadata(), { etag: eTag("empty-revision") });
+        mockWorkspaceDownload([], eTag("empty-revision"), PACKAGE_KEY, emptyArchiveWithoutNodeMetadata());
 
         await new WorkspaceService(testContext).clone(PACKAGE_KEY, "empty-workspace");
 
@@ -274,16 +304,18 @@ describe("Workspace service", () => {
             activePackageKey: PACKAGE_KEY,
             activeBranch: "main",
             serverRevision: eTag("empty-revision"),
+            manifestETag: eTag("empty-revision"),
             baselineDigests: {},
+            baselineNodeETags: {},
             moveHints: {},
         });
     });
 
     it("clones a selected branch while keeping stable project identity", async () => {
-        mockAxiosGet(
-            archiveUrl(BRANCH_PACKAGE_KEY),
-            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }]),
-            { etag: eTag("branch-revision") }
+        mockWorkspaceDownload(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }],
+            eTag("branch-revision"),
+            BRANCH_PACKAGE_KEY
         );
 
         await new WorkspaceService(testContext).clone(PACKAGE_KEY, "branch-workspace", { branch: BRANCH });
@@ -302,10 +334,10 @@ describe("Workspace service", () => {
 
     it("checks out an existing branch atomically", async () => {
         writeWorkspace();
-        mockAxiosGet(
-            archiveUrl(BRANCH_PACKAGE_KEY),
-            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }]),
-            { etag: eTag("branch-revision") }
+        mockWorkspaceDownload(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }],
+            eTag("branch-revision"),
+            BRANCH_PACKAGE_KEY
         );
 
         await new WorkspaceService(testContext).checkout(BRANCH);
@@ -328,10 +360,10 @@ describe("Workspace service", () => {
             branchKey: BRANCH,
             packageKey: BRANCH_PACKAGE_KEY,
         });
-        mockAxiosGet(
-            archiveUrl(BRANCH_PACKAGE_KEY),
-            archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]),
-            { etag: eTag("branch-revision") }
+        mockWorkspaceDownload(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }],
+            eTag("branch-revision"),
+            BRANCH_PACKAGE_KEY
         );
         const service = new WorkspaceService(testContext);
 
@@ -351,7 +383,12 @@ describe("Workspace service", () => {
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git content");
         const observation = { branch: "git-feature", head: "a".repeat(40) };
         const git = mockGit(observation);
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], BRANCH_PACKAGE_KEY);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }],
+            BRANCH_PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
         const service = new WorkspaceService(testContext, git);
 
         await service.checkout(BRANCH, { linkGit: true });
@@ -374,7 +411,12 @@ describe("Workspace service", () => {
         );
         const observation = { branch: "git-feature", head: "b".repeat(40) };
         const git = mockGit(observation, BRANCH);
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }], BRANCH_PACKAGE_KEY);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }],
+            BRANCH_PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
         const service = new WorkspaceService(testContext, git);
 
         await expect(service.statusWithGit()).resolves.toEqual([]);
@@ -428,7 +470,12 @@ describe("Workspace service", () => {
             })
         );
         const observation = { branch: "main", head: "b".repeat(40) };
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }],
+            PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
         mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("remote"), { etag: eTag("remote") });
 
         await new WorkspaceService(testContext, mockGit(observation)).pull();
@@ -470,7 +517,12 @@ describe("Workspace service", () => {
         fs.mkdirSync(path.join(process.cwd(), ".git"));
         fs.writeFileSync(path.join(process.cwd(), ".git", "marker"), "keep");
         const workspaceInode = fs.statSync(process.cwd()).ino;
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }],
+            PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
         mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("remote"), { etag: eTag("remote") });
 
         await new WorkspaceService(testContext).pull();
@@ -488,6 +540,21 @@ describe("Workspace service", () => {
         expect(
             JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).not.toHaveProperty("serverRevision");
+    });
+
+    it("replays the stored manifest ETag and skips body reads after a 304", async () => {
+        writeWorkspace();
+        const storedETag = eTag("manifest");
+        mockAxiosGetWithStatus(manifestUrl(), 304, Buffer.alloc(0), { etag: storedETag });
+
+        await new WorkspaceService(testContext).pull();
+
+        expect(mockedAxiosInstance.get).toHaveBeenCalledTimes(1);
+        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(
+            manifestUrl(),
+            expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": storedETag }) })
+        );
+        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("original");
     });
 
     it("downloads only three changed bodies from a one hundred file manifest", async () => {
@@ -656,7 +723,12 @@ describe("Workspace service", () => {
         writeWorkspace();
         fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git change");
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }],
+            PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
 
         await new WorkspaceService(testContext).pull();
 
@@ -673,7 +745,12 @@ describe("Workspace service", () => {
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "git branch content");
         const observation = { branch: "git-feature", head: "b".repeat(40) };
         const git = mockGit(observation, BRANCH);
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch baseline" }], BRANCH_PACKAGE_KEY);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch baseline" }],
+            BRANCH_PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
 
         await new WorkspaceService(testContext, git).pull();
 
@@ -691,7 +768,12 @@ describe("Workspace service", () => {
         writeWorkspace();
         fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), ".package", ".gitignore"), "local/\r\n");
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }],
+            PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
 
         const service = new WorkspaceService(testContext);
         await service.pull();
@@ -702,7 +784,12 @@ describe("Workspace service", () => {
     it("keeps Git-restored path drift as a move for the next push", async () => {
         writeWorkspace([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
         fs.rmSync(path.join(process.cwd(), ".package", "local"), { recursive: true });
-        mockManifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
+        mockManifest(
+            [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }],
+            PACKAGE_KEY,
+            eTag("manifest"),
+            true
+        );
         const service = new WorkspaceService(testContext);
 
         await service.pull();
@@ -787,9 +874,7 @@ describe("Workspace service", () => {
 
     it("restores the existing workspace when applying a pull fails", async () => {
         writeWorkspace();
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]), {
-            etag: eTag("revision-2"),
-        });
+        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], eTag("revision-2"));
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
             const sourceParent = path.basename(path.dirname(source.toString()));
@@ -810,9 +895,7 @@ describe("Workspace service", () => {
 
     it("preserves the workspace backup when pull and rollback both fail", async () => {
         writeWorkspace();
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }]), {
-            etag: eTag("revision-2"),
-        });
+        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], eTag("revision-2"));
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
             const sourceParent = path.basename(path.dirname(source.toString()));
@@ -1123,6 +1206,7 @@ describe("Workspace service", () => {
         const zip = new AdmZip();
         zip.addFile("Guides/Guide.md", Buffer.from("original"));
         mockAxiosGet(ARCHIVE_URL, zip.toBuffer(), { etag: eTag("revision-1") });
+        mockManifest([], PACKAGE_KEY, eTag("revision-1"));
 
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Archive does not contain Pacman package metadata"
@@ -1133,6 +1217,7 @@ describe("Workspace service", () => {
         const zip = new AdmZip(archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]));
         zip.addFile(".package/local/state.json", Buffer.from("{}"));
         mockAxiosGet(ARCHIVE_URL, zip.toBuffer(), { etag: eTag("revision-1") });
+        mockManifest([], PACKAGE_KEY, eTag("revision-1"));
 
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Archive contains local Pacman workspace state"
@@ -1324,7 +1409,7 @@ describe("Workspace service", () => {
 
         await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
         fs.writeFileSync(path.join(process.cwd(), local.path), "newer local edit");
-        mockManifest([remote]);
+        mockManifest([remote], PACKAGE_KEY, eTag("manifest"), true);
 
         await expect(service.pull()).rejects.toThrow("Workspace pull failed for 1 node(s)");
 
@@ -1363,7 +1448,7 @@ describe("Workspace service", () => {
         const service = new WorkspaceService(testContext, mockGit(undefined));
 
         await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
-        mockManifest([remote]);
+        mockManifest([remote], PACKAGE_KEY, eTag("manifest"), true);
         await service.pull();
 
         expect(fs.readFileSync(path.join(process.cwd(), remote.path), "utf-8")).toBe(remote.content);
@@ -1593,9 +1678,7 @@ describe("Workspace service", () => {
             originalRename(source, target);
         });
         mockAxiosPost(PUSH_URL, {});
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "changed" }]), {
-            etag: eTag("revision-2"),
-        });
+        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "changed" }], eTag("revision-2"));
 
         try {
             await service.push([], { full: true, overwrite: true });
@@ -1624,7 +1707,14 @@ describe("Workspace service", () => {
             activePackageKey: PACKAGE_KEY,
             activeBranch: "main",
             serverRevision: eTag("revision-2"),
+            manifestETag: eTag("revision-2"),
             baselineDigests: { "node-1": digest("changed") },
+            baselineNodeETags: {
+                [`folder-${createHash("sha256").update("Pages").digest("hex").slice(0, 12)}`]: eTag(
+                    `folder-${createHash("sha256").update("Pages").digest("hex").slice(0, 12)}`
+                ),
+                "node-1": eTag("changed"),
+            },
             moveHints: {},
         });
     });
@@ -1645,9 +1735,7 @@ describe("Workspace service", () => {
         ).toMatchObject({ refreshRequired: true });
         expect(() => service.status()).toThrow("Workspace synchronization state needs refresh");
 
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]), {
-            etag: eTag("revision-2"),
-        });
+        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }], eTag("revision-2"));
         await service.pull([], { full: true });
         expect(service.status()).toEqual([]);
         expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(false);
@@ -1687,9 +1775,7 @@ describe("Workspace service", () => {
         writeWorkspace();
         fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
         mockAxiosPost(PUSH_URL, {});
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }]), {
-            etag: eTag("revision-2"),
-        });
+        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }], eTag("revision-2"));
         const originalRename = fs.renameSync;
         const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
             if (target.toString() === path.join(process.cwd(), ".package")) {

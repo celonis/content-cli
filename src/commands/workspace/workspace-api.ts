@@ -35,16 +35,28 @@ export class WorkspaceApi {
         return { body: response.data, eTag };
     }
 
-    public async manifest(packageKey: string): Promise<{ manifest: WorkspaceManifest; eTag: string }> {
+    public async manifest(
+        packageKey: string,
+        ifNoneMatch?: string
+    ): Promise<{ manifest?: WorkspaceManifest; eTag: string; notModified: boolean }> {
         const response = await this.context.httpClient.getFileWithHeaders(
-            `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files`
+            `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files`,
+            ifNoneMatch ? { "If-None-Match": ifNoneMatch } : {},
+            [200, 304]
         );
         const eTag = response.headers.etag;
         if (typeof eTag !== "string" || !eTag) {
             throw new GracefulError("Workspace manifest response does not contain a package ETag.");
         }
+        if (response.status === 304) {
+            return { eTag, notModified: true };
+        }
         try {
-            return { manifest: JSON.parse(response.data.toString("utf-8")) as WorkspaceManifest, eTag };
+            return {
+                manifest: JSON.parse(response.data.toString("utf-8")) as WorkspaceManifest,
+                eTag,
+                notModified: false,
+            };
         } catch (error) {
             const failure = new GracefulError("Workspace manifest response is invalid JSON.");
             failure.cause = error;

@@ -82,7 +82,8 @@ export class WorkspaceService {
         if (fs.existsSync(target)) {
             throw new GracefulError(`Destination already exists: ${target}`);
         }
-        const temporary = this.validatedArchive(await this.api.download(packageKey), packageKey, projectKey);
+        const remote = await this.downloadWorkspace(packageKey);
+        const temporary = this.validatedArchive(remote.archive, packageKey, projectKey, undefined, remote.manifest);
         const parent = path.dirname(target);
         let staging: string | undefined;
         try {
@@ -121,14 +122,15 @@ export class WorkspaceService {
                 activePackageKey: packageKey,
                 activeBranch: branch,
                 baselineDigests: {},
+                baselineNodeETags: {},
                 moveHints: {},
             };
             await this.hydrateGitBaseline(root, { ...base, git: observation }, packageKey, branch, observation);
             logger.info(`${options.create ? "Created and selected" : "Selected"} ${packageKey}.`);
             return;
         }
-        const download = await this.api.download(packageKey);
-        const temporary = this.validatedArchive(download, packageKey, projectKey);
+        const remote = await this.downloadWorkspace(packageKey);
+        const temporary = this.validatedArchive(remote.archive, packageKey, projectKey, undefined, remote.manifest);
         try {
             await this.applyCheckout(root, temporary, packageKey, projectKey, branch, current, options);
         } finally {
@@ -163,10 +165,23 @@ export class WorkspaceService {
             this.writeState(root, localState);
         }
         const { packageKey, restoredObservation } = await this.pullTarget(root, projectKey, localState);
-        const remote = await this.api.manifest(packageKey);
+        const remote = await this.api.manifest(packageKey, localState?.manifestETag);
+        if (remote.notModified) {
+            logger.info(`Pulled ${packageKey}; the remote workspace is unchanged.`);
+            return;
+        }
+        const manifest = remote.manifest!;
         const pullService = new WorkspacePullService(this.api);
         if (!localState) {
-            this.hydrateInitialPull(root, projectKey, packageKey, restoredObservation, remote.manifest, pullService);
+            await this.hydrateInitialPull(
+                root,
+                projectKey,
+                packageKey,
+                restoredObservation,
+                manifest,
+                remote.eTag,
+                pullService
+            );
             return;
         }
         const result = await pullService.pull(
@@ -174,12 +189,17 @@ export class WorkspaceService {
             this.snapshot(root, recoveringCreateKeys),
             this.nodes(root),
             paths,
-            remote.manifest,
+            manifest,
             recoveringCreateKeys
         );
         const failed = result.outcomes.filter(outcome => !outcome.success);
         if (recoveringCreateKeys && (paths.length > 0 || failed.length > 0)) {
             result.state.refreshRequired = true;
+        }
+        if (paths.length === 0 && failed.length === 0) {
+            result.state.manifestETag = remote.eTag;
+        } else {
+            delete result.state.manifestETag;
         }
         this.writeState(root, result.state);
         result.outcomes.forEach(outcome =>
@@ -194,14 +214,15 @@ export class WorkspaceService {
         logger.info(`Pulled ${packageKey}.`);
     }
 
-    private hydrateInitialPull(
+    private async hydrateInitialPull(
         root: string,
         projectKey: string,
         packageKey: string,
         restoredObservation: WorkspaceGitObservation | undefined,
         manifest: WorkspaceManifest,
+        manifestETag: string,
         pullService: WorkspacePullService
-    ): void {
+    ): Promise<void> {
         if (manifest.nodes.length === 0) {
             fs.mkdirSync(path.join(root, ".package", "nodes"), { recursive: true });
         }
@@ -210,19 +231,15 @@ export class WorkspaceService {
             activePackageKey: packageKey,
             activeBranch: this.branchFromPackageKey(projectKey, packageKey),
             baselineDigests: {},
+            baselineNodeETags: {},
             moveHints: {},
         };
         if (restoredObservation) {
             initial.git = restoredObservation;
         }
-        this.writeState(
-            root,
-            this.withRemotePathHints(
-                root,
-                pullService.hydrateBaseline(initial, packageKey, initial.activeBranch, manifest),
-                manifest
-            )
-        );
+        const hydrated = await pullService.hydrateRemoteBaseline(initial, packageKey, initial.activeBranch, manifest);
+        hydrated.manifestETag = manifestETag;
+        this.writeState(root, this.withRemotePathHints(root, hydrated, manifest));
         logger.info(`Pulled ${packageKey}.`);
     }
 
@@ -234,11 +251,13 @@ export class WorkspaceService {
         if (!state.refreshRequired && this.snapshot(root).changes.length !== 0) {
             throw new GracefulError("Workspace has local changes. Push or discard them before full pull.");
         }
+        const remote = await this.downloadWorkspace(state.activePackageKey);
         const temporary = this.validatedArchive(
-            await this.api.download(state.activePackageKey),
+            remote.archive,
             state.activePackageKey,
             projectKey,
-            state.git
+            state.git,
+            remote.manifest
         );
         try {
             this.replaceWorkspaceContents(root, temporary);
@@ -283,6 +302,7 @@ export class WorkspaceService {
         const snapshot = this.snapshot(root);
         const invalidatedBeforePush: WorkspaceState = { ...snapshot.state };
         delete invalidatedBeforePush.serverRevision;
+        delete invalidatedBeforePush.manifestETag;
         this.writeState(root, invalidatedBeforePush);
         const outcomes: WorkspacePushOutcome[] = await new WorkspacePushService(this.api).push(root, snapshot, paths);
         outcomes.forEach(outcome =>
@@ -299,6 +319,7 @@ export class WorkspaceService {
             moveHints: retainedHints,
         };
         delete invalidatedState.serverRevision;
+        delete invalidatedState.manifestETag;
         delete invalidatedState.refreshRequired;
         if (!remoteChanged) {
             this.writeState(root, invalidatedState);
@@ -312,7 +333,7 @@ export class WorkspaceService {
             const remote = await this.api.manifest(snapshot.packageKey);
             this.writeState(
                 root,
-                new WorkspacePullService(this.api).applyPushResults(root, invalidatedState, remote.manifest, outcomes)
+                new WorkspacePullService(this.api).applyPushResults(root, invalidatedState, remote.manifest!, outcomes)
             );
         } catch (error) {
             this.writeState(root, { ...invalidatedState, refreshRequired: true });
@@ -365,15 +386,17 @@ export class WorkspaceService {
             await this.api.pushArchive(snapshot.packageKey, form, overwrite, snapshot.state.serverRevision);
             const pendingRefresh: WorkspaceState = { ...snapshot.state, refreshRequired: true };
             delete pendingRefresh.serverRevision;
+            delete pendingRefresh.manifestETag;
             this.writeState(root, pendingRefresh);
             try {
-                const refreshedArchive = await this.api.download(snapshot.packageKey);
+                const refreshed = await this.downloadWorkspace(snapshot.packageKey);
                 this.refreshMetadata(
                     root,
-                    refreshedArchive,
+                    refreshed.archive,
                     snapshot.packageKey,
                     snapshot.projectKey,
-                    snapshot.state.git
+                    snapshot.state.git,
+                    refreshed.manifest
                 );
             } catch (error) {
                 const detail = error instanceof GracefulError ? ` ${error.message}` : "";
@@ -612,14 +635,28 @@ export class WorkspaceService {
         );
     }
 
+    private async downloadWorkspace(
+        packageKey: string
+    ): Promise<{ archive: { archive: Buffer; eTag: string }; manifest: WorkspaceManifest }> {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const archive = await this.api.download(packageKey);
+            const manifest = await this.api.manifest(packageKey);
+            if (!manifest.notModified && manifest.manifest && manifest.eTag === archive.eTag) {
+                return { archive, manifest: manifest.manifest };
+            }
+        }
+        throw new GracefulError("Filesystem archive and manifest revisions did not stabilize.");
+    }
+
     private refreshMetadata(
         root: string,
         download: { archive: Buffer; eTag: string },
         packageKey: string,
         projectKey: string,
-        observation?: WorkspaceGitObservation
+        observation: WorkspaceGitObservation | undefined,
+        manifest: WorkspaceManifest
     ): void {
-        const extracted = this.validatedArchive(download, packageKey, projectKey, observation);
+        const extracted = this.validatedArchive(download, packageKey, projectKey, observation, manifest);
         try {
             this.replaceMetadataDirectory(root, path.join(extracted, ".package"));
         } finally {
@@ -662,7 +699,8 @@ export class WorkspaceService {
         download: { archive: Buffer; eTag: string },
         packageKey: string,
         projectKey: string = BranchUtils.extractProjectKey(packageKey),
-        observation?: WorkspaceGitObservation
+        observation?: WorkspaceGitObservation,
+        manifest?: WorkspaceManifest
     ): string {
         const zip = new AdmZip(download.archive);
         if (!zip.getEntry(".package/package.json") || !zip.getEntry(".package/.gitignore")) {
@@ -683,7 +721,7 @@ export class WorkspaceService {
             }
             this.validateGitignore(temporary);
             fs.mkdirSync(path.join(temporary, ".package", "nodes"), { recursive: true });
-            this.hydrateState(temporary, download.eTag, packageKey, observation);
+            this.hydrateState(temporary, download.eTag, packageKey, observation, manifest);
             const snapshot = this.snapshot(temporary);
             if (snapshot.changes.length !== 0) {
                 throw new GracefulError("Archive content does not match its workspace baseline.");
@@ -714,6 +752,7 @@ export class WorkspaceService {
             activeBranch: branch,
             serverRevision: remoteState.serverRevision,
             baselineDigests: remoteState.baselineDigests,
+            baselineNodeETags: remoteState.baselineNodeETags,
             moveHints: {},
         };
         const remoteFiles = new Map(
@@ -752,7 +791,8 @@ export class WorkspaceService {
         root: string,
         eTag: string,
         packageKey: string,
-        observation?: WorkspaceGitObservation
+        observation?: WorkspaceGitObservation,
+        manifest?: WorkspaceManifest
     ): WorkspaceState {
         if (!eTag) {
             throw new GracefulError("Filesystem archive response contains an invalid ETag.");
@@ -767,6 +807,7 @@ export class WorkspaceService {
             activeBranch: this.branchFromPackageKey(projectKey, packageKey),
             serverRevision: eTag,
             baselineDigests: {},
+            baselineNodeETags: {},
             moveHints: {},
         };
         const baselineDigests = Object.fromEntries(
@@ -778,7 +819,20 @@ export class WorkspaceService {
                 return [file.nodeKey, this.digest(absolute)];
             })
         );
-        const state: WorkspaceState = { ...emptyState, baselineDigests };
+        let state: WorkspaceState = { ...emptyState, baselineDigests };
+        if (manifest) {
+            const hydrated = new WorkspacePullService(this.api).hydrateArchiveBaseline(
+                root,
+                state,
+                packageKey,
+                state.activeBranch,
+                manifest
+            );
+            if (!this.sameStringRecord(hydrated.baselineDigests, baselineDigests)) {
+                throw new GracefulError("Archive content does not match the workspace manifest.");
+            }
+            state = { ...hydrated, serverRevision: eTag, manifestETag: eTag };
+        }
         if (observation) {
             state.git = observation;
         }
@@ -874,12 +928,20 @@ export class WorkspaceService {
             !parsed.activeBranch ||
             (parsed.serverRevision !== undefined &&
                 (typeof parsed.serverRevision !== "string" || !parsed.serverRevision)) ||
+            (parsed.manifestETag !== undefined && (typeof parsed.manifestETag !== "string" || !parsed.manifestETag)) ||
             !parsed.baselineDigests ||
             typeof parsed.baselineDigests !== "object" ||
             Array.isArray(parsed.baselineDigests) ||
             !Object.values(parsed.baselineDigests).every(
                 value => typeof value === "string" && /^sha256:[0-9a-f]{64}$/.test(value)
             ) ||
+            (parsed.baselineNodeETags !== undefined &&
+                (typeof parsed.baselineNodeETags !== "object" ||
+                    parsed.baselineNodeETags === null ||
+                    Array.isArray(parsed.baselineNodeETags) ||
+                    !Object.values(parsed.baselineNodeETags).every(
+                        value => typeof value === "string" && Boolean(value)
+                    ))) ||
             (parsed.moveHints !== undefined &&
                 (typeof parsed.moveHints !== "object" ||
                     parsed.moveHints === null ||
@@ -902,10 +964,14 @@ export class WorkspaceService {
             activePackageKey: parsed.activePackageKey,
             activeBranch: parsed.activeBranch,
             baselineDigests: parsed.baselineDigests,
+            baselineNodeETags: parsed.baselineNodeETags || {},
             moveHints: parsed.moveHints || {},
         };
         if (parsed.serverRevision) {
             state.serverRevision = parsed.serverRevision;
+        }
+        if (parsed.manifestETag) {
+            state.manifestETag = parsed.manifestETag;
         }
         if (parsed.refreshRequired) {
             state.refreshRequired = true;
@@ -1114,26 +1180,22 @@ export class WorkspaceService {
         observation: WorkspaceGitObservation
     ): Promise<void> {
         const remote = await this.api.manifest(packageKey);
+        const manifest = remote.manifest!;
         const localByKey = new Map(this.nodes(root).map(node => [node.nodeKey, node]));
-        remote.manifest.nodes.forEach(entry => {
+        manifest.nodes.forEach(entry => {
             const local = localByKey.get(entry.nodeKey);
             if (local && this.isFolder(local) !== this.isFolder(entry.metadata)) {
                 throw new GracefulError(`Node metadata type conflicts with the server for ${entry.nodeKey}.`);
             }
         });
-        this.writeState(
-            root,
-            this.withRemotePathHints(
-                root,
-                new WorkspacePullService(this.api).hydrateBaseline(
-                    { ...state, git: observation },
-                    packageKey,
-                    branch,
-                    remote.manifest
-                ),
-                remote.manifest
-            )
+        const hydrated = await new WorkspacePullService(this.api).hydrateRemoteBaseline(
+            { ...state, git: observation },
+            packageKey,
+            branch,
+            manifest
         );
+        hydrated.manifestETag = remote.eTag;
+        this.writeState(root, this.withRemotePathHints(root, hydrated, manifest));
     }
 
     private withRemotePathHints(root: string, state: WorkspaceState, manifest: WorkspaceManifest): WorkspaceState {
@@ -1211,6 +1273,11 @@ export class WorkspaceService {
     private writeState(root: string, state: WorkspaceState): void {
         fs.mkdirSync(path.dirname(this.statePath(root)), { recursive: true, mode: 0o700 });
         fs.writeFileSync(this.statePath(root), JSON.stringify(state, null, 2) + "\n", { mode: 0o600 });
+    }
+
+    private sameStringRecord(left: Record<string, string>, right: Record<string, string>): boolean {
+        const leftKeys = Object.keys(left);
+        return leftKeys.length === Object.keys(right).length && leftKeys.every(key => left[key] === right[key]);
     }
 
     private packageIdentity(root: string): WorkspacePackageIdentity {

@@ -56,10 +56,14 @@ export class HttpClient {
         return (await this.getFileWithHeaders(url)).data;
     }
 
-    public async getFileWithHeaders(url: string): Promise<{ data: Buffer; headers: Record<string, unknown> }> {
+    public async getFileWithHeaders(
+        url: string,
+        additionalHeaders: RawAxiosRequestHeaders = {},
+        acceptedStatuses: number[] = [200]
+    ): Promise<{ data: Buffer; headers: Record<string, unknown>; status: number }> {
         return new Promise<any>((resolve, reject) => {
             this.axios.get(this.resolveUrl(url), {
-                headers: this.buildHeaders(),
+                headers: { ...this.buildHeaders(), ...additionalHeaders },
                 responseType: "stream",
                 validateStatus: status => status >= 200
             }).then(response => {
@@ -68,18 +72,16 @@ export class HttpClient {
                     data.push(chunk);
                 });
                 response.data.on("end", () => {
-                    if (response.status !== 200) {
+                    if (!acceptedStatuses.includes(response.status)) {
                         reject(new Error(Buffer.concat(data as any).toString()));
                         return;
                     }
 
-                    const content = Buffer.concat(data as any);
-                    if (content) {
-                        resolve({ data: content, headers: response.headers || {} });
-                        return;
-                    }
-                    logger.error("Could not get file stream from response");
-                    reject(new Error("Could not get file stream from response"));
+                    resolve({
+                        data: Buffer.concat(data as any),
+                        headers: response.headers || {},
+                        status: response.status,
+                    });
                 });
             }).catch(err => {
                 this.handleError(err, resolve, reject);
