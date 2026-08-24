@@ -67,12 +67,13 @@ export class WorkspaceApi {
     public putFile(
         packageKey: string,
         filePath: string,
+        assetType: string,
         body: Buffer,
         contentType: string,
         headers: Record<string, string>
     ): Promise<NodeFileWriteResponse> {
         return this.context.httpClient.putFile(
-            this.fileUrl(packageKey, filePath),
+            `${this.fileUrl(packageKey, filePath)}?assetType=${encodeURIComponent(assetType)}`,
             body,
             contentType,
             undefined,

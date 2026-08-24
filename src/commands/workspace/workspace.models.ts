@@ -60,6 +60,7 @@ export interface WorkspaceNode extends WorkspaceNodeMetadata {
 export interface ExpectedWorkspaceFile {
     nodeKey: string;
     path: string;
+    assetType: string;
     digest?: string;
 }
 
@@ -94,6 +95,7 @@ export interface WorkspaceSnapshot {
 export interface WorkspacePushOptions {
     full?: boolean;
     overwrite?: boolean;
+    assetType?: string;
 }
 
 export interface WorkspacePullOptions {

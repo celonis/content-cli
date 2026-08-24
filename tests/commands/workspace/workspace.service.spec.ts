@@ -33,6 +33,10 @@ function fileUrl(filePath: string, packageKey: string = PACKAGE_KEY): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files/${filePath}`;
 }
 
+function fileWriteUrl(filePath: string, assetType: string = "md", packageKey: string = PACKAGE_KEY): string {
+    return `${fileUrl(filePath, packageKey)}?assetType=${encodeURIComponent(assetType)}`;
+}
+
 function folderUrl(folderPath: string, packageKey: string = PACKAGE_KEY): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/folders/${folderPath}`;
 }
@@ -45,6 +49,7 @@ interface TestFile {
     nodeKey: string;
     path: string;
     content: string;
+    assetType?: string;
 }
 
 function digest(value: string): string {
@@ -80,7 +85,7 @@ function metadata(files: TestFile[]): Record<string, object> {
         }
         nodes[file.nodeKey] = {
             name: path.posix.basename(file.path, path.posix.extname(file.path)),
-            type: "md",
+            type: file.assetType ?? "md",
             parentNodeKey,
         };
     });
@@ -1243,7 +1248,7 @@ describe("Workspace service", () => {
             }
             fs.writeFileSync(path.join(process.cwd(), file.path), `changed-${index}`);
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(`file-${index}`) });
-            mockAxiosPut(fileUrl(file.path), {
+            mockAxiosPut(fileWriteUrl(file.path), {
                 path: file.path,
                 nodeKey: file.nodeKey,
                 assetType: "MARKDOWN_FILE",
@@ -1278,7 +1283,7 @@ describe("Workspace service", () => {
         fs.writeFileSync(path.join(process.cwd(), "Selected/Two.md"), "two changed");
         fs.rmSync(path.join(process.cwd(), "Unselected/Three.md"));
         mockAxiosGet(fileUrl("Selected/One.md"), Buffer.from("one"), { etag: eTag("one") });
-        mockAxiosPut(fileUrl("Selected/One.md"), {
+        mockAxiosPut(fileWriteUrl("Selected/One.md"), {
             path: "Selected/One.md",
             nodeKey: "node-1",
             assetType: "MARKDOWN_FILE",
@@ -1351,7 +1356,7 @@ describe("Workspace service", () => {
         original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
         original.slice(0, 2).forEach(file => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.nodeKey) });
-            mockAxiosPut(fileUrl(file.path), {
+            mockAxiosPut(fileWriteUrl(file.path), {
                 path: file.path,
                 nodeKey: file.nodeKey,
                 assetType: "MARKDOWN_FILE",
@@ -1370,13 +1375,13 @@ describe("Workspace service", () => {
         ]);
     });
 
-    it("lets Pacman select the Asset Type for a registered-extension addition", async () => {
+    it("sends the metadata Asset Type for an addition", async () => {
         const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
         const remote = { ...local, nodeKey: "server-node" };
         writeWorkspace([local]);
         const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(statePath, JSON.stringify({ ...state([local]), baselineDigests: {} }));
-        mockAxiosPut(fileUrl(local.path), {
+        mockAxiosPut(fileWriteUrl(local.path), {
             path: local.path,
             nodeKey: remote.nodeKey,
             assetType: "MARKDOWN_FILE",
@@ -1387,14 +1392,47 @@ describe("Workspace service", () => {
         await new WorkspaceService(testContext).push();
 
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
-            fileUrl(local.path),
+            fileWriteUrl(local.path),
             Buffer.from("new"),
             expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": "*" }) })
         );
-        expect((mockedAxiosInstance.put as jest.Mock).mock.calls[0][0]).not.toContain("assetType=");
+        expect((mockedAxiosInstance.put as jest.Mock).mock.calls[0][0]).toContain("assetType=md");
         expect(new WorkspaceService(testContext).status()).toEqual([]);
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/local-node.json"))).toBe(false);
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
+    });
+
+    it("requires and sends an explicit Asset Type for a bare new file", async () => {
+        const remote = { nodeKey: "server-node", path: "New.md", content: "new", assetType: "MARKDOWN_FILE" };
+        writeWorkspace([]);
+        fs.writeFileSync(path.join(process.cwd(), remote.path), remote.content);
+        mockAxiosPut(fileWriteUrl(remote.path, remote.assetType), {
+            path: remote.path,
+            nodeKey: remote.nodeKey,
+            assetType: remote.assetType,
+            eTag: eTag(remote.content),
+        });
+        mockManifest([remote]);
+
+        await new WorkspaceService(testContext).push([remote.path], { assetType: remote.assetType });
+
+        expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
+            fileWriteUrl(remote.path, remote.assetType),
+            Buffer.from(remote.content),
+            expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": "*" }) })
+        );
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+    });
+
+    it("rejects a bare new file without an Asset Type", async () => {
+        writeWorkspace([]);
+        fs.writeFileSync(path.join(process.cwd(), "New.md"), "new");
+
+        await expect(new WorkspaceService(testContext).push(["New.md"])).rejects.toThrow(
+            "Workspace push failed for 1 path(s)"
+        );
+
+        expect(mockedAxiosInstance.put).not.toHaveBeenCalled();
     });
 
     it("pushes an empty directory through the folder API", async () => {
@@ -1435,7 +1473,7 @@ describe("Workspace service", () => {
         writeWorkspace([local]);
         const statePath = path.join(process.cwd(), ".package", "local", "state.json");
         fs.writeFileSync(statePath, JSON.stringify({ ...state([local]), baselineDigests: {} }));
-        mockAxiosPut(fileUrl(local.path), {
+        mockAxiosPut(fileWriteUrl(local.path), {
             path: local.path,
             nodeKey: remote.nodeKey,
             assetType: "MARKDOWN_FILE",
@@ -1472,10 +1510,10 @@ describe("Workspace service", () => {
     });
 
     it("recovers an untracked server-created file by path and digest", async () => {
-        const remote = { nodeKey: "server-node", path: "New.md", content: "new" };
+        const remote = { nodeKey: "server-node", path: "New.md", content: "new", assetType: "MARKDOWN_FILE" };
         writeWorkspace([]);
         fs.writeFileSync(path.join(process.cwd(), remote.path), remote.content);
-        mockAxiosPut(fileUrl(remote.path), {
+        mockAxiosPut(fileWriteUrl(remote.path, "MARKDOWN_FILE"), {
             path: remote.path,
             nodeKey: remote.nodeKey,
             assetType: "MARKDOWN_FILE",
@@ -1484,7 +1522,9 @@ describe("Workspace service", () => {
         mockAxiosGetError(manifestUrl(), 503, { message: "unavailable" });
         const service = new WorkspaceService(testContext, mockGit(undefined));
 
-        await expect(service.push()).rejects.toThrow("local synchronization state could not be refreshed");
+        await expect(service.push([], { assetType: remote.assetType })).rejects.toThrow(
+            "local synchronization state could not be refreshed"
+        );
         mockManifest([remote], PACKAGE_KEY, eTag("manifest"), true);
         await service.pull();
 
@@ -1500,7 +1540,7 @@ describe("Workspace service", () => {
         writeWorkspace();
         fs.writeFileSync(path.join(process.cwd(), "Guides/Guide.md"), "changed");
         mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: eTag("file-1") });
-        mockAxiosPutError(fileUrl("Guides/Guide.md"), 412, { message: "stale" });
+        mockAxiosPutError(fileWriteUrl("Guides/Guide.md"), 412, { message: "stale" });
 
         await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 path(s)");
 
@@ -1515,7 +1555,7 @@ describe("Workspace service", () => {
         writeWorkspace();
         fs.writeFileSync(path.join(process.cwd(), "Guides/Guide.md"), "changed");
         mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: weakETag });
-        mockAxiosPut(fileUrl("Guides/Guide.md"), {
+        mockAxiosPut(fileWriteUrl("Guides/Guide.md"), {
             path: "Guides/Guide.md",
             nodeKey: "node-1",
             assetType: "MARKDOWN_FILE",
@@ -1526,7 +1566,7 @@ describe("Workspace service", () => {
         await new WorkspaceService(testContext).push();
 
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
-            fileUrl("Guides/Guide.md"),
+            fileWriteUrl("Guides/Guide.md"),
             expect.any(Buffer),
             expect.objectContaining({ headers: expect.objectContaining({ "If-Match": weakETag }) })
         );
@@ -1541,13 +1581,13 @@ describe("Workspace service", () => {
         original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
         mockAxiosGet(fileUrl("Guides/One.md"), Buffer.from("one"), { etag: eTag("one") });
         mockAxiosGet(fileUrl("Guides/Two.md"), Buffer.from("two"), { etag: eTag("two") });
-        mockAxiosPut(fileUrl("Guides/One.md"), {
+        mockAxiosPut(fileWriteUrl("Guides/One.md"), {
             path: "Guides/One.md",
             nodeKey: "node-1",
             assetType: "MARKDOWN_FILE",
             eTag: eTag("one changed"),
         });
-        mockAxiosPutError(fileUrl("Guides/Two.md"), 412, { message: "stale" });
+        mockAxiosPutError(fileWriteUrl("Guides/Two.md"), 412, { message: "stale" });
         mockManifest([{ ...original[0], content: "one changed" }, original[1]]);
 
         await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 path(s)");
@@ -1590,7 +1630,7 @@ describe("Workspace service", () => {
             assetType: "MARKDOWN_FILE",
             eTag: eTag("file-2"),
         });
-        mockAxiosPut(fileUrl("Pages/Guide.md"), {
+        mockAxiosPut(fileWriteUrl("Pages/Guide.md"), {
             path: "Pages/Guide.md",
             nodeKey: "node-1",
             assetType: "MARKDOWN_FILE",
@@ -1606,7 +1646,7 @@ describe("Workspace service", () => {
             expect.objectContaining({ headers: expect.objectContaining({ "If-Match": eTag("file-1") }) })
         );
         expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
-            fileUrl("Pages/Guide.md"),
+            fileWriteUrl("Pages/Guide.md"),
             Buffer.from("changed"),
             expect.objectContaining({ headers: expect.objectContaining({ "If-Match": eTag("file-2") }) })
         );
@@ -1632,7 +1672,7 @@ describe("Workspace service", () => {
             assetType: "MARKDOWN_FILE",
             eTag: eTag("file-2"),
         });
-        mockAxiosPut(fileUrl("Guides/Guide.md"), {
+        mockAxiosPut(fileWriteUrl("Guides/Guide.md", "MARKDOWN_FILE"), {
             path: "Guides/Guide.md",
             nodeKey: "node-2",
             assetType: "MARKDOWN_FILE",
@@ -1643,7 +1683,7 @@ describe("Workspace service", () => {
             { nodeKey: "node-2", path: "Guides/Guide.md", content: "replacement" },
         ]);
 
-        await service.push();
+        await service.push([], { assetType: "MARKDOWN_FILE" });
 
         expect((mockedAxiosInstance.patch as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
             (mockedAxiosInstance.put as jest.Mock).mock.invocationCallOrder[0]
@@ -1663,7 +1703,7 @@ describe("Workspace service", () => {
             assetType: "MARKDOWN_FILE",
             eTag: eTag("file-2"),
         });
-        mockAxiosPutError(fileUrl("Pages/Guide.md"), 412, { message: "stale" });
+        mockAxiosPutError(fileWriteUrl("Pages/Guide.md"), 412, { message: "stale" });
         mockManifest([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
 
         await expect(service.push()).rejects.toThrow("Workspace push failed for 1 path(s)");
@@ -1677,7 +1717,7 @@ describe("Workspace service", () => {
         });
     });
 
-    it("rejects paths with a full push and overwrite without a full push", async () => {
+    it("rejects incompatible full-push options", async () => {
         writeWorkspace();
 
         await expect(new WorkspaceService(testContext).push(["Guides"], { full: true })).rejects.toThrow(
@@ -1686,6 +1726,9 @@ describe("Workspace service", () => {
         await expect(new WorkspaceService(testContext).push([], { overwrite: true })).rejects.toThrow(
             "--overwrite requires --full"
         );
+        await expect(
+            new WorkspaceService(testContext).push([], { full: true, assetType: "MARKDOWN_FILE" })
+        ).rejects.toThrow("--asset-type cannot be combined with --full");
     });
 
     it("pushes resolved changes and refreshes disposable metadata", async () => {

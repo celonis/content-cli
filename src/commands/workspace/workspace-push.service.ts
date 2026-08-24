@@ -40,12 +40,17 @@ function isOperationError(error: unknown): error is WorkspacePushOperationError 
 export class WorkspacePushService {
     constructor(private readonly api: WorkspaceApi) {}
 
-    public async push(root: string, snapshot: WorkspaceSnapshot, paths: string[]): Promise<WorkspacePushOutcome[]> {
+    public async push(
+        root: string,
+        snapshot: WorkspaceSnapshot,
+        paths: string[],
+        assetType?: string
+    ): Promise<WorkspacePushOutcome[]> {
         const changes = this.order(this.select(root, snapshot, paths));
         const outcomes: WorkspacePushOutcome[] = [];
         for (const change of changes) {
             try {
-                const result = await this.pushChange(root, snapshot, change);
+                const result = await this.pushChange(root, snapshot, change, assetType);
                 outcomes.push({
                     ...change,
                     nodeKey: result?.nodeKey || change.nodeKey,
@@ -113,7 +118,8 @@ export class WorkspacePushService {
     private async pushChange(
         root: string,
         snapshot: WorkspaceSnapshot,
-        change: ClassifiedWorkspaceChange
+        change: ClassifiedWorkspaceChange,
+        requestedAssetType?: string
     ): Promise<import("./workspace.models").NodeFileWriteResponse | undefined> {
         if (change.kind === "folder") {
             if (change.status === "added") {
@@ -132,6 +138,7 @@ export class WorkspacePushService {
                 return this.api.putFile(
                     snapshot.packageKey,
                     change.path,
+                    this.assetType(change, expected, requestedAssetType),
                     this.content(root, change.path),
                     this.contentType(change.path),
                     { "If-None-Match": "*" }
@@ -141,6 +148,7 @@ export class WorkspacePushService {
                 return this.api.putFile(
                     snapshot.packageKey,
                     change.path,
+                    this.requireExpected(expected).assetType,
                     this.content(root, change.path),
                     this.contentType(change.path),
                     { "If-Match": eTag }
@@ -165,6 +173,7 @@ export class WorkspacePushService {
                     return await this.api.putFile(
                         snapshot.packageKey,
                         change.path,
+                        tracked.assetType,
                         this.content(root, change.path),
                         this.contentType(change.path),
                         { "If-Match": eTag }
@@ -180,6 +189,25 @@ export class WorkspacePushService {
                 return;
             }
         }
+    }
+
+    private assetType(
+        change: ClassifiedWorkspaceChange,
+        expected: ExpectedWorkspaceFile | undefined,
+        requestedAssetType: string | undefined
+    ): string {
+        if (expected) {
+            if (requestedAssetType && requestedAssetType.toLowerCase() !== expected.assetType.toLowerCase()) {
+                throw new GracefulError(
+                    `Requested Asset Type does not match workspace metadata for ${change.path}: ${expected.assetType}`
+                );
+            }
+            return expected.assetType;
+        }
+        if (!requestedAssetType) {
+            throw new GracefulError(`Asset Type is required for a new file: ${change.path}. Use --asset-type.`);
+        }
+        return requestedAssetType;
     }
 
     private async currentETag(packageKey: string, expected: ExpectedWorkspaceFile, filePath: string): Promise<string> {

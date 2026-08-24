@@ -1,10 +1,15 @@
 import { classifyWorkspaceChanges } from "../../../src/commands/workspace/workspace-change-classifier";
+import { ExpectedWorkspaceFile } from "../../../src/commands/workspace/workspace.models";
+
+function tracked(nodeKey: string, filePath: string, digest?: string): ExpectedWorkspaceFile {
+    return { nodeKey, path: filePath, assetType: "md", digest };
+}
 
 describe("Workspace change classifier", () => {
     it("keeps unchanged files clean", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Guides/Guide.md", "sha256:one"]]),
                 {}
             )
@@ -14,7 +19,7 @@ describe("Workspace change classifier", () => {
     it("infers a uniquely matching unchanged move", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Pages/Guide.md", "sha256:one"]]),
                 {}
             )
@@ -24,7 +29,7 @@ describe("Workspace change classifier", () => {
     it("keeps a uniquely matching filename rename unresolved", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Pages/Renamed.md", "sha256:one"]]),
                 {}
             )
@@ -34,7 +39,7 @@ describe("Workspace change classifier", () => {
     it("uses a recorded hint for a move followed by an edit", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Pages/Guide.md", "sha256:two"]]),
                 { "node-1": "Pages/Guide.md" }
             )
@@ -44,7 +49,7 @@ describe("Workspace change classifier", () => {
     it("uses a reconciliation hint when metadata already names the destination", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Pages/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Pages/Guide.md", "sha256:one")],
                 new Map([["Pages/Guide.md", "sha256:one"]]),
                 { "node-1": "Pages/Guide.md" }
             )
@@ -54,7 +59,7 @@ describe("Workspace change classifier", () => {
     it("keeps a recorded case-only filename rename unresolved", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Guides/Guide.md", "sha256:one"]]),
                 { "node-1": "Guides/guide.md" }
             )
@@ -64,7 +69,7 @@ describe("Workspace change classifier", () => {
     it("keeps a distinct deletion and addition separate", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Old.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Old.md", "sha256:one")],
                 new Map([["Pages/New.md", "sha256:two"]]),
                 {}
             )
@@ -78,8 +83,8 @@ describe("Workspace change classifier", () => {
         expect(
             classifyWorkspaceChanges(
                 [
-                    { nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" },
-                    { nodeKey: "node-2", path: "Tutorials/Guide.md", digest: "sha256:two" },
+                    tracked("node-1", "Guides/Guide.md", "sha256:one"),
+                    tracked("node-2", "Tutorials/Guide.md", "sha256:two"),
                 ],
                 new Map([["Pages/Guide.md", "sha256:three"]]),
                 {}
@@ -94,7 +99,7 @@ describe("Workspace change classifier", () => {
     it("classifies a metadata-backed file without a baseline as added", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/New.md" }],
+                [tracked("node-1", "Guides/New.md")],
                 new Map([["Guides/New.md", "sha256:new"]]),
                 {}
             )
@@ -104,7 +109,7 @@ describe("Workspace change classifier", () => {
     it("keeps an unrecorded move without a baseline unresolved once", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/New.md" }],
+                [tracked("node-1", "Guides/New.md")],
                 new Map([["Pages/New.md", "sha256:new"]]),
                 {}
             )
@@ -114,7 +119,7 @@ describe("Workspace change classifier", () => {
     it("classifies a recorded move without a baseline as added", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/New.md" }],
+                [tracked("node-1", "Guides/New.md")],
                 new Map([["Pages/New.md", "sha256:new"]]),
                 { "node-1": "Pages/New.md" }
             )
@@ -124,7 +129,7 @@ describe("Workspace change classifier", () => {
     it("keeps an invalid recorded move unresolved", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Guides/Guide.md", "sha256:one"]]),
                 { "node-1": "Pages/Guide.md" }
             )
@@ -134,7 +139,7 @@ describe("Workspace change classifier", () => {
     it("keeps an unrecorded same-name move and edit unresolved", () => {
         expect(
             classifyWorkspaceChanges(
-                [{ nodeKey: "node-1", path: "Guides/Guide.md", digest: "sha256:one" }],
+                [tracked("node-1", "Guides/Guide.md", "sha256:one")],
                 new Map([["Pages/Guide.md", "sha256:two"]]),
                 {}
             )

@@ -303,6 +303,9 @@ export class WorkspaceService {
             if (paths.length > 0) {
                 throw new GracefulError("Workspace paths cannot be combined with --full.");
             }
+            if (options.assetType) {
+                throw new GracefulError("--asset-type cannot be combined with --full.");
+            }
             await this.pushFull(Boolean(options.overwrite));
             return;
         }
@@ -316,7 +319,12 @@ export class WorkspaceService {
         delete invalidatedBeforePush.serverRevision;
         delete invalidatedBeforePush.manifestETag;
         this.writeState(root, invalidatedBeforePush);
-        const outcomes: WorkspacePushOutcome[] = await new WorkspacePushService(this.api).push(root, snapshot, paths);
+        const outcomes: WorkspacePushOutcome[] = await new WorkspacePushService(this.api).push(
+            root,
+            snapshot,
+            paths,
+            options.assetType
+        );
         outcomes.forEach(outcome =>
             logger.info(
                 `${outcome.success ? "succeeded" : "failed"}: ${outcome.status} ${outcome.path}` +
@@ -545,7 +553,7 @@ export class WorkspaceService {
                 const sourcePath = this.isStructuredMoveHint(hint)
                     ? this.validateRelative(hint.sourcePath)
                     : metadataPath;
-                return { nodeKey: node.nodeKey, path: sourcePath, digest: baseline };
+                return { nodeKey: node.nodeKey, path: sourcePath, assetType: node.type, digest: baseline };
             });
         const foldedPaths = new Set<string>();
         expected.forEach(file => {

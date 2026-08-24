@@ -47,6 +47,7 @@ class Module extends IModule {
             .description("Push local changes.")
             .option("--full", "Push the full workspace archive", false)
             .option("--overwrite", "Replace missing remote files during a full push", false)
+            .option("--asset-type <assetType>", "Asset Type for new files")
             .action(this.push);
 
         workspace
@@ -90,6 +91,7 @@ class Module extends IModule {
             new WorkspaceService(context).push(command.args, {
                 full: options.full,
                 overwrite: options.overwrite,
+                assetType: options.assetType,
             })
         );
     }
