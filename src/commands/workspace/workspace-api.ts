@@ -80,6 +80,16 @@ export class WorkspaceApi {
         );
     }
 
+    public createFolder(packageKey: string, folderPath: string): Promise<NodeFileWriteResponse> {
+        return this.context.httpClient.putFile(
+            this.folderUrl(packageKey, folderPath),
+            Buffer.alloc(0),
+            "application/octet-stream",
+            undefined,
+            { "If-None-Match": "*" }
+        );
+    }
+
     public moveFile(
         packageKey: string,
         sourcePath: string,
@@ -105,10 +115,18 @@ export class WorkspaceApi {
     }
 
     private fileUrl(packageKey: string, filePath: string): string {
-        const encodedPath = filePath
+        return this.pathUrl(packageKey, "files", filePath);
+    }
+
+    private folderUrl(packageKey: string, folderPath: string): string {
+        return this.pathUrl(packageKey, "folders", folderPath);
+    }
+
+    private pathUrl(packageKey: string, collection: string, entryPath: string): string {
+        const encodedPath = entryPath
             .split("/")
             .map(segment => encodeURIComponent(segment))
             .join("/");
-        return `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files/${encodedPath}`;
+        return `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/${collection}/${encodedPath}`;
     }
 }

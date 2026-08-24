@@ -14,7 +14,9 @@ import { projectedLeafAfterMove, projectWorkspacePaths } from "./workspace-path-
 import { WorkspacePullService } from "./workspace-pull.service";
 import { WorkspacePushService } from "./workspace-push.service";
 import {
+    ClassifiedWorkspaceChange,
     ExpectedWorkspaceFile,
+    ExpectedWorkspaceFolder,
     WorkspaceChange,
     WorkspaceCheckoutOptions,
     WorkspaceCloneOptions,
@@ -30,6 +32,12 @@ import {
     WorkspaceSnapshot,
     WorkspaceState,
 } from "./workspace.models";
+
+interface VisibleWorkspaceTree {
+    files: Map<string, string>;
+    folders: Set<string>;
+    emptyFolders: Set<string>;
+}
 
 const NON_SEMANTIC_NODE_FIELDS = [
     "configuration",
@@ -328,7 +336,7 @@ export class WorkspaceService {
         if (!remoteChanged) {
             this.writeState(root, invalidatedState);
             if (failed.length > 0) {
-                throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
+                throw new GracefulError(`Workspace push failed for ${failed.length} path(s).`);
             }
             logger.info(paths.length > 0 ? "Selected paths have no changes." : "Workspace is clean.");
             return;
@@ -348,7 +356,7 @@ export class WorkspaceService {
             throw failure;
         }
         if (failed.length > 0) {
-            throw new GracefulError(`Workspace push failed for ${failed.length} file(s).`);
+            throw new GracefulError(`Workspace push failed for ${failed.length} path(s).`);
         }
         logger.info(`Pushed ${snapshot.packageKey}.`);
     }
@@ -466,15 +474,59 @@ export class WorkspaceService {
             throw new GracefulError("Active Pacman package does not belong to this workspace project.");
         }
         const expectedFiles = this.expectedFiles(root, state, state.activePackageKey);
-        const visibleFiles = this.visibleFiles(root);
+        const expectedFolders = this.expectedFolders(root, state.activePackageKey);
+        const visible = this.visibleTree(root);
+        const fileChanges = classifyWorkspaceChanges(
+            expectedFiles,
+            visible.files,
+            this.moveHintTargets(state.moveHints)
+        );
+        const folderChanges = this.classifyFolderChanges(expectedFolders, visible.folders, visible.emptyFolders);
         return {
             projectKey,
             packageKey: state.activePackageKey,
             state,
             expectedFiles,
-            visibleFiles,
-            changes: classifyWorkspaceChanges(expectedFiles, visibleFiles, this.moveHintTargets(state.moveHints)),
+            expectedFolders,
+            visibleFiles: visible.files,
+            visibleFolders: visible.folders,
+            changes: [...fileChanges, ...folderChanges].sort(
+                (left, right) => left.path.localeCompare(right.path) || left.status.localeCompare(right.status)
+            ),
         };
+    }
+
+    private expectedFolders(root: string, packageKey: string): ExpectedWorkspaceFolder[] {
+        const nodes = this.nodes(root);
+        const pathByKey = projectWorkspacePaths(nodes, packageKey);
+        return nodes
+            .filter(node => this.isFolder(node))
+            .map(node => ({ nodeKey: node.nodeKey, path: pathByKey.get(node.nodeKey)! }))
+            .sort((left, right) => left.path.localeCompare(right.path));
+    }
+
+    private classifyFolderChanges(
+        expectedFolders: ExpectedWorkspaceFolder[],
+        visibleFolders: Set<string>,
+        emptyFolders: Set<string>
+    ): ClassifiedWorkspaceChange[] {
+        const expectedByPath = new Map(expectedFolders.map(folder => [folder.path.toLowerCase(), folder]));
+        const visibleByPath = new Map([...visibleFolders].map(folderPath => [folderPath.toLowerCase(), folderPath]));
+        const missing = expectedFolders.filter(folder => !visibleByPath.has(folder.path.toLowerCase()));
+        const additions = [...emptyFolders].filter(folderPath => !expectedByPath.has(folderPath.toLowerCase()));
+        return [
+            ...missing.map(folder => ({
+                nodeKey: folder.nodeKey,
+                path: folder.path,
+                status: "unresolved" as const,
+                kind: "folder" as const,
+            })),
+            ...additions.map(folderPath => ({
+                path: folderPath,
+                status: "added" as const,
+                kind: "folder" as const,
+            })),
+        ];
     }
 
     private expectedFiles(root: string, state: WorkspaceState, packageKey: string): ExpectedWorkspaceFile[] {
@@ -549,8 +601,9 @@ export class WorkspaceService {
             });
     }
 
-    private visibleFiles(root: string): Map<string, string> {
+    private visibleTree(root: string): VisibleWorkspaceTree {
         const files = new Map<string, string>();
+        const folders = new Set<string>();
         const foldedPaths = new Set<string>();
         const visit = (directory: string, relativeDirectory: string): void => {
             fs.readdirSync(directory, { withFileTypes: true })
@@ -568,6 +621,15 @@ export class WorkspaceService {
                         throw new GracefulError(`Workspace contains an unsupported symbolic link: ${relative}`);
                     }
                     if (entry.isDirectory()) {
+                        const validated = this.validateRelative(relative);
+                        const foldedPath = validated.toLowerCase();
+                        if (foldedPaths.has(foldedPath)) {
+                            throw new GracefulError(
+                                `Workspace contains duplicate case-insensitive paths: ${validated}`
+                            );
+                        }
+                        foldedPaths.add(foldedPath);
+                        folders.add(validated);
                         visit(absolute, relative);
                         return;
                     }
@@ -584,7 +646,23 @@ export class WorkspaceService {
                 });
         };
         visit(root, "");
-        return files;
+        const nonEmptyParents = new Set<string>();
+        [...files.keys(), ...folders].forEach(entryPath => {
+            let parent = path.posix.dirname(entryPath);
+            while (parent !== ".") {
+                nonEmptyParents.add(parent.toLowerCase());
+                parent = path.posix.dirname(parent);
+            }
+        });
+        return {
+            files,
+            folders,
+            emptyFolders: new Set([...folders].filter(folderPath => !nonEmptyParents.has(folderPath.toLowerCase()))),
+        };
+    }
+
+    private visibleFiles(root: string): Map<string, string> {
+        return this.visibleTree(root).files;
     }
 
     private trackedFile(snapshot: WorkspaceSnapshot, sourcePath: string): ExpectedWorkspaceFile | undefined {

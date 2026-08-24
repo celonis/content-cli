@@ -78,23 +78,36 @@ export class WorkspacePushService {
 
     private order(changes: ClassifiedWorkspaceChange[]): ClassifiedWorkspaceChange[] {
         const priority = (change: ClassifiedWorkspaceChange): number => {
+            if (change.kind === "folder" && change.status === "added") {
+                return 0;
+            }
             switch (change.status) {
                 case "deleted":
-                    return 0;
+                    return 1;
                 case "moved":
                 case "moved, modified":
-                    return 1;
-                case "modified":
                     return 2;
-                case "added":
+                case "modified":
                     return 3;
-                case "unresolved":
+                case "added":
                     return 4;
+                case "unresolved":
+                    return 5;
             }
         };
-        return [...changes].sort(
-            (left, right) => priority(left) - priority(right) || left.path.localeCompare(right.path)
-        );
+        return [...changes].sort((left, right) => {
+            const difference = priority(left) - priority(right);
+            if (difference !== 0) {
+                return difference;
+            }
+            if (left.kind === "folder" && right.kind === "folder" && left.status === "added") {
+                const depth = left.path.split("/").length - right.path.split("/").length;
+                if (depth !== 0) {
+                    return depth;
+                }
+            }
+            return left.path.localeCompare(right.path);
+        });
     }
 
     private async pushChange(
@@ -102,6 +115,12 @@ export class WorkspacePushService {
         snapshot: WorkspaceSnapshot,
         change: ClassifiedWorkspaceChange
     ): Promise<import("./workspace.models").NodeFileWriteResponse | undefined> {
+        if (change.kind === "folder") {
+            if (change.status === "added") {
+                return this.api.createFolder(snapshot.packageKey, change.path);
+            }
+            throw new GracefulError("Incremental folder deletion or relocation is not supported.");
+        }
         if (change.status === "unresolved") {
             throw new GracefulError("File identity is unresolved. Record the intended move before pushing.");
         }

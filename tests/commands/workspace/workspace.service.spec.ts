@@ -33,6 +33,10 @@ function fileUrl(filePath: string, packageKey: string = PACKAGE_KEY): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files/${filePath}`;
 }
 
+function folderUrl(folderPath: string, packageKey: string = PACKAGE_KEY): string {
+    return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/folders/${folderPath}`;
+}
+
 function manifestUrl(packageKey: string = PACKAGE_KEY): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files`;
 }
@@ -210,6 +214,7 @@ function removeWorkspace(): void {
         "Guides",
         "Pages",
         "Other",
+        "Empty",
         "New",
         "New.md",
         "Bulk",
@@ -1392,6 +1397,38 @@ describe("Workspace service", () => {
         expect(fs.existsSync(path.join(process.cwd(), ".package/nodes/server-node.json"))).toBe(true);
     });
 
+    it("pushes an empty directory through the folder API", async () => {
+        const files = [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }];
+        writeWorkspace(files);
+        fs.mkdirSync(path.join(process.cwd(), "Empty"));
+        mockAxiosPut(folderUrl("Empty"), {
+            path: "Empty",
+            nodeKey: "empty-folder",
+            assetType: "FOLDER",
+            eTag: eTag("empty-folder"),
+        });
+        const remoteManifest = JSON.parse(manifest(files).toString("utf-8"));
+        remoteManifest.nodes.push({
+            nodeKey: "empty-folder",
+            path: "Empty",
+            eTag: eTag("empty-folder"),
+            metadata: { name: "Empty", type: "FOLDER", parentNodeKey: null },
+        });
+        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("manifest-2") });
+
+        await new WorkspaceService(testContext).push();
+
+        expect(mockedAxiosInstance.put).toHaveBeenCalledWith(
+            folderUrl("Empty"),
+            Buffer.alloc(0),
+            expect.objectContaining({ headers: expect.objectContaining({ "If-None-Match": "*" }) })
+        );
+        expect(new WorkspaceService(testContext).status()).toEqual([]);
+        expect(
+            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package/nodes/empty-folder.json"), "utf-8"))
+        ).toMatchObject({ name: "Empty", type: "FOLDER" });
+    });
+
     it("retains refresh recovery when a server-created file no longer matches locally", async () => {
         const local = { nodeKey: "local-node", path: "Guides/New.md", content: "new" };
         const remote = { ...local, nodeKey: "server-node" };
@@ -1465,7 +1502,7 @@ describe("Workspace service", () => {
         mockAxiosGet(fileUrl("Guides/Guide.md"), Buffer.from("original"), { etag: eTag("file-1") });
         mockAxiosPutError(fileUrl("Guides/Guide.md"), 412, { message: "stale" });
 
-        await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 file(s)");
+        await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 path(s)");
 
         expect(new WorkspaceService(testContext).status()).toEqual([{ path: "Guides/Guide.md", status: "modified" }]);
         expect(
@@ -1513,7 +1550,7 @@ describe("Workspace service", () => {
         mockAxiosPutError(fileUrl("Guides/Two.md"), 412, { message: "stale" });
         mockManifest([{ ...original[0], content: "one changed" }, original[1]]);
 
-        await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 file(s)");
+        await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 path(s)");
 
         expect(new WorkspaceService(testContext).status()).toEqual([{ path: "Guides/Two.md", status: "modified" }]);
         expect(
@@ -1629,7 +1666,7 @@ describe("Workspace service", () => {
         mockAxiosPutError(fileUrl("Pages/Guide.md"), 412, { message: "stale" });
         mockManifest([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }]);
 
-        await expect(service.push()).rejects.toThrow("Workspace push failed for 1 file(s)");
+        await expect(service.push()).rejects.toThrow("Workspace push failed for 1 path(s)");
 
         expect(service.status()).toEqual([{ path: "Pages/Guide.md", status: "modified" }]);
         expect(
@@ -1678,7 +1715,22 @@ describe("Workspace service", () => {
             originalRename(source, target);
         });
         mockAxiosPost(PUSH_URL, {});
-        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "changed" }], eTag("revision-2"));
+        const remoteFiles = [{ nodeKey: "node-1", path: "Pages/Guide.md", content: "changed" }];
+        const remoteArchive = new AdmZip(archive(remoteFiles));
+        remoteArchive.addFile(
+            ".package/nodes/folder-1.json",
+            Buffer.from(JSON.stringify({ name: "Guides", type: "FOLDER", parentNodeKey: null }))
+        );
+        remoteArchive.addFile("Guides/", Buffer.alloc(0));
+        mockAxiosGet(archiveUrl(PACKAGE_KEY), remoteArchive.toBuffer(), { etag: eTag("revision-2") });
+        const remoteManifest = JSON.parse(manifest(remoteFiles).toString("utf-8"));
+        remoteManifest.nodes.push({
+            nodeKey: "folder-1",
+            path: "Guides",
+            eTag: eTag("folder-1"),
+            metadata: { name: "Guides", type: "FOLDER", parentNodeKey: null },
+        });
+        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("revision-2") });
 
         try {
             await service.push([], { full: true, overwrite: true });
@@ -1710,6 +1762,7 @@ describe("Workspace service", () => {
             manifestETag: eTag("revision-2"),
             baselineDigests: { "node-1": digest("changed") },
             baselineNodeETags: {
+                "folder-1": eTag("folder-1"),
                 [`folder-${createHash("sha256").update("Pages").digest("hex").slice(0, 12)}`]: eTag(
                     `folder-${createHash("sha256").update("Pages").digest("hex").slice(0, 12)}`
                 ),
@@ -1810,7 +1863,7 @@ describe("Workspace service", () => {
         fs.renameSync(path.join(process.cwd(), "Guides", "Guide.md"), path.join(process.cwd(), "Pages", "Guide.md"));
         fs.writeFileSync(path.join(process.cwd(), "Pages", "Guide.md"), "changed");
 
-        await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 file(s)");
+        await expect(new WorkspaceService(testContext).push()).rejects.toThrow("Workspace push failed for 1 path(s)");
         expect(mockedAxiosInstance.post).not.toHaveBeenCalled();
     });
 

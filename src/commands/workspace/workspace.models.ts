@@ -63,6 +63,11 @@ export interface ExpectedWorkspaceFile {
     digest?: string;
 }
 
+export interface ExpectedWorkspaceFolder {
+    nodeKey: string;
+    path: string;
+}
+
 export type WorkspaceChangeStatus = "added" | "deleted" | "modified" | "moved" | "moved, modified" | "unresolved";
 
 export interface WorkspaceChange {
@@ -72,6 +77,7 @@ export interface WorkspaceChange {
 
 export interface ClassifiedWorkspaceChange extends WorkspaceChange {
     nodeKey?: string;
+    kind?: "file" | "folder";
 }
 
 export interface WorkspaceSnapshot {
@@ -79,7 +85,9 @@ export interface WorkspaceSnapshot {
     packageKey: string;
     state: WorkspaceState;
     expectedFiles: ExpectedWorkspaceFile[];
+    expectedFolders: ExpectedWorkspaceFolder[];
     visibleFiles: Map<string, string>;
+    visibleFolders: Set<string>;
     changes: ClassifiedWorkspaceChange[];
 }
 
@@ -119,6 +127,7 @@ export interface WorkspacePushOutcome {
     status: WorkspaceChangeStatus;
     nodeKey?: string;
     localNodeKey?: string;
+    kind?: "file" | "folder";
     success: boolean;
     remoteChanged?: boolean;
     error?: string;
