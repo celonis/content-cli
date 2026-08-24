@@ -1,10 +1,8 @@
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import AdmZip = require("adm-zip");
 import { WorkspaceService } from "../../../src/commands/workspace/workspace.service";
 import { WorkspaceGitService } from "../../../src/commands/workspace/workspace-git.service";
-import { fileService } from "../../../src/core/utils/file-service";
 import { logger } from "../../../src/core/utils/logger";
 import { testContext } from "../../utls/test-context";
 import {
@@ -22,13 +20,6 @@ import {
 const PACKAGE_KEY = "pkg-1";
 const BRANCH = "feature-a";
 const BRANCH_PACKAGE_KEY = `${PACKAGE_KEY}@${BRANCH}`;
-const ARCHIVE_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
-const PUSH_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/file-archive`;
-
-function archiveUrl(packageKey: string): string {
-    return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/file-archive`;
-}
-
 function fileUrl(filePath: string, packageKey: string = PACKAGE_KEY): string {
     return `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/files/${filePath}`;
 }
@@ -63,7 +54,7 @@ function eTag(value: string): string {
 function metadata(files: TestFile[]): Record<string, object> {
     const nodes: Record<string, object> = {};
     const folders = new Map<string, string>();
-    files.forEach(file => {
+    files.forEach((file) => {
         const segments = file.path.split("/");
         let parentNodeKey: string | null = null;
         for (let index = 0; index < segments.length - 1; index += 1) {
@@ -92,46 +83,22 @@ function metadata(files: TestFile[]): Record<string, object> {
     return nodes;
 }
 
-function state(
-    files: TestFile[],
-    serverRevision: string = eTag("revision-1"),
-    moveHints: Record<string, string> = {}
-): object {
+function state(files: TestFile[], moveHints: Record<string, string> = {}): object {
     const nodes = metadata(files);
     return {
         schemaVersion: 1,
         activePackageKey: PACKAGE_KEY,
         activeBranch: "main",
-        serverRevision,
         manifestETag: eTag("manifest"),
-        baselineDigests: Object.fromEntries(files.map(file => [file.nodeKey, digest(file.content)])),
+        baselineDigests: Object.fromEntries(files.map((file) => [file.nodeKey, digest(file.content)])),
         baselineNodeETags: Object.fromEntries(
-            Object.keys(nodes).map(nodeKey => {
-                const file = files.find(candidate => candidate.nodeKey === nodeKey);
+            Object.keys(nodes).map((nodeKey) => {
+                const file = files.find((candidate) => candidate.nodeKey === nodeKey);
                 return [nodeKey, eTag(file ? file.content : nodeKey)];
             })
         ),
         moveHints,
     };
-}
-
-function archive(files: TestFile[]): Buffer {
-    const zip = new AdmZip();
-    zip.addFile(".package/.gitignore", Buffer.from("local/\n"));
-    zip.addFile(".package/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })));
-    zip.addFile(".package/nodes/", Buffer.alloc(0));
-    Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
-        zip.addFile(`.package/nodes/${nodeKey}.json`, Buffer.from(JSON.stringify(node)));
-    });
-    files.forEach(file => zip.addFile(file.path, Buffer.from(file.content)));
-    return zip.toBuffer();
-}
-
-function emptyArchiveWithoutNodeMetadata(): Buffer {
-    const zip = new AdmZip();
-    zip.addFile(".package/.gitignore", Buffer.from("local/\n"));
-    zip.addFile(".package/package.json", Buffer.from(JSON.stringify({ schemaVersion: 1, projectKey: PACKAGE_KEY })));
-    return zip.toBuffer();
 }
 
 function manifest(files: TestFile[]): Buffer {
@@ -153,7 +120,7 @@ function manifest(files: TestFile[]): Buffer {
     return Buffer.from(
         JSON.stringify({
             nodes: Object.entries(nodes).map(([nodeKey, node]) => {
-                const file = files.find(candidate => candidate.nodeKey === nodeKey);
+                const file = files.find((candidate) => candidate.nodeKey === nodeKey);
                 return file
                     ? {
                           nodeKey,
@@ -176,20 +143,18 @@ function mockManifest(
 ): void {
     mockAxiosGet(manifestUrl(packageKey), manifest(files), { etag: manifestETag });
     if (mockBodies) {
-        files.forEach(file =>
+        files.forEach((file) =>
             mockAxiosGet(fileUrl(file.path, packageKey), Buffer.from(file.content), { etag: eTag(file.content) })
         );
     }
 }
 
-function mockWorkspaceDownload(
+function mockWorkspaceHydration(
     files: TestFile[],
     revision: string = eTag("revision-1"),
-    packageKey: string = PACKAGE_KEY,
-    body: Buffer = archive(files)
+    packageKey: string = PACKAGE_KEY
 ): void {
-    mockAxiosGet(archiveUrl(packageKey), body, { etag: revision });
-    mockManifest(files, packageKey, revision);
+    mockManifest(files, packageKey, revision, true);
 }
 
 function writeWorkspace(
@@ -206,7 +171,7 @@ function writeWorkspace(
     Object.entries(metadata(files)).forEach(([nodeKey, node]) => {
         fs.writeFileSync(path.join(process.cwd(), ".package", "nodes", `${nodeKey}.json`), JSON.stringify(node));
     });
-    files.forEach(file => {
+    files.forEach((file) => {
         fs.mkdirSync(path.dirname(path.join(process.cwd(), file.path)), { recursive: true });
         fs.writeFileSync(path.join(process.cwd(), file.path), file.content);
     });
@@ -233,7 +198,7 @@ function removeWorkspace(): void {
         PACKAGE_KEY,
         "branch-workspace",
         "empty-workspace",
-    ].forEach(entry => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
+    ].forEach((entry) => fs.rmSync(path.join(process.cwd(), entry), { recursive: true, force: true }));
 }
 
 function mockGit(
@@ -251,8 +216,8 @@ describe("Workspace service", () => {
     beforeEach(removeWorkspace);
     afterEach(removeWorkspace);
 
-    it("clones and validates a filesystem archive", async () => {
-        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
+    it("clones a workspace from the manifest and point file API", async () => {
+        mockWorkspaceHydration([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]);
         const rename = jest.spyOn(fs, "renameSync");
 
         try {
@@ -272,7 +237,6 @@ describe("Workspace service", () => {
                 schemaVersion: 1,
                 activePackageKey: PACKAGE_KEY,
                 activeBranch: "main",
-                serverRevision: eTag("revision-1"),
                 manifestETag: eTag("revision-1"),
                 baselineDigests: { "node-1": digest("original") },
                 baselineNodeETags: {
@@ -286,7 +250,7 @@ describe("Workspace service", () => {
                     fs.readFileSync(path.join(process.cwd(), PACKAGE_KEY, ".package", "nodes", "node-1.json"), "utf-8")
                 )
             ).toEqual({ name: "Guide", type: "md", parentNodeKey: "folder-1" });
-            const cloneRename = rename.mock.calls.find(call => call[1] === path.join(process.cwd(), PACKAGE_KEY));
+            const cloneRename = rename.mock.calls.find((call) => call[1] === path.join(process.cwd(), PACKAGE_KEY));
             expect(cloneRename).toBeDefined();
             expect(path.dirname(cloneRename![0].toString())).toBe(path.dirname(cloneRename![1].toString()));
         } finally {
@@ -295,15 +259,26 @@ describe("Workspace service", () => {
     });
 
     it("rejects a clone response without an ETag", async () => {
-        mockAxiosGet(ARCHIVE_URL, archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]));
+        mockAxiosGet(manifestUrl(), manifest([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]));
 
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
-            "Filesystem archive response does not contain an ETag."
+            "Workspace manifest response does not contain a package ETag."
         );
     });
 
+    it("rejects a clone when a file changes after the manifest is read", async () => {
+        const files = [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }];
+        mockManifest(files);
+        mockAxiosGet(fileUrl(files[0].path), Buffer.from("changed"), { etag: eTag("changed") });
+
+        await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
+            "Workspace hydration failed for 1 node(s)."
+        );
+        expect(fs.existsSync(path.join(process.cwd(), PACKAGE_KEY))).toBe(false);
+    });
+
     it("clones an empty package and hydrates an empty nodes directory", async () => {
-        mockWorkspaceDownload([], eTag("empty-revision"), PACKAGE_KEY, emptyArchiveWithoutNodeMetadata());
+        mockWorkspaceHydration([], eTag("empty-revision"), PACKAGE_KEY);
 
         await new WorkspaceService(testContext).clone(PACKAGE_KEY, "empty-workspace");
 
@@ -313,7 +288,6 @@ describe("Workspace service", () => {
             schemaVersion: 1,
             activePackageKey: PACKAGE_KEY,
             activeBranch: "main",
-            serverRevision: eTag("empty-revision"),
             manifestETag: eTag("empty-revision"),
             baselineDigests: {},
             baselineNodeETags: {},
@@ -322,7 +296,7 @@ describe("Workspace service", () => {
     });
 
     it("clones a selected branch while keeping stable project identity", async () => {
-        mockWorkspaceDownload(
+        mockWorkspaceHydration(
             [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }],
             eTag("branch-revision"),
             BRANCH_PACKAGE_KEY
@@ -344,7 +318,7 @@ describe("Workspace service", () => {
 
     it("checks out an existing branch atomically", async () => {
         writeWorkspace();
-        mockWorkspaceDownload(
+        mockWorkspaceHydration(
             [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "branch" }],
             eTag("branch-revision"),
             BRANCH_PACKAGE_KEY
@@ -370,7 +344,7 @@ describe("Workspace service", () => {
             branchKey: BRANCH,
             packageKey: BRANCH_PACKAGE_KEY,
         });
-        mockWorkspaceDownload(
+        mockWorkspaceHydration(
             [{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }],
             eTag("branch-revision"),
             BRANCH_PACKAGE_KEY
@@ -589,7 +563,7 @@ describe("Workspace service", () => {
 
         const bodyReads = (mockedAxiosInstance.get as jest.Mock).mock.calls.filter(([url]) => url !== manifestUrl());
         expect(bodyReads).toHaveLength(3);
-        changedIndexes.forEach(index => {
+        changedIndexes.forEach((index) => {
             expect(fs.readFileSync(path.join(process.cwd(), remote[index].path), "utf-8")).toBe(`remote-${index}`);
         });
     });
@@ -600,10 +574,10 @@ describe("Workspace service", () => {
             { nodeKey: "node-2", path: "Selected/Nested/Two.md", content: "two" },
             { nodeKey: "node-3", path: "Unselected/Three.md", content: "three" },
         ];
-        const remote = original.map(file => ({ ...file, content: `${file.content} remote` }));
+        const remote = original.map((file) => ({ ...file, content: `${file.content} remote` }));
         writeWorkspace(original);
         mockManifest(remote);
-        remote.slice(0, 2).forEach(file => {
+        remote.slice(0, 2).forEach((file) => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.content) });
         });
 
@@ -653,9 +627,9 @@ describe("Workspace service", () => {
         writeWorkspace(original);
         const sharedKey = `folder-${createHash("sha256").update("Source/Shared").digest("hex").slice(0, 12)}`;
         const remoteManifest = JSON.parse(manifest(remote).toString("utf-8"));
-        const sharedFolder = remoteManifest.nodes.find(node => node.path === "Target/Shared");
+        const sharedFolder = remoteManifest.nodes.find((node) => node.path === "Target/Shared");
         sharedFolder.nodeKey = sharedKey;
-        remoteManifest.nodes.find(node => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
+        remoteManifest.nodes.find((node) => node.nodeKey === "node-1").metadata.parentNodeKey = sharedKey;
         mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("manifest") });
         mockAxiosGet(fileUrl(remote[0].path), Buffer.from(remote[0].content), { etag: eTag(remote[0].content) });
 
@@ -718,15 +692,6 @@ describe("Workspace service", () => {
             "node-2": digest("two remote"),
         });
         expect(localState).not.toHaveProperty("serverRevision");
-    });
-
-    it("rejects paths with a full pull", async () => {
-        writeWorkspace();
-
-        await expect(new WorkspaceService(testContext).pull(["Guides"], { full: true })).rejects.toThrow(
-            "Workspace paths cannot be combined with --full"
-        );
-        expect(mockedAxiosInstance.get).not.toHaveBeenCalled();
     });
 
     it("hydrates local state after an external Git restore without overwriting files", async () => {
@@ -882,59 +847,6 @@ describe("Workspace service", () => {
         );
     });
 
-    it("restores the existing workspace when applying a pull fails", async () => {
-        writeWorkspace();
-        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], eTag("revision-2"));
-        const originalRename = fs.renameSync;
-        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
-            const sourceParent = path.basename(path.dirname(source.toString()));
-            if (sourceParent.startsWith(".package-pull-") && !sourceParent.startsWith(".package-pull-backup-")) {
-                throw new Error("apply failed");
-            }
-            originalRename(source, target);
-        });
-
-        try {
-            await expect(new WorkspaceService(testContext).pull([], { full: true })).rejects.toThrow("apply failed");
-        } finally {
-            rename.mockRestore();
-        }
-        expect(fs.readFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "utf-8")).toBe("original");
-        expect(new WorkspaceService(testContext).status()).toEqual([]);
-    });
-
-    it("preserves the workspace backup when pull and rollback both fail", async () => {
-        writeWorkspace();
-        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "remote" }], eTag("revision-2"));
-        const originalRename = fs.renameSync;
-        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
-            const sourceParent = path.basename(path.dirname(source.toString()));
-            if (sourceParent.startsWith(".package-pull-")) {
-                throw new Error("rename failed");
-            }
-            originalRename(source, target);
-        });
-        let backup: string | undefined;
-
-        try {
-            await new WorkspaceService(testContext).pull([], { full: true });
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error);
-            const match = (error as Error).message.match(/backup remains at (.+)\.$/);
-            backup = match?.[1];
-        } finally {
-            rename.mockRestore();
-        }
-
-        expect(backup).toBeDefined();
-        expect(fs.existsSync(backup!)).toBe(true);
-        fs.readdirSync(backup!).forEach(entry => {
-            originalRename(path.join(backup!, entry), path.join(process.cwd(), entry));
-        });
-        fs.rmSync(backup!, { recursive: true, force: true });
-        expect(new WorkspaceService(testContext).status()).toEqual([]);
-    });
-
     it("infers an unchanged move performed by another tool without writing path state", () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), "Pages"));
@@ -995,7 +907,7 @@ describe("Workspace service", () => {
         const changes = new WorkspaceService(testContext).status();
 
         expect(changes).toHaveLength(4);
-        expect(changes.every(change => change.status === "unresolved")).toBe(true);
+        expect(changes.every((change) => change.status === "unresolved")).toBe(true);
     });
 
     it("reports clean, modified, added, and deleted files", () => {
@@ -1186,10 +1098,10 @@ describe("Workspace service", () => {
         const target = path.join(process.cwd(), "Guides", "guide.md");
         const existsSync = fs.existsSync;
         const lstatSync = fs.lstatSync;
-        const exists = jest.spyOn(fs, "existsSync").mockImplementation(candidate => {
+        const exists = jest.spyOn(fs, "existsSync").mockImplementation((candidate) => {
             return candidate.toString() === target || existsSync(candidate);
         });
-        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation(candidate => {
+        const lstat = jest.spyOn(fs, "lstatSync").mockImplementation((candidate) => {
             return candidate.toString() === target ? lstatSync(source) : lstatSync(candidate);
         });
 
@@ -1209,28 +1121,6 @@ describe("Workspace service", () => {
 
         await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
             "Destination already exists"
-        );
-    });
-
-    it("rejects an archive without stable package metadata", async () => {
-        const zip = new AdmZip();
-        zip.addFile("Guides/Guide.md", Buffer.from("original"));
-        mockAxiosGet(ARCHIVE_URL, zip.toBuffer(), { etag: eTag("revision-1") });
-        mockManifest([], PACKAGE_KEY, eTag("revision-1"));
-
-        await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
-            "Archive does not contain Pacman package metadata"
-        );
-    });
-
-    it("rejects downloaded archives containing local workspace state", async () => {
-        const zip = new AdmZip(archive([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "original" }]));
-        zip.addFile(".package/local/state.json", Buffer.from("{}"));
-        mockAxiosGet(ARCHIVE_URL, zip.toBuffer(), { etag: eTag("revision-1") });
-        mockManifest([], PACKAGE_KEY, eTag("revision-1"));
-
-        await expect(new WorkspaceService(testContext).clone(PACKAGE_KEY)).rejects.toThrow(
-            "Archive contains local Pacman workspace state"
         );
     });
 
@@ -1353,8 +1243,8 @@ describe("Workspace service", () => {
             { nodeKey: "node-3", path: "Unselected/Three.md", content: "three" },
         ];
         writeWorkspace(original);
-        original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
-        original.slice(0, 2).forEach(file => {
+        original.forEach((file) => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
+        original.slice(0, 2).forEach((file) => {
             mockAxiosGet(fileUrl(file.path), Buffer.from(file.content), { etag: eTag(file.nodeKey) });
             mockAxiosPut(fileWriteUrl(file.path), {
                 path: file.path,
@@ -1578,7 +1468,7 @@ describe("Workspace service", () => {
             { nodeKey: "node-2", path: "Guides/Two.md", content: "two" },
         ];
         writeWorkspace(original);
-        original.forEach(file => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
+        original.forEach((file) => fs.writeFileSync(path.join(process.cwd(), file.path), `${file.content} changed`));
         mockAxiosGet(fileUrl("Guides/One.md"), Buffer.from("one"), { etag: eTag("one") });
         mockAxiosGet(fileUrl("Guides/Two.md"), Buffer.from("two"), { etag: eTag("two") });
         mockAxiosPut(fileWriteUrl("Guides/One.md"), {
@@ -1717,127 +1607,6 @@ describe("Workspace service", () => {
         });
     });
 
-    it("rejects incompatible full-push options", async () => {
-        writeWorkspace();
-
-        await expect(new WorkspaceService(testContext).push(["Guides"], { full: true })).rejects.toThrow(
-            "Workspace paths cannot be combined with --full"
-        );
-        await expect(new WorkspaceService(testContext).push([], { overwrite: true })).rejects.toThrow(
-            "--overwrite requires --full"
-        );
-        await expect(
-            new WorkspaceService(testContext).push([], { full: true, assetType: "MARKDOWN_FILE" })
-        ).rejects.toThrow("--asset-type cannot be combined with --full");
-    });
-
-    it("pushes resolved changes and refreshes disposable metadata", async () => {
-        writeWorkspace();
-        fs.mkdirSync(path.join(process.cwd(), "Pages"));
-        fs.renameSync(path.join(process.cwd(), "Guides", "Guide.md"), path.join(process.cwd(), "Pages", "Guide.md"));
-        fs.writeFileSync(path.join(process.cwd(), "Pages", "Guide.md"), "changed");
-        const service = new WorkspaceService(testContext);
-        service.move("Guides/Guide.md", "Pages/Guide.md", true);
-        const zip = jest.spyOn(fileService, "zipDirectoryAsSinglePackage");
-        const originalRename = fs.renameSync;
-        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
-            const workspaceRoot = `${process.cwd()}${path.sep}`;
-            const refreshPrefix = path.join(
-                path.dirname(process.cwd()),
-                `.${path.basename(process.cwd())}-pacman-refresh-`
-            );
-            const sourcePath = path.resolve(source.toString());
-            const targetPath = path.resolve(target.toString());
-            const sourceOnWorkspaceFilesystem =
-                sourcePath.startsWith(workspaceRoot) || sourcePath.startsWith(refreshPrefix);
-            const targetOnWorkspaceFilesystem =
-                targetPath.startsWith(workspaceRoot) || targetPath.startsWith(refreshPrefix);
-            if (sourceOnWorkspaceFilesystem !== targetOnWorkspaceFilesystem) {
-                throw Object.assign(new Error("cross-device rename"), { code: "EXDEV" });
-            }
-            originalRename(source, target);
-        });
-        mockAxiosPost(PUSH_URL, {});
-        const remoteFiles = [{ nodeKey: "node-1", path: "Pages/Guide.md", content: "changed" }];
-        const remoteArchive = new AdmZip(archive(remoteFiles));
-        remoteArchive.addFile(
-            ".package/nodes/folder-1.json",
-            Buffer.from(JSON.stringify({ name: "Guides", type: "FOLDER", parentNodeKey: null }))
-        );
-        remoteArchive.addFile("Guides/", Buffer.alloc(0));
-        mockAxiosGet(archiveUrl(PACKAGE_KEY), remoteArchive.toBuffer(), { etag: eTag("revision-2") });
-        const remoteManifest = JSON.parse(manifest(remoteFiles).toString("utf-8"));
-        remoteManifest.nodes.push({
-            nodeKey: "folder-1",
-            path: "Guides",
-            eTag: eTag("folder-1"),
-            metadata: { name: "Guides", type: "FOLDER", parentNodeKey: null },
-        });
-        mockAxiosGet(manifestUrl(), Buffer.from(JSON.stringify(remoteManifest)), { etag: eTag("revision-2") });
-
-        try {
-            await service.push([], { full: true, overwrite: true });
-        } finally {
-            rename.mockRestore();
-        }
-
-        expect(mockedAxiosInstance.post).toHaveBeenCalledWith(
-            PUSH_URL,
-            expect.anything(),
-            expect.objectContaining({
-                params: { overwrite: true },
-                headers: expect.objectContaining({ "If-Match": eTag("revision-1") }),
-            })
-        );
-        const include = zip.mock.calls[0][1]!;
-        expect(include(".package/local/state.json")).toBe(false);
-        expect(include(".package/nodes/node-1.json")).toBe(true);
-        const form = (mockedAxiosInstance.post as jest.Mock).mock.calls[0][1] as { _streams: unknown[] };
-        expect(form._streams).toContain(JSON.stringify({ moves: { "node-1": "Pages/Guide.md" } }));
-        expect(service.status()).toEqual([]);
-        expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
-        ).toEqual({
-            schemaVersion: 1,
-            activePackageKey: PACKAGE_KEY,
-            activeBranch: "main",
-            serverRevision: eTag("revision-2"),
-            manifestETag: eTag("revision-2"),
-            baselineDigests: { "node-1": digest("changed") },
-            baselineNodeETags: {
-                "folder-1": eTag("folder-1"),
-                [`folder-${createHash("sha256").update("Pages").digest("hex").slice(0, 12)}`]: eTag(
-                    `folder-${createHash("sha256").update("Pages").digest("hex").slice(0, 12)}`
-                ),
-                "node-1": eTag("changed"),
-            },
-            moveHints: {},
-        });
-    });
-
-    it("replaces the workspace on full pull when post-push refresh fails", async () => {
-        writeWorkspace();
-        fs.mkdirSync(path.join(process.cwd(), "Pages"));
-        fs.renameSync(path.join(process.cwd(), "Guides", "Guide.md"), path.join(process.cwd(), "Pages", "Guide.md"));
-        mockAxiosPost(PUSH_URL, {});
-        mockAxiosGetError(ARCHIVE_URL, 503, { message: "unavailable" });
-        const service = new WorkspaceService(testContext);
-
-        await expect(service.push([], { full: true })).rejects.toThrow(
-            "Push succeeded, but local state refresh failed"
-        );
-        expect(
-            JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
-        ).toMatchObject({ refreshRequired: true });
-        expect(() => service.status()).toThrow("Workspace synchronization state needs refresh");
-
-        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Pages/Guide.md", content: "original" }], eTag("revision-2"));
-        await service.pull([], { full: true });
-        expect(service.status()).toEqual([]);
-        expect(fs.existsSync(path.join(process.cwd(), "Guides", "Guide.md"))).toBe(false);
-        expect(fs.readFileSync(path.join(process.cwd(), "Pages", "Guide.md"), "utf-8")).toBe("original");
-    });
-
     it("clears an applied move hint when an incremental push refresh is recovered by pull", async () => {
         writeWorkspace();
         fs.mkdirSync(path.join(process.cwd(), "Pages"));
@@ -1865,39 +1634,6 @@ describe("Workspace service", () => {
         expect(
             JSON.parse(fs.readFileSync(path.join(process.cwd(), ".package", "local", "state.json"), "utf-8"))
         ).toMatchObject({ moveHints: {} });
-    });
-
-    it("preserves the metadata backup when refresh and rollback both fail", async () => {
-        writeWorkspace();
-        fs.writeFileSync(path.join(process.cwd(), "Guides", "Guide.md"), "changed");
-        mockAxiosPost(PUSH_URL, {});
-        mockWorkspaceDownload([{ nodeKey: "node-1", path: "Guides/Guide.md", content: "changed" }], eTag("revision-2"));
-        const originalRename = fs.renameSync;
-        const rename = jest.spyOn(fs, "renameSync").mockImplementation((source, target) => {
-            if (target.toString() === path.join(process.cwd(), ".package")) {
-                throw new Error("rename failed");
-            }
-            originalRename(source, target);
-        });
-        let backup: string | undefined;
-
-        try {
-            await new WorkspaceService(testContext).push([], { full: true });
-        } catch (error) {
-            expect(error).toBeInstanceOf(Error);
-            const match = (error as Error).message.match(
-                /backup remains at (.+?)\. Run workspace pull before retrying\.$/
-            );
-            backup = match?.[1];
-        } finally {
-            rename.mockRestore();
-        }
-
-        expect(backup).toBeDefined();
-        expect(fs.existsSync(backup!)).toBe(true);
-        expect(backup!.startsWith(`${process.cwd()}${path.sep}`)).toBe(false);
-        originalRename(backup!, path.join(process.cwd(), ".package"));
-        fs.rmSync(path.dirname(backup!), { recursive: true, force: true });
     });
 
     it("does not push unresolved file identities", async () => {

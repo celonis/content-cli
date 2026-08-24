@@ -41,7 +41,6 @@ describe("Workspace module", () => {
         await execute("workspace", "checkout", "feature-a", "--link-git");
         await execute("workspace", "checkout", "-b", "feature-b");
         await execute("workspace", "pull", "target", "other.md");
-        await execute("workspace", "pull", "--full");
         await execute("workspace", "status", "target");
         await execute("workspace", "push", "target", "other.md", "--asset-type", "MARKDOWN_FILE");
         await execute("workspace", "move", "old.md", "new.md", "--record");
@@ -57,12 +56,9 @@ describe("Workspace module", () => {
             discard: false,
             linkGit: false,
         });
-        expect(pull).toHaveBeenNthCalledWith(1, ["target", "other.md"], { full: false });
-        expect(pull).toHaveBeenNthCalledWith(2, [], { full: true });
+        expect(pull).toHaveBeenCalledWith(["target", "other.md"]);
         expect(status).toHaveBeenCalledWith("target");
         expect(push).toHaveBeenCalledWith(["target", "other.md"], {
-            full: false,
-            overwrite: false,
             assetType: "MARKDOWN_FILE",
         });
         expect(move).toHaveBeenCalledWith("old.md", "new.md", true);

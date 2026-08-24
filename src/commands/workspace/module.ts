@@ -32,12 +32,7 @@ class Module extends IModule {
             .option("--link-git", "Map the current Git branch", false)
             .action(this.checkout);
 
-        workspace
-            .command("pull [paths...]")
-            .beta()
-            .description("Pull remote changes.")
-            .option("--full", "Pull and replace from the full workspace archive", false)
-            .action(this.pull);
+        workspace.command("pull [paths...]").beta().description("Pull remote changes.").action(this.pull);
 
         workspace.command("status [directory]").beta().description("Show local changes.").action(this.status);
 
@@ -45,8 +40,6 @@ class Module extends IModule {
             .command("push [paths...]")
             .beta()
             .description("Push local changes.")
-            .option("--full", "Push the full workspace archive", false)
-            .option("--overwrite", "Replace missing remote files during a full push", false)
             .option("--asset-type <assetType>", "Asset Type for new files")
             .action(this.push);
 
@@ -78,8 +71,8 @@ class Module extends IModule {
         });
     }
 
-    private async pull(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await runWorkspaceCommand(() => new WorkspaceService(context).pull(command.args, { full: options.full }));
+    private async pull(context: Context, command: Command): Promise<void> {
+        await runWorkspaceCommand(() => new WorkspaceService(context).pull(command.args));
     }
 
     private async status(context: Context, command: Command): Promise<void> {
@@ -89,8 +82,6 @@ class Module extends IModule {
     private async push(context: Context, command: Command, options: OptionValues): Promise<void> {
         await runWorkspaceCommand(() =>
             new WorkspaceService(context).push(command.args, {
-                full: options.full,
-                overwrite: options.overwrite,
                 assetType: options.assetType,
             })
         );

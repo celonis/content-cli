@@ -1,30 +1,9 @@
-import * as FormData from "form-data";
 import { Context } from "../../core/command/cli-context";
 import { GracefulError } from "../../core/utils/logger";
 import { NodeFileWriteResponse, WorkspaceBranch, WorkspaceManifest } from "./workspace.models";
 
 export class WorkspaceApi {
     constructor(private readonly context: Context) {}
-
-    public async download(packageKey: string): Promise<{ archive: Buffer; eTag: string }> {
-        const response = await this.context.httpClient.getFileWithHeaders(
-            `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/file-archive`
-        );
-        const eTag = response.headers.etag;
-        if (typeof eTag !== "string") {
-            throw new GracefulError("Filesystem archive response does not contain an ETag.");
-        }
-        return { archive: response.data, eTag };
-    }
-
-    public pushArchive(packageKey: string, data: FormData, overwrite: boolean, eTag: string): Promise<unknown> {
-        return this.context.httpClient.postFile(
-            `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/file-archive`,
-            data,
-            { overwrite },
-            { "If-Match": eTag }
-        );
-    }
 
     public async readFile(packageKey: string, filePath: string): Promise<{ body: Buffer; eTag: string }> {
         const response = await this.context.httpClient.getFileWithHeaders(this.fileUrl(packageKey, filePath));
@@ -126,7 +105,7 @@ export class WorkspaceApi {
     private pathUrl(packageKey: string, collection: string, entryPath: string): string {
         const encodedPath = entryPath
             .split("/")
-            .map(segment => encodeURIComponent(segment))
+            .map((segment) => encodeURIComponent(segment))
             .join("/");
         return `/pacman/api/core/staging/packages/${encodeURIComponent(packageKey)}/${collection}/${encodedPath}`;
     }

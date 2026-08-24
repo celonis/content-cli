@@ -27,7 +27,6 @@ const FORBIDDEN_METADATA_FIELDS = [
     "creationDate",
     "changeDate",
     "revision",
-    "serverRevision",
     "filesystemName",
 ];
 
@@ -90,7 +89,6 @@ export class WorkspacePullService {
             baselineNodeETags: { ...snapshot.state.baselineNodeETags },
             moveHints: { ...snapshot.state.moveHints },
         };
-        delete state.serverRevision;
         delete state.refreshRequired;
         const outcomes: WorkspacePullOutcome[] = [];
         const appliedFolderMoves: AppliedFolderMove[] = [];
@@ -119,32 +117,6 @@ export class WorkspacePullService {
         return { outcomes, state };
     }
 
-    public hydrateArchiveBaseline(
-        root: string,
-        state: WorkspaceState,
-        packageKey: string,
-        activeBranch: string,
-        manifest: WorkspaceManifest
-    ): WorkspaceState {
-        this.validateManifest(manifest);
-        const hydrated: WorkspaceState = {
-            schemaVersion: 1,
-            activePackageKey: packageKey,
-            activeBranch,
-            baselineDigests: Object.fromEntries(
-                manifest.nodes
-                    .filter(entry => !this.isFolder(entry.metadata))
-                    .map(entry => [entry.nodeKey, this.digest(this.resolve(root, entry.path))])
-            ),
-            baselineNodeETags: Object.fromEntries(manifest.nodes.map(entry => [entry.nodeKey, entry.eTag])),
-            moveHints: {},
-        };
-        if (state.git) {
-            hydrated.git = state.git;
-        }
-        return hydrated;
-    }
-
     public async hydrateRemoteBaseline(
         state: WorkspaceState,
         packageKey: string,
@@ -155,9 +127,11 @@ export class WorkspacePullService {
         const baselineDigests: Record<string, string> = {};
         for (const entry of manifest.nodes) {
             if (!this.isFolder(entry.metadata)) {
-                baselineDigests[entry.nodeKey] = this.digestBuffer(
-                    (await this.api.readFile(packageKey, entry.path)).body
-                );
+                const remote = await this.api.readFile(packageKey, entry.path);
+                if (remote.eTag !== entry.eTag) {
+                    throw new GracefulError(`Remote file changed while hydrating the baseline: ${entry.path}`);
+                }
+                baselineDigests[entry.nodeKey] = this.digestBuffer(remote.body);
             }
         }
         const hydrated: WorkspaceState = {
@@ -165,7 +139,7 @@ export class WorkspacePullService {
             activePackageKey: packageKey,
             activeBranch,
             baselineDigests,
-            baselineNodeETags: Object.fromEntries(manifest.nodes.map(entry => [entry.nodeKey, entry.eTag])),
+            baselineNodeETags: Object.fromEntries(manifest.nodes.map((entry) => [entry.nodeKey, entry.eTag])),
             moveHints: {},
         };
         if (state.git) {
@@ -187,18 +161,17 @@ export class WorkspacePullService {
         }>
     ): WorkspaceState {
         this.validateManifest(manifest);
-        const byNodeKey = new Map(manifest.nodes.map(entry => [entry.nodeKey, entry]));
+        const byNodeKey = new Map(manifest.nodes.map((entry) => [entry.nodeKey, entry]));
         const next: WorkspaceState = {
             ...state,
             baselineDigests: { ...state.baselineDigests },
             baselineNodeETags: { ...state.baselineNodeETags },
             moveHints: { ...state.moveHints },
         };
-        delete next.serverRevision;
         delete next.refreshRequired;
         outcomes
-            .filter(outcome => (outcome.success || outcome.remoteChanged) && outcome.nodeKey)
-            .forEach(outcome => {
+            .filter((outcome) => (outcome.success || outcome.remoteChanged) && outcome.nodeKey)
+            .forEach((outcome) => {
                 const nodeKey = outcome.nodeKey!;
                 if (outcome.localNodeKey && outcome.localNodeKey !== nodeKey) {
                     this.removeMetadata(root, outcome.localNodeKey);
@@ -235,16 +208,16 @@ export class WorkspacePullService {
         manifest: WorkspaceManifest,
         recoveringCreateKeys: boolean
     ): PullOperation[] {
-        const localByKey = new Map(localNodes.map(node => [node.nodeKey, node]));
+        const localByKey = new Map(localNodes.map((node) => [node.nodeKey, node]));
         const localPaths = this.localPaths(localNodes, snapshot.packageKey);
         const localByPath = new Map(
             [...localPaths].map(([nodeKey, localPath]) => [localPath.toLowerCase(), localByKey.get(nodeKey)!])
         );
-        const expectedByKey = new Map(snapshot.expectedFiles.map(file => [file.nodeKey, file]));
+        const expectedByKey = new Map(snapshot.expectedFiles.map((file) => [file.nodeKey, file]));
         const changeByKey = new Map(
-            snapshot.changes.flatMap(change => (change.nodeKey ? [[change.nodeKey, change] as const] : []))
+            snapshot.changes.flatMap((change) => (change.nodeKey ? [[change.nodeKey, change] as const] : []))
         );
-        const remoteByKey = new Map(manifest.nodes.map(entry => [entry.nodeKey, entry]));
+        const remoteByKey = new Map(manifest.nodes.map((entry) => [entry.nodeKey, entry]));
         const replacedLocalKeys = new Set<string>();
         const context: PullOperationContext = {
             snapshot,
@@ -256,7 +229,7 @@ export class WorkspacePullService {
             replacedLocalKeys,
             recoveringCreateKeys,
         };
-        const operations = manifest.nodes.flatMap(entry => {
+        const operations = manifest.nodes.flatMap((entry) => {
             const operation = this.remoteOperation(entry, context);
             return operation ? [operation] : [];
         });
@@ -282,7 +255,7 @@ export class WorkspacePullService {
             : undefined;
         if (context.recoveringCreateKeys && !this.isFolder(entry.metadata) && !provisional) {
             const visiblePath = [...context.snapshot.visibleFiles.keys()].find(
-                filePath => filePath.toLowerCase() === entry.path.toLowerCase()
+                (filePath) => filePath.toLowerCase() === entry.path.toLowerCase()
             );
             if (visiblePath) {
                 return {
@@ -373,7 +346,7 @@ export class WorkspacePullService {
         remoteByKey: Map<string, WorkspaceManifestNode>,
         context: PullOperationContext
     ): PullOperation[] {
-        return localNodes.flatMap(node => {
+        return localNodes.flatMap((node) => {
             if (remoteByKey.has(node.nodeKey) || context.replacedLocalKeys.has(node.nodeKey)) {
                 return [];
             }
@@ -404,7 +377,7 @@ export class WorkspacePullService {
         return selectWorkspaceCandidates(
             root,
             paths,
-            operations.map(operation => ({
+            operations.map((operation) => ({
                 value: operation,
                 paths: [operation.path, operation.localPath].filter((value): value is string => Boolean(value)),
             }))
@@ -504,6 +477,9 @@ export class WorkspacePullService {
             return this.moveWithoutDownload(source, target, moved);
         }
         const remote = await this.api.readFile(packageKey, entry.path);
+        if (remote.eTag !== entry.eTag) {
+            throw new GracefulError(`Remote file changed while applying the manifest: ${entry.path}`);
+        }
         const remoteDigest = this.digestBuffer(remote.body);
         this.applyDownloadedFile(source, target, operation, entry, remote.body, remoteDigest);
         if (operation.verifyConvergence && moved && source && fs.existsSync(source)) {
@@ -575,7 +551,7 @@ export class WorkspacePullService {
     ): boolean {
         const source = sourcePath.toLowerCase();
         const target = targetPath.toLowerCase();
-        return appliedFolderMoves.some(move => {
+        return appliedFolderMoves.some((move) => {
             const sourceRoot = move.sourcePath.toLowerCase();
             if (!source.startsWith(`${sourceRoot}/`)) {
                 return false;
@@ -624,8 +600,8 @@ export class WorkspacePullService {
             const metadataDirectory = path.join(root, ".package", "nodes");
             const hasChildren = fs
                 .readdirSync(metadataDirectory)
-                .filter(file => file.endsWith(".json") && file !== `${operation.nodeKey}.json`)
-                .some(file => {
+                .filter((file) => file.endsWith(".json") && file !== `${operation.nodeKey}.json`)
+                .some((file) => {
                     const metadata = JSON.parse(
                         fs.readFileSync(path.join(metadataDirectory, file), "utf-8")
                     ) as WorkspaceNodeMetadata;
@@ -666,7 +642,7 @@ export class WorkspacePullService {
         }
         const parentKey = entry.metadata.parentNodeKey;
         if (parentKey) {
-            const parent = manifest.nodes.find(candidate => candidate.nodeKey === parentKey);
+            const parent = manifest.nodes.find((candidate) => candidate.nodeKey === parentKey);
             if (!parent || !this.isFolder(parent.metadata)) {
                 throw new GracefulError(`Workspace manifest has an invalid parent for node ${entry.nodeKey}.`);
             }
@@ -703,13 +679,13 @@ export class WorkspacePullService {
         if (
             !manifest ||
             !Array.isArray(manifest.nodes) ||
-            Object.keys(manifest as unknown as Record<string, unknown>).some(field => field !== "nodes")
+            Object.keys(manifest as unknown as Record<string, unknown>).some((field) => field !== "nodes")
         ) {
             throw new GracefulError("Unsupported workspace manifest.");
         }
         const keys = new Set<string>();
         const paths = new Set<string>();
-        manifest.nodes.forEach(entry => {
+        manifest.nodes.forEach((entry) => {
             const foldedPath = entry.path?.toLowerCase();
             const metadata = entry.metadata as unknown as Record<string, unknown>;
             const fields = entry as unknown as Record<string, unknown>;
@@ -721,9 +697,9 @@ export class WorkspacePullService {
                 !entry.metadata?.type ||
                 "key" in metadata ||
                 "nodeKey" in metadata ||
-                FORBIDDEN_METADATA_FIELDS.some(field => field in metadata) ||
+                FORBIDDEN_METADATA_FIELDS.some((field) => field in metadata) ||
                 this.hasLegacyFilesystemName(entry.metadata) ||
-                ["body", "kind", "assetType", "size", "contentDigest"].some(field => field in fields) ||
+                ["body", "kind", "assetType", "size", "contentDigest"].some((field) => field in fields) ||
                 keys.has(entry.nodeKey) ||
                 paths.has(foldedPath) ||
                 !entry.eTag ||
@@ -734,7 +710,7 @@ export class WorkspacePullService {
             keys.add(entry.nodeKey);
             paths.add(foldedPath);
         });
-        const byKey = new Map(manifest.nodes.map(entry => [entry.nodeKey, entry]));
+        const byKey = new Map(manifest.nodes.map((entry) => [entry.nodeKey, entry]));
         const resolved = new Set<string>();
         const resolve = (entry: WorkspaceManifestNode, resolving: Set<string>): void => {
             if (resolved.has(entry.nodeKey)) {
@@ -755,13 +731,13 @@ export class WorkspacePullService {
             resolving.delete(entry.nodeKey);
             resolved.add(entry.nodeKey);
         };
-        manifest.nodes.forEach(entry => {
+        manifest.nodes.forEach((entry) => {
             resolve(entry, new Set());
         });
         const projectedPaths = projectWorkspacePaths(
-            manifest.nodes.map(entry => ({ nodeKey: entry.nodeKey, ...entry.metadata }))
+            manifest.nodes.map((entry) => ({ nodeKey: entry.nodeKey, ...entry.metadata }))
         );
-        if (manifest.nodes.some(entry => projectedPaths.get(entry.nodeKey) !== entry.path)) {
+        if (manifest.nodes.some((entry) => projectedPaths.get(entry.nodeKey) !== entry.path)) {
             throw new GracefulError("Workspace manifest contains a path that does not match Node metadata.");
         }
     }
@@ -775,12 +751,12 @@ export class WorkspacePullService {
         return (
             first !== ".package" &&
             first !== ".git" &&
-            segments.every(segment => Boolean(segment) && segment !== "." && segment !== "..")
+            segments.every((segment) => Boolean(segment) && segment !== "." && segment !== "..")
         );
     }
 
     private visibleAt(snapshot: WorkspaceSnapshot, filePath: string): boolean {
-        return [...snapshot.visibleFiles.keys()].some(value => value.toLowerCase() === filePath.toLowerCase());
+        return [...snapshot.visibleFiles.keys()].some((value) => value.toLowerCase() === filePath.toLowerCase());
     }
 
     private sameMetadata(left: WorkspaceNodeMetadata, right: WorkspaceNodeMetadata): boolean {
@@ -794,7 +770,7 @@ export class WorkspacePullService {
 
     private sorted(value: unknown): unknown {
         if (Array.isArray(value)) {
-            return value.map(item => this.sorted(item));
+            return value.map((item) => this.sorted(item));
         }
         if (value && typeof value === "object") {
             return Object.fromEntries(

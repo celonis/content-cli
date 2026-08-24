@@ -2,7 +2,6 @@ export interface WorkspaceState {
     schemaVersion: number;
     activePackageKey: string;
     activeBranch: string;
-    serverRevision?: string;
     manifestETag?: string;
     baselineDigests: Record<string, string>;
     baselineNodeETags: Record<string, string>;
@@ -47,7 +46,6 @@ export interface WorkspaceNodeMetadata {
     type: string;
     parentNodeKey?: string | null;
     schemaVersion?: number;
-    serializedDocumentRef?: string;
     dependenciesConfiguration?: unknown;
     metadata?: Record<string, unknown>;
     additionalFields?: Record<string, unknown>;
@@ -93,13 +91,7 @@ export interface WorkspaceSnapshot {
 }
 
 export interface WorkspacePushOptions {
-    full?: boolean;
-    overwrite?: boolean;
     assetType?: string;
-}
-
-export interface WorkspacePullOptions {
-    full?: boolean;
 }
 
 export interface WorkspaceManifest {
