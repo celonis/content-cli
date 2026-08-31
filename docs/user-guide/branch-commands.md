@@ -1,6 +1,6 @@
 # Branch Commands (beta)
 
-The `config branch` command group lets you author and merge branches from the CLI, and optionally mirror a branch to a Git branch one-to-one.
+The `config branch` command group lets you author and merge branches from the CLI, and optionally mirror a branch to a Git branch one-to-one. The related [`config pointer`](#select-a-branch-as-live-config-pointer) group selects which branch a package's consumers read.
 
 ## Concepts
 
@@ -142,6 +142,69 @@ Worked example: the preview reports that for node `node-1`, the source set `/tit
   ]
 }
 ```
+
+## Select a branch as LIVE (`config pointer`)
+
+The `config pointer` group decides which branch of a package its consumers read. Selecting a branch as
+LIVE is how you release a branch without merging it back into main.
+
+This group needs the `pacman.live-branch-pointer` feature to be active for the team.
+
+### Concepts
+
+- **LIVE selection** — a named pointer on a main package. While it is set, a consumer that references
+  the main package resolves to the selected branch instead. Consumers keep referencing the plain
+  `<packageKey>`, so moving the selection to a new branch needs no change on their side.
+- **No selection** — the default. Consumers read the main package.
+
+Both commands take `--packageKey` as the **main** package key. Passing a `<packageKey>@<branchKey>`
+value is rejected before any request is sent; name the branch with `--branchKey` instead.
+
+### Set the LIVE selection
+
+```bash
+content-cli config pointer set --packageKey <packageKey> --branchKey <branchKey>
+```
+
+`--json` writes the raw `PackagePointerTransport` payload to a file in the working directory.
+
+There is no dry-run flag. `set` always changes the selection when it succeeds, so validate the branch
+first with `config package validate --packageKey <packageKey>@<branchKey>`.
+
+`main` cannot be selected. To return consumers to the main package, merge the branch into main with
+[`config branch merge apply`](#preview-and-apply-merges) — there is no CLI command that clears a
+selection, because leaving consumers pointed at nothing is not a state the CLI will produce.
+
+### Read the LIVE selection
+
+```bash
+content-cli config pointer get --packageKey <packageKey>
+content-cli config pointer get --packageKey <packageKey> --json
+```
+
+When no branch is selected, the command reports that and exits successfully. With `--json` it writes
+`null`.
+
+### Responses worth recognizing
+
+| Response | Meaning | What to do |
+|---|---|---|
+| `409` with `package-pointer-blocking-problems` | The branch has problems that block a release. | Run `config package validate --packageKey <packageKey>@<branchKey>`, fix what it reports, then set the selection again. There is no override flag. |
+| `403` | Ambiguous. Either the profile may not edit the package, **or** `pacman.live-branch-pointer` is inactive for the team. The response body is empty and does not distinguish the two. | Confirm the feature is active before asking for permissions. |
+| `400` | `--packageKey` was not a main key, or the composed branch key does not name a branch. | Check both keys. `config branch list --packageKey <packageKey>` shows the valid branch keys. |
+
+### Where this sits in a release
+
+```bash
+content-cli config package validate --packageKey my-package
+content-cli config versions create --packageKey my-package --versionBumpOption PATCH
+content-cli config branch create --packageKey my-package --branchKey release-branch --sourceVersion 1.4.0
+content-cli config package validate --packageKey my-package@release-branch
+content-cli config pointer set --packageKey my-package --branchKey release-branch
+```
+
+Run the branch's pipelines and transformations, and refresh any cached perspectives, before the last
+step. The problems those steps clear are the same ones the `409` reports.
 
 ## Branch export / import
 

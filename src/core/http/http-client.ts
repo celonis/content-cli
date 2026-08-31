@@ -52,6 +52,23 @@ export class HttpClient {
         });
     }
 
+    public async putStatusAndData(url: string, body: object): Promise<{ status: number; data: any }> {
+        const fullUrl = this.resolveUrl(url);
+        logger.debug(`HttpClient - PUT ${fullUrl}`);
+        return this.axios.put(fullUrl, JSON.stringify(body), {
+            headers: this.buildHeaders("application/json;charset=utf-8"),
+            validateStatus: () => true,
+        }).then(response => {
+            logger.debug(`Response ${response.status}`);
+            return { status: response.status, data: response.data };
+        }).catch(err => {
+            if (err.response) {
+                return { status: err.response.status, data: err.response.data };
+            }
+            throw new FatalError(err);
+        });
+    }
+
     public async getFile(url: string): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.axios.get(this.resolveUrl(url), {

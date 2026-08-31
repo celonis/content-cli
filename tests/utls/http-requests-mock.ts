@@ -13,6 +13,7 @@ const mockedPostResponseByUrl = new Map<string, any>();
 const mockedPostErrorByUrl = new Map<string, { status: number; data: any }>();
 const mockedPostRequestBodyByUrl = new Map<string, any>();
 const mockedPutErrorByUrl = new Map<string, { status: number; data: any }>();
+const mockedPutStatusByUrl = new Map<string, number>();
 const mockedDeleteResponseByUrl = new Map<string, any>();
 
 const mockAxios = () : void => {
@@ -72,7 +73,10 @@ const mockAxios = () : void => {
             return Promise.reject({ response: { status, data: errorData } });
         }
         if (mockedPostResponseByUrl.has(requestUrl)) {
-            const response = { data: mockedPostResponseByUrl.get(requestUrl) };
+            const response = {
+                data: mockedPostResponseByUrl.get(requestUrl),
+                status: mockedPutStatusByUrl.get(requestUrl) ?? 200,
+            };
             mockedPostRequestBodyByUrl.set(requestUrl, data);
 
             return Promise.resolve(response);
@@ -110,6 +114,13 @@ const mockAxiosPostError = (url: string, status: number, data: any) => {
 
 const mockAxiosPut = (url: string, responseData: any) => {
     mockedPostResponseByUrl.set(url, responseData);
+    mockedPutStatusByUrl.delete(url);
+    mockedPutErrorByUrl.delete(url);
+};
+
+const mockAxiosPutWithStatus = (url: string, status: number, responseData: any) => {
+    mockedPostResponseByUrl.set(url, responseData);
+    mockedPutStatusByUrl.set(url, status);
     mockedPutErrorByUrl.delete(url);
 };
 
@@ -137,6 +148,7 @@ afterEach(() => {
     mockedPostErrorByUrl.clear();
     mockedPostRequestBodyByUrl.clear();
     mockedPutErrorByUrl.clear();
+    mockedPutStatusByUrl.clear();
     mockedDeleteResponseByUrl.clear();
 })
 
@@ -149,6 +161,7 @@ export {
     mockAxiosPost,
     mockAxiosPostError,
     mockAxiosPut,
+    mockAxiosPutWithStatus,
     mockAxiosPutError,
     mockAxiosDelete,
     mockedPostRequestBodyByUrl

@@ -10,6 +10,7 @@ import { SinglePackageImportService } from "../../../src/commands/configuration-
 import { SinglePackageExportService } from "../../../src/commands/configuration-management/single-package-export.service";
 import { BranchCommandService } from "../../../src/commands/configuration-management/branch/branch.command.service";
 import { BranchExportImportCommandService } from "../../../src/commands/configuration-management/branch/branch-export-import.command.service";
+import { PointerCommandService } from "../../../src/commands/configuration-management/pointer/pointer.command.service";
 import { CliRunResult, runCli as runCliProcess } from "../../utls/cli-runner";
 
 jest.mock("../../../src/commands/configuration-management/config-command.service");
@@ -23,6 +24,7 @@ jest.mock("../../../src/commands/configuration-management/single-package-import.
 jest.mock("../../../src/commands/configuration-management/single-package-export.service");
 jest.mock("../../../src/commands/configuration-management/branch/branch.command.service");
 jest.mock("../../../src/commands/configuration-management/branch/branch-export-import.command.service");
+jest.mock("../../../src/commands/configuration-management/pointer/pointer.command.service");
 
 describe("configuration-management command integration", () => {
     let mockConfigCommandService: jest.Mocked<ConfigCommandService>;
@@ -36,6 +38,7 @@ describe("configuration-management command integration", () => {
     let mockSinglePackageExportService: jest.Mocked<SinglePackageExportService>;
     let mockBranchCommandService: jest.Mocked<BranchCommandService>;
     let mockBranchExportImportCommandService: jest.Mocked<BranchExportImportCommandService>;
+    let mockPointerCommandService: jest.Mocked<PointerCommandService>;
 
     beforeEach(() => {
         mockConfigCommandService = {
@@ -90,6 +93,11 @@ describe("configuration-management command integration", () => {
             importBranch: jest.fn().mockResolvedValue(undefined),
         } as any;
 
+        mockPointerCommandService = {
+            setLive: jest.fn().mockResolvedValue(undefined),
+            getLive: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
         (ConfigCommandService as jest.MockedClass<typeof ConfigCommandService>).mockImplementation(() => mockConfigCommandService);
         (StagingPackageService as jest.MockedClass<typeof StagingPackageService>).mockImplementation(() => mockStagingPackageService);
         (MetadataService as jest.MockedClass<typeof MetadataService>).mockImplementation(() => mockMetadataService);
@@ -101,6 +109,7 @@ describe("configuration-management command integration", () => {
         (SinglePackageExportService as jest.MockedClass<typeof SinglePackageExportService>).mockImplementation(() => mockSinglePackageExportService);
         (BranchCommandService as jest.MockedClass<typeof BranchCommandService>).mockImplementation(() => mockBranchCommandService);
         (BranchExportImportCommandService as jest.MockedClass<typeof BranchExportImportCommandService>).mockImplementation(() => mockBranchExportImportCommandService);
+        (PointerCommandService as jest.MockedClass<typeof PointerCommandService>).mockImplementation(() => mockPointerCommandService);
     });
 
     let lastResult: CliRunResult;
@@ -314,6 +323,49 @@ describe("configuration-management command integration", () => {
 
             expectError("Please provide either 'true' or 'false' for --enabled.");
             expect(mockBranchCommandService.setBranchingEnabled).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("config pointer set (setLive)", () => {
+        it("forwards the main package key and branch key", async () => {
+            const result = await runCli(["config", "pointer", "set", "--packageKey", "myPackage", "--branchKey", "release-branch"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockPointerCommandService.setLive).toHaveBeenCalledWith("myPackage", "release-branch", false);
+        });
+
+        it("forwards --json", async () => {
+            const result = await runCli([
+                "config", "pointer", "set",
+                "--packageKey", "myPackage",
+                "--branchKey", "release-branch",
+                "--json",
+            ]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockPointerCommandService.setLive).toHaveBeenCalledWith("myPackage", "release-branch", true);
+        });
+
+        it("requires --branchKey, so no partial selection is attempted", async () => {
+            await runCli(["config", "pointer", "set", "--packageKey", "myPackage"]);
+
+            expect(mockPointerCommandService.setLive).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("config pointer get (getLive)", () => {
+        it("forwards the main package key", async () => {
+            const result = await runCli(["config", "pointer", "get", "--packageKey", "myPackage"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockPointerCommandService.getLive).toHaveBeenCalledWith("myPackage", false);
+        });
+
+        it("forwards --json", async () => {
+            const result = await runCli(["config", "pointer", "get", "--packageKey", "myPackage", "--json"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockPointerCommandService.getLive).toHaveBeenCalledWith("myPackage", true);
         });
     });
 

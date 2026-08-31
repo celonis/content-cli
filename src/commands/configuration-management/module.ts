@@ -19,6 +19,7 @@ import { SinglePackageImportService } from "./single-package-import.service";
 import { SinglePackageExportService } from "./single-package-export.service";
 import { BranchCommandService } from "./branch/branch.command.service";
 import { BranchExportImportCommandService } from "./branch/branch-export-import.command.service";
+import { PointerCommandService } from "./pointer/pointer.command.service";
 import { BranchUtils } from "../../core/utils/branches";
 
 class Module extends IModule {
@@ -104,6 +105,22 @@ class Module extends IModule {
             .option("--gitProfile <gitProfile>", "Git profile to use. When set, the package is pulled from Git instead of read locally")
             .option("--json", "Write response to a JSON file", false)
             .action(this.importBranch);
+
+        const pointerCommand = configCommand.command("pointer").beta()
+            .description("Select which branch of a package consumers read (the LIVE selection)");
+
+        pointerCommand.command("set").beta()
+            .description("Select a branch as LIVE, so consumers of the main package read that branch")
+            .requiredOption("--packageKey <packageKey>", "Main package key (no '@')")
+            .requiredOption("--branchKey <branchKey>", "Branch key to select as LIVE")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.setPackagePointer);
+
+        pointerCommand.command("get").beta()
+            .description("Show which branch is currently LIVE for a main package")
+            .requiredOption("--packageKey <packageKey>", "Main package key (no '@')")
+            .option("--json", "Write response to a JSON file", false)
+            .action(this.getPackagePointer);
 
         configCommand.command("list")
             .description("[Deprecated] Use 't2tc package list' instead. List packages in the target team.")
@@ -337,6 +354,14 @@ class Module extends IModule {
 
     private async deleteBranch(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new BranchCommandService(context).deleteBranch(options.packageKey, options.branchKey);
+    }
+
+    private async setPackagePointer(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new PointerCommandService(context).setLive(options.packageKey, options.branchKey, !!options.json);
+    }
+
+    private async getPackagePointer(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new PointerCommandService(context).getLive(options.packageKey, !!options.json);
     }
 
     private async previewBranchMerge(context: Context, command: Command, options: OptionValues): Promise<void> {
