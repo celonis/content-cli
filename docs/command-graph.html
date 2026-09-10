@@ -276,9 +276,6 @@ const NODES = [
     description: "Get the JSON schema for an asset type's configuration", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
   { id: "ar_examples", label: "examples", group: "command", path: "asset-registry examples",
     description: "Get example configurations for an asset type", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
-  { id: "ar_validate", label: "validate", group: "command", path: "asset-registry validate",
-    description: "Validate asset configuration against the asset service's validate endpoint.",
-    options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--packageKey <packageKey> (required with --nodeKey or --configuration)", "--nodeKey <nodeKey> (use with --packageKey)", "--configuration <configuration> (inline JSON, use with --packageKey)", "-f, --file <file> (full ValidateRequest body; mutually exclusive with build-from-options flags)", "--json", "-h, --help"] },
 
   // config direct leaves (deprecated)
   { id: "config_list", label: "list", group: "command", path: "config list",
@@ -498,7 +495,7 @@ const EDGES = [
   ["area_push","push_widget"],["area_push","push_view_bookmarks"],
 
   ["area_asset_registry","ar_list"],["area_asset_registry","ar_get"],["area_asset_registry","ar_schema"],
-  ["area_asset_registry","ar_examples"],["area_asset_registry","ar_validate"],
+  ["area_asset_registry","ar_examples"],
 
   ["area_config","config_list"],["area_config","config_export"],["area_config","config_import"],
   ["area_config","config_validate"],["area_config","config_diff"],

@@ -1,9 +1,9 @@
 import { AssetRegistryApi } from "./asset-registry-api";
-import { AssetRegistryDescriptor, ValidateOptions } from "./asset-registry.interfaces";
+import { AssetRegistryDescriptor } from "./asset-registry.interfaces";
 import { Context } from "../../core/command/cli-context";
-import { fileService, FileService } from "../../core/utils/file-service";
+import { FileService } from "../../core/utils/file-service";
 import { CuiFileService } from "../../core/utils/cui-file-service";
-import { FatalError, logger } from "../../core/utils/logger";
+import { logger } from "../../core/utils/logger";
 import { v4 as uuidv4 } from "uuid";
 
 export class AssetRegistryService {
@@ -54,65 +54,6 @@ export class AssetRegistryService {
     public async getExamples(assetType: string, jsonResponse: boolean): Promise<void> {
         const data = await this.api.getExamples(assetType);
         await this.outputResponse(data, jsonResponse);
-    }
-
-    public async validate(opts: ValidateOptions): Promise<void> {
-        const payload = this.buildValidatePayload(opts);
-        const data = await this.api.validate(opts.assetType, payload);
-        await this.outputResponse(data, opts.json);
-    }
-
-    private static readonly INLINE_VALIDATION_NODE_KEY = "validation-node";
-
-    private buildValidatePayload(opts: ValidateOptions): any {
-        const hasNodeKey = !!opts.nodeKey;
-        const hasConfig = !!opts.configuration;
-        const hasFile = !!opts.file;
-
-        if (hasFile && (hasNodeKey || hasConfig || !!opts.packageKey)) {
-            throw new FatalError("Option -f is mutually exclusive with --packageKey, --nodeKey and --configuration.");
-        }
-
-        if (hasFile) {
-            return this.parseJson(fileService.readFile(opts.file), `-f ${opts.file}`);
-        }
-
-        if (hasNodeKey && hasConfig) {
-            throw new FatalError(
-                "Options --nodeKey and --configuration are mutually exclusive. Use --nodeKey to validate a stored node, or --configuration to validate a configuration. For full control, use -f."
-            );
-        }
-        if (!hasNodeKey && !hasConfig) {
-            throw new FatalError(
-                "Provide --packageKey with one of --nodeKey (validate a stored node) or --configuration (validate a configuration), or use -f for a full request file."
-            );
-        }
-        if (!opts.packageKey) {
-            throw new FatalError("--packageKey is required when using --nodeKey or --configuration.");
-        }
-
-        if (hasNodeKey) {
-            return {
-                assetType: opts.assetType,
-                packageKey: opts.packageKey,
-                nodeKeys: [opts.nodeKey],
-            };
-        }
-
-        const configJson = this.parseJson(opts.configuration!, "--configuration");
-        return {
-            assetType: opts.assetType,
-            packageKey: opts.packageKey,
-            nodes: [{ key: AssetRegistryService.INLINE_VALIDATION_NODE_KEY, configuration: configJson }],
-        };
-    }
-
-    private parseJson(raw: string, source: string): any {
-        try {
-            return JSON.parse(raw);
-        } catch {
-            throw new FatalError(`Invalid JSON in ${source}.`);
-        }
     }
 
     private async outputResponse(data: any, jsonResponse: boolean): Promise<void> {
