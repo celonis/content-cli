@@ -39,12 +39,6 @@ export class AssetRegistryApi {
             .catch((e) => handleAssetRegistryApiError(`getting examples for asset type '${assetType}'`, e));
     }
 
-    public async validate(assetType: string, body: any): Promise<any> {
-        return this.httpClient()
-            .post(AssetRegistryApi.endpointUrl("validate", encodeURIComponent(assetType)), body)
-            .catch((e) => handleAssetRegistryApiError(`validating asset type '${assetType}'`, e));
-    }
-
     private static endpointUrl(...segments: string[]): string {
         return `${AssetRegistryApi.BASE_URL}/${segments.join("/")}`;
     }

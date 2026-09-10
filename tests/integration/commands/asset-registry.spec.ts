@@ -13,7 +13,6 @@ describe("asset-registry command integration", () => {
             listTypes: jest.fn().mockResolvedValue(undefined),
             getType: jest.fn().mockResolvedValue(undefined),
             getSchema: jest.fn().mockResolvedValue(undefined),
-            validate: jest.fn().mockResolvedValue(undefined),
             getExamples: jest.fn().mockResolvedValue(undefined),
         } as any;
 
@@ -40,57 +39,15 @@ describe("asset-registry command integration", () => {
     });
 
     describe("asset-registry validate", () => {
-        it("forwards --configuration sub-mode options", async () => {
+        it("no longer exists and exits non-zero", async () => {
             const result = await runCli([
-                "asset-registry", "validate",
-                "--assetType", "BOARD_V2",
-                "--packageKey", "my-pkg",
-                "--configuration", '{"components":[]}',
-                "--json",
-            ]);
-
-            expect(result.exitCode).toBe(0);
-            expect(mockService.validate).toHaveBeenCalledWith({
-                assetType: "BOARD_V2",
-                packageKey: "my-pkg",
-                nodeKey: undefined,
-                configuration: '{"components":[]}',
-                file: undefined,
-                json: true,
-            });
-        });
-
-        it("forwards --nodeKey sub-mode options", async () => {
-            await runCli([
                 "asset-registry", "validate",
                 "--assetType", "BOARD_V2",
                 "--packageKey", "my-pkg",
                 "--nodeKey", "my-view",
             ]);
-            expect(mockService.validate).toHaveBeenCalledWith({
-                assetType: "BOARD_V2",
-                packageKey: "my-pkg",
-                nodeKey: "my-view",
-                configuration: undefined,
-                file: undefined,
-                json: false,
-            });
-        });
 
-        it("forwards --file mode options", async () => {
-            await runCli([
-                "asset-registry", "validate",
-                "--assetType", "BOARD_V2",
-                "--file", "request.json",
-            ]);
-            expect(mockService.validate).toHaveBeenCalledWith({
-                assetType: "BOARD_V2",
-                packageKey: undefined,
-                nodeKey: undefined,
-                configuration: undefined,
-                file: "request.json",
-                json: false,
-            });
+            expect(result.exitCode).not.toBe(0);
         });
     });
 
