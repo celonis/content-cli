@@ -74,9 +74,8 @@ Options:
 
 ## Validating assets
 
-There is no `asset-registry validate` command. Validate stored assets with `config package validate`,
-which runs the same asset-service validation plus the other validation layers, and can be narrowed to
-individual nodes:
+Assets are validated through `config package validate`, which runs the asset service's validation
+alongside the other validation layers and can be narrowed to individual nodes:
 
 ```
 content-cli config package validate --packageKey my-pkg --nodeKeys my-view
