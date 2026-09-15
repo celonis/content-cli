@@ -28,7 +28,7 @@ jest.mock("openid-client", () => ({
 }));
 
 jest.mock("../../../src/core/utils/logger", () => ({
-    logger: { error: jest.fn(), info: jest.fn() },
+    logger: { error: jest.fn(), info: jest.fn(), debug: jest.fn(), warn: jest.fn() },
     FatalError: class FatalError extends Error {
         constructor(m: string) {
             super(m);
@@ -37,7 +37,8 @@ jest.mock("../../../src/core/utils/logger", () => ({
     },
 }));
 
-import { ProfileService } from "../../../src/core/profile/profile.service";
+import { logger } from "../../../src/core/utils/logger";
+import { PROFILE_RECOVERY_COMMAND, ProfileService } from "../../../src/core/profile/profile.service";
 import { Dirent } from "node:fs";
 
 describe("ProfileService - mapCelonisEnvProfile", () => {
@@ -432,6 +433,50 @@ describe("ProfileService - findProfile", () => {
             await expect(profileService.findProfile(profileName)).rejects.toBe(
                 `The profile ${profileName} couldn't be resolved due to missing environment variables.`
             );
+        });
+    });
+
+    describe("when the stored profile cannot be refreshed", () => {
+        it("should reject instead of resolving an unrefreshed profile", async () => {
+            const profileName = "expired-profile";
+            const mockProfile: Profile = {
+                name: profileName,
+                team: "https://example.celonis.cloud",
+                apiToken: "expired-token",
+                authenticationType: AuthenticationType.BEARER,
+                type: ProfileType.DEVICE_CODE
+            };
+
+            jest.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify(mockProfile));
+            jest.spyOn(profileService, "refreshProfile")
+                .mockRejectedValue(new Error(`The profile ${profileName} cannot be refreshed.`));
+
+            await expect(profileService.findProfile(profileName))
+                .rejects.toEqual(`The profile ${profileName} couldn't be resolved.`);
+        });
+
+        it("should reject when secrets come from the keychain", async () => {
+            const profileName = "secure-expired-profile";
+            const mockProfile: Profile = {
+                name: profileName,
+                team: "https://example.celonis.cloud",
+                apiToken: "expired-token",
+                authenticationType: AuthenticationType.BEARER,
+                type: ProfileType.DEVICE_CODE,
+                secretsStoredSecurely: true
+            };
+
+            jest.spyOn(fs, "readFileSync").mockReturnValue(JSON.stringify(mockProfile));
+            mockGetSecrets.mockResolvedValue({
+                apiToken: "expired-token",
+                refreshToken: "revoked-refresh-token",
+                clientSecret: undefined
+            });
+            jest.spyOn(profileService, "refreshProfile")
+                .mockRejectedValue(new Error(`The profile ${profileName} cannot be refreshed.`));
+
+            await expect(profileService.findProfile(profileName))
+                .rejects.toEqual(`The profile ${profileName} couldn't be resolved.`);
         });
     });
 
@@ -1177,6 +1222,80 @@ describe("ProfileService - refreshProfile", () => {
         expect(profile.apiToken).toBe("new-token");
         expect(profile.expiresAt).toBe(newTokenSet.expires_at);
         expect(storeSpy).toHaveBeenCalledWith(profile);
+    });
+
+    it("should reject with the recovery command when a device code refresh fails", async () => {
+        const profile: Profile = {
+            name: "device-code-profile",
+            team: "https://example.com",
+            apiToken: "old-token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.DEVICE_CODE,
+            refreshToken: "revoked-refresh-token",
+            expiresAt: Math.floor(Date.now() / 1000) - 10,
+        };
+        mockIssuerDiscover.mockResolvedValue({
+            Client: jest.fn().mockImplementation(() => ({
+                refresh: jest.fn().mockRejectedValue(new Error("invalid_grant")),
+            })),
+        });
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
+
+        await expect(profileService.refreshProfile(profile))
+            .rejects.toThrow("The profile device-code-profile cannot be refreshed.");
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(PROFILE_RECOVERY_COMMAND));
+        expect(storeSpy).not.toHaveBeenCalled();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("should reject with the recovery command when a client credentials refresh fails", async () => {
+        const profile: Profile = {
+            name: "client-credentials-profile",
+            team: "https://example.com",
+            apiToken: "old-token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.CLIENT_CREDENTIALS,
+            clientId: "id",
+            clientSecret: "secret",
+            scopes: ["studio"],
+            clientAuthenticationMethod: "client_secret_basic",
+            expiresAt: Math.floor(Date.now() / 1000) - 10,
+        };
+        mockIssuerDiscover.mockResolvedValue({
+            Client: jest.fn().mockImplementation(() => ({
+                grant: jest.fn().mockRejectedValue(new Error("invalid_client")),
+            })),
+        });
+        const storeSpy = jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
+
+        await expect(profileService.refreshProfile(profile))
+            .rejects.toThrow("The profile client-credentials-profile cannot be refreshed.");
+        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(PROFILE_RECOVERY_COMMAND));
+        expect(storeSpy).not.toHaveBeenCalled();
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it("should keep the stale token on the profile when the refresh fails", async () => {
+        const profile: Profile = {
+            name: "device-code-profile",
+            team: "https://example.com",
+            apiToken: "old-token",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.DEVICE_CODE,
+            refreshToken: "revoked-refresh-token",
+            expiresAt: Math.floor(Date.now() / 1000) - 10,
+        };
+        mockIssuerDiscover.mockResolvedValue({
+            Client: jest.fn().mockImplementation(() => ({
+                refresh: jest.fn().mockRejectedValue(new Error("invalid_grant")),
+            })),
+        });
+        jest.spyOn(profileService, "storeProfile").mockImplementation(async () => {});
+
+        await expect(profileService.refreshProfile(profile)).rejects.toThrow("cannot be refreshed");
+
+        expect(profile.apiToken).toBe("old-token");
+        expect(profile.refreshToken).toBe("revoked-refresh-token");
     });
 });
 
