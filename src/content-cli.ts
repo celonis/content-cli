@@ -2,7 +2,7 @@
 
 import semverSatisfies = require("semver/functions/satisfies");
 import { Command } from "commander";
-import { Configurator, IModuleConstructor, ModuleHandler } from "./core/command/module-handler";
+import { Configurator, IModuleConstructor, ModuleHandler, shouldLoadProfile } from "./core/command/module-handler";
 import { Context } from "./core/command/cli-context";
 import { VersionUtils } from "./core/utils/version";
 import { logger } from "./core/utils/logger";
@@ -63,6 +63,14 @@ export function createProgram(context: Context, opts: CreateProgramOptions = {})
     return program;
 }
 
+export function loadProfileOnDemand(program: Command, context: Context): void {
+    program.hook("preAction", async (_program, actionCommand) => {
+        if (shouldLoadProfile(actionCommand)) {
+            await context.init();
+        }
+    });
+}
+
 /**
  * To support the legacy command structure, we have to configure some root commands
  * that the individual modules will extend.
@@ -103,9 +111,8 @@ async function run(): Promise<void> {
     }
 
     const context = new Context(globalOpts);
-    await context.init();
-
     const program = createProgram(context, { devMode: !!globalOpts.dev });
+    loadProfileOnDemand(program, context);
 
     try {
         await program.parseAsync(process.argv);

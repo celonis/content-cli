@@ -15,7 +15,8 @@ class Module extends IModule {
                 .description("Commands related to Git settings");
 
         const gitProfileCommand = gitCommand.command("profile")
-            .description("Manage Git profiles required to use git-related operations.");
+            .description("Manage Git profiles required to use git-related operations.")
+            .skipProfileLoading();
 
         gitProfileCommand.command("list")
                 .description("Command to list all stored Git profiles")

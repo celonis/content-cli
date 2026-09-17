@@ -12,7 +12,8 @@ class Module extends IModule {
 
     public register(context: Context, configurator: Configurator): void {
         const command = configurator.command("profile")
-                .description("Manage profiles required to access a system.");
+                .description("Manage profiles required to access a system.")
+                .skipProfileLoading();
 
         command.command("list")
                 .description("Command to list all stored profiles")

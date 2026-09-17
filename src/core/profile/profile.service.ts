@@ -19,8 +19,6 @@ const expiryBuffer = 5000;
 const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
 /** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
 const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
-export const PROFILE_RECOVERY_COMMAND = "content-cli profile create --setAsDefault";
-
 export interface Config {
     defaultProfile: string;
 }
@@ -298,8 +296,7 @@ export class ProfileService {
     private unrefreshableProfile(profileName: string, err: unknown): Error {
         const cause = err instanceof Error ? err.message : "an unrecognised error";
         logger.debug(`Refreshing the profile ${profileName} failed: ${cause}`);
-        logger.warn(`The profile ${profileName} cannot be refreshed. `
-            + `Retry, or recreate it with "${PROFILE_RECOVERY_COMMAND}".`);
+        logger.warn(`The profile ${profileName} cannot be refreshed. Retry, or recreate it.`);
         return new Error(`The profile ${profileName} cannot be refreshed.`);
     }
 

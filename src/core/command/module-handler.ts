@@ -123,6 +123,15 @@ export class ModuleHandler {
 
 type CommandHandler = (context: Context, command: Command, options: OptionValues) => Promise<void>;
 
+export function shouldLoadProfile(command: Command): boolean {
+    for (let cmd = command; cmd; cmd = cmd.parent) {
+        if ((cmd as any).skipsProfileLoading) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /**
  * Allows the creation of root level commands.
  */
@@ -206,6 +215,11 @@ export class CommandConfig {
 
     public beta(): CommandConfig {
         (this.cmd as any).isBeta = true;
+        return this;
+    }
+
+    public skipProfileLoading(): CommandConfig {
+        (this.cmd as any).skipsProfileLoading = true;
         return this;
     }
 

@@ -38,7 +38,7 @@ jest.mock("../../../src/core/utils/logger", () => ({
 }));
 
 import { logger } from "../../../src/core/utils/logger";
-import { PROFILE_RECOVERY_COMMAND, ProfileService } from "../../../src/core/profile/profile.service";
+import { ProfileService } from "../../../src/core/profile/profile.service";
 import { Dirent } from "node:fs";
 
 describe("ProfileService - mapCelonisEnvProfile", () => {
@@ -1243,7 +1243,7 @@ describe("ProfileService - refreshProfile", () => {
 
         await expect(profileService.refreshProfile(profile))
             .rejects.toThrow("The profile device-code-profile cannot be refreshed.");
-        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(PROFILE_RECOVERY_COMMAND));
+        expect(logger.warn).toHaveBeenCalledWith("The profile device-code-profile cannot be refreshed. Retry, or recreate it.");
         expect(storeSpy).not.toHaveBeenCalled();
         expect(logger.error).not.toHaveBeenCalled();
     });
@@ -1270,7 +1270,7 @@ describe("ProfileService - refreshProfile", () => {
 
         await expect(profileService.refreshProfile(profile))
             .rejects.toThrow("The profile client-credentials-profile cannot be refreshed.");
-        expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(PROFILE_RECOVERY_COMMAND));
+        expect(logger.warn).toHaveBeenCalledWith("The profile client-credentials-profile cannot be refreshed. Retry, or recreate it.");
         expect(storeSpy).not.toHaveBeenCalled();
         expect(logger.error).not.toHaveBeenCalled();
     });
