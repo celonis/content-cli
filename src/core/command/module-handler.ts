@@ -218,7 +218,7 @@ export class CommandConfig {
         return this;
     }
 
-    public skipProfileLoading(): CommandConfig {
+    public skipProfileLoading(): this {
         (this.cmd as any).skipsProfileLoading = true;
         return this;
     }
