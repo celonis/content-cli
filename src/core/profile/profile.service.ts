@@ -19,7 +19,6 @@ const expiryBuffer = 5000;
 const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
 /** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
 const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
-
 export interface Config {
     defaultProfile: string;
 }
@@ -263,9 +262,9 @@ export class ProfileService {
         if (!this.isProfileExpired(profile, expiryBuffer)) {
             return;
         }
-        const issuer = await Issuer.discover(profile.team);
-        if (profile.type === ProfileType.DEVICE_CODE) {
-            try {
+        try {
+            const issuer = await Issuer.discover(profile.team);
+            if (profile.type === ProfileType.DEVICE_CODE) {
                 const oauthClient = new issuer.Client({
                     client_id: "content-cli",
                     token_endpoint_auth_method: "none",
@@ -274,12 +273,7 @@ export class ProfileService {
                 profile.apiToken = tokenSet.access_token;
                 profile.expiresAt = tokenSet.expires_at;
                 profile.refreshToken = tokenSet.refresh_token;
-            } catch (err) {
-                logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
-            }
-        }
-        else {
-            try {
+            } else {
                 const oauthClient = new issuer.Client({
                     client_id: profile.clientId,
                     client_secret: profile.clientSecret,
@@ -291,12 +285,19 @@ export class ProfileService {
                 });
                 profile.apiToken = tokenSet.access_token;
                 profile.expiresAt = tokenSet.expires_at;
-            } catch (err) {
-                logger.error(new FatalError("The profile cannot be refreshed. Please retry or recreate profile."));
             }
+        } catch (err) {
+            throw this.unrefreshableProfile(profile.name, err);
         }
 
         await this.storeProfile(profile);
+    }
+
+    private unrefreshableProfile(profileName: string, err: unknown): Error {
+        const cause = err instanceof Error ? err.message : "an unrecognised error";
+        logger.debug(`Refreshing the profile ${profileName} failed: ${cause}`);
+        logger.warn(`The profile ${profileName} cannot be refreshed. Retry, or recreate it.`);
+        return new Error(`The profile ${profileName} cannot be refreshed.`);
     }
 
     private getProfileEnvVariables(): any {
