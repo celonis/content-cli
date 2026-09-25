@@ -262,6 +262,7 @@ describe("ProfileService - findProfile", () => {
         originalApiToken = process.env.API_TOKEN;
 
         jest.spyOn(ProfileValidator, "validateProfile").mockResolvedValue(AuthenticationType.BEARER);
+        jest.spyOn(ProfileValidator, "validateEnvironmentProfile").mockImplementation(() => undefined);
     });
 
     afterEach(() => {
@@ -350,7 +351,7 @@ describe("ProfileService - findProfile", () => {
             expect(result.team).toBe("https://env.celonis.cloud");
             expect(result.apiToken).toBe("env-token");
             expect(result.type).toBe(ProfileType.KEY);
-            expect(ProfileValidator.validateProfile).toHaveBeenCalled();
+            expect(ProfileValidator.validateEnvironmentProfile).toHaveBeenCalled();
         });
 
         it("should use CELONIS_URL and CELONIS_API_TOKEN when TEAM_URL and API_TOKEN are not set", async () => {
@@ -383,17 +384,16 @@ describe("ProfileService - findProfile", () => {
             expect(result.team).toBe("https://celonis.celonis.cloud");
         });
 
-        it("should reject when CELONIS_API_TOKEN is not set but CELONIS_URL is set", async () => {
+        it("should not pair CELONIS_URL with an API_TOKEN from the other variable family", async () => {
             process.env.CELONIS_URL = "https://celonis.celonis.cloud";
             process.env.API_TOKEN = "old-token";
             delete process.env.CELONIS_API_TOKEN;
             delete process.env.TEAM_URL;
 
-            const profileName = "";
+            const result = await profileService.findProfile("");
 
-            await expect(profileService.findProfile(profileName)).rejects.toBe(
-                `The profile ${profileName} couldn't be resolved due to missing environment variables.`
-            );
+            expect(result.team).toBe("https://celonis.celonis.cloud");
+            expect(result.apiToken).toBeUndefined();
         });
 
         it("should reject when no environment variables are set", async () => {
@@ -409,17 +409,53 @@ describe("ProfileService - findProfile", () => {
             );
         });
 
-        it("should reject when only CELONIS_URL is set without CELONIS_API_TOKEN", async () => {
+        it("should resolve a profile without a token when only CELONIS_URL is set", async () => {
             process.env.CELONIS_URL = "https://celonis.celonis.cloud";
             delete process.env.CELONIS_API_TOKEN;
             delete process.env.TEAM_URL;
             delete process.env.API_TOKEN;
 
-            const profileName = "";
+            const result = await profileService.findProfile("");
 
-            await expect(profileService.findProfile(profileName)).rejects.toBe(
-                `The profile ${profileName} couldn't be resolved due to missing environment variables.`
+            expect(result.team).toBe("https://celonis.celonis.cloud");
+            expect(result.apiToken).toBeUndefined();
+            expect(result.type).toBe(ProfileType.KEY);
+        });
+
+        it("should resolve a profile without a token when only TEAM_URL is set", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            delete process.env.API_TOKEN;
+            delete process.env.CELONIS_URL;
+            delete process.env.CELONIS_API_TOKEN;
+
+            const result = await profileService.findProfile("");
+
+            expect(result.team).toBe("https://env.celonis.cloud");
+            expect(result.apiToken).toBeUndefined();
+        });
+
+        it("should warn when resolving a profile without a token", async () => {
+            process.env.CELONIS_URL = "https://celonis.celonis.cloud";
+            delete process.env.CELONIS_API_TOKEN;
+            delete process.env.TEAM_URL;
+            delete process.env.API_TOKEN;
+
+            await profileService.findProfile("");
+
+            expect(logger.warn).toHaveBeenCalledWith(
+                "No API token provided. Requests to https://celonis.celonis.cloud will be sent without an authorization header."
             );
+        });
+
+        it("should not warn when the resolved profile carries a token", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            process.env.API_TOKEN = "env-token";
+            delete process.env.CELONIS_URL;
+            delete process.env.CELONIS_API_TOKEN;
+
+            await profileService.findProfile("");
+
+            expect(logger.warn).not.toHaveBeenCalled();
         });
 
         it("should reject when only CELONIS_API_TOKEN is set without CELONIS_URL", async () => {
@@ -433,6 +469,69 @@ describe("ProfileService - findProfile", () => {
             await expect(profileService.findProfile(profileName)).rejects.toBe(
                 `The profile ${profileName} couldn't be resolved due to missing environment variables.`
             );
+        });
+    });
+
+    describe("precedence between environment variable families", () => {
+        it("should prefer a complete CELONIS pair over a TEAM_URL without a token", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            delete process.env.API_TOKEN;
+            process.env.CELONIS_URL = "https://celonis.celonis.cloud";
+            process.env.CELONIS_API_TOKEN = "celonis-token";
+
+            const result = await profileService.findProfile("");
+
+            expect(result.team).toBe("https://celonis.celonis.cloud");
+            expect(result.apiToken).toBe("celonis-token");
+        });
+
+        it("should prefer a complete TEAM pair over a CELONIS_URL without a token", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            process.env.API_TOKEN = "env-token";
+            process.env.CELONIS_URL = "https://celonis.celonis.cloud";
+            delete process.env.CELONIS_API_TOKEN;
+
+            const result = await profileService.findProfile("");
+
+            expect(result.team).toBe("https://env.celonis.cloud");
+            expect(result.apiToken).toBe("env-token");
+        });
+
+        it("should prefer the TEAM pair when both families are complete", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            process.env.API_TOKEN = "env-token";
+            process.env.CELONIS_URL = "https://celonis.celonis.cloud";
+            process.env.CELONIS_API_TOKEN = "celonis-token";
+
+            const result = await profileService.findProfile("");
+
+            expect(result.team).toBe("https://env.celonis.cloud");
+            expect(result.apiToken).toBe("env-token");
+        });
+
+        it("should prefer the TEAM pair when neither family supplies a token", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            delete process.env.API_TOKEN;
+            process.env.CELONIS_URL = "https://celonis.celonis.cloud";
+            delete process.env.CELONIS_API_TOKEN;
+
+            const result = await profileService.findProfile("");
+
+            expect(result.team).toBe("https://env.celonis.cloud");
+            expect(result.apiToken).toBeUndefined();
+        });
+
+        it("should not map the CELONIS variables when the TEAM pair wins", async () => {
+            process.env.TEAM_URL = "https://env.celonis.cloud";
+            process.env.API_TOKEN = "env-token";
+            process.env.CELONIS_URL = "https://celonis.celonis.cloud";
+            delete process.env.CELONIS_API_TOKEN;
+
+            const mapCelonisEnvProfileSpy = jest.spyOn(profileService as any, "mapCelonisEnvProfile");
+
+            await profileService.findProfile("");
+
+            expect(mapCelonisEnvProfileSpy).not.toHaveBeenCalled();
         });
     });
 

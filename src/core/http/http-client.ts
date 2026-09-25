@@ -246,10 +246,13 @@ export class HttpClient {
     }
 
     private buildAuthorizationHeaders(profile: Profile, contentType?: string): RawAxiosRequestHeaders {
-        const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
-        return {
-            Authorization: `${authenticationType} ${profile.apiToken}`,
+        const headers: RawAxiosRequestHeaders = {
             "Content-Type": contentType ?? "application/json",
         };
+        if (profile.apiToken) {
+            const authenticationType = profile.authenticationType || AuthenticationType.BEARER;
+            headers.Authorization = `${authenticationType} ${profile.apiToken}`;
+        }
+        return headers;
     }
 }

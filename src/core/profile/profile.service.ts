@@ -23,6 +23,12 @@ export interface Config {
     defaultProfile: string;
 }
 
+interface EnvProfileSource {
+    teamUrl: string;
+    apiToken: string;
+    requiresCelonisMapping: boolean;
+}
+
 export class ProfileService {
     private profileContainerPath = path.resolve(homedir, ".celonis-content-cli-profiles");
     private configContainer = path.resolve(this.profileContainerPath, "config.json");
@@ -59,13 +65,16 @@ export class ProfileService {
                             .then(() => resolve(profile))
                             .catch(() => reject(`The profile ${profileName} couldn't be resolved.`));
                     }
-                } else if (process.env.TEAM_URL && process.env.API_TOKEN) {
-                    resolve(this.buildProfileFromEnvVariables());
-                } else if (process.env.CELONIS_URL && process.env.CELONIS_API_TOKEN) {
-                    this.mapCelonisEnvProfile();
-                    resolve(this.buildProfileFromEnvVariables());
                 } else {
-                    reject(`The profile ${profileName} couldn't be resolved due to missing environment variables.`);
+                    const envProfileSource = this.selectEnvProfileSource();
+                    if (envProfileSource) {
+                        if (envProfileSource.requiresCelonisMapping) {
+                            this.mapCelonisEnvProfile();
+                        }
+                        resolve(this.buildProfileFromEnvVariables());
+                    } else {
+                        reject(`The profile ${profileName} couldn't be resolved due to missing environment variables.`);
+                    }
                 }
             } catch (e) {
                 reject(`The profile ${profileName} couldn't be resolved.`);
@@ -121,6 +130,15 @@ export class ProfileService {
         });
     }
 
+    private selectEnvProfileSource(): EnvProfileSource | null {
+        const sources: EnvProfileSource[] = [
+            { teamUrl: process.env.TEAM_URL, apiToken: process.env.API_TOKEN, requiresCelonisMapping: false },
+            { teamUrl: process.env.CELONIS_URL, apiToken: process.env.CELONIS_API_TOKEN, requiresCelonisMapping: true },
+        ].filter(source => !!source.teamUrl);
+
+        return sources.find(source => !!source.apiToken) ?? sources[0] ?? null;
+    }
+
     private async buildProfileFromEnvVariables(): Promise<Profile> {
         const profileVariables = this.getProfileEnvVariables();
         const profile: Profile = {
@@ -130,7 +148,10 @@ export class ProfileService {
             authenticationType: AuthenticationType.BEARER,
             type: ProfileType.KEY
         };
-        profile.authenticationType = await ProfileValidator.validateProfile(profile);
+        ProfileValidator.validateEnvironmentProfile(profile);
+        if (!profile.apiToken) {
+            logger.warn(`No API token provided. Requests to ${profile.team} will be sent without an authorization header.`);
+        }
         return profile;
     }
 
