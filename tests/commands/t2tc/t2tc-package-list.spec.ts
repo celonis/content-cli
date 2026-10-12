@@ -16,7 +16,8 @@ describe("Config list", () => {
 
     it.each([
         "",
-        "STUDIO,TEST"
+        "STUDIO,TEST",
+        "CCM"
     ])(
         "Should list all packages by key for non-json response with flavors: %p",
         async (flavors: string) => {
@@ -59,6 +60,18 @@ describe("Config list", () => {
 
         expect(exportedSecondPackage).toEqual(secondPackage);
         expect(exportedFirstPackage).toEqual({...firstPackage, spaceId: "spaceId-1"});
+    })
+
+    it("Should export CCM packages unchanged for json response with CCM flavor", async () => {
+        const ccmPackage = {...PacmanApiUtils.buildPackageExportTransport("ccm-key", "ccm-name"), flavor: "CCM"};
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false&includeBranches=false&flavors=CCM", [{...ccmPackage}]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
+
+        await new T2tcCommandService(testContext).listPackages(true, ["CCM"], false, [], undefined, null, null, false, false);
+
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
+        expect(exportedTransports).toEqual([ccmPackage]);
     })
 
     it("Should export all packages with dependencies and data models set for json response and withDependencies option", async () => {
