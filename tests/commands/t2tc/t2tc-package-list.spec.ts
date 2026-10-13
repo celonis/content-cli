@@ -264,6 +264,31 @@ describe("Config list", () => {
         expect(exportedFirstPackage).toEqual({...firstPackage, spaceId: "spaceId-1"});
     })
 
+    it("Should list live packages by key for non-json response", async () => {
+        const livePackage = PacmanApiUtils.buildPackageExportTransport("project@release", "live-name");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-live?withDependencies=false&flavors=CCM", [livePackage]);
+
+        await new T2tcCommandService(testContext).listPackages(false, ["CCM"], false, [], undefined, null, null, false, false, true);
+
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${livePackage.name} - Key: "${livePackage.key}"`);
+    })
+
+    it("Should export live packages for json response with spaceId set for studio packages", async () => {
+        const studioLivePackage = {...PacmanApiUtils.buildPackageExportTransport("studio@release", "studio-name"), flavor: "STUDIO"};
+        const ccmLivePackage = {...PacmanApiUtils.buildPackageExportTransport("ccm@live", "ccm-name"), flavor: "CCM"};
+        const studioNode: ContentNodeTransport = PacmanApiUtils.buildContentNodeTransport("studio@release", "spaceId-1");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-live?withDependencies=false", [{...studioLivePackage}, {...ccmLivePackage}]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioNode]);
+
+        await new T2tcCommandService(testContext).listPackages(true, [], false, [], undefined, null, null, false, false, true);
+
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
+        expect(exportedTransports).toEqual([{...studioLivePackage, spaceId: "spaceId-1"}, ccmLivePackage]);
+    })
+
     it("Should list all staging packages by key for non-json response with flavors", async () => {
         const firstPackage = PacmanApiUtils.buildPackageExportTransport("studio", "name-1");
         const secondPackage = PacmanApiUtils.buildPackageExportTransport("ocdm", "name-2");

@@ -65,6 +65,16 @@ To list staging packages instead of deployed packages use the `--staging` option
 
 > For day-to-day staging listing outside the copy workflow, prefer [`config package list`](./config-commands.md#list-packages-config-package-list), which lists staging packages by default.
 
+### List Live Packages
+
+Use the `--live` option to list only the package each project's **LIVE** pointer targets. Projects without a LIVE pointer are skipped. If the live branch pointer feature is not enabled for the team, the deployed main packages are listed instead.
+
+```
+content-cli t2tc package list --profile my-profile --live --flavors CCM --json
+```
+
+`--live` can be combined with `--json`, `--flavors` and `--withDependencies`. It is not compatible with `--staging`, `--branches`, `--packageKeys`, `--keysByVersion`, `--variableValue` and `--variableType`.
+
 ### List Packages with Dependencies
 
 When using the listing command with the `--json` option, two additional options are available:

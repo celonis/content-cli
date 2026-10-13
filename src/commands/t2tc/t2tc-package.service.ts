@@ -49,6 +49,19 @@ export class T2tcPackageService {
         });
     }
 
+    public async listLivePackages(flavors: string[], withDependencies: boolean, jsonResponse: boolean): Promise<void> {
+        const livePackages = await this.t2tcPackageApi.findAllLivePackages(flavors, withDependencies);
+
+        if (jsonResponse) {
+            await this.exportListOfPackages(await this.studioService.getExportPackagesWithStudioData(livePackages, withDependencies));
+            return;
+        }
+
+        livePackages.forEach(pkg => {
+            logger.info(`${pkg.name} - Key: "${pkg.key}"`);
+        });
+    }
+
     public async findAndExportListOfPackages(flavors: string[], packageKeys: string[], keysByVersion: string[], withDependencies: boolean, includeBranches: boolean): Promise<void> {
         let packagesToExport: PackageExportTransport[];
 
