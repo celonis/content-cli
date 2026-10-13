@@ -100,7 +100,7 @@ describe("Asset registry list", () => {
 
         await new AssetRegistryService(testContext).listTypes(false, "STUDIO");
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain("BOARD_V2 - View [DASHBOARDS]");
     });
 
