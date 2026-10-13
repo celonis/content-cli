@@ -36,4 +36,25 @@ describe("Asset registry schema", () => {
         expect(written.$schema).toBe("http://json-schema.org/draft-07/schema#");
         expect(written.title).toBe("Board");
     });
+
+    it("Should request only the given part of the schema when a path is passed", async () => {
+        const fragment = { type: "object", properties: { columns: { $ref: "#/$defs/column" } } };
+        mockAxiosGet(
+            "https://myTeam.celonis.cloud/pacman/api/core/asset-registry/schemas/BOARD_V2?path=%23%2F%24defs%2Ftable",
+            fragment
+        );
+
+        await new AssetRegistryService(testContext).getSchema("BOARD_V2", false, "#/$defs/table");
+
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain("#/$defs/column");
+    });
+
+    it("Should request the full schema when the path is blank", async () => {
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/asset-registry/schemas/BOARD_V2", schemaResponse);
+
+        await new AssetRegistryService(testContext).getSchema("BOARD_V2", false, " ");
+
+        expect(loggingTestTransport.logMessages[0].message).toContain("Board");
+    });
 });

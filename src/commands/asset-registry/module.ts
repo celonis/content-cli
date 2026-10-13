@@ -11,6 +11,7 @@ class Module extends IModule {
 
         assetRegistryCommand.command("list")
             .description("List all registered asset types")
+            .option("--flavor <flavor>", "Lists only the asset types that apply to the given package flavor (e.g., STUDIO)")
             .option("--json", "Return the response as a JSON file")
             .action(this.listTypes);
 
@@ -23,6 +24,7 @@ class Module extends IModule {
         assetRegistryCommand.command("schema")
             .description("Get the JSON schema for an asset type's configuration")
             .requiredOption("--assetType <assetType>", "The asset type identifier (e.g., BOARD_V2)")
+            .option("--path <path>", "Return only this part of the schema, written like a $ref inside it (e.g., '#/$defs/table'); '#' returns the entry point")
             .option("--json", "Return the response as a JSON file")
             .action(this.getSchema);
 
@@ -34,7 +36,7 @@ class Module extends IModule {
     }
 
     private async listTypes(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).listTypes(!!options.json);
+        await new AssetRegistryService(context).listTypes(!!options.json, options.flavor);
     }
 
     private async getType(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -42,7 +44,7 @@ class Module extends IModule {
     }
 
     private async getSchema(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new AssetRegistryService(context).getSchema(options.assetType, !!options.json);
+        await new AssetRegistryService(context).getSchema(options.assetType, !!options.json, options.path);
     }
 
     private async getExamples(context: Context, command: Command, options: OptionValues): Promise<void> {

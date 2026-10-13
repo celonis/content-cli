@@ -90,6 +90,20 @@ describe("Asset registry list", () => {
         expect(written.types["SEMANTIC_MODEL"].assetType).toBe("SEMANTIC_MODEL");
     });
 
+    it("Should list only the asset types of the given flavor", async () => {
+        const studioOnly: AssetRegistryMetadata = {
+            types: {
+                BOARD_V2: metadata.types.BOARD_V2,
+            },
+        };
+        mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types?flavor=STUDIO", studioOnly);
+
+        await new AssetRegistryService(testContext).listTypes(false, "STUDIO");
+
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain("BOARD_V2 - View [DASHBOARDS]");
+    });
+
     it("Should handle empty registry", async () => {
         mockAxiosGet("https://myTeam.celonis.cloud/pacman/api/core/asset-registry/types", { types: {} });
 
