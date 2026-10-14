@@ -26,6 +26,17 @@ It is also possible to use the `--json` option for writing the full response to 
 content-cli asset-registry list --json
 ```
 
+To list only the asset types that apply to one package flavor, pass `--flavor`:
+
+```
+content-cli asset-registry list --flavor STUDIO
+```
+
+Options:
+
+- `--flavor <flavor>` – List only the asset types that apply to this package flavor (`STUDIO`, `CCM` or `OCDM`, case-insensitive). Asset types that do not declare any flavors apply to all of them.
+- `--json` – Write the full response to a JSON file in the working directory
+
 ## Get Asset Type
 
 Get the full descriptor for a specific asset type, including schema version, service base path, and endpoint paths.
@@ -67,9 +78,19 @@ The response is the full JSON Schema (draft-07) for the asset type. Use `--json`
 content-cli asset-registry schema --assetType BOARD_V2 --json
 ```
 
+Large schemas can be read one part at a time with `--path`. Write the path the same way the schema writes its `$ref` values. `#` returns the entry point, the top level of the schema without its definitions, and any `$ref` in a response can be passed as the next `--path`:
+
+```
+content-cli asset-registry schema --assetType BOARD_V2 --path '#'
+content-cli asset-registry schema --assetType BOARD_V2 --path '#/$defs/table'
+```
+
+Quote the path so the shell does not interpret `#` or `$`. Asset types that do not support partial schemas return the full schema.
+
 Options:
 
 - `--assetType <assetType>` (required) – The asset type identifier
+- `--path <path>` – Return only this part of the schema, written like a `$ref` inside it (for example, `#/$defs/table`)
 - `--json` – Write the schema to a JSON file in the working directory
 
 ## Validating assets

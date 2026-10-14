@@ -29,12 +29,19 @@ describe("asset-registry command integration", () => {
             const result = await runCli(["asset-registry", "schema", "--assetType", "BOARD_V2", "--json"]);
 
             expect(result.exitCode).toBe(0);
-            expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", true);
+            expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", true, undefined);
         });
 
         it("defaults --json to false when omitted", async () => {
             await runCli(["asset-registry", "schema", "--assetType", "BOARD_V2"]);
-            expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", false);
+            expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", false, undefined);
+        });
+
+        it("passes --path to getSchema", async () => {
+            const result = await runCli(["asset-registry", "schema", "--assetType", "BOARD_V2", "--path", "#/$defs/table"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockService.getSchema).toHaveBeenCalledWith("BOARD_V2", false, "#/$defs/table");
         });
     });
 
@@ -70,12 +77,19 @@ describe("asset-registry command integration", () => {
             const result = await runCli(["asset-registry", "list", "--json"]);
 
             expect(result.exitCode).toBe(0);
-            expect(mockService.listTypes).toHaveBeenCalledWith(true);
+            expect(mockService.listTypes).toHaveBeenCalledWith(true, undefined);
         });
 
         it("calls listTypes without --json", async () => {
             await runCli(["asset-registry", "list"]);
-            expect(mockService.listTypes).toHaveBeenCalledWith(false);
+            expect(mockService.listTypes).toHaveBeenCalledWith(false, undefined);
+        });
+
+        it("passes --flavor to listTypes", async () => {
+            const result = await runCli(["asset-registry", "list", "--flavor", "STUDIO"]);
+
+            expect(result.exitCode).toBe(0);
+            expect(mockService.listTypes).toHaveBeenCalledWith(false, "STUDIO");
         });
     });
 

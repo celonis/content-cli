@@ -15,8 +15,8 @@ export class AssetRegistryService {
         this.cuiFileService = new CuiFileService(context);
     }
 
-    public async listTypes(jsonResponse: boolean): Promise<void> {
-        const metadata = await this.api.listTypes();
+    public async listTypes(jsonResponse: boolean, flavor?: string): Promise<void> {
+        const metadata = await this.api.listTypes(flavor);
         const descriptors = Object.values(metadata.types);
 
         if (jsonResponse) {
@@ -46,8 +46,8 @@ export class AssetRegistryService {
         }
     }
 
-    public async getSchema(assetType: string, jsonResponse: boolean): Promise<void> {
-        const data = await this.api.getSchema(assetType);
+    public async getSchema(assetType: string, jsonResponse: boolean, path?: string): Promise<void> {
+        const data = await this.api.getSchema(assetType, path);
         await this.outputResponse(data, jsonResponse);
     }
 

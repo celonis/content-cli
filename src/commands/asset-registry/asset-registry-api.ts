@@ -15,9 +15,9 @@ export class AssetRegistryApi {
         this.httpClient = () => context.httpClient;
     }
 
-    public async listTypes(): Promise<AssetRegistryMetadata> {
+    public async listTypes(flavor?: string): Promise<AssetRegistryMetadata> {
         return this.httpClient()
-            .get(AssetRegistryApi.endpointUrl("types"))
+            .get(AssetRegistryApi.withQuery(AssetRegistryApi.endpointUrl("types"), { flavor }))
             .catch((e) => handleAssetRegistryApiError("listing asset registry types", e));
     }
 
@@ -27,9 +27,9 @@ export class AssetRegistryApi {
             .catch((e) => handleAssetRegistryApiError(`getting asset type '${assetType}'`, e));
     }
 
-    public async getSchema(assetType: string): Promise<any> {
+    public async getSchema(assetType: string, path?: string): Promise<any> {
         return this.httpClient()
-            .get(AssetRegistryApi.endpointUrl("schemas", encodeURIComponent(assetType)))
+            .get(AssetRegistryApi.withQuery(AssetRegistryApi.endpointUrl("schemas", encodeURIComponent(assetType)), { path }))
             .catch((e) => handleAssetRegistryApiError(`getting schema for asset type '${assetType}'`, e));
     }
 
@@ -41,5 +41,14 @@ export class AssetRegistryApi {
 
     private static endpointUrl(...segments: string[]): string {
         return `${AssetRegistryApi.BASE_URL}/${segments.join("/")}`;
+    }
+
+    private static withQuery(url: string, params: Record<string, string | undefined>): string {
+        const queryParams = new URLSearchParams();
+        Object.entries(params)
+            .filter(([, value]) => value !== undefined && value.trim() !== "")
+            .forEach(([name, value]) => queryParams.set(name, value));
+        const query = queryParams.toString();
+        return query ? `${url}?${query}` : url;
     }
 }

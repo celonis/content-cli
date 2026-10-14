@@ -269,11 +269,11 @@ const NODES = [
 
   // asset-registry
   { id: "ar_list", label: "list", group: "command", path: "asset-registry list",
-    description: "List all registered asset types", options: ["-p, --profile <profile>", "--json", "-h, --help"] },
+    description: "List all registered asset types", options: ["-p, --profile <profile>", "--flavor <flavor>", "--json", "-h, --help"] },
   { id: "ar_get", label: "get", group: "command", path: "asset-registry get",
     description: "Get the descriptor for a specific asset type", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
   { id: "ar_schema", label: "schema", group: "command", path: "asset-registry schema",
-    description: "Get the JSON schema for an asset type's configuration", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
+    description: "Get the JSON schema for an asset type's configuration", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--path <path>", "--json", "-h, --help"] },
   { id: "ar_examples", label: "examples", group: "command", path: "asset-registry examples",
     description: "Get example configurations for an asset type", options: ["-p, --profile <profile>", "--assetType <assetType> (e.g., BOARD_V2)", "--json", "-h, --help"] },
 
