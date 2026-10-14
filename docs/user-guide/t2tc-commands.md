@@ -59,11 +59,21 @@ The name of the file will be printed in the console with the following format:
 info:    File downloaded successfully. New filename: 9560f81f-f746-4117-83ee-dd1f614ad624.json
 ```
 
-By using the `--flavors` option, you can filter which packages to list. The available flavors are: **STUDIO** and **OCDM**.
+By using the `--flavors` option, you can filter which packages to list. The available flavors are: **STUDIO**, **OCDM** and **CCM**.
 
 To list staging packages instead of deployed packages use the `--staging` option. Please note that this flag is not compatible with the below options.
 
 > For day-to-day staging listing outside the copy workflow, prefer [`config package list`](./config-commands.md#list-packages-config-package-list), which lists staging packages by default.
+
+### List Live Packages
+
+Use the `--live` option to list only the package each project's **LIVE** pointer targets. Projects without a LIVE pointer are skipped. If the live branch pointer feature is not enabled for the team, the deployed main packages are listed instead.
+
+```
+content-cli t2tc package list --profile my-profile --live --flavors CCM --json
+```
+
+`--live` can be combined with `--json`, `--flavors` and `--withDependencies`. It is not compatible with `--staging`, `--branches`, `--packageKeys`, `--keysByVersion`, `--variableValue` and `--variableType`.
 
 ### List Packages with Dependencies
 

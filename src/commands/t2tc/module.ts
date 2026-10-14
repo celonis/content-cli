@@ -23,6 +23,7 @@ class Module extends IModule {
             .option("--variableType <variableType>", "Variable type for filtering packages by.")
             .option("--branches", "Include branches", false)
             .option("--staging", "List staging packages instead", false)
+            .option("--live", "List only the package each LIVE pointer targets", false)
             .action(this.listPackages);
 
         t2tcPackageCommand.command("export")
@@ -61,6 +62,9 @@ class Module extends IModule {
         if (options.packageKeys && options.keysByVersion) {
             throw new Error("Please provide either --packageKeys or --keysByVersion, but not both.");
         }
+        if (options.live && (options.staging || options.branches || options.packageKeys || options.keysByVersion || options.variableValue || options.variableType)) {
+            throw new Error("Live parameter is not compatible with --staging, --branches, --packageKeys, --keysByVersion, --variableValue, --variableType");
+        }
 
         await new T2tcCommandService(context).listPackages(
             options.json,
@@ -71,7 +75,8 @@ class Module extends IModule {
             options.variableValue,
             options.variableType,
             options.branches,
-            options.staging);
+            options.staging,
+            options.live);
     }
 
     private async batchExportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

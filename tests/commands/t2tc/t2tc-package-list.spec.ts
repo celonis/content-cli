@@ -16,7 +16,8 @@ describe("Config list", () => {
 
     it.each([
         "",
-        "STUDIO,TEST"
+        "STUDIO,TEST",
+        "CCM"
     ])(
         "Should list all packages by key for non-json response with flavors: %p",
         async (flavors: string) => {
@@ -59,6 +60,18 @@ describe("Config list", () => {
 
         expect(exportedSecondPackage).toEqual(secondPackage);
         expect(exportedFirstPackage).toEqual({...firstPackage, spaceId: "spaceId-1"});
+    })
+
+    it("Should export CCM packages unchanged for json response with CCM flavor", async () => {
+        const ccmPackage = {...PacmanApiUtils.buildPackageExportTransport("ccm-key", "ccm-name"), flavor: "CCM"};
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list?withDependencies=false&includeBranches=false&flavors=CCM", [{...ccmPackage}]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", []);
+
+        await new T2tcCommandService(testContext).listPackages(true, ["CCM"], false, [], undefined, null, null, false, false);
+
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
+        expect(exportedTransports).toEqual([ccmPackage]);
     })
 
     it("Should export all packages with dependencies and data models set for json response and withDependencies option", async () => {
@@ -249,6 +262,31 @@ describe("Config list", () => {
 
         expect(exportedSecondPackage).toEqual(secondPackage);
         expect(exportedFirstPackage).toEqual({...firstPackage, spaceId: "spaceId-1"});
+    })
+
+    it("Should list live packages by key for non-json response", async () => {
+        const livePackage = PacmanApiUtils.buildPackageExportTransport("project@release", "live-name");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-live?withDependencies=false&flavors=CCM", [livePackage]);
+
+        await new T2tcCommandService(testContext).listPackages(false, ["CCM"], false, [], undefined, null, null, false, false, true);
+
+        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages[0].message).toContain(`${livePackage.name} - Key: "${livePackage.key}"`);
+    })
+
+    it("Should export live packages for json response with spaceId set for studio packages", async () => {
+        const studioLivePackage = {...PacmanApiUtils.buildPackageExportTransport("studio@release", "studio-name"), flavor: "STUDIO"};
+        const ccmLivePackage = {...PacmanApiUtils.buildPackageExportTransport("ccm@live", "ccm-name"), flavor: "CCM"};
+        const studioNode: ContentNodeTransport = PacmanApiUtils.buildContentNodeTransport("studio@release", "spaceId-1");
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/list-live?withDependencies=false", [{...studioLivePackage}, {...ccmLivePackage}]);
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/packages/with-variable-assignments?type=DATA_MODEL", [studioNode]);
+
+        await new T2tcCommandService(testContext).listPackages(true, [], false, [], undefined, null, null, false, false, true);
+
+        const exportedTransports = getJsonFromDownloadedFile() as PackageExportTransport[];
+        expect(exportedTransports).toEqual([{...studioLivePackage, spaceId: "spaceId-1"}, ccmLivePackage]);
     })
 
     it("Should list all staging packages by key for non-json response with flavors", async () => {

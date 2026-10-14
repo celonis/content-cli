@@ -27,6 +27,17 @@ export class T2tcPackageApi {
         });
     }
 
+    public async findAllLivePackages(flavors: string[], withDependencies: boolean = false): Promise<PackageExportTransport[]> {
+        const queryParams = new URLSearchParams();
+
+        queryParams.set("withDependencies", withDependencies.toString());
+        flavors.forEach(flavor => queryParams.append("flavors", flavor));
+
+        return this.httpClient().get(`/package-manager/api/core/packages/export/list-live?${queryParams.toString()}`).catch(e => {
+            throw new FatalError(`Problem getting live packages: ${e}`);
+        });
+    }
+
     public async findActivePackagesByVariableValue(flavors: string[], variableValue: string, variableType: string, includeBranches: boolean = false): Promise<PackageExportTransport[]> {
         const queryParams = new URLSearchParams();
 

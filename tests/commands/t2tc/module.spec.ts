@@ -99,7 +99,48 @@ describe("T2TC Module", () => {
                 undefined,
                 undefined,
                 undefined,
+                undefined,
                 undefined
+            );
+        });
+
+        it.each([
+            ["--staging", { staging: true }],
+            ["--branches", { branches: true }],
+            ["--packageKeys", { packageKeys: ["package1"] }],
+            ["--keysByVersion", { keysByVersion: ["package1.1.0.0"] }],
+            ["--variableValue", { variableValue: "value" }],
+            ["--variableType", { variableType: "DATA_MODEL" }],
+        ])("throws when --live is combined with %s", async (_name: string, extraOptions: OptionValues) => {
+            const options: OptionValues = { live: true, ...extraOptions };
+
+            await expect(
+                (module as any).listPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Live parameter is not compatible with");
+
+            expect(mockT2tcCommandService.listPackages).not.toHaveBeenCalled();
+        });
+
+        it("delegates --live to T2tcCommandService", async () => {
+            const options: OptionValues = {
+                json: true,
+                flavors: ["CCM"],
+                live: true,
+            };
+
+            await (module as any).listPackages(testContext, mockCommand, options);
+
+            expect(mockT2tcCommandService.listPackages).toHaveBeenCalledWith(
+                true,
+                ["CCM"],
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                true
             );
         });
     });

@@ -25,8 +25,11 @@ export class T2tcCommandService {
         variableValue: string,
         variableType: string,
         includeBranches: boolean,
-        staging: boolean): Promise<void> {
-        if (staging) {
+        staging: boolean,
+        live: boolean = false): Promise<void> {
+        if (live) {
+            await this.t2tcPackageService.listLivePackages(flavors ?? [], withDependencies, jsonResponse);
+        } else if (staging) {
             await this.stagingPackageService.listStagingPackages(flavors ?? [], includeBranches, jsonResponse);
         } else if (variableValue) {
             await this.listPackagesByVariableValue(jsonResponse, flavors, variableValue, variableType, includeBranches);
