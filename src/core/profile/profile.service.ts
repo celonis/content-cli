@@ -214,11 +214,25 @@ export class ProfileService {
                 break;
             case ProfileType.DEVICE_CODE:
                 const deviceCodeIssuer = await Issuer.discover(profile.team);
+                // Spike (DISCO-68): CONTENT_CLI_CLIENT_ID overrides the OAuth client; it is stored on the profile
+                // so that refreshes use the same client.
+                if (process.env.CONTENT_CLI_CLIENT_ID) {
+                    profile.clientId = process.env.CONTENT_CLI_CLIENT_ID;
+                }
                 const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
-                    client_id: "content-cli",
+                    client_id: profile.clientId ?? "content-cli",
                     token_endpoint_auth_method: "none",
                 });
-                const deviceCodeScopeAttempts: string[][] = [OAUTH_SCOPES, DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE];
+                // Spike (DISCO-68): CONTENT_CLI_EXTRA_SCOPES="a b" adds scopes, CONTENT_CLI_SCOPES="a b" replaces them.
+                // Either one makes a single attempt without fallback, so a rejected scope fails visibly
+                // instead of being silently dropped.
+                const parseScopes = (value?: string) => (value ?? "").split(/[\s,]+/).filter(Boolean);
+                const overrideScopes = parseScopes(process.env.CONTENT_CLI_SCOPES);
+                const extraScopes = parseScopes(process.env.CONTENT_CLI_EXTRA_SCOPES);
+                const scopesOverridden = overrideScopes.length > 0 || extraScopes.length > 0;
+                const deviceCodeScopeAttempts: string[][] = scopesOverridden
+                    ? [[...(overrideScopes.length ? overrideScopes : OAUTH_SCOPES), ...extraScopes]]
+                    : [OAUTH_SCOPES, DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE];
                 let deviceCodeSuccess = false;
                 for (const scopeList of deviceCodeScopeAttempts) {
                     try {
@@ -234,6 +248,9 @@ export class ProfileService {
                         break;
                     } catch (err) {
                         // This scope set failed; try next or fail below
+                        if (scopesOverridden) {
+                            logger.warn(`Device code authorization with scopes "${scopeList.join(" ")}" failed: ${err}`);
+                        }
                     }
                 }
                 if (!deviceCodeSuccess) {
@@ -287,7 +304,7 @@ export class ProfileService {
             const issuer = await Issuer.discover(profile.team);
             if (profile.type === ProfileType.DEVICE_CODE) {
                 const oauthClient = new issuer.Client({
-                    client_id: "content-cli",
+                    client_id: profile.clientId ?? "content-cli",
                     token_endpoint_auth_method: "none",
                 });
                 const tokenSet = await oauthClient.refresh(profile.refreshToken);
