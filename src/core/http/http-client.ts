@@ -1,4 +1,4 @@
-import {AxiosResponse, RawAxiosRequestHeaders} from "axios";
+import {AxiosResponse, RawAxiosRequestHeaders, isAxiosError} from "axios";
 import * as FormData from "form-data";
 import { Context } from "../command/cli-context";
 import {AxiosInitializer} from "./axios-initializer";
@@ -16,6 +16,38 @@ export class HttpClient {
     private axios = AxiosInitializer.initializeAxios();
 
     constructor(private context: Context) {}
+
+    /** Raw authenticated transport for APIs that require binary bodies and custom headers. */
+    public async requestRaw(
+        method: "GET" | "POST" | "PUT",
+        url: string,
+        body?: Buffer | object,
+        headers: RawAxiosRequestHeaders = {},
+    ): Promise<{ status: number; data: unknown }> {
+        const origin = new URL(this.context.profile.team);
+        const target = new URL(url, origin);
+        if (!url.startsWith("/") || target.origin !== origin.origin || target.search || target.hash) {
+            throw new Error("Expected an API path on the profile's tenant origin.");
+        }
+        try {
+            const response = await this.axios.request<unknown>({
+                method,
+                url: target.href,
+                data: body,
+                headers: { ...this.buildHeaders(), ...headers },
+                timeout: 120000,
+                maxRedirects: 0,
+                maxBodyLength: 16 * 1024 * 1024,
+                maxContentLength: 4 * 1024 * 1024,
+                validateStatus: () => true,
+            });
+            return { status: response.status, data: response.data };
+        } catch (error) {
+            // Never expose Axios errors: their config contains the Authorization header.
+            const code = isAxiosError(error) ? error.code : undefined;
+            throw new Error(code === "ECONNABORTED" ? "Fragment request timed out." : "Fragment request failed in transport.");
+        }
+    }
 
     public async get(url: string): Promise<any> {
         const fullUrl = this.resolveUrl(url);

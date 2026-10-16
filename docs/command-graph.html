@@ -145,6 +145,11 @@
 // group: root | area | subarea | subsubarea | command
 // ---------------------------------------------------------------------------
 const NODES = [
+  { id: "area_sdk", label: "sdk", group: "area", path: "sdk",
+    description: "Publish custom app builds to the Fragment Gateway", options: ["-h, --help"] },
+  { id: "sdk_publish", label: "publish", group: "command", path: "sdk publish",
+    description: "Upload a browser bundle and finalize a release; requires index.html",
+    options: ["--app-id <appId>", "--dist <distribution>", "-p, --profile <profile>", "-h, --help"] },
   { id: "root", label: "content-cli", group: "root", path: "content-cli",
     description: "Root CLI. Global options apply to every command.",
     options: ["-V, --version", "-q, --quietmode (default: false)", "-p, --profile [profile]", "--gitProfile [gitProfile]", "--debug (default: false)", "--dev (default: false)", "-h, --help"] },
@@ -471,6 +476,7 @@ const NODES = [
 ];
 
 const EDGES = [
+  ["root","area_sdk"],["area_sdk","sdk_publish"],
   ["root","area_list"],["root","area_analyze"],["root","area_export"],["root","area_import"],
   ["root","area_pull"],["root","area_push"],["root","area_asset_registry"],["root","area_config"],
   ["root","area_t2tc"],

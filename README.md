@@ -84,6 +84,28 @@ content-cli -h
 content-cli pull package -h
 ```
 
+## Publish a custom app build
+
+```sh
+content-cli sdk publish --app-id my-custom-app --dist ./dist --profile dev
+```
+
+The selected profile's tenant URL and Bearer authentication are reused. The app ID is used
+directly as the Fragment Gateway app ID; it does not create or link a Studio asset.
+The directory must contain browser-ready files and a regular `index.html` at its root.
+Build Angular, React or TypeScript sources before running this command.
+
+The command validates the complete directory before creating an upload, sends each file
+separately, then finalizes the release and waits for admission to become ready. It prints the
+upload ID and the server-generated release ID. The API requires a producer `version` label;
+the command generates this automatically.
+
+Builds are limited to 500 files, 16 MiB per file and 64 MiB total. Symlinks, unsupported
+extensions, reserved gateway metadata and invalid paths are rejected. ZIP archives are not used.
+Finalization does not activate or launch the app. A failed upload exits nonzero; after
+session creation, its ID can be used to inspect the upload.
+Rerunning the command creates a new upload; cross-process resume is not implemented.
+
 ## Command Graph
 
 [**Open the interactive Command Graph**](https://raw.githack.com/celonis/content-cli/main/docs/command-graph.html) — a

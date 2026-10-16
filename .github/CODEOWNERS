@@ -3,6 +3,7 @@
 /*                                                @celonis/astro
 /src                                              @celonis/astro
 /src/core                                         @celonis/astro
+/src/commands/fragments/                          @celonis/astro
 /src/commands/configuration-management/           @celonis/astro
 /tests/commands/configuration-management/         @celonis/astro
 /src/commands/t2tc/                               @celonis/astro
