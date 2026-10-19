@@ -23,6 +23,7 @@ export class HttpClient {
         url: string,
         body?: Buffer | object,
         headers: RawAxiosRequestHeaders = {},
+        maxBodyLength = 16 * 1024 * 1024,
     ): Promise<{ status: number; data: unknown }> {
         const origin = new URL(this.context.profile.team);
         const target = new URL(url, origin);
@@ -37,7 +38,7 @@ export class HttpClient {
                 headers: { ...this.buildHeaders(), ...headers },
                 timeout: 120000,
                 maxRedirects: 0,
-                maxBodyLength: 16 * 1024 * 1024,
+                maxBodyLength,
                 maxContentLength: 4 * 1024 * 1024,
                 validateStatus: () => true,
             });

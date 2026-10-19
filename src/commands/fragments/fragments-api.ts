@@ -1,5 +1,6 @@
 import { HttpClient } from "../../core/http/http-client";
 import { check, FragmentFile } from "./fragments-inventory";
+import { MAX_ARCHIVE_BYTES } from "./fragments-archive";
 
 export interface UploadFile extends FragmentFile {
     fileId: string;
@@ -55,13 +56,18 @@ export class FragmentsApi {
         return this.request("POST", `${this.base}/${uploadId}/finalize`, { schemaVersion: 1 });
     }
 
-    private async request(method: "GET" | "POST" | "PUT", path: string, body?: Buffer | object, key?: string): Promise<UploadStatus> {
+    public transferArchive(uploadId: string, bytes: Buffer): Promise<UploadStatus> {
+        return this.request("PUT", `${this.base}/${uploadId}/archive`, bytes, undefined, "application/zip");
+    }
+
+    private async request(method: "GET" | "POST" | "PUT", path: string, body?: Buffer | object, key?: string,
+        contentType = Buffer.isBuffer(body) ? "application/octet-stream" : "application/json"): Promise<UploadStatus> {
         const response = await this.http.requestRaw(method, path, body, {
             "X-Fragment-Publication": "1",
-            "Content-Type": Buffer.isBuffer(body) ? "application/octet-stream" : "application/json",
+            "Content-Type": contentType,
             "Accept": "application/json",
             ...(key ? { "Idempotency-Key": key } : {}),
-        });
+        }, contentType === "application/zip" ? MAX_ARCHIVE_BYTES : undefined);
         const data = response.data;
         if (response.status < 200 || response.status >= 300) {
             const error = record(data) && record(data.error) ? data.error : {};

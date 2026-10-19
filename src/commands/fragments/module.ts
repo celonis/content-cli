@@ -7,7 +7,7 @@ class Module extends IModule {
         configurator.command("sdk")
             .description("Publish custom app builds to the Fragment Gateway")
             .command("publish")
-            .description("Upload a browser bundle and finalize a release; requires index.html")
+            .description("Upload a browser bundle with automatic ZIP selection and finalize a release; requires index.html")
             .requiredOption("--app-id <appId>", "Fragment app ID")
             .requiredOption("--dist <distribution>", "Browser-ready build directory containing index.html")
             .action(async (ctx, command, options) => {
