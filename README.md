@@ -96,8 +96,7 @@ The directory must contain browser-ready files and a regular `index.html` at its
 Build Angular, React or TypeScript sources before running this command.
 
 The command validates the complete directory before creating an upload and automatically
-chooses the transfer mode: up to 10 files are uploaded separately; larger builds are compressed
-locally into a ZIP and sent in one request. No compression option is needed.
+compresses the build locally into a ZIP and sends it in one request.
 It then finalizes the release and waits for admission to become ready. It prints the
 upload ID and the server-generated release ID. The API requires a producer `version` label;
 the command generates this automatically.

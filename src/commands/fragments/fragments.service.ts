@@ -3,8 +3,8 @@ import { setTimeout as delay } from "timers/promises";
 import { Context } from "../../core/command/cli-context";
 import { logger } from "../../core/utils/logger";
 import { FragmentsApi, identifier, UploadStatus } from "./fragments-api";
-import { check, inventoryBuild, readBuildFile, sha256 } from "./fragments-inventory";
-import { buildArchive, useArchive } from "./fragments-archive";
+import { check, inventoryBuild } from "./fragments-inventory";
+import { buildArchive, MAX_ARCHIVE_BYTES } from "./fragments-archive";
 
 export class FragmentsService {
     constructor(private readonly context: Context) {}
@@ -45,25 +45,13 @@ export class FragmentsService {
         };
         let upload = validate(created);
         try {
-            if (useArchive(files.length)) {
-                logger.info("Auto upload: compressing the build into a ZIP archive.");
-                const archive = await buildArchive(root, files);
-                upload = validate(await api.transferArchive(created.uploadId, archive));
-                check(upload.files.every(file => upload.verifiedFileIds.includes(file.fileId)),
-                    "Gateway did not verify every file in the archive.");
-                logger.info(`Uploaded ZIP (${archive.length} bytes).`);
-            } else {
-                // Sequential transfers keep memory bounded to one file and stay below the gateway limit.
-                for (const file of upload.files) {
-                    if (upload.verifiedFileIds.includes(file.fileId)) { continue; }
-                    const bytes = await readBuildFile(root, file.path);
-                    check(bytes.length === file.size && sha256(bytes) === file.sha256,
-                        `Build changed since inventory: ${file.path}`);
-                    upload = validate(await api.transfer(created, file, bytes));
-                    check(upload.verifiedFileIds.includes(file.fileId), "Gateway did not verify the transferred file.");
-                    logger.info(`Uploaded ${file.path}`);
-                }
-            }
+            logger.info("Compressing the build into a ZIP archive.");
+            const { archive, limit } = await buildArchive(root, files);
+            check(archive.length <= limit, "ZIP exceeds the gateway's compressed byte limit.");
+            upload = validate(await api.transferArchive(created.uploadId, archive));
+            check(upload.files.every(file => upload.verifiedFileIds.includes(file.fileId)),
+                "Gateway did not verify every file in the archive.");
+            logger.info(`Uploaded ZIP (${archive.length} bytes).`);
             try {
                 upload = validate(await api.finalize(created.uploadId));
             } catch (error) {
