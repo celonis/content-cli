@@ -384,13 +384,19 @@ The params argument should be passed in a key value format separated by commas w
 
 The supported types and the API each one reads:
 
-| Type | Source | Value to assign |
-|---|---|---|
-| `DATA_MODEL` | `/package-manager/api/compute-pools/pools-with-data-models` | `dataModel.dataModelId` |
-| `CONNECTION` | `/process-automation-v2/api/connections` | the connection object |
-| `DATA_POOL_ID` | `/integration/api/pools` | `id` |
+| Type | Source | `value` | `label` |
+|---|---|---|---|
+| `DATA_MODEL` | `/package-manager/api/compute-pools/pools-with-data-models` | data model id | `<pool name> / <data model name>` |
+| `CONNECTION` | `/process-automation-v2/api/connections` | connection id | `<provider> - <username>` |
+| `DATA_POOL_ID` | `/integration/api/pools` | data pool id | data pool name |
 
-Each command prints the API's JSON as it is. With `--json`, it writes that JSON to a file. Any other type fails with `Variable type <type> not supported.`
+Every type returns the same shape, a list of assignments:
+
+```json
+[{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "label": "Order Management Pool"}]
+```
+
+`value` is what you assign to the variable; `label` is for display only. With `--json` the list is written to a file instead of the console. Any other type fails with `Variable type <type> not supported.`
 
 ### Mapping Variables
 
