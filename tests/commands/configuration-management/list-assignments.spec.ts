@@ -9,6 +9,7 @@ describe("List assignments", () => {
 
     const DATA_MODEL_URL = "https://myTeam.celonis.cloud/package-manager/api/compute-pools/pools-with-data-models";
     const CONNECTIONS_URL = "https://myTeam.celonis.cloud/process-automation-v2/api/connections?param1=value1&param2=value2";
+    const DATA_POOLS_URL = "https://myTeam.celonis.cloud/integration/api/pools";
 
     it("Should list assignments for supported type and non-json response", async () => {
         const mockAssignmentValues = [
@@ -48,6 +49,19 @@ describe("List assignments", () => {
         await new VariableCommandService(testContext).listAssignments("CONNECTION", false, "param1=value1,param2=value2");
 
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(CONNECTIONS_URL, expect.anything())
+    })
+
+    it("Should list data pools as assignments for the DATA_POOL_ID type", async () => {
+        const mockAssignmentValues = [
+            {id: "pool-1", name: "Pool 1"},
+            {id: "pool-2", name: "Pool 2"}
+        ];
+        mockAxiosGet(DATA_POOLS_URL, mockAssignmentValues);
+
+        await new VariableCommandService(testContext).listAssignments("DATA_POOL_ID", true, "");
+
+        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(DATA_POOLS_URL, expect.anything());
+        expect(getJsonFromDownloadedFile()).toEqual(mockAssignmentValues);
     })
 
     it("Should throw error for unsupported variable types", async () => {

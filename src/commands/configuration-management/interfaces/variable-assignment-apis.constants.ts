@@ -8,5 +8,8 @@ export const variableAssignmentApis: { [key: string]: VariableAssignmentApi } = 
     },
     CONNECTION: {
         url: "/process-automation-v2/api/connections"
+    },
+    DATA_POOL_ID: {
+        url: "/integration/api/pools"
     }
 };

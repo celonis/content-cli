@@ -382,6 +382,16 @@ The params argument should be passed in a key value format separated by commas w
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
+The supported types and the API each one reads:
+
+| Type | Source | Value to assign |
+|---|---|---|
+| `DATA_MODEL` | `/package-manager/api/compute-pools/pools-with-data-models` | `dataModel.dataModelId` |
+| `CONNECTION` | `/process-automation-v2/api/connections` | the connection object |
+| `DATA_POOL_ID` | `/integration/api/pools` | `id` |
+
+Each command prints the API's JSON as it is. With `--json`, it writes that JSON to a file. Any other type fails with `Variable type <type> not supported.`
+
 ### Mapping Variables
 
 After getting the variables list (with definitions and assignments in the source team) and the assignments (possible values on the target team), you can change the value of the source team to one of the options provided when listing assignments.
