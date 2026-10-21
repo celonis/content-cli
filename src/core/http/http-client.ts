@@ -123,6 +123,24 @@ export class HttpClient {
         })
     }
 
+    public async postBinary(url: string, body: Buffer, contentType: string): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.axios.post(
+                this.resolveUrl(url),
+                body,
+                {
+                    headers: this.buildHeaders(contentType)
+                }
+            ).then(response => {
+                this.handleResponse(response, resolve, reject);
+            }).catch(err => {
+                this.handleError(err, resolve, reject);
+            })
+        }).catch(e => {
+            throw new FatalError(e);
+        })
+    }
+
     public async put(url: string, body: object): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.axios.put(

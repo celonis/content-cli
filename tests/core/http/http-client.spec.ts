@@ -1,7 +1,7 @@
 import { Context } from "../../../src/core/command/cli-context";
 import { HttpClient } from "../../../src/core/http/http-client";
 import { Profile } from "../../../src/core/profile/profile.interface";
-import { mockAxiosGet, mockedAxiosInstance } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosPost, mockAxiosPostError, mockedAxiosInstance } from "../../utls/http-requests-mock";
 
 const TEAM_URL = "https://myTeam.celonis.cloud";
 const RESOURCE_PATH = "/api/test/resource";
@@ -62,5 +62,27 @@ describe("HttpClient authorization headers", () => {
         await httpClientFor({ apiToken: undefined }).get(RESOURCE_PATH);
 
         expect(headersOfSentRequest()["Content-Type"]).toBe("application/json");
+    });
+});
+
+describe("HttpClient binary post", () => {
+    const body = Buffer.from("binary-content");
+
+    it("should send the body unchanged with the given content type", async () => {
+        mockAxiosPost(TEAM_URL + RESOURCE_PATH, { result: "ok" });
+
+        const response = await httpClientFor({ apiToken: "test-token" }).postBinary(RESOURCE_PATH, body, "application/zip");
+
+        const [, sentBody, config] = (mockedAxiosInstance.post as jest.Mock).mock.calls[0];
+        expect(response).toEqual({ result: "ok" });
+        expect(sentBody).toBe(body);
+        expect(config.headers["Content-Type"]).toBe("application/zip");
+    });
+
+    it("should reject with the response body when the backend responds with an error", async () => {
+        mockAxiosPostError(TEAM_URL + RESOURCE_PATH, 400, "Invalid bundle");
+
+        await expect(httpClientFor({ apiToken: "test-token" }).postBinary(RESOURCE_PATH, body, "application/zip"))
+            .rejects.toThrow("\"Invalid bundle\"");
     });
 });
