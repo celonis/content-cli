@@ -382,21 +382,11 @@ The params argument should be passed in a key value format separated by commas w
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
-The supported types and the API each one reads:
-
-| Type | Source | `value` | `name` |
-|---|---|---|---|
-| `DATA_MODEL` | `/package-manager/api/compute-pools/pools-with-data-models` | data model id | `<pool name> / <data model name>` |
-| `CONNECTION` | `/process-automation-v2/api/connections` | connection id | `<provider> - <username>` |
-| `DATA_POOL_ID` | `/integration/api/pools` | data pool id | data pool name |
-
-Every type returns the same shape, a list of assignments:
+Supported types are `DATA_MODEL`, `CONNECTION` and `DATA_POOL_ID`. Each returns a list of assignments:
 
 ```json
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
 ```
-
-`value` is what you assign to the variable; `name` is for display only. With `--json` the list is written to a file instead of the console. Any other type fails with `Variable type <type> not supported.`
 
 ### Mapping Variables
 
