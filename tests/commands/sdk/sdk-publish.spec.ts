@@ -40,7 +40,7 @@ describe("SDK publish", () => {
 
         expect(publishedBundle().readAsText("index.html")).toBe("<html></html>");
         expect(publishedBundle().readAsText("assets/main.js")).toBe("console.log()");
-        expect(loggingTestTransport.logMessages[0].message).toContain("App published successfully. Version: release-1");
+        expect(loggingTestTransport.logMessages[0].message).toContain("App published successfully as version 'release-1'");
     });
 
     it("Should upload the bundle as zip archive", async () => {
