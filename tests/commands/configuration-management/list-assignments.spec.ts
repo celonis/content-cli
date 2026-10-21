@@ -18,7 +18,7 @@ describe("List assignments", () => {
         businessGraphDataModel: false,
     });
 
-    it("Should list data model assignments as value and label", async () => {
+    it("Should list data model assignments as value and name", async () => {
         mockAxiosGet(DATA_MODEL_URL, [
             dataModelCandidate("Pool 1", "dm-1", "Model 1"),
             dataModelCandidate("Pool 2", "dm-2", "Model 2"),
@@ -27,8 +27,8 @@ describe("List assignments", () => {
         await new VariableCommandService(testContext).listAssignments("DATA_MODEL", false, "");
 
         expect(loggingTestTransport.logMessages.length).toBe(2);
-        expect(loggingTestTransport.logMessages[0].message).toContain('{"value":"dm-1","label":"Pool 1 / Model 1"}');
-        expect(loggingTestTransport.logMessages[1].message).toContain('{"value":"dm-2","label":"Pool 2 / Model 2"}');
+        expect(loggingTestTransport.logMessages[0].message).toContain('{"value":"dm-1","name":"Pool 1 / Model 1"}');
+        expect(loggingTestTransport.logMessages[1].message).toContain('{"value":"dm-2","name":"Pool 2 / Model 2"}');
 
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(DATA_MODEL_URL, expect.anything())
     })
@@ -45,8 +45,8 @@ describe("List assignments", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain(FileService.fileDownloadedMessage);
 
         expect(getJsonFromDownloadedFile()).toEqual([
-            {value: "dm-1", label: "Pool 1 / Model 1"},
-            {value: "dm-2", label: "Pool 2 / Model 2"},
+            {value: "dm-1", name: "Pool 1 / Model 1"},
+            {value: "dm-2", name: "Pool 2 / Model 2"},
         ]);
     })
 
@@ -58,7 +58,7 @@ describe("List assignments", () => {
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(CONNECTIONS_URL, expect.anything())
     })
 
-    it("Should label connections by their provider and username", async () => {
+    it("Should name connections by their provider and username", async () => {
         mockAxiosGet(CONNECTIONS_URL, [
             {id: "connection-1", username: "jane@celonis.com", authProvider: {name: "celonis", label: "Celonis"}},
             {id: "connection-2"},
@@ -67,8 +67,8 @@ describe("List assignments", () => {
         await new VariableCommandService(testContext).listAssignments("CONNECTION", true, "param1=value1,param2=value2");
 
         expect(getJsonFromDownloadedFile()).toEqual([
-            {value: "connection-1", label: "Celonis - jane@celonis.com"},
-            {value: "connection-2", label: "connection-2"},
+            {value: "connection-1", name: "Celonis - jane@celonis.com"},
+            {value: "connection-2", name: "connection-2"},
         ]);
     })
 
@@ -82,8 +82,8 @@ describe("List assignments", () => {
 
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(DATA_POOLS_URL, expect.anything());
         expect(getJsonFromDownloadedFile()).toEqual([
-            {value: "pool-1", label: "Pool 1"},
-            {value: "pool-2", label: "Pool 2"},
+            {value: "pool-1", name: "Pool 1"},
+            {value: "pool-2", name: "Pool 2"},
         ]);
     })
 
@@ -92,7 +92,7 @@ describe("List assignments", () => {
 
         await new VariableCommandService(testContext).listAssignments("DATA_POOL_ID", true, "");
 
-        expect(getJsonFromDownloadedFile()).toEqual([{value: "pool-1", label: "Pool 1"}]);
+        expect(getJsonFromDownloadedFile()).toEqual([{value: "pool-1", name: "Pool 1"}]);
     })
 
     it("Should throw error for unsupported variable types", async () => {

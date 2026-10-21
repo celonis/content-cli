@@ -384,7 +384,7 @@ The params argument should be passed in a key value format separated by commas w
 
 The supported types and the API each one reads:
 
-| Type | Source | `value` | `label` |
+| Type | Source | `value` | `name` |
 |---|---|---|---|
 | `DATA_MODEL` | `/package-manager/api/compute-pools/pools-with-data-models` | data model id | `<pool name> / <data model name>` |
 | `CONNECTION` | `/process-automation-v2/api/connections` | connection id | `<provider> - <username>` |
@@ -393,10 +393,10 @@ The supported types and the API each one reads:
 Every type returns the same shape, a list of assignments:
 
 ```json
-[{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "label": "Order Management Pool"}]
+[{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
 ```
 
-`value` is what you assign to the variable; `label` is for display only. With `--json` the list is written to a file instead of the console. Any other type fails with `Variable type <type> not supported.`
+`value` is what you assign to the variable; `name` is for display only. With `--json` the list is written to a file instead of the console. Any other type fails with `Variable type <type> not supported.`
 
 ### Mapping Variables
 
