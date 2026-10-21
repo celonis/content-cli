@@ -382,6 +382,12 @@ The params argument should be passed in a key value format separated by commas w
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
+Supported types are `DATA_MODEL`, `CONNECTION` and `DATA_POOL_ID`. Each returns a list of assignments:
+
+```json
+[{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
+```
+
 ### Mapping Variables
 
 After getting the variables list (with definitions and assignments in the source team) and the assignments (possible values on the target team), you can change the value of the source team to one of the options provided when listing assignments.
