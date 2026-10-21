@@ -69,11 +69,9 @@ export interface VariableDefinition {
 
 export enum PackageManagerVariableType {
     DATA_MODEL="DATA_MODEL",
-    DATA_POOL_ID="DATA_POOL_ID",
     CONNECTION="CONNECTION",
     ASSIGNMENT_RULE="ASSIGNMENT_RULE",
-    PLAIN_TEXT= "PLAIN_TEXT",
-    PIG_INSTANCE="PIG_INSTANCE"
+    PLAIN_TEXT= "PLAIN_TEXT"
 }
 
 export interface PackageHistoryTransport {
