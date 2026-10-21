@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { SdkApi } from "./sdk-api";
 import { Context } from "../../core/command/cli-context";
 import { logger } from "../../core/utils/logger";
@@ -7,7 +7,7 @@ import { logger } from "../../core/utils/logger";
 export class SdkService {
     public static readonly SDK_DIRECTORY = ".celonis-sdk";
 
-    private sdkApi: SdkApi;
+    private readonly sdkApi: SdkApi;
 
     constructor(context: Context) {
         this.sdkApi = new SdkApi(context);

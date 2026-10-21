@@ -3,7 +3,7 @@ import { Context } from "../../core/command/cli-context";
 import { FatalError } from "../../core/utils/logger";
 
 export class SdkApi {
-    private httpClient: () => HttpClient;
+    private readonly httpClient: () => HttpClient;
 
     constructor(context: Context) {
         this.httpClient = () => context.httpClient;

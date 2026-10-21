@@ -215,7 +215,7 @@ export class ProfileService {
                     }
                 }
                 break;
-            case ProfileType.DEVICE_CODE:
+            case ProfileType.DEVICE_CODE: {
                 const deviceCodeIssuer = await Issuer.discover(profile.team);
                 const deviceCodeOAuthClient = new deviceCodeIssuer.Client({
                     client_id: "content-cli",
@@ -249,6 +249,7 @@ export class ProfileService {
                     );
                 }
                 break;
+            }
             case ProfileType.CLIENT_CREDENTIALS:
                 const clientCredentialsIssuer = await Issuer.discover(profile.team);
                 const basicResult = await this.tryClientCredentialsGrant(
