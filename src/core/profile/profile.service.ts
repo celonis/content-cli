@@ -19,6 +19,9 @@ const expiryBuffer = 5000;
 const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
 /** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
 const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
+/** First attempt for both auth flows: all scopes plus the pro-code-app-manager scopes, which are not yet available on every environment. */
+const OAUTH_SCOPES_WITH_PRO_CODE = [...OAUTH_SCOPES, "pro-code-app-manager.sdk:read", "pro-code-app-manager.publish"];
+
 export interface Config {
     defaultProfile: string;
 }
@@ -218,7 +221,11 @@ export class ProfileService {
                     client_id: "content-cli",
                     token_endpoint_auth_method: "none",
                 });
-                const deviceCodeScopeAttempts: string[][] = [OAUTH_SCOPES, DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE];
+                const deviceCodeScopeAttempts: string[][] = [
+                    OAUTH_SCOPES_WITH_PRO_CODE,
+                    OAUTH_SCOPES,
+                    DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE,
+                ];
                 let deviceCodeSuccess = false;
                 for (const scopeList of deviceCodeScopeAttempts) {
                     try {
@@ -427,7 +434,7 @@ export class ProfileService {
             token_endpoint_auth_method: tokenEndpointAuthMethod,
         });
 
-        const scopeAttempts = this.getScopeCombinationsOrderedBySize(OAUTH_SCOPES);
+        const scopeAttempts = [OAUTH_SCOPES_WITH_PRO_CODE, ...this.getScopeCombinationsOrderedBySize(OAUTH_SCOPES)];
 
         for (const scopeList of scopeAttempts) {
             try {

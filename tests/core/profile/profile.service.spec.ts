@@ -755,7 +755,9 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
             expires_at: Math.floor(Date.now() / 1000) + 3600,
             scope: "studio package-manager",
         };
-        const mockGrant = jest.fn().mockResolvedValue(tokenSet);
+        const mockGrant = jest.fn()
+            .mockRejectedValueOnce(new Error("invalid_scope"))
+            .mockResolvedValue(tokenSet);
         const mockIssuer = {
             Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
         };
@@ -788,6 +790,7 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
         };
         const mockGrant = jest.fn()
             .mockRejectedValueOnce(new Error("invalid_scope"))
+            .mockRejectedValueOnce(new Error("invalid_scope"))
             .mockResolvedValueOnce(tokenSet);
         const mockIssuer = {
             Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
@@ -806,7 +809,7 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
         expect(result).not.toBeNull();
         expect(result!.tokenSet.access_token).toBe("token-2");
         expect(result!.scopes).toEqual(["studio"]);
-        expect(mockGrant).toHaveBeenCalledTimes(2);
+        expect(mockGrant).toHaveBeenCalledTimes(3);
     });
 
     it("should return null when all scope combinations fail", async () => {
@@ -826,7 +829,7 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
         );
 
         expect(result).toBeNull();
-        expect(mockGrant).toHaveBeenCalledTimes(2);
+        expect(mockGrant).toHaveBeenCalledTimes(3);
     });
 
     it("should use fallback scopes when token response has no scope field", async () => {
@@ -834,7 +837,9 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
             access_token: "token-no-scope",
             expires_at: Math.floor(Date.now() / 1000) + 3600,
         };
-        const mockGrant = jest.fn().mockResolvedValue(tokenSet);
+        const mockGrant = jest.fn()
+            .mockRejectedValueOnce(new Error("invalid_scope"))
+            .mockResolvedValue(tokenSet);
         const mockIssuer = {
             Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
         };
@@ -848,6 +853,30 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
 
         expect(result).not.toBeNull();
         expect(result!.scopes).toEqual(["studio"]);
+    });
+
+    it("should request pro-code-app-manager scopes before the scope combinations", async () => {
+        const tokenSet = {
+            access_token: "token-pro-code",
+            expires_at: Math.floor(Date.now() / 1000) + 3600,
+        };
+        const mockGrant = jest.fn().mockResolvedValue(tokenSet);
+        const mockIssuer = {
+            Client: jest.fn().mockImplementation(() => ({ grant: mockGrant })),
+        };
+
+        const result = await (profileService as any).tryClientCredentialsGrant(
+            mockIssuer,
+            mockProfile,
+            "client_secret_basic"
+        );
+
+        expect(result).not.toBeNull();
+        expect(result!.scopes).toEqual([
+            "studio", "package-manager", "integration.data-pools", "action-engine.projects",
+            "pro-code-app-manager.sdk:read", "pro-code-app-manager.publish",
+        ]);
+        expect(mockGrant).toHaveBeenCalledTimes(1);
     });
 });
 
@@ -866,7 +895,7 @@ describe("ProfileService - authorizeProfile (device code)", () => {
         });
     });
 
-    it("should throw FatalError when both scope attempts fail", async () => {
+    it("should throw FatalError when all scope attempts fail", async () => {
         mockClientInstance.deviceAuthorization.mockRejectedValue(new Error("invalid_scope"));
 
         const profile: Profile = {
@@ -904,6 +933,27 @@ describe("ProfileService - authorizeProfile (device code)", () => {
         expect(profile.apiToken).toBe("access-123");
         expect(profile.refreshToken).toBe("refresh-456");
         expect(profile.expiresAt).toBe(tokenSet.expires_at);
+    });
+
+    it("should request pro-code-app-manager scopes first and fall back without them", async () => {
+        mockClientInstance.deviceAuthorization.mockRejectedValue(new Error("invalid_scope"));
+
+        const profile: Profile = {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "",
+            authenticationType: AuthenticationType.BEARER,
+            type: ProfileType.DEVICE_CODE,
+        };
+
+        await expect(profileService.authorizeProfile(profile)).rejects.toThrow("Device code authorization failed");
+
+        expect(mockClientInstance.deviceAuthorization.mock.calls.map(([params]) => params.scope)).toEqual([
+            "studio package-manager integration.data-pools action-engine.projects " +
+                "pro-code-app-manager.sdk:read pro-code-app-manager.publish",
+            "studio package-manager integration.data-pools action-engine.projects",
+            "studio package-manager integration.data-pools",
+        ]);
     });
 });
 

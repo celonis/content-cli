@@ -21,5 +21,7 @@
 /src/commands/data-pipeline/                      @Dusan-r @IvanGandacov @EktaCelonis @gorasoCelonis
 /src/commands/studio/                             @celonis/astro
 /tests/commands/studio/                           @celonis/astro
+/src/commands/sdk/                                @celonis/discovery
+/tests/commands/sdk/                              @celonis/discovery
 /package.json                                     @celonis/astro @aocelo @siavash-celonis
 /yarn.lock                                        @celonis/astro @aocelo @siavash-celonis
