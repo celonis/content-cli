@@ -14,7 +14,16 @@ describe("SDK Module", () => {
             expect(mockConfigurator.command).toHaveBeenCalledWith("sdk");
             expect(mockConfigurator.command).toHaveBeenCalledWith("download");
             expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--appId <appId>", expect.any(String));
-            expect(mockConfigurator.beta).toHaveBeenCalledTimes(2);
+            expect(mockConfigurator.beta).toHaveBeenCalledTimes(3);
+        });
+
+        it("registers the sdk publish command", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            new Module().register(testContext, mockConfigurator);
+
+            expect(mockConfigurator.command).toHaveBeenCalledWith("publish");
+            expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--dist <dist>", expect.any(String));
         });
 
         it("downloads the SDK of the given app when the download command runs", async () => {
@@ -26,6 +35,17 @@ describe("SDK Module", () => {
             await downloadAction(testContext, new Command(), { appId: "app-id" });
 
             expect(downloadSdk).toHaveBeenCalledWith("app-id");
+        });
+
+        it("publishes the given dist directory when the publish command runs", async () => {
+            const publishApp = jest.spyOn(SdkService.prototype, "publishApp").mockResolvedValue();
+            const mockConfigurator = createMockConfigurator();
+            new Module().register(testContext, mockConfigurator);
+
+            const publishAction = mockConfigurator.action.mock.calls[1][0];
+            await publishAction(testContext, new Command(), { appId: "app-id", dist: "dist" });
+
+            expect(publishApp).toHaveBeenCalledWith("app-id", "dist");
         });
     });
 });

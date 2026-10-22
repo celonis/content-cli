@@ -1,8 +1,9 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import AdmZip = require("adm-zip");
 import { SdkApi } from "./sdk-api";
 import { Context } from "../../core/command/cli-context";
-import { logger } from "../../core/utils/logger";
+import { FatalError, logger } from "../../core/utils/logger";
 
 export class SdkService {
     public static readonly SDK_DIRECTORY = ".celonis-sdk";
@@ -24,5 +25,27 @@ export class SdkService {
         fs.writeFileSync(path.resolve(process.cwd(), sdkFile), sdk);
 
         logger.info(`SDK downloaded successfully: ${sdkFile}`);
+    }
+
+    public async publishApp(appId: string, dist: string): Promise<void> {
+        const distDirectory = path.resolve(process.cwd(), dist);
+        this.requireDirectory(distDirectory);
+
+        const bundle = this.compressDirectory(distDirectory);
+        const { version } = await this.sdkApi.publishApp(appId, bundle);
+
+        logger.info(`App published successfully as version '${version}'`);
+    }
+
+    private requireDirectory(directory: string): void {
+        if (!fs.existsSync(directory) || !fs.statSync(directory).isDirectory()) {
+            throw new FatalError(`The dist directory ${directory} does not exist or is no directory`);
+        }
+    }
+
+    private compressDirectory(directory: string): Buffer {
+        const zip = new AdmZip();
+        zip.addLocalFolder(directory);
+        return zip.toBuffer();
     }
 }

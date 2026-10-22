@@ -438,6 +438,9 @@ const NODES = [
   { id: "sdk_download", label: "download (beta)", group: "command", path: "sdk download",
     description: "Download the latest Celonis SDK generated for a Codespace asset.",
     options: ["-p, --profile <profile>", "--appId <appId>", "-h, --help"] },
+  { id: "sdk_publish", label: "publish (beta)", group: "command", path: "sdk publish",
+    description: "Publish a build of a custom app as a new version of its Codespace asset.",
+    options: ["-p, --profile <profile>", "--appId <appId>", "--dist <dist>", "-h, --help"] },
 
   // git profile
   { id: "git_profile_area", label: "profile", group: "subarea", path: "git profile",
@@ -540,7 +543,7 @@ const EDGES = [
   ["deployment_list_area","deployment_list_history"],["deployment_list_area","deployment_list_active"],
   ["deployment_list_area","deployment_list_deployables"],["deployment_list_area","deployment_list_targets"],
 
-  ["area_sdk","sdk_download"],
+  ["area_sdk","sdk_download"],["area_sdk","sdk_publish"],
 
   ["area_git","git_profile_area"],["git_profile_area","git_profile_list"],
   ["git_profile_area","git_profile_create"],["git_profile_area","git_profile_default"],

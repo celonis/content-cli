@@ -17,3 +17,13 @@ npm install ./.celonis-sdk/<appId>.tgz
 ```
 
 Running the command again replaces the previously downloaded SDK with the latest version.
+
+## Publish App
+
+Publish a build of a custom app as a new version of its Codespace asset.
+
+```
+content-cli sdk publish --appId <appId> --dist <dist>
+```
+
+The command compresses the given build directory and uploads it for the app. On success, the version assigned to the build is printed, which can then be selected on the Codespace asset.
