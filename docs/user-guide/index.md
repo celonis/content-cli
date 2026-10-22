@@ -12,3 +12,4 @@ Content CLI organizes its commands into groups by area. Each group covers a spec
 | [Data Pool Commands](./data-pool-commands.md) | Export and import Data Pools with their dependencies                          |
 | [Action Flow Commands](./action-flow-commands.md) | Analyze and export/import Action Flows and their dependencies                 |
 | [Bookmark Commands](./bookmark-commands.md) | Export and import bookmarks for packages                                      |
+| [SDK Commands](./sdk-commands.md) | Implement custom apps for Codespace assets using the Celonis SDK              |
