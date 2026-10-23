@@ -33,6 +33,7 @@ class Module extends IModule {
             .option("--unzip", "Unzip the exported file", "")
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported file")
+            .option("--staging", "Export the staging state of the given --packageKeys (including branch packages) instead of the latest deployed version", false)
             .action(this.batchExportPackages);
 
         t2tcPackageCommand.command("import")
@@ -81,8 +82,11 @@ class Module extends IModule {
         if (options.gitProfile && !options.gitBranch) {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
+        if (options.staging && options.keysByVersion) {
+            throw new Error("Staging parameter is only supported with --packageKeys, not --keysByVersion.");
+        }
         options.withDependencies = options.withDependencies ?? false;
-        await new T2tcCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch, options.unzip);
+        await new T2tcCommandService(context).batchExportPackages(options.packageKeys, options.keysByVersion, options.withDependencies, options.gitBranch, options.unzip, options.staging);
     }
 
     private async batchImportPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

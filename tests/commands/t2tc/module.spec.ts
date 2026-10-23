@@ -154,6 +154,39 @@ describe("T2TC Module", () => {
                 undefined,
                 false,
                 undefined,
+                true,
+                undefined
+            );
+        });
+
+        it("throws when --staging is combined with --keysByVersion", async () => {
+            const options: OptionValues = {
+                keysByVersion: ["package1.1.0.0"],
+                staging: true,
+            };
+
+            await expect(
+                (module as any).batchExportPackages(testContext, mockCommand, options)
+            ).rejects.toThrow("Staging parameter is only supported with --packageKeys, not --keysByVersion.");
+
+            expect(mockT2tcCommandService.batchExportPackages).not.toHaveBeenCalled();
+        });
+
+        it("delegates to T2tcCommandService with staging enabled", async () => {
+            const options: OptionValues = {
+                packageKeys: ["project@my-branch"],
+                withDependencies: true,
+                staging: true,
+            };
+
+            await (module as any).batchExportPackages(testContext, mockCommand, options);
+
+            expect(mockT2tcCommandService.batchExportPackages).toHaveBeenCalledWith(
+                ["project@my-branch"],
+                undefined,
+                true,
+                undefined,
+                undefined,
                 true
             );
         });
