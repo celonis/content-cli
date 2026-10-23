@@ -16,6 +16,7 @@ import { parse, stringify } from "../../core/utils/json";
 import { PackageApi } from "../studio/api/package-api";
 import { T2tcPackageApi } from "./api/t2tc-package-api";
 import { VariableApi } from "../configuration-management/api/variable-api";
+import { StagingPackageVariablesApi } from "../configuration-management/api/staging-package-variables-api";
 import { fixConnectionVariables } from "../configuration-management/connection-variable.helper";
 import { StudioService } from "./studio.service";
 import { GitService } from "../../core/git-profile/git/git.service";
@@ -26,6 +27,7 @@ export class T2tcPackageService {
 
     private t2tcPackageApi: T2tcPackageApi;
     private variableApi: VariableApi;
+    private stagingPackageVariablesApi: StagingPackageVariablesApi;
 
     private studioPackageApi: PackageApi;
     private studioService: StudioService;
@@ -35,6 +37,7 @@ export class T2tcPackageService {
     constructor(context: Context) {
         this.t2tcPackageApi = new T2tcPackageApi(context);
         this.variableApi = new VariableApi(context);
+        this.stagingPackageVariablesApi = new StagingPackageVariablesApi(context);
 
         this.studioPackageApi = new PackageApi(context);
         this.studioService = new StudioService(context);
@@ -72,9 +75,11 @@ export class T2tcPackageService {
         });
     }
 
-    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
+    public async batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean, staging: boolean = false): Promise<void> {
         let exportedPackagesData: Buffer;
-        if (packageKeys) {
+        if (staging) {
+            exportedPackagesData = await this.t2tcPackageApi.exportStagingPackages(packageKeys, withDependencies);
+        } else if (packageKeys) {
             exportedPackagesData = await this.t2tcPackageApi.exportPackages(packageKeys, withDependencies);
         } else {
             exportedPackagesData = await this.t2tcPackageApi.exportPackagesByVersions(packageKeysByVersion, withDependencies);
@@ -184,10 +189,15 @@ export class T2tcPackageService {
         return versionsByPackageKey;
     }
 
-    private getVersionedVariablesForPackagesWithKeys(versionsByPackageKey: Map<string, string[]>): Promise<VariableManifestTransport[]> {
+    private async getVersionedVariablesForPackagesWithKeys(versionsByPackageKey: Map<string, string[]>): Promise<VariableManifestTransport[]> {
         const variableExportRequest: PackageKeyAndVersionPair[] = [];
+        const stagingPackageKeys: string[] = [];
         versionsByPackageKey?.forEach((versions, key) => {
             versions?.forEach(version => {
+                if (version === BatchExportImportConstants.STAGING_VERSION) {
+                    stagingPackageKeys.push(key);
+                    return;
+                }
                 variableExportRequest.push({
                     packageKey: key,
                     version: version,
@@ -195,7 +205,21 @@ export class T2tcPackageService {
             })
         });
 
-        return this.variableApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest)
+        const versionedVariables = await this.variableApi.findVariablesWithValuesByPackageKeysAndVersion(variableExportRequest);
+        const stagingVariables = stagingPackageKeys.length
+            ? await this.getStagingVariablesForPackagesWithKeys(stagingPackageKeys)
+            : [];
+
+        return [...versionedVariables, ...stagingVariables];
+    }
+
+    private async getStagingVariablesForPackagesWithKeys(packageKeys: string[]): Promise<VariableManifestTransport[]> {
+        const stagingVariables = await this.stagingPackageVariablesApi.findAllByPackageKeys(packageKeys);
+        return stagingVariables.map(stagingVariable => ({
+            packageKey: stagingVariable.packageKey,
+            version: BatchExportImportConstants.STAGING_VERSION,
+            variables: stagingVariable.variables ?? [],
+        }));
     }
 
     private buildBodyForImport(configs: AdmZip, sourcePath: string, variablesManifests: VariableManifestTransport[]): FormData {
