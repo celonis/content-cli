@@ -220,6 +220,12 @@ class Module extends IModule {
             .option("--json", "Return the response as a JSON file")
             .action(this.getPackageVersion)
 
+        configVersionCommand.command("list")
+            .description("List all created versions of a package or branch")
+            .requiredOption("--packageKey <packageKey>", "Identifier of the package. Use <projectKey>@<branchKey> for a branch.")
+            .option("--json", "Return the response as a JSON file")
+            .action(this.listPackageVersions);
+
         configVersionCommand.command("create")
             .description("Create a new version for a package")
             .requiredOption("--packageKey <packageKey>", "Identifier of the package")
@@ -449,6 +455,10 @@ class Module extends IModule {
 
     private async getPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new PackageVersionCommandService(context).getPackageVersion(options.packageKey, options.packageVersion, options.json);
+    }
+
+    private async listPackageVersions(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new PackageVersionCommandService(context).listPackageVersions(options.packageKey, options.json);
     }
 
     private async createPackageVersion(context: Context, command: Command, options: OptionValues): Promise<void> {

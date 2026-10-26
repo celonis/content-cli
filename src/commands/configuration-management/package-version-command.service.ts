@@ -13,6 +13,10 @@ export class PackageVersionCommandService {
         await this.packageVersionService.findPackageVersion(packageKey, version, jsonResponse);
     }
 
+    public async listPackageVersions(packageKey: string, jsonResponse: boolean): Promise<void> {
+        await this.packageVersionService.listPackageVersions(packageKey, jsonResponse);
+    }
+
     public async createPackageVersion(
         packageKey: string,
         version: string | undefined,
