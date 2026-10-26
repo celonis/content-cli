@@ -29,7 +29,7 @@ describe("Package Version list", () => {
 
         await new PackageVersionCommandService(testContext).listPackageVersions(packageKey, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(2);
+        expect(loggingTestTransport.logMessages).toHaveLength(2);
         expect(JSON.parse(loggingTestTransport.logMessages[0].message)).toEqual(packageVersions[0]);
         expect(JSON.parse(loggingTestTransport.logMessages[1].message)).toEqual(packageVersions[1]);
     });
@@ -50,7 +50,7 @@ describe("Package Version list", () => {
 
         await new PackageVersionCommandService(testContext).listPackageVersions(packageKey, false);
 
-        expect(loggingTestTransport.logMessages.length).toBe(1);
+        expect(loggingTestTransport.logMessages).toHaveLength(1);
         expect(loggingTestTransport.logMessages[0].message).toContain(`Package ${packageKey} has no versions.`);
     });
 });
