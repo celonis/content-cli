@@ -20,6 +20,7 @@ export interface MockConfigurator extends Configurator {
     betaOption: jest.Mock;
     deprecationNotice: jest.Mock;
     beta: jest.Mock;
+    skipProfileLoading: jest.Mock;
     action: jest.Mock;
 }
 
@@ -35,6 +36,7 @@ export function createMockConfigurator(): MockConfigurator {
     chain.betaOption = jest.fn(() => chain);
     chain.deprecationNotice = jest.fn(() => chain);
     chain.beta = jest.fn(() => chain);
+    chain.skipProfileLoading = jest.fn(() => chain);
     chain.action = jest.fn();
 
     return chain as MockConfigurator;

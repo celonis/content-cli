@@ -1,6 +1,7 @@
 import { Configurator, IModule } from "../../core/command/module-handler";
 import { Context } from "../../core/command/cli-context";
 import { Command, OptionValues } from "commander";
+import { SdkPreviewService } from "./sdk-preview.service";
 import { SdkService } from "./sdk.service";
 
 class Module extends IModule {
@@ -24,6 +25,15 @@ class Module extends IModule {
             .requiredOption("--appId <appId>", "Identifier of the app to publish the build for")
             .requiredOption("--dist <dist>", "Directory containing the build of the app")
             .action(this.publishApp);
+
+        sdkCommand
+            .command("preview")
+            .beta()
+            .skipProfileLoading()
+            .description("Serve a local dev server to the Codespace's Local preview with the published app's sandbox rules")
+            .option("--target <target>", "URL of your app's dev server", "http://localhost:4200")
+            .option("--port <port>", "HTTPS port the Codespace preview loads", "4300")
+            .action(this.previewApp);
     }
 
     private async downloadSdk(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -32,6 +42,20 @@ class Module extends IModule {
 
     private async publishApp(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new SdkService(context).publishApp(options.appId, options.dist);
+    }
+
+    private async previewApp(context: Context, command: Command, options: OptionValues): Promise<void> {
+        const proxy = await new SdkPreviewService().preview(options.target, options.port);
+        await new Promise<void>(resolve => {
+            const stop = (): void => {
+                process.removeListener("SIGINT", stop);
+                process.removeListener("SIGTERM", stop);
+                resolve();
+            };
+            process.once("SIGINT", stop);
+            process.once("SIGTERM", stop);
+        });
+        await proxy.close();
     }
 }
 
