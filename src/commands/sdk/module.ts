@@ -33,6 +33,7 @@ class Module extends IModule {
             .description("Serve a local dev server to the Codespace's Local preview with the published app's sandbox rules")
             .option("--target <target>", "URL of your app's dev server", "http://localhost:4200")
             .option("--port <port>", "HTTPS port the Codespace preview loads", "4300")
+            .option("--allow-inline-scripts", "Allow inline scripts in your dev server's HTML, like React's Fast Refresh preamble")
             .action(this.previewApp);
     }
 
@@ -45,7 +46,7 @@ class Module extends IModule {
     }
 
     private async previewApp(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const proxy = await new SdkPreviewService().preview(options.target, options.port);
+        const proxy = await new SdkPreviewService().preview(options.target, options.port, options.allowInlineScripts === true);
         await new Promise<void>(resolve => {
             const stop = (): void => {
                 process.removeListener("SIGINT", stop);

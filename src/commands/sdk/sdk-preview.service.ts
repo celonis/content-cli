@@ -10,7 +10,7 @@ export class SdkPreviewService {
 
     constructor(private readonly certificateDirectory: string = SdkPreviewService.CERTIFICATE_DIRECTORY) {}
 
-    public async preview(target: string, port: string | number): Promise<PreviewProxy> {
+    public async preview(target: string, port: string | number, allowInlineScripts: boolean = false): Promise<PreviewProxy> {
         const targetUrl = this.parseTarget(target);
         const portNumber = this.parsePort(port);
 
@@ -20,6 +20,7 @@ export class SdkPreviewService {
             port: portNumber,
             certificate,
             headers: LOCAL_PREVIEW_HEADERS,
+            allowInlineScripts,
         });
 
         logger.info(`Local preview running on https://localhost:${portNumber}, forwarding to ${target}.`);

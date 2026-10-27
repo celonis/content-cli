@@ -58,6 +58,7 @@ describe("SDK Module", () => {
             expect(mockConfigurator.command).toHaveBeenCalledWith("preview");
             expect(mockConfigurator.option).toHaveBeenCalledWith("--target <target>", expect.any(String), "http://localhost:4200");
             expect(mockConfigurator.option).toHaveBeenCalledWith("--port <port>", expect.any(String), "4300");
+            expect(mockConfigurator.option).toHaveBeenCalledWith("--allow-inline-scripts", expect.any(String));
             expect(mockConfigurator.skipProfileLoading).toHaveBeenCalledTimes(1);
         });
 
@@ -71,13 +72,13 @@ describe("SDK Module", () => {
             const sigtermListeners = process.listenerCount("SIGTERM");
 
             const previewAction = mockConfigurator.action.mock.calls[2][0];
-            const running = previewAction(testContext, new Command(), { target: "http://localhost:5173", port: "5173" });
+            const running = previewAction(testContext, new Command(), { target: "http://localhost:5173", port: "5173", allowInlineScripts: true });
             await new Promise(resolve => setImmediate(resolve));
             expect(close).not.toHaveBeenCalled();
             process.emit("SIGINT");
             await running;
 
-            expect(preview).toHaveBeenCalledWith("http://localhost:5173", "5173");
+            expect(preview).toHaveBeenCalledWith("http://localhost:5173", "5173", true);
             expect(close).toHaveBeenCalledTimes(1);
             expect(process.listenerCount("SIGINT")).toBe(sigintListeners);
             expect(process.listenerCount("SIGTERM")).toBe(sigtermListeners);

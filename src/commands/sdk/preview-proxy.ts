@@ -12,6 +12,8 @@ export interface PreviewProxyOptions {
     port: number;
     certificate: PreviewCertificate;
     headers: Readonly<Record<string, string>>;
+    /** Adds a hash of each inline script in proxied HTML to `script-src`. Published apps block inline scripts. */
+    allowInlineScripts: boolean;
 }
 
 export interface PreviewProxy {
@@ -23,14 +25,17 @@ const REPLACED_HEADERS = ["content-security-policy", "content-security-policy-re
 const LOOPBACK_HOSTNAMES = ["localhost", "127.0.0.1", "[::1]"];
 const BODILESS_STATUSES = [204, 304];
 
-function inlineScriptWarning(path: string, excerpt: string): string {
-    return `Allowing an inline script in ${path} for the local preview: "${excerpt}". ` +
-        "Published apps block inline scripts, so this only works locally unless your dev server added it " +
-        "(like React's Fast Refresh preamble).";
+function inlineScriptWarning(path: string, excerpt: string, allowed: boolean): string {
+    return allowed
+        ? `Allowing an inline script in ${path} for the local preview: "${excerpt}". ` +
+            "Published apps block inline scripts, so this only works locally unless your dev server added it " +
+            "(like React's Fast Refresh preamble)."
+        : `Blocking an inline script in ${path}: "${excerpt}". Published apps block inline scripts too. ` +
+            "If your dev server added it (like React's Fast Refresh preamble), pass --allow-inline-scripts.";
 }
 
 export function startPreviewProxy(options: PreviewProxyOptions): Promise<PreviewProxy> {
-    const { target, port, certificate, headers } = options;
+    const { target, port, certificate, headers, allowInlineScripts: allowInline } = options;
     const secureTarget = target.protocol === "https:";
     const targetHostname = target.hostname.replace(/^\[(.*)\]$/, "$1");
     const targetPort = Number(target.port) || (secureTarget ? 443 : 80);
@@ -92,7 +97,7 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
                 for (const { hash, excerpt } of scripts) {
                     if (!warnedInlineScripts.has(hash)) {
                         warnedInlineScripts.add(hash);
-                        logger.warn(inlineScriptWarning(req.url, excerpt));
+                        logger.warn(inlineScriptWarning(req.url, excerpt, allowInline));
                     }
                 }
                 if (proxyRes.headers["content-length"] !== undefined) {
@@ -102,7 +107,7 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
                 res.writeHead(proxyRes.statusCode, {
                     ...responseHeaders,
                     ...headers,
-                    ...(csp === undefined ? {} : {
+                    ...(csp === undefined || !allowInline ? {} : {
                         "content-security-policy": allowInlineScripts(csp, scripts.map(script => script.hash)),
                     }),
                 });

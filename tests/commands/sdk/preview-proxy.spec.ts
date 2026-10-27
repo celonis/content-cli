@@ -68,8 +68,14 @@ describe("Preview proxy", () => {
         return new URL(`http://localhost:${(target.address() as net.AddressInfo).port}`);
     }
 
-    async function startProxy(target: URL): Promise<PreviewProxy> {
-        const proxy = await startPreviewProxy({ target, port: await freePort(), certificate, headers: LOCAL_PREVIEW_HEADERS });
+    async function startProxy(target: URL, allowInlineScripts: boolean = false): Promise<PreviewProxy> {
+        const proxy = await startPreviewProxy({
+            target,
+            port: await freePort(),
+            certificate,
+            headers: LOCAL_PREVIEW_HEADERS,
+            allowInlineScripts,
+        });
         proxies.push(proxy);
         return proxy;
     }
@@ -301,18 +307,41 @@ describe("Preview proxy", () => {
             .map(entry => entry.message.trim());
     }
 
-    it("Should allow the inline scripts of a proxied HTML page and warn about each once", async () => {
-        const inline = "import { injectIntoGlobalHook } from \"/@react-refresh\";";
-        const html = `<html><head><script type="module">${inline}</script>` +
-            "<script type=\"module\" src=\"/@vite/client\"></script></head><body>Grüße</body></html>";
-        const target = await startTarget((req, res) => {
+    const reactPreamble = "import { injectIntoGlobalHook } from \"/@react-refresh\";";
+    const reactPage = `<html><head><script type="module">${reactPreamble}</script>` +
+        "<script type=\"module\" src=\"/@vite/client\"></script></head><body>Grüße</body></html>";
+
+    function startHtmlTarget(html: string): Promise<http.Server> {
+        return startTarget((req, res) => {
             res.writeHead(200, {
                 "content-type": "text/html; charset=utf-8",
                 "content-length": Buffer.byteLength(html),
             });
             res.end(html);
         });
-        const proxy = await startProxy(targetUrl(target));
+    }
+
+    it("Should block the inline scripts of a proxied HTML page by default and warn about each once", async () => {
+        const proxy = await startProxy(targetUrl(await startHtmlTarget(reactPage)));
+
+        const first = await send(proxy, "/index.html");
+        const second = await send(proxy, "/index.html");
+
+        for (const response of [first, second]) {
+            expect(response.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
+            expect(response.body).toBe(reactPage);
+            expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(reactPage)));
+        }
+        expect(warnings()).toEqual([
+            `Blocking an inline script in /index.html: "${reactPreamble}". Published apps block inline scripts too. ` +
+            "If your dev server added it (like React's Fast Refresh preamble), pass --allow-inline-scripts.",
+        ]);
+    });
+
+    it("Should allow the inline scripts of a proxied HTML page when enabled and warn about each once", async () => {
+        const inline = reactPreamble;
+        const html = reactPage;
+        const proxy = await startProxy(targetUrl(await startHtmlTarget(html)), true);
 
         const first = await send(proxy, "/index.html");
         const second = await send(proxy, "/index.html");
@@ -338,7 +367,7 @@ describe("Preview proxy", () => {
             res.write("<html><head><script>a()");
             setImmediate(() => res.end("</script></head></html>"));
         });
-        const proxy = await startProxy(targetUrl(target));
+        const proxy = await startProxy(targetUrl(target), true);
 
         const response = await send(proxy, "/");
 
@@ -442,6 +471,7 @@ describe("Preview proxy", () => {
             port: busyPort,
             certificate,
             headers: LOCAL_PREVIEW_HEADERS,
+            allowInlineScripts: false,
         };
 
         await expect(startPreviewProxy(options)).rejects.toThrow(`Port ${busyPort} is already in use`);
