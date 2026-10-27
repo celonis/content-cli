@@ -31,6 +31,19 @@ export class PackageVersionService {
         }
     }
 
+    public async listPackageVersions(packageKey: string, jsonResponse: boolean): Promise<void> {
+        const packageVersions: PackageVersionTransport[] = await this.packageVersionApi.findAll(packageKey);
+        if (jsonResponse) {
+            const filename = uuidv4() + ".json";
+            const writtenFilename = await this.cuiFileService.writeToFileWithGivenName(JSON.stringify(packageVersions, null, 2), filename);
+            logger.info(FileService.fileDownloadedMessage + writtenFilename);
+        } else if (packageVersions.length === 0) {
+            logger.info(`Package ${packageKey} has no versions.`);
+        } else {
+            packageVersions.forEach(packageVersion => logger.info(JSON.stringify(packageVersion)));
+        }
+    }
+
     public async createPackageVersion(
         packageKey: string,
         version: string | undefined,

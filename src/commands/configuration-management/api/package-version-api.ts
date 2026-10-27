@@ -14,6 +14,14 @@ export class PackageVersionApi {
         this.httpClient = () => context.httpClient;
     }
 
+    public async findAll(packageKey: string): Promise<PackageVersionTransport[]> {
+        return this.httpClient()
+            .get(`/pacman/api/core/packages/${packageKey}/versions`)
+            .catch(e => {
+                throw new FatalError(`Problem listing versions of Package with key '${packageKey}': ${e}`);
+            });
+    }
+
     public async findOne(packageKey: string, version: string): Promise<PackageVersionTransport> {
         return this.httpClient()
             .get(`/pacman/api/core/packages/${packageKey}/versions/${version}`)

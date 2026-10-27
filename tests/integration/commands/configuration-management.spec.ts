@@ -69,6 +69,7 @@ describe("configuration-management command integration", () => {
         mockPackageVersionCommandService = {
             createPackageVersion: jest.fn().mockResolvedValue(undefined),
             getPackageVersion: jest.fn().mockResolvedValue(undefined),
+            listPackageVersions: jest.fn().mockResolvedValue(undefined),
         } as any;
 
         mockSinglePackageImportService = {
@@ -978,6 +979,29 @@ describe("configuration-management command integration", () => {
                 "",
                 []
             );
+        });
+    });
+
+    describe("config versions list (listPackageVersions)", () => {
+        it("forwards the branch package key and --json", async () => {
+            await runCli([
+                "config", "versions", "list",
+                "--packageKey", "project-key@my-branch",
+                "--json",
+            ]);
+
+            expect(lastResult.exitCode).toBe(0);
+            expect(mockPackageVersionCommandService.listPackageVersions).toHaveBeenCalledWith(
+                "project-key@my-branch",
+                true
+            );
+        });
+
+        it("rejects when --packageKey is missing", async () => {
+            await runCli(["config", "versions", "list"]);
+
+            expectError("--packageKey <packageKey>");
+            expect(mockPackageVersionCommandService.listPackageVersions).not.toHaveBeenCalled();
         });
     });
 

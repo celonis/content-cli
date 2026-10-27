@@ -10,7 +10,7 @@ The `config` command group manages a package and its resources — importing a s
     - [`config package validate`](#validate-package-configurations-config-package-validate) — validate a package's staging version
     - [`config package list`](#list-packages-config-package-list) — list packages (staging by default)
     - [`config nodes …`](#finding-nodes) — work with individual nodes
-    - [`config versions …`](#package-version) — read and create package versions
+    - [`config versions …`](#package-version) — read, list and create package versions
     - [`config variables list`](#listing--mapping-variables) — read package variables
     - `config metadata export` — check whether packages have unpublished changes
 - **Team-to-Team Copy (batch) commands** — bulk multi-package transport, now under [`t2tc package`](./t2tc-commands.md):
@@ -39,7 +39,7 @@ This applies to every command that reads or modifies a single package or its nod
 - `config nodes get`, `config nodes list`, `config nodes diff`, `config nodes dependencies list`
 - `config nodes create`, `config nodes update`, `config nodes archive`
 - `config variables list`
-- `config versions get`, `config versions create`
+- `config versions get`, `config versions list`, `config versions create`
 - `config package validate`, `config package import`, `config package export`, `config metadata export`
 - `t2tc package export`, `t2tc package import`, `t2tc package diff`
 
@@ -438,6 +438,28 @@ To export the version metadata as a JSON file instead of displaying it in the co
 
 ```bash
 content-cli config versions get --packageKey <packageKey> --packageVersion <packageVersion> --json
+```
+
+### List Package Versions
+
+To list all created versions of a package, use the following command:
+
+```bash
+content-cli config versions list --packageKey <packageKey>
+```
+
+Branches are packages too, so the same command lists the versions of a branch:
+
+```bash
+content-cli config versions list --packageKey <projectKey>@<branchKey>
+```
+
+The command prints one line of version metadata per version. A package without versions prints `Package <packageKey> has no versions.`
+
+To export the list as a JSON file instead, use the `--json` option:
+
+```bash
+content-cli config versions list --packageKey <packageKey> --json
 ```
 
 ### Create Package Version
