@@ -93,6 +93,11 @@ content-cli t2tc package export -p <sourceProfile> --packageKeys key1 ... keyN
 The `--keysByVersion` option can be used to export packages by specific version. You can specify multiple packages with version separated by spaces, in the format of 'packageKey.version'.
 The `--withDependencies` option can be used to also export dependencies of the given packages.
 The `--unzip` option can be used to unzip the exported packages into the current working directory.
+The `--staging` option exports the current staging state of the given `--packageKeys` instead of their latest deployed version. Branch package keys (`<projectKey>@<branchKey>`) are supported. Staging packages appear as `<packageKey>_staging.zip`, use `staging` as their version in `manifest.json` and `variables.json`, and their staging variable values are exported. With `--withDependencies`, dependencies are exported at the published versions the staging configuration references. `--staging` cannot be combined with `--keysByVersion`.
+
+```bash
+content-cli t2tc package export -p <sourceProfile> --packageKeys projectKey@branchKey --staging --withDependencies
+```
 
 Depending on the `--unzip` option used, a zip file, or a directory containing the exported packages, will be created in the current working directory containing:
 

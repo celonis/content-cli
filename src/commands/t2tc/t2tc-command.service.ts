@@ -39,8 +39,8 @@ export class T2tcCommandService {
         }
     }
 
-    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean): Promise<void> {
-        return this.t2tcPackageService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies, gitBranch, unzip);
+    public batchExportPackages(packageKeys: string[], packageKeysByVersion: string[], withDependencies: boolean, gitBranch: string, unzip: boolean, staging: boolean = false): Promise<void> {
+        return this.t2tcPackageService.batchExportPackages(packageKeys, packageKeysByVersion, withDependencies, gitBranch, unzip, staging);
     }
 
     public batchImportPackages(file: string, directory: string, overwrite: boolean, gitBranch: string, performValidation: boolean = false): Promise<void> {

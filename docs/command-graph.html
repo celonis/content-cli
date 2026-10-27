@@ -471,7 +471,7 @@ const NODES = [
     options: ["-p, --profile <profile>", "--json", "--flavors <flavors...>", "--withDependencies", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--variableValue <variableValue>", "--variableType <variableType>", "--branches (default: false)", "--staging (default: false)", "-h, --help"] },
   { id: "t2tc_package_export", label: "export", group: "command", path: "t2tc package export",
     description: "Export one or more packages into a Team-to-Team Copy archive. The archive is consumed by 't2tc package import' / 't2tc package diff'. To export a single standalone package, use 'config package export'.",
-    options: ["-p, --profile <profile>", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--withDependencies", "--unzip", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
+    options: ["-p, --profile <profile>", "--packageKeys <packageKeys...>", "--keysByVersion <keysByVersion...>", "--withDependencies", "--unzip", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "--staging (only with --packageKeys)", "-h, --help"] },
   { id: "t2tc_package_import", label: "import", group: "command", path: "t2tc package import",
     description: "Import packages from a Team-to-Team Copy archive produced by 't2tc package export'. To import a single standalone package, use 'config package import'.",
     options: ["-p, --profile <profile>", "--overwrite", "--validate (default: false)", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-f, --file <file>", "-d, --directory <directory>", "-h, --help"] },

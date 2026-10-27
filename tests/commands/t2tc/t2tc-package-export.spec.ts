@@ -1210,4 +1210,50 @@ describe("Config export", () => {
 
         expect(getDownloadedFileName()).not.toBeNull();
     })
+    it("Should export staging packages from the staging endpoint with staging variables", async () => {
+        const manifest: PackageManifestTransport[] = [];
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavorAndVersion("project@my-branch", "TEST", null, {
+            [BatchExportImportConstants.STAGING_VERSION]: [],
+        } as unknown as Map<string, DependencyTransport[]>));
+        manifest.push(ConfigUtils.buildManifestForKeyAndFlavorAndVersion("dependency-key", "TEST", "1.0.0", {
+            "1.0.0": [],
+        } as unknown as Map<string, DependencyTransport[]>));
+        const exportedPackagesZip = ConfigUtils.buildBatchExportZip(manifest, []);
+
+        const stagingVariable = {
+            key: "staging-variable",
+            type: PackageManagerVariableType.PLAIN_TEXT,
+            value: "staging-value",
+            metadata: {},
+        };
+        const versionedVariables: VariableManifestTransport[] = [{
+            packageKey: "dependency-key",
+            version: "1.0.0",
+            variables: [],
+        }];
+
+        mockAxiosGet("https://myTeam.celonis.cloud/package-manager/api/core/staging/packages/export/batch?packageKeys=project%40my-branch&withDependencies=true", exportedPackagesZip.toBuffer());
+        mockAxiosPost("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments", versionedVariables);
+        mockAxiosPost("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/variables/by-package-keys", [{
+            packageKey: "project@my-branch",
+            variables: [stagingVariable],
+        }]);
+
+        await new T2tcCommandService(testContext).batchExportPackages(["project@my-branch"], undefined, true, null, null, true);
+
+        const versionedVariablesRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/package-manager/api/core/packages/export/batch/variables-with-assignments"));
+        expect(versionedVariablesRequest).toEqual([{packageKey: "dependency-key", version: "1.0.0"}]);
+
+        const stagingVariablesRequest = parse(mockedPostRequestBodyByUrl.get("https://myTeam.celonis.cloud/pacman/api/core/staging/packages/variables/by-package-keys"));
+        expect(stagingVariablesRequest).toEqual(["project@my-branch"]);
+
+        const actualZip = new AdmZip(getDownloadedFileName());
+        const exportedVariables: VariableManifestTransport[] = parse(actualZip.getEntry(BatchExportImportConstants.VARIABLES_FILE_NAME).getData().toString());
+        expect(exportedVariables).toContainEqual({
+            packageKey: "project@my-branch",
+            version: BatchExportImportConstants.STAGING_VERSION,
+            variables: [stagingVariable],
+        });
+        expect(exportedVariables).toContainEqual(versionedVariables[0]);
+    })
 })

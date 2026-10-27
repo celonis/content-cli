@@ -74,6 +74,16 @@ export class T2tcPackageApi {
         });
     }
 
+    public async exportStagingPackages(packageKeys: string[], withDependencies: boolean): Promise<Buffer> {
+        const queryParams = new URLSearchParams();
+        packageKeys.forEach(packageKey => queryParams.append("packageKeys", packageKey));
+        queryParams.set("withDependencies", withDependencies.toString());
+
+        return this.httpClient().getFile(`/package-manager/api/core/staging/packages/export/batch?${queryParams.toString()}`).catch(e => {
+            throw new FatalError(`Problem exporting staging packages: ${e}`);
+        });
+    }
+
     public async exportPackagesByVersions(packageKeysWithVersion: string[], withDependencies: boolean): Promise<Buffer> {
         const queryParams = new URLSearchParams();
         packageKeysWithVersion.forEach(packageKeyByVersion => queryParams.append("packageKeysWithVersion", packageKeyByVersion));

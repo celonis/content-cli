@@ -7,5 +7,6 @@ export enum BatchExportImportConstants {
     ZIP_EXTENSION = ".zip",
     JSON_EXTENSION = ".json",
     NODES_FOLDER_NAME = "nodes/",
-    SCENARIO_NODE = "SCENARIO"
+    SCENARIO_NODE = "SCENARIO",
+    STAGING_VERSION = "staging"
 }
