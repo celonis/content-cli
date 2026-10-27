@@ -40,3 +40,5 @@ content-cli sdk preview [--target <target>] [--port <port>]
 - `--port` is the HTTPS port the Local preview loads. Defaults to `4300`.
 
 The command does not need a profile. It serves your dev server over HTTPS with a self-signed certificate stored in `~/.celonis-content-cli-preview`, and forwards requests and WebSocket connections to the target. If the Local preview stays blank, open the printed `https://localhost:<port>` URL in a browser tab, accept the certificate, and reload the preview. Press Ctrl+C to stop.
+
+Inline scripts in your dev server's HTML pages, such as React's Fast Refresh preamble, are allowed in the Local preview: the command adds a hash of each one to the page's `script-src` and prints a warning for each the first time it sees it. Published apps block inline scripts, so move any inline script of your own into a separate file before publishing.

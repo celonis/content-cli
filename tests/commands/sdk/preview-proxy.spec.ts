@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as http from "node:http";
 import * as https from "node:https";
 import * as net from "node:net";
@@ -280,6 +281,154 @@ describe("Preview proxy", () => {
 
         expect(echoed).toBe("ping");
         expect(upgradeHost).toBe(targetUrl(target).host);
+    });
+
+    function sha256(text: string): string {
+        return `'sha256-${createHash("sha256").update(text).digest("base64")}'`;
+    }
+
+    function scriptSrc(response: ProxyResponse): string[] {
+        const directive = (response.headers["content-security-policy"] as string)
+            .split(";")
+            .map(part => part.trim())
+            .find(part => part.startsWith("script-src "));
+        return directive.split(/\s+/).slice(1);
+    }
+
+    function warnings(): string[] {
+        return loggingTestTransport.logMessages
+            .filter(entry => entry.level.includes("warn"))
+            .map(entry => entry.message.trim());
+    }
+
+    it("Should allow the inline scripts of a proxied HTML page and warn about each once", async () => {
+        const inline = "import { injectIntoGlobalHook } from \"/@react-refresh\";";
+        const html = `<html><head><script type="module">${inline}</script>` +
+            "<script type=\"module\" src=\"/@vite/client\"></script></head><body>Grüße</body></html>";
+        const target = await startTarget((req, res) => {
+            res.writeHead(200, {
+                "content-type": "text/html; charset=utf-8",
+                "content-length": Buffer.byteLength(html),
+            });
+            res.end(html);
+        });
+        const proxy = await startProxy(targetUrl(target));
+
+        const first = await send(proxy, "/index.html");
+        const second = await send(proxy, "/index.html");
+
+        for (const response of [first, second]) {
+            expect(scriptSrc(response)).toEqual(["'self'", sha256(inline)]);
+            expect((response.headers["content-security-policy"] as string).replace(` ${sha256(inline)}`, ""))
+                .toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
+            expect(response.body).toBe(html);
+            expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(html)));
+            expect(response.headers["content-type"]).toBe("text/html; charset=utf-8");
+        }
+        expect(warnings()).toEqual([
+            `Allowing an inline script in /index.html for the local preview: "${inline}". ` +
+            "Published apps block inline scripts, so this only works locally unless your dev server added it " +
+            "(like React's Fast Refresh preamble).",
+        ]);
+    });
+
+    it("Should allow the inline scripts of an HTML page sent without a content-length", async () => {
+        const target = await startTarget((req, res) => {
+            res.writeHead(200, { "content-type": "text/html" });
+            res.write("<html><head><script>a()");
+            setImmediate(() => res.end("</script></head></html>"));
+        });
+        const proxy = await startProxy(targetUrl(target));
+
+        const response = await send(proxy, "/");
+
+        expect(scriptSrc(response)).toEqual(["'self'", sha256("a()")]);
+        expect(response.body).toBe("<html><head><script>a()</script></head></html>");
+        expect(response.headers["content-length"]).toBeUndefined();
+    });
+
+    it("Should leave the CSP of non-HTML responses unchanged", async () => {
+        const target = await startTarget((req, res) => {
+            res.writeHead(200, { "content-type": "text/javascript" });
+            res.end("document.write(\"<script>a()</script>\");");
+        });
+        const proxy = await startProxy(targetUrl(target));
+
+        const response = await send(proxy, "/main.js");
+
+        expect(response.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
+        expect(response.body).toBe("document.write(\"<script>a()</script>\");");
+        expect(warnings()).toEqual([]);
+    });
+
+    it("Should pass HEAD and 304 responses for HTML through without a body", async () => {
+        const target = await startTarget((req, res) => {
+            if (req.method === "HEAD") {
+                res.writeHead(200, { "content-type": "text/html", "content-length": "42" });
+                res.end();
+                return;
+            }
+            res.writeHead(304, { "content-type": "text/html", etag: "\"v1\"" });
+            res.end();
+        });
+        const proxy = await startProxy(targetUrl(target));
+
+        const head = await send(proxy, "/", "HEAD");
+        const notModified = await send(proxy, "/");
+
+        expect(head.status).toBe(200);
+        expect(head.headers["content-length"]).toBe("42");
+        expect(head.body).toBe("");
+        expect(head.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
+        expect(notModified.status).toBe(304);
+        expect(notModified.headers.etag).toBe("\"v1\"");
+        expect(notModified.body).toBe("");
+    });
+
+    it("Should abort an HTML response when the target fails mid-body and keep serving", async () => {
+        let calls = 0;
+        const target = await startTarget((req, res) => {
+            calls++;
+            res.writeHead(200, { "content-type": "text/html" });
+            if (calls === 1) {
+                res.write("<html><script>a()");
+                setImmediate(() => res.destroy());
+                return;
+            }
+            res.end("<html></html>");
+        });
+        const proxy = await startProxy(targetUrl(target));
+
+        await expect(send(proxy, "/")).rejects.toThrow();
+        const next = await send(proxy, "/");
+
+        expect(next.status).toBe(200);
+        expect(next.body).toBe("<html></html>");
+        expect(warnings()).toEqual([]);
+    });
+
+    it("Should ask the target for an uncompressed response", async () => {
+        let acceptEncoding: string | string[];
+        const target = await startTarget((req, res) => {
+            acceptEncoding = req.headers["accept-encoding"];
+            res.end();
+        });
+        const proxy = await startProxy(targetUrl(target));
+
+        await new Promise<void>((resolve, reject) => {
+            const request = https.request(`${proxy.url}/`, {
+                ca: certificate.cert,
+                agent: false,
+                headers: { "Accept-Encoding": "gzip, deflate, br" },
+            }, response => {
+                response.resume();
+                response.on("end", () => resolve());
+            });
+            request.on("error", reject);
+            request.end();
+        });
+
+        expect(acceptEncoding).toBe("identity");
     });
 
     it("Should fail with a clear error when the port is already in use", async () => {
