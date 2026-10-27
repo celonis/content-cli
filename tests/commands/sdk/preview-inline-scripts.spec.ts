@@ -29,6 +29,12 @@ describe("Preview inline scripts", () => {
             expect(inlineScriptHashes(`<script>${text}</script>`)[0].hash).toBe(sha256(text));
         });
 
+        it("Should hash the text with line endings normalized to LF, as the HTML parser does", () => {
+            const html = "<script>\r\na();\r\nb();\rc();\r\n</script>";
+
+            expect(inlineScriptHashes(html)[0].hash).toBe(sha256("\na();\nb();\nc();\n"));
+        });
+
         it("Should treat src in any case or position as an external script", () => {
             const html = "<script SRC='/a.js'></script><script type=module\nsrc=/b.js></script><script data-src=\"x\">c()</script>";
 

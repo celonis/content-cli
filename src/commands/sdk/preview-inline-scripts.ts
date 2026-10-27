@@ -13,7 +13,7 @@ const EXCERPT_LENGTH = 60;
 
 /**
  * The inline scripts (`<script>` without `src`) of an HTML document, distinct by hash and in document order.
- * Each hash covers the script text exactly as served, like a browser computes it for CSP.
+ * Each hash covers the script text as the browser parses it for CSP (line endings normalized to LF).
  */
 export function inlineScriptHashes(html: string): InlineScript[] {
     const scripts = new Map<string, InlineScript>();
@@ -21,7 +21,9 @@ export function inlineScriptHashes(html: string): InlineScript[] {
         if (SRC_ATTRIBUTE.test(attributes) || text.length === 0) {
             continue;
         }
-        const hash = `'sha256-${createHash("sha256").update(text, "utf8").digest("base64")}'`;
+        // Browsers hash the parsed text, and the HTML parser turns CRLF and lone CR into LF.
+        const parsedText = text.replace(/\r\n?/g, "\n");
+        const hash = `'sha256-${createHash("sha256").update(parsedText, "utf8").digest("base64")}'`;
         if (!scripts.has(hash)) {
             scripts.set(hash, { hash, excerpt: text.replace(/\s+/g, " ").trim().slice(0, EXCERPT_LENGTH) });
         }
