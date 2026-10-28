@@ -22,8 +22,8 @@ export interface PreviewProxy {
 }
 
 const REPLACED_HEADERS = ["content-security-policy", "content-security-policy-report-only", "x-frame-options"];
-const LOOPBACK_HOSTNAMES = ["localhost", "127.0.0.1", "[::1]"];
-const BODILESS_STATUSES = [204, 304];
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const BODILESS_STATUSES = new Set([204, 304]);
 
 function inlineScriptWarning(path: string, excerpt: string, allowed: boolean): string {
     return allowed
@@ -39,7 +39,7 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
     const secureTarget = target.protocol === "https:";
     const targetHostname = target.hostname.replace(/^\[(.*)\]$/, "$1");
     const targetPort = Number(target.port) || (secureTarget ? 443 : 80);
-    const rejectUnauthorized = !LOOPBACK_HOSTNAMES.includes(target.hostname);
+    const rejectUnauthorized = !LOOPBACK_HOSTNAMES.has(target.hostname);
     const agent = secureTarget
         ? new https.Agent({ keepAlive: true, rejectUnauthorized })
         : new http.Agent({ keepAlive: true });
@@ -79,7 +79,7 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
             proxyRes.on("aborted", () => res.destroy());
 
             const isHtml = /^text\/html\b/i.test(proxyRes.headers["content-type"] ?? "");
-            const hasBody = req.method !== "HEAD" && !BODILESS_STATUSES.includes(proxyRes.statusCode);
+            const hasBody = req.method !== "HEAD" && !BODILESS_STATUSES.has(proxyRes.statusCode);
             if (!isHtml || !hasBody) {
                 res.writeHead(proxyRes.statusCode, { ...responseHeaders, ...headers });
                 proxyRes.pipe(res);
@@ -179,6 +179,14 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
     server.on("connection", track);
     server.on("upgrade", forwardUpgrade);
 
+    function close(): Promise<void> {
+        return new Promise<void>(closed => {
+            server.close(() => closed());
+            openSockets.forEach(socket => socket.destroy());
+            agent.destroy();
+        });
+    }
+
     return new Promise((resolve, reject) => {
         const onListenError = (error: NodeJS.ErrnoException): void => {
             agent.destroy();
@@ -191,11 +199,7 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
             server.off("error", onListenError);
             resolve({
                 url: `https://localhost:${(server.address() as net.AddressInfo).port}`,
-                close: () => new Promise<void>(closed => {
-                    server.close(() => closed());
-                    openSockets.forEach(socket => socket.destroy());
-                    agent.destroy();
-                }),
+                close,
             });
         });
     });

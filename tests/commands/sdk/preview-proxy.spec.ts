@@ -233,7 +233,7 @@ describe("Preview proxy", () => {
         });
         clientRequest.destroy();
 
-        await closed;
+        await expect(closed).resolves.toBeUndefined();
     });
 
     it("Should not report the target as unreachable when the client disconnects before it answers", async () => {

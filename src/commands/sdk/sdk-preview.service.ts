@@ -53,7 +53,7 @@ export class SdkPreviewService {
     }
 
     private parsePort(port: string | number): number {
-        const value = typeof port === "number" ? port : /^\d+$/.test(port) ? Number(port) : NaN;
+        const value = typeof port === "number" || /^\d+$/.test(port) ? Number(port) : Number.NaN;
         if (!Number.isInteger(value) || value < 1 || value > 65535) {
             throw new FatalError("--port must be a number between 1 and 65535");
         }
