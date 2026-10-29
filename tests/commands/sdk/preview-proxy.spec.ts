@@ -334,7 +334,7 @@ describe("Preview proxy", () => {
         }
         expect(warnings()).toEqual([
             `Blocking an inline script in /index.html: "${reactPreamble}". Published apps block inline scripts too. ` +
-            "If your dev server added it (like React's Fast Refresh preamble), pass --allow-inline-scripts.",
+            "If your dev server added it for local development only, pass --allow-inline-scripts.",
         ]);
     });
 
@@ -357,7 +357,7 @@ describe("Preview proxy", () => {
         expect(warnings()).toEqual([
             `Allowing an inline script in /index.html for the local preview: "${inline}". ` +
             "Published apps block inline scripts, so this only works locally unless your dev server added it " +
-            "(like React's Fast Refresh preamble).",
+            "for local development only.",
         ]);
     });
 
