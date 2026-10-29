@@ -31,6 +31,24 @@ export class SdkPreviewService {
         return proxy;
     }
 
+    public async previewUntilStopped(target: string, port: string | number, allowInlineScripts: boolean = false): Promise<void> {
+        const proxy = await this.preview(target, port, allowInlineScripts);
+        await this.waitForShutdownSignal();
+        await proxy.close();
+    }
+
+    private waitForShutdownSignal(): Promise<void> {
+        return new Promise<void>(resolve => {
+            const stop = (): void => {
+                process.removeListener("SIGINT", stop);
+                process.removeListener("SIGTERM", stop);
+                resolve();
+            };
+            process.once("SIGINT", stop);
+            process.once("SIGTERM", stop);
+        });
+    }
+
     private parseTarget(target: string): URL {
         const message = "--target must be an http or https origin, for example http://localhost:4200";
         let url: URL;

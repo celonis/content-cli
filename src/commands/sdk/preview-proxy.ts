@@ -29,7 +29,7 @@ function inlineScriptWarning(path: string, excerpt: string, allowed: boolean): s
     return allowed
         ? `Allowing an inline script in ${path} for the local preview: "${excerpt}". ` +
             "Inline scripts are disabled for published apps, so they can only be used during development."
-        : `Blocking an inline script in ${path}: "${excerpt}". Inline scripts are disabled for published apps. You can allow inline scripts during development by passing --allow-inline-scripts.";
+        : `Blocking an inline script in ${path}: "${excerpt}". Inline scripts are disabled for published apps. You can allow inline scripts during development by passing --allow-inline-scripts.`;
 }
 
 export function startPreviewProxy(options: PreviewProxyOptions): Promise<PreviewProxy> {

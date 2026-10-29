@@ -46,17 +46,7 @@ class Module extends IModule {
     }
 
     private async previewApp(context: Context, command: Command, options: OptionValues): Promise<void> {
-        const proxy = await new SdkPreviewService().preview(options.target, options.port, options.allowInlineScripts === true);
-        await new Promise<void>(resolve => {
-            const stop = (): void => {
-                process.removeListener("SIGINT", stop);
-                process.removeListener("SIGTERM", stop);
-                resolve();
-            };
-            process.once("SIGINT", stop);
-            process.once("SIGTERM", stop);
-        });
-        await proxy.close();
+        await new SdkPreviewService().previewUntilStopped(options.target, options.port, options.allowInlineScripts === true);
     }
 }
 
