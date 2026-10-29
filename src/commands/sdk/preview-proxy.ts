@@ -29,9 +29,9 @@ function inlineScriptWarning(path: string, excerpt: string, allowed: boolean): s
     return allowed
         ? `Allowing an inline script in ${path} for the local preview: "${excerpt}". ` +
             "Published apps block inline scripts, so this only works locally unless your dev server added it " +
-            "(like React's Fast Refresh preamble)."
+            "for local development only."
         : `Blocking an inline script in ${path}: "${excerpt}". Published apps block inline scripts too. ` +
-            "If your dev server added it (like React's Fast Refresh preamble), pass --allow-inline-scripts.";
+            "If your dev server added it for local development only, pass --allow-inline-scripts.";
 }
 
 export function startPreviewProxy(options: PreviewProxyOptions): Promise<PreviewProxy> {
