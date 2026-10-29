@@ -30,9 +30,9 @@ class Module extends IModule {
             .command("preview")
             .beta()
             .skipProfileLoading()
-            .description("Serve a local dev server to the Codespace's Local preview with the published app's sandbox rules")
-            .option("--target <target>", "URL of your app's dev server", "http://localhost:4200")
-            .option("--port <port>", "HTTPS port the Codespace preview loads", "4300")
+            .description("Proxy your local dev server to preview the app inside Celonis")
+            .option("--target <target>", "URL of the local dev server to proxy", "http://localhost:4200")
+            .option("--port <port>", "Target port on which the preview is hosted", "4300")
             .option("--allow-inline-scripts", "Allow inline scripts in your dev server's HTML")
             .action(this.previewApp);
     }

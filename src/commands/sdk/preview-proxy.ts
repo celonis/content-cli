@@ -28,10 +28,8 @@ const BODILESS_STATUSES = new Set([204, 304]);
 function inlineScriptWarning(path: string, excerpt: string, allowed: boolean): string {
     return allowed
         ? `Allowing an inline script in ${path} for the local preview: "${excerpt}". ` +
-            "Published apps block inline scripts, so this only works locally unless your dev server added it " +
-            "for local development only."
-        : `Blocking an inline script in ${path}: "${excerpt}". Published apps block inline scripts too. ` +
-            "If your dev server added it for local development only, pass --allow-inline-scripts.";
+            "Inline scripts are disabled for published apps, so they can only be used during development."
+        : `Blocking an inline script in ${path}: "${excerpt}". Inline scripts are disabled for published apps. You can allow inline scripts during development by passing --allow-inline-scripts.";
 }
 
 export function startPreviewProxy(options: PreviewProxyOptions): Promise<PreviewProxy> {
