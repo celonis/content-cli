@@ -333,8 +333,8 @@ describe("Preview proxy", () => {
             expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(reactPage)));
         }
         expect(warnings()).toEqual([
-            `Blocking an inline script in /index.html: "${reactPreamble}". Published apps block inline scripts too. ` +
-            "If your dev server added it for local development only, pass --allow-inline-scripts.",
+            `Blocking an inline script in /index.html: "${reactPreamble}". Inline scripts are disabled for published apps. ` +
+            "You can allow inline scripts during development by passing --allow-inline-scripts.",
         ]);
     });
 
@@ -356,8 +356,7 @@ describe("Preview proxy", () => {
         }
         expect(warnings()).toEqual([
             `Allowing an inline script in /index.html for the local preview: "${inline}". ` +
-            "Published apps block inline scripts, so this only works locally unless your dev server added it " +
-            "for local development only.",
+            "Inline scripts are disabled for published apps, so they can only be used during development.",
         ]);
     });
 
