@@ -27,3 +27,19 @@ content-cli sdk publish --appId <appId> --dist <dist>
 ```
 
 The command compresses the given build directory and uploads it for the app. On success, the version assigned to the build is printed, which can then be selected on the Codespace asset.
+
+## Print Token
+
+Print a fresh token that only grants read access to the Celonis SDK, e.g. to authenticate against the npm registry.
+
+```
+content-cli -q sdk token
+```
+
+The token is printed to the console without any other output when the `-q` option is set, so it can be used in scripts, e.g. to configure npm:
+
+```
+npm config set //<team>.celonis.cloud/pro-code-app-manager/api/npm/:_authToken "$(content-cli -q sdk token)"
+```
+
+The command requires a device code or client credentials profile. API keys can be used directly for authentication instead.

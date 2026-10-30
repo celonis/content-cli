@@ -14,7 +14,7 @@ describe("SDK Module", () => {
             expect(mockConfigurator.command).toHaveBeenCalledWith("sdk");
             expect(mockConfigurator.command).toHaveBeenCalledWith("download");
             expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--appId <appId>", expect.any(String));
-            expect(mockConfigurator.beta).toHaveBeenCalledTimes(3);
+            expect(mockConfigurator.beta).toHaveBeenCalledTimes(4);
         });
 
         it("registers the sdk publish command", () => {
@@ -46,6 +46,25 @@ describe("SDK Module", () => {
             await publishAction(testContext, new Command(), { appId: "app-id", dist: "dist" });
 
             expect(publishApp).toHaveBeenCalledWith("app-id", "dist");
+        });
+
+        it("registers the sdk token command", () => {
+            const mockConfigurator = createMockConfigurator();
+
+            new Module().register(testContext, mockConfigurator);
+
+            expect(mockConfigurator.command).toHaveBeenCalledWith("token");
+        });
+
+        it("prints the token when the token command runs", async () => {
+            const printToken = jest.spyOn(SdkService.prototype, "printToken").mockResolvedValue();
+            const mockConfigurator = createMockConfigurator();
+            new Module().register(testContext, mockConfigurator);
+
+            const tokenAction = mockConfigurator.action.mock.calls[2][0];
+            await tokenAction(testContext, new Command(), {});
+
+            expect(printToken).toHaveBeenCalled();
         });
     });
 });

@@ -4,13 +4,18 @@ import AdmZip = require("adm-zip");
 import { SdkApi } from "./sdk-api";
 import { Context } from "../../core/command/cli-context";
 import { FatalError, logger } from "../../core/utils/logger";
+import { ProfileService } from "../../core/profile/profile.service";
+import { Profile } from "../../core/profile/profile.interface";
 
 export class SdkService {
     public static readonly SDK_DIRECTORY = ".celonis-sdk";
+    public static readonly SDK_READ_SCOPE = "pro-code-app-manager.sdk:read";
 
+    private readonly context: Context;
     private readonly sdkApi: SdkApi;
 
     constructor(context: Context) {
+        this.context = context;
         this.sdkApi = new SdkApi(context);
     }
 
@@ -35,6 +40,20 @@ export class SdkService {
         const { version } = await this.sdkApi.publishApp(appId, bundle);
 
         logger.info(`App published successfully as version '${version}'`);
+    }
+
+    public async printToken(): Promise<void> {
+        const profile = this.requireProfile();
+        const token = await new ProfileService().acquireScopedToken(profile, [SdkService.SDK_READ_SCOPE]);
+
+        process.stdout.write(`${token}\n`);
+    }
+
+    private requireProfile(): Profile {
+        if (!this.context.profile) {
+            throw new FatalError("No profile provided. Please provide a profile to acquire a token for");
+        }
+        return this.context.profile;
     }
 
     private requireDirectory(directory: string): void {
