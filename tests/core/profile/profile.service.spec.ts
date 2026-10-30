@@ -1039,6 +1039,107 @@ describe("ProfileService - authorizeProfile (client credentials)", () => {
     });
 });
 
+describe("ProfileService - acquireScopedToken", () => {
+    let profileService: ProfileService;
+    let mockClientInstance: { refresh: jest.Mock; grant: jest.Mock };
+    let mockClientConstructor: jest.Mock;
+    let storeProfileSpy: jest.SpyInstance;
+
+    function createProfile(type: ProfileType): Profile {
+        return {
+            name: "test",
+            team: "https://example.celonis.cloud",
+            apiToken: "full-scope-token",
+            refreshToken: "refresh-old",
+            expiresAt: Math.floor(Date.now() / 1000) + 3600,
+            authenticationType: AuthenticationType.BEARER,
+            type,
+            clientId: "client-id",
+            clientSecret: "client-secret",
+            clientAuthenticationMethod: "client_secret_basic",
+            scopes: ["studio", "package-manager"],
+        };
+    }
+
+    beforeEach(() => {
+        profileService = new ProfileService();
+        mockIssuerDiscover.mockReset();
+        mockClientInstance = {
+            refresh: jest.fn().mockResolvedValue({ access_token: "scoped-token", refresh_token: "refresh-new" }),
+            grant: jest.fn().mockResolvedValue({ access_token: "scoped-token" }),
+        };
+        mockClientConstructor = jest.fn().mockReturnValue(mockClientInstance);
+        mockIssuerDiscover.mockResolvedValue({ Client: mockClientConstructor });
+        storeProfileSpy = jest.spyOn(profileService, "storeProfile").mockResolvedValue();
+    });
+
+    describe("for device code profiles", () => {
+        it("should refresh with the requested scopes only", async () => {
+            const token = await profileService.acquireScopedToken(createProfile(ProfileType.DEVICE_CODE), ["sdk:read"]);
+
+            expect(token).toBe("scoped-token");
+            expect(mockClientInstance.refresh).toHaveBeenCalledWith("refresh-old", {
+                exchangeBody: { scope: "sdk:read" },
+            });
+        });
+
+        it("should store the rotated refresh token and mark the profile as expired", async () => {
+            const profile = createProfile(ProfileType.DEVICE_CODE);
+
+            await profileService.acquireScopedToken(profile, ["sdk:read"]);
+
+            expect(storeProfileSpy).toHaveBeenCalledWith(profile);
+            expect(profile.refreshToken).toBe("refresh-new");
+            expect(profile.expiresAt).toBe(0);
+        });
+
+        it("should not store the scoped token in the profile", async () => {
+            const profile = createProfile(ProfileType.DEVICE_CODE);
+
+            await profileService.acquireScopedToken(profile, ["sdk:read"]);
+
+            expect(profile.apiToken).toBe("full-scope-token");
+        });
+    });
+
+    describe("for client credentials profiles", () => {
+        it("should grant a token with the requested scopes only", async () => {
+            const token = await profileService.acquireScopedToken(createProfile(ProfileType.CLIENT_CREDENTIALS), ["sdk:read"]);
+
+            expect(token).toBe("scoped-token");
+            expect(mockClientConstructor).toHaveBeenCalledWith({
+                client_id: "client-id",
+                client_secret: "client-secret",
+                token_endpoint_auth_method: "client_secret_basic",
+            });
+            expect(mockClientInstance.grant).toHaveBeenCalledWith({
+                grant_type: "client_credentials",
+                scope: "sdk:read",
+            });
+        });
+
+        it("should leave the profile unchanged", async () => {
+            const profile = createProfile(ProfileType.CLIENT_CREDENTIALS);
+            const originalProfile = { ...profile };
+
+            await profileService.acquireScopedToken(profile, ["sdk:read"]);
+
+            expect(profile).toEqual(originalProfile);
+            expect(storeProfileSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("for API key profiles", () => {
+        it("should fail and point to using the API key directly", async () => {
+            await expect(
+                profileService.acquireScopedToken(createProfile(ProfileType.KEY), ["sdk:read"])
+            ).rejects.toThrow("Use the API key directly for authentication");
+
+            expect(mockIssuerDiscover).not.toHaveBeenCalled();
+        });
+    });
+});
+
 describe("ProfileService - makeDefaultProfile", () => {
     let profileService: ProfileService;
     const mockHomedir = "/mock/home";

@@ -322,6 +322,51 @@ export class ProfileService {
         await this.storeProfile(profile);
     }
 
+    public async acquireScopedToken(profile: Profile, scopes: string[]): Promise<string> {
+        switch (profile.type) {
+            case ProfileType.DEVICE_CODE:
+                return this.acquireScopedDeviceCodeToken(profile, scopes);
+            case ProfileType.CLIENT_CREDENTIALS:
+                return this.acquireScopedClientCredentialsToken(profile, scopes);
+            default:
+                throw new FatalError(
+                    "A scoped token cannot be acquired for API key profiles. Use the API key directly for authentication."
+                );
+        }
+    }
+
+    private async acquireScopedDeviceCodeToken(profile: Profile, scopes: string[]): Promise<string> {
+        const issuer = await Issuer.discover(profile.team);
+        const oauthClient = new issuer.Client({
+            client_id: "content-cli",
+            token_endpoint_auth_method: "none",
+        });
+        const tokenSet = await oauthClient.refresh(profile.refreshToken, {
+            exchangeBody: { scope: scopes.join(" ") },
+        });
+
+        profile.refreshToken = tokenSet.refresh_token;
+        profile.expiresAt = 0;
+        await this.storeProfile(profile);
+
+        return tokenSet.access_token;
+    }
+
+    private async acquireScopedClientCredentialsToken(profile: Profile, scopes: string[]): Promise<string> {
+        const issuer = await Issuer.discover(profile.team);
+        const oauthClient = new issuer.Client({
+            client_id: profile.clientId,
+            client_secret: profile.clientSecret,
+            token_endpoint_auth_method: profile.clientAuthenticationMethod,
+        });
+        const tokenSet = await oauthClient.grant({
+            grant_type: "client_credentials",
+            scope: scopes.join(" "),
+        });
+
+        return tokenSet.access_token;
+    }
+
     private unrefreshableProfile(profileName: string, err: unknown): Error {
         const cause = err instanceof Error ? err.message : "an unrecognised error";
         logger.debug(`Refreshing the profile ${profileName} failed: ${cause}`);

@@ -24,6 +24,12 @@ class Module extends IModule {
             .requiredOption("--appId <appId>", "Identifier of the app to publish the build for")
             .requiredOption("--dist <dist>", "Directory containing the build of the app")
             .action(this.publishApp);
+
+        sdkCommand
+            .command("token")
+            .beta()
+            .description("Print a token with read access to the Celonis SDK, e.g. to authenticate against the npm registry")
+            .action(this.printToken);
     }
 
     private async downloadSdk(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -32,6 +38,10 @@ class Module extends IModule {
 
     private async publishApp(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new SdkService(context).publishApp(options.appId, options.dist);
+    }
+
+    private async printToken(context: Context): Promise<void> {
+        await new SdkService(context).printToken();
     }
 }
 
