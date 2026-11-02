@@ -1039,7 +1039,7 @@ describe("ProfileService - authorizeProfile (client credentials)", () => {
     });
 });
 
-describe("ProfileService - acquireScopedToken", () => {
+describe("ProfileService - acquireSdkToken", () => {
     let profileService: ProfileService;
     let mockClientInstance: { refresh: jest.Mock; grant: jest.Mock };
     let mockClientConstructor: jest.Mock;
@@ -1074,19 +1074,19 @@ describe("ProfileService - acquireScopedToken", () => {
     });
 
     describe("for device code profiles", () => {
-        it("should refresh with the requested scopes only", async () => {
-            const token = await profileService.acquireScopedToken(createProfile(ProfileType.DEVICE_CODE), ["sdk:read"]);
+        it("should refresh with the SDK read scope only", async () => {
+            const token = await profileService.acquireSdkToken(createProfile(ProfileType.DEVICE_CODE));
 
             expect(token).toBe("scoped-token");
             expect(mockClientInstance.refresh).toHaveBeenCalledWith("refresh-old", {
-                exchangeBody: { scope: "sdk:read" },
+                exchangeBody: { scope: "pro-code-app-manager.sdk:read" },
             });
         });
 
         it("should store the rotated refresh token and mark the profile as expired", async () => {
             const profile = createProfile(ProfileType.DEVICE_CODE);
 
-            await profileService.acquireScopedToken(profile, ["sdk:read"]);
+            await profileService.acquireSdkToken(profile);
 
             expect(storeProfileSpy).toHaveBeenCalledWith(profile);
             expect(profile.refreshToken).toBe("refresh-new");
@@ -1096,15 +1096,15 @@ describe("ProfileService - acquireScopedToken", () => {
         it("should not store the scoped token in the profile", async () => {
             const profile = createProfile(ProfileType.DEVICE_CODE);
 
-            await profileService.acquireScopedToken(profile, ["sdk:read"]);
+            await profileService.acquireSdkToken(profile);
 
             expect(profile.apiToken).toBe("full-scope-token");
         });
     });
 
     describe("for client credentials profiles", () => {
-        it("should grant a token with the requested scopes only", async () => {
-            const token = await profileService.acquireScopedToken(createProfile(ProfileType.CLIENT_CREDENTIALS), ["sdk:read"]);
+        it("should grant a token with the SDK read scope only", async () => {
+            const token = await profileService.acquireSdkToken(createProfile(ProfileType.CLIENT_CREDENTIALS));
 
             expect(token).toBe("scoped-token");
             expect(mockClientConstructor).toHaveBeenCalledWith({
@@ -1114,7 +1114,7 @@ describe("ProfileService - acquireScopedToken", () => {
             });
             expect(mockClientInstance.grant).toHaveBeenCalledWith({
                 grant_type: "client_credentials",
-                scope: "sdk:read",
+                scope: "pro-code-app-manager.sdk:read",
             });
         });
 
@@ -1122,7 +1122,7 @@ describe("ProfileService - acquireScopedToken", () => {
             const profile = createProfile(ProfileType.CLIENT_CREDENTIALS);
             const originalProfile = { ...profile };
 
-            await profileService.acquireScopedToken(profile, ["sdk:read"]);
+            await profileService.acquireSdkToken(profile);
 
             expect(profile).toEqual(originalProfile);
             expect(storeProfileSpy).not.toHaveBeenCalled();
@@ -1132,7 +1132,7 @@ describe("ProfileService - acquireScopedToken", () => {
     describe("for API key profiles", () => {
         it("should fail and point to using the API key directly", async () => {
             await expect(
-                profileService.acquireScopedToken(createProfile(ProfileType.KEY), ["sdk:read"])
+                profileService.acquireSdkToken(createProfile(ProfileType.KEY))
             ).rejects.toThrow("Use the API key directly for authentication");
 
             expect(mockIssuerDiscover).not.toHaveBeenCalled();

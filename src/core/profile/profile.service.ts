@@ -19,8 +19,9 @@ const expiryBuffer = 5000;
 const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
 /** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
 const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
+const SDK_READ_SCOPE = "pro-code-app-manager.sdk:read";
 /** First attempt for both auth flows: all scopes plus the pro-code-app-manager scopes, which are not yet available on every environment. */
-const OAUTH_SCOPES_WITH_PRO_CODE = [...OAUTH_SCOPES, "pro-code-app-manager.sdk:read", "pro-code-app-manager.publish"];
+const OAUTH_SCOPES_WITH_PRO_CODE = [...OAUTH_SCOPES, SDK_READ_SCOPE, "pro-code-app-manager.publish"];
 
 export interface Config {
     defaultProfile: string;
@@ -322,27 +323,27 @@ export class ProfileService {
         await this.storeProfile(profile);
     }
 
-    public async acquireScopedToken(profile: Profile, scopes: string[]): Promise<string> {
+    public async acquireSdkToken(profile: Profile): Promise<string> {
         switch (profile.type) {
             case ProfileType.DEVICE_CODE:
-                return this.acquireScopedDeviceCodeToken(profile, scopes);
+                return this.acquireDeviceCodeSdkToken(profile);
             case ProfileType.CLIENT_CREDENTIALS:
-                return this.acquireScopedClientCredentialsToken(profile, scopes);
+                return this.acquireClientCredentialsSdkToken(profile);
             default:
                 throw new FatalError(
-                    "A scoped token cannot be acquired for API key profiles. Use the API key directly for authentication."
+                    "An SDK token cannot be acquired for API key profiles. Use the API key directly for authentication."
                 );
         }
     }
 
-    private async acquireScopedDeviceCodeToken(profile: Profile, scopes: string[]): Promise<string> {
+    private async acquireDeviceCodeSdkToken(profile: Profile): Promise<string> {
         const issuer = await Issuer.discover(profile.team);
         const oauthClient = new issuer.Client({
             client_id: "content-cli",
             token_endpoint_auth_method: "none",
         });
         const tokenSet = await oauthClient.refresh(profile.refreshToken, {
-            exchangeBody: { scope: scopes.join(" ") },
+            exchangeBody: { scope: SDK_READ_SCOPE },
         });
 
         profile.refreshToken = tokenSet.refresh_token;
@@ -352,7 +353,7 @@ export class ProfileService {
         return tokenSet.access_token;
     }
 
-    private async acquireScopedClientCredentialsToken(profile: Profile, scopes: string[]): Promise<string> {
+    private async acquireClientCredentialsSdkToken(profile: Profile): Promise<string> {
         const issuer = await Issuer.discover(profile.team);
         const oauthClient = new issuer.Client({
             client_id: profile.clientId,
@@ -361,7 +362,7 @@ export class ProfileService {
         });
         const tokenSet = await oauthClient.grant({
             grant_type: "client_credentials",
-            scope: scopes.join(" "),
+            scope: SDK_READ_SCOPE,
         });
 
         return tokenSet.access_token;

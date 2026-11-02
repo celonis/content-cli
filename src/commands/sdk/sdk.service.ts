@@ -9,7 +9,6 @@ import { Profile } from "../../core/profile/profile.interface";
 
 export class SdkService {
     public static readonly SDK_DIRECTORY = ".celonis-sdk";
-    public static readonly SDK_READ_SCOPE = "pro-code-app-manager.sdk:read";
 
     private readonly context: Context;
     private readonly sdkApi: SdkApi;
@@ -44,7 +43,7 @@ export class SdkService {
 
     public async printToken(): Promise<void> {
         const profile = this.requireProfile();
-        const token = await new ProfileService().acquireScopedToken(profile, [SdkService.SDK_READ_SCOPE]);
+        const token = await new ProfileService().acquireSdkToken(profile);
 
         process.stdout.write(`${token}\n`);
     }
