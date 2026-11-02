@@ -1,6 +1,7 @@
 import { Configurator, IModule } from "../../core/command/module-handler";
 import { Context } from "../../core/command/cli-context";
 import { Command, OptionValues } from "commander";
+import { SdkPreviewService } from "./sdk-preview.service";
 import { SdkService } from "./sdk.service";
 
 class Module extends IModule {
@@ -26,6 +27,16 @@ class Module extends IModule {
             .action(this.publishApp);
 
         sdkCommand
+            .command("preview")
+            .beta()
+            .skipProfileLoading()
+            .description("Proxy your local dev server to preview the app inside Celonis")
+            .option("--target <target>", "URL of the local dev server to proxy", "http://localhost:4200")
+            .option("--port <port>", "Target port on which the preview is hosted", "4300")
+            .option("--allow-inline-scripts", "Allow inline scripts in your dev server's HTML")
+            .action(this.previewApp);
+
+        sdkCommand
             .command("token")
             .beta()
             .description("Print a token with read access to the Celonis SDK, e.g. to authenticate against the npm registry")
@@ -38,6 +49,10 @@ class Module extends IModule {
 
     private async publishApp(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new SdkService(context).publishApp(options.appId, options.dist);
+    }
+
+    private async previewApp(context: Context, command: Command, options: OptionValues): Promise<void> {
+        await new SdkPreviewService().previewUntilStopped(options.target, options.port, options.allowInlineScripts === true);
     }
 
     private async printToken(context: Context): Promise<void> {
