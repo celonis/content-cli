@@ -18,17 +18,18 @@
     "node": ">=18.20.5"
   },
   "dependencies": {
+    "@github/keytar": "7.10.6",
     "adm-zip": "0.6.0",
-    "chalk": "4.1.2",
-    "uuid": "9.0.1",
     "axios": "1.18.0",
+    "chalk": "4.1.2",
     "commander": "13.1.0",
     "form-data": "4.0.6",
-    "openid-client": "5.6.1",
     "hpagent": "1.2.0",
-    "@github/keytar": "7.10.6",
+    "openid-client": "5.6.1",
+    "selfsigned": "5.5.0",
     "semver": "7.6.3",
     "simple-git": "3.36.0",
+    "uuid": "9.0.1",
     "valid-url": "1.0.9",
     "winston": "3.17.0",
     "yaml": "2.8.3"

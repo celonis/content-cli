@@ -444,6 +444,9 @@ const NODES = [
   { id: "sdk_publish", label: "publish (beta)", group: "command", path: "sdk publish",
     description: "Publish a build of a custom app as a new version of its Codespace asset.",
     options: ["-p, --profile <profile>", "--appId <appId>", "--dist <dist>", "-h, --help"] },
+  { id: "sdk_preview", label: "preview (beta)", group: "command", path: "sdk preview",
+    description: "Serve a local dev server to the Codespace's Local preview with the published app's sandbox rules",
+    options: ["--target <target>", "--port <port>", "--allow-inline-scripts", "-h, --help"] },
 
   // git profile
   { id: "git_profile_area", label: "profile", group: "subarea", path: "git profile",
@@ -546,7 +549,7 @@ const EDGES = [
   ["deployment_list_area","deployment_list_history"],["deployment_list_area","deployment_list_active"],
   ["deployment_list_area","deployment_list_deployables"],["deployment_list_area","deployment_list_targets"],
 
-  ["area_sdk","sdk_download"],["area_sdk","sdk_publish"],
+  ["area_sdk","sdk_download"],["area_sdk","sdk_publish"],["area_sdk","sdk_preview"],
 
   ["area_git","git_profile_area"],["git_profile_area","git_profile_list"],
   ["git_profile_area","git_profile_create"],["git_profile_area","git_profile_default"],
