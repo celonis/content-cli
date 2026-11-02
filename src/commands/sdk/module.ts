@@ -35,6 +35,12 @@ class Module extends IModule {
             .option("--port <port>", "Target port on which the preview is hosted", "4300")
             .option("--allow-inline-scripts", "Allow inline scripts in your dev server's HTML")
             .action(this.previewApp);
+
+        sdkCommand
+            .command("token")
+            .beta()
+            .description("Print a token with read access to the Celonis SDK, e.g. to authenticate against the npm registry")
+            .action(this.printToken);
     }
 
     private async downloadSdk(context: Context, command: Command, options: OptionValues): Promise<void> {
@@ -47,6 +53,10 @@ class Module extends IModule {
 
     private async previewApp(context: Context, command: Command, options: OptionValues): Promise<void> {
         await new SdkPreviewService().previewUntilStopped(options.target, options.port, options.allowInlineScripts === true);
+    }
+
+    private async printToken(context: Context): Promise<void> {
+        await new SdkService(context).printToken();
     }
 }
 

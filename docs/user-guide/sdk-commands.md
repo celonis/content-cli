@@ -43,3 +43,19 @@ content-cli sdk preview [--target <target>] [--port <port>] [--allow-inline-scri
 The command does not need a profile. It serves your dev server over HTTPS with a self-signed certificate stored in `~/.celonis-content-cli-preview`, and forwards requests and WebSocket connections to the target. If the Local preview stays blank, open the printed `https://localhost:<port>` URL in a browser tab, accept the certificate, and reload the preview. Press Ctrl+C to stop.
 
 Published apps block inline scripts, and so does the Local preview by default. Some dev servers inject one, such as React's Fast Refresh preamble, and the app stays blank without it. Pass `--allow-inline-scripts` to allow them: the command adds a hash of each inline script to the page's `script-src`. Either way it prints a warning for each inline script the first time it sees it. Move any inline script of your own into a separate file before publishing.
+
+## Print Token
+
+Print a fresh token that only grants read access to the Celonis SDK, e.g. to authenticate against the npm registry.
+
+```
+content-cli -q sdk token
+```
+
+The token is printed to the console without any other output when the `-q` option is set, so it can be used in scripts, e.g. to configure npm:
+
+```
+npm config set //<team>.celonis.cloud/pro-code-app-manager/api/npm/:_authToken "$(content-cli -q sdk token)"
+```
+
+The command requires a device code or client credentials profile. API keys can be used directly for authentication instead.
