@@ -874,7 +874,7 @@ describe("ProfileService - tryClientCredentialsGrant", () => {
         expect(result).not.toBeNull();
         expect(result!.scopes).toEqual([
             "studio", "package-manager", "integration.data-pools", "action-engine.projects",
-            "pro-code-app-manager.sdk:read", "pro-code-app-manager.publish",
+            "pro-code-app-manager.sdk", "pro-code-app-manager.publish",
         ]);
         expect(mockGrant).toHaveBeenCalledTimes(1);
     });
@@ -950,7 +950,7 @@ describe("ProfileService - authorizeProfile (device code)", () => {
 
         expect(mockClientInstance.deviceAuthorization.mock.calls.map(([params]) => params.scope)).toEqual([
             "studio package-manager integration.data-pools action-engine.projects " +
-                "pro-code-app-manager.sdk:read pro-code-app-manager.publish",
+                "pro-code-app-manager.sdk pro-code-app-manager.publish",
             "studio package-manager integration.data-pools action-engine.projects",
             "studio package-manager integration.data-pools",
         ]);
@@ -1074,12 +1074,12 @@ describe("ProfileService - acquireSdkToken", () => {
     });
 
     describe("for device code profiles", () => {
-        it("should refresh with the SDK read scope only", async () => {
+        it("should refresh with the SDK scope only", async () => {
             const token = await profileService.acquireSdkToken(createProfile(ProfileType.DEVICE_CODE));
 
             expect(token).toBe("scoped-token");
             expect(mockClientInstance.refresh).toHaveBeenCalledWith("refresh-old", {
-                exchangeBody: { scope: "pro-code-app-manager.sdk:read" },
+                exchangeBody: { scope: "pro-code-app-manager.sdk" },
             });
         });
 
@@ -1103,7 +1103,7 @@ describe("ProfileService - acquireSdkToken", () => {
     });
 
     describe("for client credentials profiles", () => {
-        it("should grant a token with the SDK read scope only", async () => {
+        it("should grant a token with the SDK scope only", async () => {
             const token = await profileService.acquireSdkToken(createProfile(ProfileType.CLIENT_CREDENTIALS));
 
             expect(token).toBe("scoped-token");
@@ -1114,7 +1114,7 @@ describe("ProfileService - acquireSdkToken", () => {
             });
             expect(mockClientInstance.grant).toHaveBeenCalledWith({
                 grant_type: "client_credentials",
-                scope: "pro-code-app-manager.sdk:read",
+                scope: "pro-code-app-manager.sdk",
             });
         });
 

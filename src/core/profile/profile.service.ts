@@ -19,9 +19,9 @@ const expiryBuffer = 5000;
 const OAUTH_SCOPES = ["studio", "package-manager", "integration.data-pools", "action-engine.projects"];
 /** Device code fallback: try without action-engine.projects if all 4 scopes fail. */
 const DEVICE_CODE_SCOPES_WITHOUT_ACTION_ENGINE = ["studio", "package-manager", "integration.data-pools"];
-const SDK_READ_SCOPE = "pro-code-app-manager.sdk:read";
+const SDK_SCOPE = "pro-code-app-manager.sdk";
 /** First attempt for both auth flows: all scopes plus the pro-code-app-manager scopes, which are not yet available on every environment. */
-const OAUTH_SCOPES_WITH_PRO_CODE = [...OAUTH_SCOPES, SDK_READ_SCOPE, "pro-code-app-manager.publish"];
+const OAUTH_SCOPES_WITH_PRO_CODE = [...OAUTH_SCOPES, SDK_SCOPE, "pro-code-app-manager.publish"];
 
 export interface Config {
     defaultProfile: string;
@@ -343,7 +343,7 @@ export class ProfileService {
             token_endpoint_auth_method: "none",
         });
         const tokenSet = await oauthClient.refresh(profile.refreshToken, {
-            exchangeBody: { scope: SDK_READ_SCOPE },
+            exchangeBody: { scope: SDK_SCOPE },
         });
 
         profile.refreshToken = tokenSet.refresh_token;
@@ -362,7 +362,7 @@ export class ProfileService {
         });
         const tokenSet = await oauthClient.grant({
             grant_type: "client_credentials",
-            scope: SDK_READ_SCOPE,
+            scope: SDK_SCOPE,
         });
 
         return tokenSet.access_token;
