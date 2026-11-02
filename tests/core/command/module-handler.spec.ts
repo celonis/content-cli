@@ -78,3 +78,48 @@ describe("CommandConfig action error handling", () => {
         ).toBe(false);
     });
 });
+
+describe("CommandConfig beta notices", () => {
+    beforeEach(() => {
+        loggingTestTransport.logMessages = [];
+    });
+
+    async function runBetaCommand(): Promise<void> {
+        const program = new Command();
+        const configurator = new Configurator(program, testContext);
+
+        configurator.command("test-command").beta().action(async () => undefined);
+
+        program.exitOverride();
+        await program.parseAsync(["node", "content-cli", "test-command"]);
+    }
+
+    async function runCommandWithBetaOption(): Promise<void> {
+        const program = new Command();
+        const configurator = new Configurator(program, testContext);
+
+        configurator
+            .command("test-command")
+            .betaOption("--preview", "Beta option")
+            .action(async () => undefined);
+
+        program.exitOverride();
+        await program.parseAsync(["node", "content-cli", "test-command", "--preview"]);
+    }
+
+    function findLogEntry(text: string) {
+        return loggingTestTransport.logMessages.find(entry => String(entry.message).includes(text));
+    }
+
+    it("warns that a beta command may change, so the notice goes to stderr", async () => {
+        await runBetaCommand();
+
+        expect(findLogEntry("This command is in beta")?.level).toContain("warn");
+    });
+
+    it("warns that a provided beta option may change, so the notice goes to stderr", async () => {
+        await runCommandWithBetaOption();
+
+        expect(findLogEntry("The option '--preview' is in beta")?.level).toContain("warn");
+    });
+});

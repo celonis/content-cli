@@ -50,6 +50,7 @@ export const logger: Logger = winston.createLogger({
     transports: [
         new winston.transports.Console({
             level: "info",
+            stderrLevels: ["error", "warn"],
             format: winston.format.combine(
                 winston.format.colorize(),
             ),

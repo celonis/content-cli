@@ -257,7 +257,7 @@ export class CommandConfig {
 
     private printBetaNoticeIfBetaCommand(): void {
         if ((this.cmd as any).isBeta) {
-            logger.info(chalk.yellow("This command is in beta and may change in future releases."));
+            logger.warn(chalk.yellow("This command is in beta and may change in future releases."));
         }
     }
 
@@ -269,7 +269,7 @@ export class CommandConfig {
         for (const option of this.cmd.options) {
             const optionName = option.attributeName();
             if ((option as any).isBeta && Object.hasOwn(providedOptions, optionName)) {
-                logger.info(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
+                logger.warn(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
             }
         }
     }
