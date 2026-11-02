@@ -266,11 +266,10 @@ export class CommandConfig {
             return;
         }
         const providedOptions = this.cmd.optsWithGlobals();
-        for (const option of this.cmd.options) {
-            const optionName = option.attributeName();
-            if ((option as any).isBeta && Object.hasOwn(providedOptions, optionName)) {
-                logger.warn(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`));
-            }
-        }
+        this.cmd.options
+            .filter(option => (option as any).isBeta && Object.hasOwn(providedOptions, option.attributeName()))
+            .forEach(option =>
+                logger.warn(chalk.yellow(`The option '${option.long}' is in beta and may change in future releases.`))
+            );
     }
 }
