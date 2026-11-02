@@ -100,8 +100,8 @@ async function run(): Promise<void> {
     const globalOpts = bootstrapProgram.opts();
 
     if (!globalOpts.quietmode) {
-        console.log(`Content CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
-        console.log();
+        console.error(`Content CLI - (C) Copyright 2025 - Celonis SE - Version ${VersionUtils.getCurrentCliVersion()}`);
+        console.error();
     }
 
     if (globalOpts.debug) {
