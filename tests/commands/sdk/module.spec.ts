@@ -8,15 +8,13 @@ import { SdkService } from "../../../src/commands/sdk/sdk.service";
 
 describe("SDK Module", () => {
     describe("register", () => {
-        it("registers the sdk download command as beta", () => {
+        it("registers the sdk commands as beta", () => {
             const mockConfigurator = createMockConfigurator();
 
             new Module().register(testContext, mockConfigurator);
 
             expect(mockConfigurator.command).toHaveBeenCalledWith("sdk");
-            expect(mockConfigurator.command).toHaveBeenCalledWith("download");
-            expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--appId <appId>", expect.any(String));
-            expect(mockConfigurator.beta).toHaveBeenCalledTimes(5);
+            expect(mockConfigurator.beta).toHaveBeenCalledTimes(4);
         });
 
         it("registers the sdk publish command", () => {
@@ -25,18 +23,8 @@ describe("SDK Module", () => {
             new Module().register(testContext, mockConfigurator);
 
             expect(mockConfigurator.command).toHaveBeenCalledWith("publish");
+            expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--appId <appId>", expect.any(String));
             expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--dist <dist>", expect.any(String));
-        });
-
-        it("downloads the SDK of the given app when the download command runs", async () => {
-            const downloadSdk = jest.spyOn(SdkService.prototype, "downloadSdk").mockResolvedValue();
-            const mockConfigurator = createMockConfigurator();
-            new Module().register(testContext, mockConfigurator);
-
-            const downloadAction = mockConfigurator.action.mock.calls[0][0];
-            await downloadAction(testContext, new Command(), { appId: "app-id" });
-
-            expect(downloadSdk).toHaveBeenCalledWith("app-id");
         });
 
         it("publishes the given dist directory when the publish command runs", async () => {
@@ -44,7 +32,7 @@ describe("SDK Module", () => {
             const mockConfigurator = createMockConfigurator();
             new Module().register(testContext, mockConfigurator);
 
-            const publishAction = mockConfigurator.action.mock.calls[1][0];
+            const publishAction = mockConfigurator.action.mock.calls[0][0];
             await publishAction(testContext, new Command(), { appId: "app-id", dist: "dist" });
 
             expect(publishApp).toHaveBeenCalledWith("app-id", "dist");
@@ -71,7 +59,7 @@ describe("SDK Module", () => {
             const sigintListeners = process.listenerCount("SIGINT");
             const sigtermListeners = process.listenerCount("SIGTERM");
 
-            const previewAction = mockConfigurator.action.mock.calls[2][0];
+            const previewAction = mockConfigurator.action.mock.calls[1][0];
             const running = previewAction(testContext, new Command(), { target: "http://localhost:5173", port: "5173", allowInlineScripts: true });
             await new Promise(resolve => setImmediate(resolve));
             expect(close).not.toHaveBeenCalled();
@@ -97,7 +85,7 @@ describe("SDK Module", () => {
             const mockConfigurator = createMockConfigurator();
             new Module().register(testContext, mockConfigurator);
 
-            const tokenAction = mockConfigurator.action.mock.calls[3][0];
+            const tokenAction = mockConfigurator.action.mock.calls[2][0];
             await tokenAction(testContext, new Command(), {});
 
             expect(printToken).toHaveBeenCalled();

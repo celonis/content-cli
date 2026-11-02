@@ -12,13 +12,6 @@ class Module extends IModule {
             .description("Implement custom apps for Codespace assets using the Celonis SDK");
 
         sdkCommand
-            .command("download")
-            .beta()
-            .description("Download the latest Celonis SDK generated for a Codespace asset")
-            .requiredOption("--appId <appId>", "Identifier of the app to download the SDK for")
-            .action(this.downloadSdk);
-
-        sdkCommand
             .command("publish")
             .beta()
             .description("Publish a build of a custom app as a new version of its Codespace asset")
@@ -41,10 +34,6 @@ class Module extends IModule {
             .beta()
             .description("Print a token with read access to the Celonis SDK, e.g. to authenticate against the npm registry")
             .action(this.printToken);
-    }
-
-    private async downloadSdk(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new SdkService(context).downloadSdk(options.appId);
     }
 
     private async publishApp(context: Context, command: Command, options: OptionValues): Promise<void> {
