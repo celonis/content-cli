@@ -9,12 +9,12 @@ class Module extends IModule {
         const sdkCommand = configurator
             .command("sdk")
             .beta()
-            .description("Implement custom apps for Codespace assets using the Celonis SDK");
+            .description("Implement custom apps for Codehub assets using the Celonis SDK");
 
         sdkCommand
             .command("publish")
             .beta()
-            .description("Publish a build of a custom app as a new version of its Codespace asset")
+            .description("Publish a build of a custom app as a new version of its Codehub asset")
             .requiredOption("--appId <appId>", "Identifier of the app to publish the build for")
             .requiredOption("--dist <dist>", "Directory containing the build of the app")
             .option("--buildVersion <buildVersion>", "Semantic version of the build. Defaults to the next major version")
