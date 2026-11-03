@@ -7,8 +7,11 @@ The **sdk** command group provides the commands to implement custom apps for Cod
 Publish a build of a custom app as a new version of its Codespace asset.
 
 ```
-content-cli sdk publish --appId <appId> --dist <dist>
+content-cli sdk publish --appId <appId> --dist <dist> [--buildVersion <buildVersion>] [--message <message>]
 ```
+
+- `--buildVersion` is the semantic version of the build, e.g. `2.1.0`. Defaults to the next major version: `1.0.0` for the first build, then `2.0.0`, `3.0.0`, and so on. A given version must be greater than the latest version of the app. A version that already exists or is lower is rejected.
+- `--message` describes the build, e.g. what changed. At most 500 characters, longer messages are rejected.
 
 The command compresses the given build directory and uploads it for the app. On success, the version assigned to the build is printed, which can then be selected on the Codespace asset.
 

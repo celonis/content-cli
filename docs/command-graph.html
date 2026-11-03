@@ -440,7 +440,7 @@ const NODES = [
   // sdk
   { id: "sdk_publish", label: "publish (beta)", group: "command", path: "sdk publish",
     description: "Publish a build of a custom app as a new version of its Codespace asset.",
-    options: ["-p, --profile <profile>", "--appId <appId>", "--dist <dist>", "-h, --help"] },
+    options: ["-p, --profile <profile>", "--appId <appId>", "--dist <dist>", "--buildVersion <buildVersion>", "--message <message>", "-h, --help"] },
   { id: "sdk_preview", label: "preview (beta)", group: "command", path: "sdk preview",
     description: "Serve a local dev server to the Codespace's Local preview with the published app's sandbox rules",
     options: ["--target <target>", "--port <port>", "--allow-inline-scripts", "-h, --help"] },
