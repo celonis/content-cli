@@ -1,20 +1,20 @@
 # SDK Commands
 
-The **sdk** command group provides the commands to implement custom apps for Codespace assets using the Celonis SDK.
+The **sdk** command group provides the commands to implement custom apps for Codehub assets using the Celonis SDK.
 
 ## Publish App
 
-Publish a build of a custom app as a new version of its Codespace asset.
+Publish a build of a custom app as a new version of its Codehub asset.
 
 ```
 content-cli sdk publish --appId <appId> --dist <dist>
 ```
 
-The command compresses the given build directory and uploads it for the app. On success, the version assigned to the build is printed, which can then be selected on the Codespace asset.
+The command compresses the given build directory and uploads it for the app. On success, the version assigned to the build is printed, which can then be selected on the Codehub asset.
 
 ## Preview App
 
-Serve a local dev server to the Local preview of a Codespace asset, with the same sandbox rules as the published app.
+Proxy your local dev server to preview the app inside Celonis.
 
 ```
 content-cli sdk preview [--target <target>] [--port <port>] [--allow-inline-scripts]

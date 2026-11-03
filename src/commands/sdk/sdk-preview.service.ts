@@ -25,7 +25,7 @@ export class SdkPreviewService {
 
         logger.info(`Local preview running on https://localhost:${portNumber}, forwarding to ${target}.`);
         logger.info(
-            `Open the Local preview in your Codespace. If it stays blank, open https://localhost:${portNumber} in a browser tab and accept the certificate, then reload the preview.`
+            `Open the Local preview in your Codehub. If it stays blank, open https://localhost:${portNumber} in a browser tab and accept the certificate, then reload the preview.`
         );
         logger.info("Press Ctrl+C to stop.");
         return proxy;

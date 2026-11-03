@@ -179,7 +179,7 @@ const NODES = [
   { id: "area_deployment", label: "deployment (beta)", group: "area", path: "deployment",
     description: "Create deployments, list their history, check active deployments, and retrieve deployables and targets", options: ["-h, --help"] },
   { id: "area_sdk", label: "sdk (beta)", group: "area", path: "sdk",
-    description: "Implement custom apps for Codespace assets using the Celonis SDK", options: ["-h, --help"] },
+    description: "Implement custom apps for Codehub assets using the Celonis SDK", options: ["-h, --help"] },
   { id: "area_git", label: "git", group: "area", path: "git",
     description: "Commands related to Git settings", options: ["-h, --help"] },
   { id: "area_profile", label: "profile", group: "area", path: "profile",
@@ -439,10 +439,10 @@ const NODES = [
 
   // sdk
   { id: "sdk_publish", label: "publish (beta)", group: "command", path: "sdk publish",
-    description: "Publish a build of a custom app as a new version of its Codespace asset.",
+    description: "Publish a build of a custom app as a new version of its Codehub asset.",
     options: ["-p, --profile <profile>", "--appId <appId>", "--dist <dist>", "-h, --help"] },
   { id: "sdk_preview", label: "preview (beta)", group: "command", path: "sdk preview",
-    description: "Serve a local dev server to the Codespace's Local preview with the published app's sandbox rules",
+    description: "Proxy your local dev server to preview the app inside Celonis",
     options: ["--target <target>", "--port <port>", "--allow-inline-scripts", "-h, --help"] },
   { id: "sdk_token", label: "token (beta)", group: "command", path: "sdk token",
     description: "Print a token with read access to the Celonis SDK.",
