@@ -21,7 +21,7 @@ export class SdkService {
         this.requireDirectory(distDirectory);
 
         const bundle = this.compressDirectory(distDirectory);
-        const { version } = await this.sdkApi.publishApp(appId, bundle);
+        const { version } = await this.sdkApi.publishApp(appId, bundle, {});
 
         logger.info(`App published successfully as version '${version}'`);
     }
