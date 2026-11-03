@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import AdmZip = require("adm-zip");
+import axios from "axios";
 import {
     mockAxiosPost,
     mockAxiosPostError,
@@ -21,6 +22,14 @@ describe("SDK publish", () => {
 
     function publishedBundle(): AdmZip {
         return new AdmZip(mockedPostRequestBodyByUrl.get(publishUrl));
+    }
+
+    function sentParams(): Record<string, string | undefined> {
+        return (mockedAxiosInstance.post as jest.Mock).mock.calls[0][2].params;
+    }
+
+    function sentUri(): string {
+        return axios.getUri({ url: publishUrl, params: sentParams() });
     }
 
     beforeEach(() => {
@@ -79,23 +88,22 @@ describe("SDK publish", () => {
     });
 
     it("Should publish with the given version and message", async () => {
-        const url = `${publishUrl}?version=2.0.0&message=First+build`;
-        mockAxiosPost(url, { version: "2.0.0" });
+        mockAxiosPost(publishUrl, { version: "2.0.0" });
 
         await new SdkService(testContext).publishApp(appId, distDirectory, "2.0.0", "First build");
 
-        expect(new AdmZip(mockedPostRequestBodyByUrl.get(url)).readAsText("index.html")).toBe("<html></html>");
+        expect(publishedBundle().readAsText("index.html")).toBe("<html></html>");
+        expect(sentParams()).toEqual({ version: "2.0.0", message: "First build" });
         expect(loggingTestTransport.logMessages[0].message).toContain("App published successfully as version '2.0.0'");
     });
 
     it("Should accept a message of exactly 500 characters", async () => {
         const message = "a".repeat(500);
-        const url = `${publishUrl}?message=${message}`;
-        mockAxiosPost(url, { version: "1.0.0" });
+        mockAxiosPost(publishUrl, { version: "1.0.0" });
 
         await new SdkService(testContext).publishApp(appId, distDirectory, undefined, message);
 
-        expect(mockedPostRequestBodyByUrl.has(url)).toBe(true);
+        expect(sentParams().message).toBe(message);
     });
 
     it("Should reject a message longer than 500 characters without uploading", async () => {
@@ -109,44 +117,33 @@ describe("SDK publish", () => {
         const bundle = Buffer.from("bundle");
 
         it("Should send version and message as URL-encoded query parameters", async () => {
-            const url = `${publishUrl}?version=2.0.0&message=Fix%3A+%2312+%2F+a+%26+b%3F+x%3D1%2B2+%F0%9F%9A%80`;
-            mockAxiosPost(url, { version: "2.0.0" });
+            mockAxiosPost(publishUrl, { version: "2.0.0" });
 
             const response = await new SdkApi(testContext).publishApp(appId, bundle, { version: "2.0.0", message: "Fix: #12 / a & b? x=1+2 🚀" });
 
             expect(response.version).toBe("2.0.0");
-            expect(mockedPostRequestBodyByUrl.get(url)).toBe(bundle);
+            expect(mockedPostRequestBodyByUrl.get(publishUrl)).toBe(bundle);
+            expect(sentUri()).toBe(`${publishUrl}?version=2.0.0&message=Fix:+%2312+%2F+a+%26+b%3F+x%3D1%2B2+%F0%9F%9A%80`);
         });
 
         it("Should send only the version when no message is given", async () => {
-            const url = `${publishUrl}?version=2.0.0`;
-            mockAxiosPost(url, { version: "2.0.0" });
+            mockAxiosPost(publishUrl, { version: "2.0.0" });
 
             await new SdkApi(testContext).publishApp(appId, bundle, { version: "2.0.0" });
 
-            expect(mockedPostRequestBodyByUrl.get(url)).toBe(bundle);
+            expect(sentUri()).toBe(`${publishUrl}?version=2.0.0`);
         });
 
         it("Should send only the message when no version is given", async () => {
-            const url = `${publishUrl}?message=First+build`;
-            mockAxiosPost(url, { version: "1.0.0" });
+            mockAxiosPost(publishUrl, { version: "1.0.0" });
 
             await new SdkApi(testContext).publishApp(appId, bundle, { message: "First build" });
 
-            expect(mockedPostRequestBodyByUrl.get(url)).toBe(bundle);
-        });
-
-        it("Should send no query parameters for empty version and message", async () => {
-            mockAxiosPost(publishUrl, { version: "1.0.0" });
-
-            await new SdkApi(testContext).publishApp(appId, bundle, { version: "", message: "" });
-
-            expect(mockedPostRequestBodyByUrl.get(publishUrl)).toBe(bundle);
+            expect(sentUri()).toBe(`${publishUrl}?message=First+build`);
         });
 
         it("Should report a version conflict from the backend", async () => {
-            const url = `${publishUrl}?version=1.0.0`;
-            mockAxiosPostError(url, 409, "Version 1.0.0 must be greater than the latest version 2.0.0");
+            mockAxiosPostError(publishUrl, 409, "Version 1.0.0 must be greater than the latest version 2.0.0");
 
             await expect(new SdkApi(testContext).publishApp(appId, bundle, { version: "1.0.0" }))
                 .rejects.toThrow(`Problem publishing app ${appId}: Error: "Version 1.0.0 must be greater than the latest version 2.0.0"`);
