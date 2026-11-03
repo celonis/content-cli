@@ -1,4 +1,4 @@
-import { URLSearchParams } from "url";
+import { URLSearchParams } from "node:url";
 import { HttpClient } from "../../core/http/http-client";
 import { Context } from "../../core/command/cli-context";
 import { FatalError } from "../../core/utils/logger";
@@ -28,7 +28,8 @@ export class SdkApi {
             queryParams.set("message", options.message);
         }
         const query = queryParams.toString();
-        const url = `/pro-code-app-manager/api/codespace/apps/${appId}/publish${query ? `?${query}` : ""}`;
+        const path = `/pro-code-app-manager/api/codespace/apps/${appId}/publish`;
+        const url = query ? `${path}?${query}` : path;
 
         return this.httpClient()
             .postBinary(url, bundle, "application/zip")
