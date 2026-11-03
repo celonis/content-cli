@@ -25,6 +25,8 @@ describe("SDK Module", () => {
             expect(mockConfigurator.command).toHaveBeenCalledWith("publish");
             expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--appId <appId>", expect.any(String));
             expect(mockConfigurator.requiredOption).toHaveBeenCalledWith("--dist <dist>", expect.any(String));
+            expect(mockConfigurator.option).toHaveBeenCalledWith("--buildVersion <buildVersion>", expect.any(String));
+            expect(mockConfigurator.option).toHaveBeenCalledWith("--message <message>", expect.any(String));
         });
 
         it("publishes the given dist directory when the publish command runs", async () => {
@@ -35,7 +37,18 @@ describe("SDK Module", () => {
             const publishAction = mockConfigurator.action.mock.calls[0][0];
             await publishAction(testContext, new Command(), { appId: "app-id", dist: "dist" });
 
-            expect(publishApp).toHaveBeenCalledWith("app-id", "dist");
+            expect(publishApp).toHaveBeenCalledWith("app-id", "dist", undefined, undefined);
+        });
+
+        it("publishes with the given build version and message when the publish command runs", async () => {
+            const publishApp = jest.spyOn(SdkService.prototype, "publishApp").mockResolvedValue();
+            const mockConfigurator = createMockConfigurator();
+            new Module().register(testContext, mockConfigurator);
+
+            const publishAction = mockConfigurator.action.mock.calls[0][0];
+            await publishAction(testContext, new Command(), { appId: "app-id", dist: "dist", buildVersion: "2.0.0", message: "First build" });
+
+            expect(publishApp).toHaveBeenCalledWith("app-id", "dist", "2.0.0", "First build");
         });
 
         it("registers the sdk preview command with its defaults and without profile loading", () => {

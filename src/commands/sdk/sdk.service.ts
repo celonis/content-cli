@@ -7,6 +7,8 @@ import { FatalError, logger } from "../../core/utils/logger";
 import { ProfileService } from "../../core/profile/profile.service";
 import { Profile } from "../../core/profile/profile.interface";
 
+const MAX_MESSAGE_LENGTH = 500;
+
 export class SdkService {
     private readonly context: Context;
     private readonly sdkApi: SdkApi;
@@ -16,12 +18,13 @@ export class SdkService {
         this.sdkApi = new SdkApi(context);
     }
 
-    public async publishApp(appId: string, dist: string): Promise<void> {
+    public async publishApp(appId: string, dist: string, buildVersion?: string, message?: string): Promise<void> {
+        this.requireValidMessage(message);
         const distDirectory = path.resolve(process.cwd(), dist);
         this.requireDirectory(distDirectory);
 
         const bundle = this.compressDirectory(distDirectory);
-        const { version } = await this.sdkApi.publishApp(appId, bundle, {});
+        const { version } = await this.sdkApi.publishApp(appId, bundle, { version: buildVersion, message });
 
         logger.info(`App published successfully as version '${version}'`);
     }
@@ -38,6 +41,12 @@ export class SdkService {
             throw new FatalError("No profile provided. Please provide a profile to acquire a token for");
         }
         return this.context.profile;
+    }
+
+    private requireValidMessage(message?: string): void {
+        if (message && message.length > MAX_MESSAGE_LENGTH) {
+            throw new FatalError(`The message must not exceed ${MAX_MESSAGE_LENGTH} characters (got ${message.length})`);
+        }
     }
 
     private requireDirectory(directory: string): void {

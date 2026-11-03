@@ -17,6 +17,8 @@ class Module extends IModule {
             .description("Publish a build of a custom app as a new version of its Codespace asset")
             .requiredOption("--appId <appId>", "Identifier of the app to publish the build for")
             .requiredOption("--dist <dist>", "Directory containing the build of the app")
+            .option("--buildVersion <buildVersion>", "Semantic version of the build. Defaults to the next major version")
+            .option("--message <message>", "Message describing the build, at most 500 characters")
             .action(this.publishApp);
 
         sdkCommand
@@ -37,7 +39,7 @@ class Module extends IModule {
     }
 
     private async publishApp(context: Context, command: Command, options: OptionValues): Promise<void> {
-        await new SdkService(context).publishApp(options.appId, options.dist);
+        await new SdkService(context).publishApp(options.appId, options.dist, options.buildVersion, options.message);
     }
 
     private async previewApp(context: Context, command: Command, options: OptionValues): Promise<void> {

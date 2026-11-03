@@ -78,14 +78,41 @@ describe("SDK publish", () => {
             .rejects.toThrow(`Problem publishing app ${appId}: Error: "Custom app 'app-id' not found"`);
     });
 
+    it("Should publish with the given version and message", async () => {
+        const url = `${publishUrl}?version=2.0.0&message=First+build`;
+        mockAxiosPost(url, { version: "2.0.0" });
+
+        await new SdkService(testContext).publishApp(appId, distDirectory, "2.0.0", "First build");
+
+        expect(new AdmZip(mockedPostRequestBodyByUrl.get(url)).readAsText("index.html")).toBe("<html></html>");
+        expect(loggingTestTransport.logMessages[0].message).toContain("App published successfully as version '2.0.0'");
+    });
+
+    it("Should accept a message of exactly 500 characters", async () => {
+        const message = "a".repeat(500);
+        const url = `${publishUrl}?message=${message}`;
+        mockAxiosPost(url, { version: "1.0.0" });
+
+        await new SdkService(testContext).publishApp(appId, distDirectory, undefined, message);
+
+        expect(mockedPostRequestBodyByUrl.has(url)).toBe(true);
+    });
+
+    it("Should reject a message longer than 500 characters without uploading", async () => {
+        await expect(new SdkService(testContext).publishApp(appId, distDirectory, undefined, "a".repeat(501)))
+            .rejects.toThrow("The message must not exceed 500 characters (got 501)");
+
+        expect(mockedAxiosInstance.post).not.toHaveBeenCalled();
+    });
+
     describe("Publish request", () => {
         const bundle = Buffer.from("bundle");
 
         it("Should send version and message as URL-encoded query parameters", async () => {
-            const url = `${publishUrl}?version=2.0.0&message=Fix%3A+a+%26+b`;
+            const url = `${publishUrl}?version=2.0.0&message=Fix%3A+%2312+%2F+a+%26+b%3F+x%3D1%2B2+%F0%9F%9A%80`;
             mockAxiosPost(url, { version: "2.0.0" });
 
-            const response = await new SdkApi(testContext).publishApp(appId, bundle, { version: "2.0.0", message: "Fix: a & b" });
+            const response = await new SdkApi(testContext).publishApp(appId, bundle, { version: "2.0.0", message: "Fix: #12 / a & b? x=1+2 🚀" });
 
             expect(response.version).toBe("2.0.0");
             expect(mockedPostRequestBodyByUrl.get(url)).toBe(bundle);
