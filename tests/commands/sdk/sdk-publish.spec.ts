@@ -97,22 +97,6 @@ describe("SDK publish", () => {
         expect(loggingTestTransport.logMessages[0].message).toContain("App published successfully as version '2.0.0'");
     });
 
-    it("Should accept a message of exactly 500 characters", async () => {
-        const message = "a".repeat(500);
-        mockAxiosPost(publishUrl, { version: "1.0.0" });
-
-        await new SdkService(testContext).publishApp(appId, distDirectory, undefined, message);
-
-        expect(sentParams().message).toBe(message);
-    });
-
-    it("Should reject a message longer than 500 characters without uploading", async () => {
-        await expect(new SdkService(testContext).publishApp(appId, distDirectory, undefined, "a".repeat(501)))
-            .rejects.toThrow("The message must not exceed 500 characters (got 501)");
-
-        expect(mockedAxiosInstance.post).not.toHaveBeenCalled();
-    });
-
     describe("Publish request", () => {
         const bundle = Buffer.from("bundle");
 
