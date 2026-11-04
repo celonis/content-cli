@@ -169,7 +169,9 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Key of the package to export")
             .option("--zip", "Export the package as a single <packageKey>.zip file instead of an unzipped <packageKey> directory", false)
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
-            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported package")
+            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported package. Files on the branch that aren't part of the package are kept")
+            .option("--portable", "Leave out the package key, the variable values (variables.json) and the node spaces, so the export can be imported into any package", false)
+            .option("--targetFile <targetFile>", "Also write the package key and its variable values to this JSON file, for use when importing into a target package")
             .action(this.exportSinglePackage);
 
         packageCommand.command("validate")
@@ -500,7 +502,13 @@ class Module extends IModule {
         if (options.gitProfile && !options.gitBranch) {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
-        await new SinglePackageExportService(context).exportPackage(options.packageKey, options.zip, options.gitBranch);
+        await new SinglePackageExportService(context).exportPackage(
+            options.packageKey,
+            options.zip,
+            options.gitBranch,
+            options.portable,
+            options.targetFile
+        );
     }
 
     private async diffPackages(context: Context, command: Command, options: OptionValues): Promise<void> {

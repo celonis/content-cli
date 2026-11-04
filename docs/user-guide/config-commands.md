@@ -224,6 +224,50 @@ my-package/
 
 `variables.json` is omitted when the package has no variable assignments.
 
+#### Portable Export
+
+Use `--portable` to export a package that can be imported into any package of the same flavor (a branch, or a test, qa or prod package). The export leaves out the values that differ per target:
+
+- the package key (`package.json#key`)
+- the variable values (`variables.json`)
+- the space of each node (`additionalFields.spaceId` in `nodes/<nodeKey>.json`). The package's own space stays.
+
+```bash
+content-cli config package export -p <sourceProfile> --packageKey <packageKey> --portable
+```
+
+`--portable` works with the unzipped, `--zip` and `--gitBranch` exports.
+
+#### Target File
+
+Use `--targetFile <path>` to also write the package key and its current variable values to a JSON file. The path is relative to the current working directory. Keep one target file per target package, so each target keeps its own values. `config package import` doesn't read target files yet; that comes with a later release.
+
+Example:
+
+```bash
+content-cli config package export -p <sourceProfile> --packageKey <packageKey> --portable --targetFile targets/dev.json
+```
+
+```bash
+info:    Target file written: targets/dev.json
+info:    Successful export. Exported directory: my-package
+```
+
+```json
+{
+  "packageKey": "my-package",
+  "variables": [
+    {
+      "key": "my-data-model",
+      "type": "DATA_MODEL",
+      "value": "8f1c6d2e-..."
+    }
+  ]
+}
+```
+
+The target file is always written locally, also when `--gitBranch` is used.
+
 #### Git Integration for Export
 
 Instead of writing to the current working directory, you can push the exported package straight to a Git branch with the following **Git options**:
@@ -232,6 +276,8 @@ Instead of writing to the current working directory, you can push the exported p
 - `--gitBranch <branchName>` – the branch in the Git repository the exported package is pushed to.
 
 The package is pushed in its unzipped [package layout](#package-layout), so `--zip` has no effect when `--gitBranch` is used.
+
+The push replaces only the package files on the branch: `package.json`, `variables.json` and the `nodes/` folder. Any other files on the branch, such as a README, CI configuration or target files, are kept.
 
 ```bash
 content-cli config package export -p <sourceProfile> --packageKey <packageKey> --gitProfile myGitProfile --gitBranch feature-branch
