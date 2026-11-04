@@ -16,12 +16,12 @@ export class SdkService {
         this.sdkApi = new SdkApi(context);
     }
 
-    public async publishApp(appId: string, dist: string): Promise<void> {
+    public async publishApp(appId: string, dist: string, buildVersion?: string, message?: string): Promise<void> {
         const distDirectory = path.resolve(process.cwd(), dist);
         this.requireDirectory(distDirectory);
 
         const bundle = this.compressDirectory(distDirectory);
-        const { version } = await this.sdkApi.publishApp(appId, bundle);
+        const { version } = await this.sdkApi.publishApp(appId, bundle, { version: buildVersion, message });
 
         logger.info(`App published successfully as version '${version}'`);
     }
