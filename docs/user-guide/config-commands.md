@@ -147,7 +147,7 @@ When overwriting, variable assignments whose key is no longer declared in the im
 
 #### Importing into Another Package
 
-Use `--packageKey` to import into an existing package. Its contents are replaced, and the key in `package.json` is ignored:
+Use `--packageKey` to import into an existing package. Its contents are replaced:
 
 ```bash
 content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey>
