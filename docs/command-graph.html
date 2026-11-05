@@ -304,7 +304,7 @@ const NODES = [
     options: ["-p, --profile <profile>", "-f, --file <file> (Package zip file)", "-d, --directory <directory> (Package directory)", "--overwrite", "--json", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
   { id: "config_package_export", label: "export", group: "command", path: "config package export",
     description: "Export a single package's staging (draft) version to an unzipped directory (or a single zip with --zip, or to a Git branch with --gitBranch). Uses the package format, which is not interchangeable with the 't2tc package export' / 't2tc package import' batch archive.",
-    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--zip (default: false)", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "--portable (default: false)", "--targetFile <targetFile>", "-h, --help"] },
+    options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--zip (default: false)", "--gitProfile <gitProfile>", "--gitBranch <gitBranch>", "-h, --help"] },
   { id: "config_package_validate", label: "validate", group: "command", path: "config package validate",
     description: "Validate package node configurations",
     options: ["-p, --profile <profile>", "--packageKey <packageKey>", "--layers <layers...> (SCHEMA, BUSINESS, PACKAGE_SETTINGS, PIG_SEMANTICS, DATA_PIPELINES; default: every layer available for the team)", "--nodeKeys <nodeKeys...> (default: all nodes)", "--json", "-h, --help"] },

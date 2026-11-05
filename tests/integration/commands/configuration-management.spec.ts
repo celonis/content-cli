@@ -875,8 +875,6 @@ describe("configuration-management command integration", () => {
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
                 false,
-                undefined,
-                false,
                 undefined
             );
         });
@@ -887,8 +885,6 @@ describe("configuration-management command integration", () => {
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
                 true,
-                undefined,
-                false,
                 undefined
             );
         });
@@ -904,26 +900,7 @@ describe("configuration-management command integration", () => {
             expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
                 "my-package",
                 false,
-                "feature-branch",
-                false,
-                undefined
-            );
-        });
-
-        it("forwards --portable + --targetFile", async () => {
-            await runCli([
-                "config", "package", "export",
-                "--packageKey", "my-package",
-                "--portable",
-                "--targetFile", "targets/dev.json",
-            ]);
-
-            expect(mockSinglePackageExportService.exportPackage).toHaveBeenCalledWith(
-                "my-package",
-                false,
-                undefined,
-                true,
-                "targets/dev.json"
+                "feature-branch"
             );
         });
 
