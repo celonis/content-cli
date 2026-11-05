@@ -382,10 +382,16 @@ The params argument should be passed in a key value format separated by commas w
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
-Supported types are `DATA_MODEL`, `CONNECTION` and `DATA_POOL_ID`. Each returns a list of assignments:
+Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID` and `SCHEMA_REFERENCE`. Each returns a list of assignments:
 
 ```json
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
+```
+
+`SCHEMA_REFERENCE` lists the schemas of every data pool you are an admin of: the pool's global schema and the schema of each data connection, except data connections of managed packages such as Context Models. The value is the technical schema name:
+
+```json
+[{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a_sap", "name": "Order Management Pool / SAP ECC"}]
 ```
 
 ### Mapping Variables

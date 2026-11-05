@@ -20,7 +20,9 @@ export class VariableAssignmentCandidatesApi {
 
         const apiUrl: string = assignmentApi.url + (params.toString().length ? `?${params.toString()}` : "");
 
-        const candidates = await this.httpClient().get(apiUrl).catch(e => {
+        const get = (url: string): Promise<any> => this.httpClient().get(url);
+        const request = assignmentApi.loadCandidates ? assignmentApi.loadCandidates(get, apiUrl) : get(apiUrl);
+        const candidates = await request.catch(e => {
             throw new FatalError(`Problem getting variables assignment values for type ${type}: ${e}`);
         });
 
