@@ -145,6 +145,36 @@ content-cli config package import -p <sourceProfile> -f <file path> --overwrite
 
 When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are ignored, keeping declarations and assignments consistent.
 
+#### Importing into Another Package
+
+Use `--packageKey` to import a package file into an existing package of the same flavor, for example a test, qa or prod package, or a branch. The contents of that package are replaced, and the key in `package.json` is not used, so the file can also come without one:
+
+```bash
+content-cli config package import -p <profile> -d <package directory path> --packageKey sales-qa
+```
+
+To also set that package's own variable values, put them in a target file and pass it with `--targetFile`:
+
+```json
+{
+  "packageKey": "sales-qa",
+  "variables": [
+    { "key": "dataPool", "type": "DATA_POOL", "value": "qa-pool-id" }
+  ]
+}
+```
+
+```bash
+content-cli config package import -p <profile> -d <package directory path> --targetFile targets/qa.json
+```
+
+- The variables listed in the file get the given values. All other variables keep the values the package already has.
+- Every variable in the file must be declared in `package.json`.
+- `--packageKey` takes precedence over the `packageKey` in the target file.
+- One entry of `config variables list --packageKeys <packageKey> --json` is a good starting point for a target file.
+
+If the package file has no package key and neither option is given, the command stops and asks for `--packageKey` or a `--targetFile`.
+
 #### Output
 
 On success, the command prints a summary of the imported package and its nodes to the console:

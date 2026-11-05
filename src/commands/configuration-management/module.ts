@@ -159,6 +159,8 @@ class Module extends IModule {
             .option("-f, --file <file>", "Package zip file (relative path)")
             .option("-d, --directory <directory>", "Package directory (relative path)")
             .option("--overwrite", "Flag to allow overwriting an existing package with the same key")
+            .option("--packageKey <packageKey>", "Key of the existing package to import into. Replaces its contents; the key in package.json is not used")
+            .option("--targetFile <targetFile>", "JSON file with the target packageKey and the variable values to set on it")
             .option("--json", "Return the response as a JSON file")
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the package and import")
@@ -493,7 +495,15 @@ class Module extends IModule {
         if (options.gitProfile && !options.gitBranch) {
             throw new Error("Please specify a branch using --gitBranch when using a Git profile.");
         }
-        await new SinglePackageImportService(context).importPackage(options.file, options.directory, options.overwrite, options.json, options.gitBranch);
+        await new SinglePackageImportService(context).importPackage(
+            options.file,
+            options.directory,
+            options.overwrite,
+            options.json,
+            options.gitBranch,
+            options.packageKey,
+            options.targetFile
+        );
     }
 
     private async exportSinglePackage(context: Context, command: Command, options: OptionValues): Promise<void> {

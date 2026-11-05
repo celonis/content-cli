@@ -18,4 +18,11 @@ export class SinglePackageImportApi {
             { overwrite }
         );
     }
+
+    public async importPackageInto(packageKey: string, data: FormData): Promise<SinglePackageImportResult> {
+        return this.httpClient().postFile(
+            `/pacman/api/core/staging/packages/${packageKey}/import-file`,
+            data
+        );
+    }
 }

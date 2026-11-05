@@ -807,6 +807,8 @@ describe("configuration-management command integration", () => {
                 undefined,
                 undefined,
                 undefined,
+                undefined,
+                undefined,
                 undefined
             );
         });
@@ -817,6 +819,8 @@ describe("configuration-management command integration", () => {
             expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
                 undefined,
                 "./single-package-dir",
+                undefined,
+                undefined,
                 undefined,
                 undefined,
                 undefined
@@ -836,6 +840,8 @@ describe("configuration-management command integration", () => {
                 undefined,
                 true,
                 true,
+                undefined,
+                undefined,
                 undefined
             );
         });
@@ -852,7 +858,28 @@ describe("configuration-management command integration", () => {
                 undefined,
                 undefined,
                 undefined,
-                "feature-branch"
+                "feature-branch",
+                undefined,
+                undefined
+            );
+        });
+
+        it("forwards --packageKey and --targetFile", async () => {
+            await runCli([
+                "config", "package", "import",
+                "--file", "single-package.zip",
+                "--packageKey", "target-pkg",
+                "--targetFile", "targets/qa.json",
+            ]);
+
+            expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
+                "single-package.zip",
+                undefined,
+                undefined,
+                undefined,
+                undefined,
+                "target-pkg",
+                "targets/qa.json"
             );
         });
 

@@ -9,11 +9,13 @@ import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { GitService } from "../../core/git-profile/git/git.service";
 import { SinglePackageImportApi } from "./api/single-package-import-api";
-import { SinglePackageImportResult } from "./interfaces/single-package-import.interfaces";
+import { PackageImportTarget, SinglePackageImportResult } from "./interfaces/single-package-import.interfaces";
 
 export class SinglePackageImportService {
 
     private static readonly MAX_UNCOMPRESSED_ZIP_SIZE = 4 * 1024 * 1024 * 1024;
+    private static readonly PACKAGE_FILE = "package.json";
+    private static readonly VARIABLES_PART = "variables";
 
     private readonly singlePackageImportApi: SinglePackageImportApi;
     private readonly gitService: GitService;
@@ -25,12 +27,25 @@ export class SinglePackageImportService {
         this.cuiFileService = new CuiFileService(context);
     }
 
-    public async importPackage(file: string, directory: string, overwrite: boolean, jsonResponse: boolean, gitBranch: string): Promise<void> {
+    public async importPackage(
+        file: string,
+        directory: string,
+        overwrite: boolean,
+        jsonResponse: boolean,
+        gitBranch: string,
+        packageKey?: string,
+        targetFile?: string
+    ): Promise<void> {
         if ((file || directory) && gitBranch) {
             throw new Error("You cannot use --file or --directory together with --gitBranch. Only one import source can be defined.");
         }
         if (!file && !directory && !gitBranch) {
             throw new Error("You must provide a --file, a --directory, or a --gitBranch option to import a package.");
+        }
+        const target = SinglePackageImportService.readTarget(targetFile);
+        const targetPackageKey = packageKey || target?.packageKey;
+        if (!targetPackageKey && target?.variables?.length) {
+            throw new Error("The --targetFile contains variables but no packageKey. Add a packageKey to the file or pass --packageKey.");
         }
 
         let gitTempDir: string | undefined;
@@ -46,7 +61,9 @@ export class SinglePackageImportService {
             try {
                 const packageZip = new AdmZip(resolvedSource.zipPath);
                 const formData = SinglePackageImportService.buildBodyForImport(packageZip, resolvedSource.zipPath);
-                const result = await this.singlePackageImportApi.importPackage(formData, overwrite);
+                const result = targetPackageKey
+                    ? await this.importInto(targetPackageKey, formData, target?.variables)
+                    : await this.importWithPackageKeyFromFile(packageZip, formData, overwrite);
                 await this.outputResult(result, jsonResponse);
             } finally {
                 if (resolvedSource.isTemporary) {
@@ -58,6 +75,59 @@ export class SinglePackageImportService {
                 fs.rmSync(gitTempDir, { recursive: true, force: true });
             }
         }
+    }
+
+    private async importInto(
+        targetPackageKey: string,
+        formData: FormData,
+        variables: PackageImportTarget["variables"]
+    ): Promise<SinglePackageImportResult> {
+        if (variables?.length) {
+            formData.append(
+                SinglePackageImportService.VARIABLES_PART,
+                Buffer.from(JSON.stringify(variables)),
+                { filename: "variables.json", contentType: "application/json" }
+            );
+        }
+        return this.singlePackageImportApi.importPackageInto(targetPackageKey, formData);
+    }
+
+    private async importWithPackageKeyFromFile(
+        packageZip: AdmZip,
+        formData: FormData,
+        overwrite: boolean
+    ): Promise<SinglePackageImportResult> {
+        if (!SinglePackageImportService.hasPackageKey(packageZip)) {
+            throw new Error("The package has no package key. Pass --packageKey with the key of the package to import into, or a --targetFile that contains one.");
+        }
+        return this.singlePackageImportApi.importPackage(formData, overwrite);
+    }
+
+    private static hasPackageKey(packageZip: AdmZip): boolean {
+        const packageEntry = packageZip.getEntry(SinglePackageImportService.PACKAGE_FILE);
+        if (!packageEntry) {
+            return true;
+        }
+        try {
+            const packageJson = JSON.parse(packageEntry.getData().toString("utf-8"));
+            return typeof packageJson?.key === "string" && packageJson.key.length > 0;
+        } catch {
+            return true;
+        }
+    }
+
+    private static readTarget(targetFile: string): PackageImportTarget | undefined {
+        if (!targetFile) {
+            return undefined;
+        }
+        const target = fileService.readFileToJson(targetFile);
+        const isObject = target !== null && typeof target === "object" && !Array.isArray(target);
+        const hasValidKey = target?.packageKey === undefined || typeof target.packageKey === "string";
+        const hasValidVariables = target?.variables === undefined || Array.isArray(target.variables);
+        if (!isObject || !hasValidKey || !hasValidVariables) {
+            throw new Error("The --targetFile must be a JSON object with an optional packageKey and an optional variables list.");
+        }
+        return target;
     }
 
     private resolveSource(file: string, directory: string): { zipPath: string; isTemporary: boolean } {

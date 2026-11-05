@@ -1,4 +1,5 @@
 import { NodeTransport } from "./node.interfaces";
+import { VariableExportTransport } from "./package-export.interfaces";
 
 export interface PackageTransport {
     id: string;
@@ -13,6 +14,11 @@ export interface PackageTransport {
     creationDate?: string;
     changeDate?: string;
     [key: string]: any;
+}
+
+export interface PackageImportTarget {
+    packageKey?: string;
+    variables?: VariableExportTransport[];
 }
 
 export interface SinglePackageImportResult {
