@@ -42,11 +42,10 @@ export class SinglePackageImportService {
         if (!file && !directory && !gitBranch) {
             throw new Error("You must provide a --file, a --directory, or a --gitBranch option to import a package.");
         }
-        const params = SinglePackageImportService.readParams(paramsFile);
-        const targetPackageKey = packageKey || params?.packageKey;
-        if (!targetPackageKey && params?.variables?.length) {
-            throw new Error("The --paramsFile contains variables but no packageKey. Add a packageKey to the file or pass --packageKey.");
+        if (paramsFile && !packageKey) {
+            throw new Error("The --paramsFile option needs --packageKey with the key of the package to import into.");
         }
+        const params = SinglePackageImportService.readParams(paramsFile);
 
         let gitTempDir: string | undefined;
         try {
@@ -61,8 +60,8 @@ export class SinglePackageImportService {
             try {
                 const packageZip = new AdmZip(resolvedSource.zipPath);
                 const formData = SinglePackageImportService.buildBodyForImport(packageZip, resolvedSource.zipPath);
-                const result = targetPackageKey
-                    ? await this.importInto(targetPackageKey, formData, params?.variables)
+                const result = packageKey
+                    ? await this.importInto(packageKey, formData, params?.variables)
                     : await this.importWithPackageKeyFromFile(packageZip, formData, overwrite);
                 await this.outputResult(result, jsonResponse);
             } finally {
@@ -98,7 +97,7 @@ export class SinglePackageImportService {
         overwrite: boolean
     ): Promise<SinglePackageImportResult> {
         if (!SinglePackageImportService.hasPackageKey(packageZip)) {
-            throw new Error("The package has no package key. Pass --packageKey with the key of the package to import into, or a --paramsFile that contains one.");
+            throw new Error("The package has no package key. Pass --packageKey with the key of the package to import into.");
         }
         return this.singlePackageImportApi.importPackage(formData, overwrite);
     }
@@ -122,10 +121,9 @@ export class SinglePackageImportService {
         }
         const params = fileService.readFileToJson(paramsFile);
         const isObject = params !== null && typeof params === "object" && !Array.isArray(params);
-        const hasValidKey = params?.packageKey === undefined || typeof params.packageKey === "string";
         const hasValidVariables = params?.variables === undefined || Array.isArray(params.variables);
-        if (!isObject || !hasValidKey || !hasValidVariables) {
-            throw new Error("The --paramsFile must be a JSON object with an optional packageKey and an optional variables list.");
+        if (!isObject || !hasValidVariables) {
+            throw new Error("The --paramsFile must be a JSON object with an optional variables list.");
         }
         return params;
     }

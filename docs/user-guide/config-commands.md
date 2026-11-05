@@ -157,7 +157,6 @@ To also set variable values on that package, pass a params file with `--paramsFi
 
 ```json
 {
-  "packageKey": "<packageKey>",
   "variables": [
     { "key": "dataPool", "type": "DATA_POOL", "value": "<data pool id>" }
   ]
@@ -165,10 +164,10 @@ To also set variable values on that package, pass a params file with `--paramsFi
 ```
 
 ```bash
-content-cli config package import -p <profile> -d <package directory path> --paramsFile params.json
+content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey> --paramsFile params.json
 ```
 
-Only the listed variables are changed. `--packageKey` takes precedence over the `packageKey` in the file.
+Only the listed variables are changed.
 
 #### Output
 

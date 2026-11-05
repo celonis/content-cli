@@ -225,50 +225,40 @@ describe("Single package import", () => {
         expect(variablesPartOf(mockedPostRequestBodyByUrl.get(IMPORT_INTO_URL))).toBeUndefined();
     });
 
-    it("Should import into the params file's package and send its variables", async () => {
+    it("Should send the params file's variables to the package given with --packageKey", async () => {
         const zipPath = zipToTempFolder(buildSinglePackageZip(null));
-        const variables = [{ key: "dataPool", type: "DATA_POOL", value: "qa-pool" }];
-        const paramsFile = writeParamsFile({ packageKey: TARGET_KEY, variables });
-        mockAxiosPost(IMPORT_INTO_URL, buildImportResponse());
-
-        await new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false, null, undefined, paramsFile);
-
-        expect(variablesPartOf(mockedPostRequestBodyByUrl.get(IMPORT_INTO_URL))).toEqual(variables);
-    });
-
-    it("Should prefer --packageKey over the params file's packageKey", async () => {
-        const zipPath = zipToTempFolder(buildSinglePackageZip());
-        const paramsFile = writeParamsFile({ packageKey: "other-pkg" });
+        const variables = [{ key: "dataPool", type: "DATA_POOL", value: "pool-id" }];
+        const paramsFile = writeParamsFile({ variables });
         mockAxiosPost(IMPORT_INTO_URL, buildImportResponse());
 
         await new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false, null, TARGET_KEY, paramsFile);
 
-        expect(mockedPostRequestBodyByUrl.has(IMPORT_INTO_URL)).toBe(true);
+        expect(variablesPartOf(mockedPostRequestBodyByUrl.get(IMPORT_INTO_URL))).toEqual(variables);
     });
 
-    it("Should stop before calling Pacman when the package has no key and no params file is given", async () => {
+    it("Should stop before calling Pacman when the package has no key and no --packageKey is given", async () => {
         const zipPath = zipToTempFolder(buildSinglePackageZip(null));
 
         await expect(
             new SinglePackageImportService(testContext).importPackage(zipPath, null, false, false, null)
-        ).rejects.toThrow("The package has no package key. Pass --packageKey with the key of the package to import into, or a --paramsFile that contains one.");
+        ).rejects.toThrow("The package has no package key. Pass --packageKey with the key of the package to import into.");
         expect(mockedAxiosInstance.post).not.toHaveBeenCalled();
     });
 
-    it("Should reject a params file with variables but no packageKey", async () => {
+    it("Should reject a params file without --packageKey", async () => {
         const paramsFile = writeParamsFile({ variables: [{ key: "dataPool", type: "DATA_POOL", value: "x" }] });
 
         await expect(
             new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, false, null, undefined, paramsFile)
-        ).rejects.toThrow("The --paramsFile contains variables but no packageKey. Add a packageKey to the file or pass --packageKey.");
+        ).rejects.toThrow("The --paramsFile option needs --packageKey with the key of the package to import into.");
     });
 
-    it("Should reject a params file that is not an object with a packageKey and variables", async () => {
-        const paramsFile = writeParamsFile([{ packageKey: TARGET_KEY }]);
+    it("Should reject a params file that is not an object with a variables list", async () => {
+        const paramsFile = writeParamsFile([{ key: "dataPool" }]);
 
         await expect(
-            new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, false, null, undefined, paramsFile)
-        ).rejects.toThrow("The --paramsFile must be a JSON object with an optional packageKey and an optional variables list.");
+            new SinglePackageImportService(testContext).importPackage("./package.zip", null, false, false, null, TARGET_KEY, paramsFile)
+        ).rejects.toThrow("The --paramsFile must be a JSON object with an optional variables list.");
     });
 
 });
