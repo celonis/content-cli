@@ -864,12 +864,12 @@ describe("configuration-management command integration", () => {
             );
         });
 
-        it("forwards --packageKey and --targetFile", async () => {
+        it("forwards --packageKey and --paramsFile", async () => {
             await runCli([
                 "config", "package", "import",
                 "--file", "single-package.zip",
                 "--packageKey", "target-pkg",
-                "--targetFile", "targets/qa.json",
+                "--paramsFile", "params.json",
             ]);
 
             expect(mockSinglePackageImportService.importPackage).toHaveBeenCalledWith(
@@ -879,7 +879,7 @@ describe("configuration-management command integration", () => {
                 undefined,
                 undefined,
                 "target-pkg",
-                "targets/qa.json"
+                "params.json"
             );
         });
 

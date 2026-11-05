@@ -16,7 +16,7 @@ export interface PackageTransport {
     [key: string]: any;
 }
 
-export interface PackageImportTarget {
+export interface PackageImportParams {
     packageKey?: string;
     variables?: VariableExportTransport[];
 }

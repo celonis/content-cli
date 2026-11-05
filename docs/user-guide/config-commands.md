@@ -147,33 +147,28 @@ When overwriting, variable assignments whose key is no longer declared in the im
 
 #### Importing into Another Package
 
-Use `--packageKey` to import a package file into an existing package of the same flavor, for example a test, qa or prod package, or a branch. The contents of that package are replaced, and the key in `package.json` is not used, so the file can also come without one:
+Use `--packageKey` to import into an existing package. Its contents are replaced, and the key in `package.json` is ignored:
 
 ```bash
-content-cli config package import -p <profile> -d <package directory path> --packageKey sales-qa
+content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey>
 ```
 
-To also set that package's own variable values, put them in a target file and pass it with `--targetFile`:
+To also set variable values on that package, pass a params file with `--paramsFile`:
 
 ```json
 {
-  "packageKey": "sales-qa",
+  "packageKey": "<packageKey>",
   "variables": [
-    { "key": "dataPool", "type": "DATA_POOL", "value": "qa-pool-id" }
+    { "key": "dataPool", "type": "DATA_POOL", "value": "<data pool id>" }
   ]
 }
 ```
 
 ```bash
-content-cli config package import -p <profile> -d <package directory path> --targetFile targets/qa.json
+content-cli config package import -p <profile> -d <package directory path> --paramsFile params.json
 ```
 
-- The variables listed in the file get the given values. All other variables keep the values the package already has.
-- Every variable in the file must be declared in `package.json`.
-- `--packageKey` takes precedence over the `packageKey` in the target file.
-- One entry of `config variables list --packageKeys <packageKey> --json` is a good starting point for a target file.
-
-If the package file has no package key and neither option is given, the command stops and asks for `--packageKey` or a `--targetFile`.
+Only the listed variables are changed. `--packageKey` takes precedence over the `packageKey` in the file.
 
 #### Output
 

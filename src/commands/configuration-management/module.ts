@@ -160,7 +160,7 @@ class Module extends IModule {
             .option("-d, --directory <directory>", "Package directory (relative path)")
             .option("--overwrite", "Flag to allow overwriting an existing package with the same key")
             .option("--packageKey <packageKey>", "Key of the existing package to import into. Replaces its contents; the key in package.json is not used")
-            .option("--targetFile <targetFile>", "JSON file with the target packageKey and the variable values to set on it")
+            .option("--paramsFile <paramsFile>", "JSON file with the packageKey to import into and the variable values to set on it")
             .option("--json", "Return the response as a JSON file")
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
             .option("--gitBranch <gitBranch>", "Git branch from which you want to pull the package and import")
@@ -502,7 +502,7 @@ class Module extends IModule {
             options.json,
             options.gitBranch,
             options.packageKey,
-            options.targetFile
+            options.paramsFile
         );
     }
 

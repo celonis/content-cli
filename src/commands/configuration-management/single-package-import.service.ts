@@ -9,7 +9,7 @@ import { CuiFileService } from "../../core/utils/cui-file-service";
 import { logger } from "../../core/utils/logger";
 import { GitService } from "../../core/git-profile/git/git.service";
 import { SinglePackageImportApi } from "./api/single-package-import-api";
-import { PackageImportTarget, SinglePackageImportResult } from "./interfaces/single-package-import.interfaces";
+import { PackageImportParams, SinglePackageImportResult } from "./interfaces/single-package-import.interfaces";
 
 export class SinglePackageImportService {
 
@@ -34,7 +34,7 @@ export class SinglePackageImportService {
         jsonResponse: boolean,
         gitBranch: string,
         packageKey?: string,
-        targetFile?: string
+        paramsFile?: string
     ): Promise<void> {
         if ((file || directory) && gitBranch) {
             throw new Error("You cannot use --file or --directory together with --gitBranch. Only one import source can be defined.");
@@ -42,10 +42,10 @@ export class SinglePackageImportService {
         if (!file && !directory && !gitBranch) {
             throw new Error("You must provide a --file, a --directory, or a --gitBranch option to import a package.");
         }
-        const target = SinglePackageImportService.readTarget(targetFile);
-        const targetPackageKey = packageKey || target?.packageKey;
-        if (!targetPackageKey && target?.variables?.length) {
-            throw new Error("The --targetFile contains variables but no packageKey. Add a packageKey to the file or pass --packageKey.");
+        const params = SinglePackageImportService.readParams(paramsFile);
+        const targetPackageKey = packageKey || params?.packageKey;
+        if (!targetPackageKey && params?.variables?.length) {
+            throw new Error("The --paramsFile contains variables but no packageKey. Add a packageKey to the file or pass --packageKey.");
         }
 
         let gitTempDir: string | undefined;
@@ -62,7 +62,7 @@ export class SinglePackageImportService {
                 const packageZip = new AdmZip(resolvedSource.zipPath);
                 const formData = SinglePackageImportService.buildBodyForImport(packageZip, resolvedSource.zipPath);
                 const result = targetPackageKey
-                    ? await this.importInto(targetPackageKey, formData, target?.variables)
+                    ? await this.importInto(targetPackageKey, formData, params?.variables)
                     : await this.importWithPackageKeyFromFile(packageZip, formData, overwrite);
                 await this.outputResult(result, jsonResponse);
             } finally {
@@ -80,7 +80,7 @@ export class SinglePackageImportService {
     private async importInto(
         targetPackageKey: string,
         formData: FormData,
-        variables: PackageImportTarget["variables"]
+        variables: PackageImportParams["variables"]
     ): Promise<SinglePackageImportResult> {
         if (variables?.length) {
             formData.append(
@@ -98,7 +98,7 @@ export class SinglePackageImportService {
         overwrite: boolean
     ): Promise<SinglePackageImportResult> {
         if (!SinglePackageImportService.hasPackageKey(packageZip)) {
-            throw new Error("The package has no package key. Pass --packageKey with the key of the package to import into, or a --targetFile that contains one.");
+            throw new Error("The package has no package key. Pass --packageKey with the key of the package to import into, or a --paramsFile that contains one.");
         }
         return this.singlePackageImportApi.importPackage(formData, overwrite);
     }
@@ -116,18 +116,18 @@ export class SinglePackageImportService {
         }
     }
 
-    private static readTarget(targetFile: string): PackageImportTarget | undefined {
-        if (!targetFile) {
+    private static readParams(paramsFile: string): PackageImportParams | undefined {
+        if (!paramsFile) {
             return undefined;
         }
-        const target = fileService.readFileToJson(targetFile);
-        const isObject = target !== null && typeof target === "object" && !Array.isArray(target);
-        const hasValidKey = target?.packageKey === undefined || typeof target.packageKey === "string";
-        const hasValidVariables = target?.variables === undefined || Array.isArray(target.variables);
+        const params = fileService.readFileToJson(paramsFile);
+        const isObject = params !== null && typeof params === "object" && !Array.isArray(params);
+        const hasValidKey = params?.packageKey === undefined || typeof params.packageKey === "string";
+        const hasValidVariables = params?.variables === undefined || Array.isArray(params.variables);
         if (!isObject || !hasValidKey || !hasValidVariables) {
-            throw new Error("The --targetFile must be a JSON object with an optional packageKey and an optional variables list.");
+            throw new Error("The --paramsFile must be a JSON object with an optional packageKey and an optional variables list.");
         }
-        return target;
+        return params;
     }
 
     private resolveSource(file: string, directory: string): { zipPath: string; isTemporary: boolean } {
