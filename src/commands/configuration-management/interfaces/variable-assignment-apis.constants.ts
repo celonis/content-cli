@@ -51,10 +51,12 @@ const mapWithConcurrency = async <T, R>(items: T[], limit: number, mapper: (item
     const results: R[] = new Array(items.length);
     let next = 0;
     const worker = async (): Promise<void> => {
-        while (next < items.length) {
-            const index = next++;
-            results[index] = await mapper(items[index]);
+        if (next >= items.length) {
+            return;
         }
+        const index = next++;
+        results[index] = await mapper(items[index]);
+        return worker();
     };
     await Promise.all(Array.from({length: Math.min(limit, items.length)}, worker));
     return results;
