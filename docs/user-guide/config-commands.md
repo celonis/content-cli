@@ -145,6 +145,30 @@ content-cli config package import -p <sourceProfile> -f <file path> --overwrite
 
 When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are ignored, keeping declarations and assignments consistent.
 
+#### Importing into Another Package
+
+Use `--packageKey` to import into an existing package. Its contents are replaced:
+
+```bash
+content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey>
+```
+
+To also set variable values on that package, pass a params file with `--paramsFile`:
+
+```json
+{
+  "variables": [
+    { "key": "dataPool", "type": "DATA_POOL", "value": "<data pool id>" }
+  ]
+}
+```
+
+```bash
+content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey> --paramsFile params.json
+```
+
+Only the listed variables are changed.
+
 #### Output
 
 On success, the command prints a summary of the imported package and its nodes to the console:
