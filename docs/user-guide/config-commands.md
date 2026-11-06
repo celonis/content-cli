@@ -414,7 +414,7 @@ Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID`, `OBJECTS_EVENTS_
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
 ```
 
-`SCHEMA_REFERENCE` lists the schemas of every data pool you are an admin of: the pool's global schema and the schema of each data connection, except data connections of managed packages such as Context Models. The value is the technical schema name:
+`SCHEMA_REFERENCE` lists the schemas of every data pool on Storium that you are an admin of: the pool's global schema and the schema of each data connection, except data connections of managed packages such as Context Models. A pool counts as on Storium when Storium is its primary or, during a migration, its secondary engine. The value is the technical schema name:
 
 ```json
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a_sap", "name": "Order Management Pool / SAP ECC"}]
