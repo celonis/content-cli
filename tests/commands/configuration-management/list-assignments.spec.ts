@@ -168,6 +168,24 @@ describe("List assignments", () => {
         expect(getJsonFromDownloadedFile()).toEqual([{value: POOL_1, name: "Pool 1 / Global schema"}]);
     })
 
+    it("Should list the global schema once and leave out OCDM from the virtual slim overview entries", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [
+            {id: "sap", name: "SAP ECC", type: "sap", targetSchemaName: "sap_schema", ...ON_STORIUM},
+            {id: null, name: "Global Data Connection", type: "global", targetSchemaName: POOL_1, ...ON_STORIUM},
+            {id: null, name: "Objects and events", type: "OCDM", targetSchemaName: `${POOL_1}_ocdm`, ...ON_STORIUM},
+            {id: null, name: "Objects and events", type: "OCDM", targetSchemaName: "business_graph_schema_tenant", ...ON_STORIUM},
+        ]);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(poolProviderTypesUrl(POOL_1), expect.anything());
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: POOL_1, name: "Pool 1 / Global schema"},
+            {value: "sap_schema", name: "Pool 1 / SAP ECC"},
+        ]);
+    })
+
     it("Should only offer schemas of pools on Storium, also while Storium is the secondary engine", async () => {
         mockAxiosGet(DATA_POOLS_URL, [
             {id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]},
