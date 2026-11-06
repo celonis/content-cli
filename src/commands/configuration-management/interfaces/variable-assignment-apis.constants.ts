@@ -23,7 +23,6 @@ const connectionName = (connection: any): string => {
 
 const DATA_POOL_ADMIN_PERMISSION = "ADMIN";
 const MANAGED_SCHEMA_SOURCE_TYPES = new Set(["pig", "context-model", "context-model-semantic"]);
-const GLOBAL_SCHEMA_SOURCE_TYPE = "global";
 const MAX_PARALLEL_DATA_SOURCE_REQUESTS = 4;
 const MAX_POOL_IDS_PER_REQUEST = 100;
 const STORIUM_POOL_PROVIDER_TYPE = "STORIUM";
@@ -31,12 +30,8 @@ const STORIUM_POOL_PROVIDER_TYPE = "STORIUM";
 const toPoolSchemas = (pool: any, dataSources: any[]): SchemaCandidate[] => {
     const sourceSchemas = new Map<string, SchemaCandidate & { managed: boolean }>();
     for (const dataSource of dataSources) {
-        const type = String(dataSource?.type ?? "").toLowerCase();
-        if (type === GLOBAL_SCHEMA_SOURCE_TYPE) {
-            continue;
-        }
         const schema = dataSource?.targetSchemaName || `${pool.id}_${dataSource?.id}`;
-        if (!schema.toLowerCase().startsWith(`${pool.id.toLowerCase()}_`)) {
+        if (schema !== pool.id && !schema.startsWith(`${pool.id}_`)) {
             continue;
         }
         const existing = sourceSchemas.get(schema);
@@ -44,7 +39,7 @@ const toPoolSchemas = (pool: any, dataSources: any[]): SchemaCandidate[] => {
             schema,
             name: existing?.name ?? (dataSource?.name || schema),
             poolName: pool.name,
-            managed: !!existing?.managed || MANAGED_SCHEMA_SOURCE_TYPES.has(type),
+            managed: !!existing?.managed || MANAGED_SCHEMA_SOURCE_TYPES.has(dataSource?.type),
         });
     }
     const assignableSchemas = [...sourceSchemas.values()]
@@ -103,7 +98,8 @@ const loadSchemaCandidates = async (get: (url: string) => Promise<any>, poolsUrl
 
     return loadedPools
         .filter(({pool}) => isStoriumBacked(typesByPool.get(pool.id)))
-        .flatMap(({pool, dataSources}) => toPoolSchemas(pool, dataSources));
+        .flatMap(({pool, dataSources}) => toPoolSchemas(pool, dataSources))
+        .sort((a, b) => (a.poolName ?? "").localeCompare(b.poolName ?? "") || a.name.localeCompare(b.name));
 };
 
 export const variableAssignmentApis: { [key: string]: VariableAssignmentApi } = {

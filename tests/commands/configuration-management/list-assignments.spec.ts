@@ -149,9 +149,9 @@ describe("List assignments", () => {
 
         expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(dataSourcesUrl(POOL_2), expect.anything());
         expect(getJsonFromDownloadedFile()).toEqual([
+            {value: `${POOL_1}_jdbc`, name: `Pool 1 / ${POOL_1}_jdbc`},
             {value: POOL_1, name: "Pool 1 / Global schema"},
             {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
-            {value: `${POOL_1}_jdbc`, name: `Pool 1 / ${POOL_1}_jdbc`},
             {value: POOL_3, name: "Pool 3 / Global schema"},
         ]);
     })
@@ -160,7 +160,7 @@ describe("List assignments", () => {
         mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
         mockAxiosGet(dataSourcesUrl(POOL_1), [
             {id: "sap", name: "SAP ECC", type: "sap", targetSchemaName: `${POOL_1}_shared`, ...ON_STORIUM},
-            {id: "pig", name: "PIG", type: "PIG", targetSchemaName: `${POOL_1}_shared`, ...ON_STORIUM},
+            {id: "pig", name: "PIG", type: "pig", targetSchemaName: `${POOL_1}_shared`, ...ON_STORIUM},
             {id: "ccm", name: "My Context Model", type: "context-model", ...ON_STORIUM},
         ]);
 
@@ -169,7 +169,7 @@ describe("List assignments", () => {
         expect(getJsonFromDownloadedFile()).toEqual([{value: POOL_1, name: "Pool 1 / Global schema"}]);
     })
 
-    it("Should list the global schema once and offer the pool's OCDM schema from the virtual slim overview entries", async () => {
+    it("Should offer the virtual global and OCDM entries of the slim overview like the schema picker", async () => {
         mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
         mockAxiosGet(dataSourcesUrl(POOL_1), [
             {id: "sap", name: "SAP ECC", type: "sap", ...ON_STORIUM},
@@ -181,9 +181,10 @@ describe("List assignments", () => {
 
         expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(poolProviderTypesUrl(POOL_1), expect.anything());
         expect(getJsonFromDownloadedFile()).toEqual([
+            {value: POOL_1, name: "Pool 1 / Global Data Connection"},
             {value: POOL_1, name: "Pool 1 / Global schema"},
-            {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
             {value: `${POOL_1}_ocdm`, name: "Pool 1 / Objects and events"},
+            {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
         ]);
     })
 
