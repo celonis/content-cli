@@ -16,8 +16,6 @@ describe("List assignments", () => {
     const POOL_3 = "33333333-3333-3333-3333-333333333333";
     const dataSourcesUrl = (poolId: string) =>
         `https://myTeam.celonis.cloud/integration/api/pools/${poolId}/data-sources/slim-overview`;
-    const poolProviderTypesUrl = (...poolIds: string[]) =>
-        `https://myTeam.celonis.cloud/integration/api/pools/pool-provider-types?${poolIds.map(id => `poolIds=${id}`).join("&")}`;
     const ON_STORIUM = {primaryPoolProviderType: "STORIUM"};
     const ON_LEGACY_ENGINE = {primaryPoolProviderType: "HDFS"};
 
@@ -143,7 +141,6 @@ describe("List assignments", () => {
             {id: "imported", name: "Imported", type: "imported", targetSchemaName: `${POOL_2}_other`, ...ON_STORIUM},
         ]);
         mockAxiosGet(dataSourcesUrl(POOL_3), []);
-        mockAxiosGet(poolProviderTypesUrl(POOL_3), [{poolId: POOL_3, ...ON_STORIUM}]);
 
         await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
 
@@ -179,7 +176,6 @@ describe("List assignments", () => {
 
         await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
 
-        expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(poolProviderTypesUrl(POOL_1), expect.anything());
         expect(getJsonFromDownloadedFile()).toEqual([
             {value: POOL_1, name: "Pool 1 / Global Data Connection"},
             {value: POOL_1, name: "Pool 1 / Global schema"},
@@ -218,31 +214,22 @@ describe("List assignments", () => {
         ]);
     })
 
-    it("Should resolve the engine of pools without data sources in one request", async () => {
+    it("Should offer the schemas of pools whose engine is not reported, without requesting it", async () => {
         mockAxiosGet(DATA_POOLS_URL, [
             {id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]},
             {id: POOL_3, name: "Pool 3", permissions: ["ADMIN"]},
         ]);
-        mockAxiosGet(dataSourcesUrl(POOL_1), []);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [{id: "sap", name: "SAP ECC", type: "sap"}]);
         mockAxiosGet(dataSourcesUrl(POOL_3), []);
-        mockAxiosGet(poolProviderTypesUrl(POOL_1, POOL_3), [
-            {poolId: POOL_1, ...ON_STORIUM},
-            {poolId: POOL_3, ...ON_LEGACY_ENGINE},
-        ]);
 
         await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
 
-        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(poolProviderTypesUrl(POOL_1, POOL_3), expect.anything());
-        expect(getJsonFromDownloadedFile()).toEqual([{value: POOL_1, name: "Pool 1 / Global schema"}]);
-    })
-
-    it("Should fail when the engine of a pool cannot be loaded", async () => {
-        mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
-        mockAxiosGet(dataSourcesUrl(POOL_1), []);
-        mockAxiosGetError(poolProviderTypesUrl(POOL_1), 404, "Not Found");
-
-        await expect(new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, ""))
-            .rejects.toThrow("Problem getting variables assignment values for type SCHEMA_REFERENCE");
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(expect.stringContaining("pool-provider-types"), expect.anything());
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: POOL_1, name: "Pool 1 / Global schema"},
+            {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
+            {value: POOL_3, name: "Pool 3 / Global schema"},
+        ]);
     })
 
     it("Should fail when the data sources of a pool cannot be loaded", async () => {

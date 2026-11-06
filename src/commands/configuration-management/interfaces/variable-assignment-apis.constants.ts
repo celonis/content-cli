@@ -24,7 +24,6 @@ const connectionName = (connection: any): string => {
 const DATA_POOL_ADMIN_PERMISSION = "ADMIN";
 const MANAGED_SCHEMA_SOURCE_TYPES = new Set(["pig", "context-model", "context-model-semantic"]);
 const MAX_PARALLEL_DATA_SOURCE_REQUESTS = 4;
-const MAX_POOL_IDS_PER_REQUEST = 100;
 const STORIUM_POOL_PROVIDER_TYPE = "STORIUM";
 
 const toPoolSchemas = (pool: any, dataSources: any[]): SchemaCandidate[] => {
@@ -61,19 +60,9 @@ const mapWithConcurrency = async <T, R>(items: T[], limit: number, mapper: (item
     return results;
 };
 
-const isStoriumBacked = (types: any): boolean =>
-    [types?.primaryPoolProviderType, types?.secondaryPoolProviderType].includes(STORIUM_POOL_PROVIDER_TYPE);
-
-const loadMissingPoolProviderTypes = async (get: (url: string) => Promise<any>, poolIds: string[]): Promise<any[]> => {
-    const batches: string[][] = [];
-    for (let index = 0; index < poolIds.length; index += MAX_POOL_IDS_PER_REQUEST) {
-        batches.push(poolIds.slice(index, index + MAX_POOL_IDS_PER_REQUEST));
-    }
-    const typesPerBatch = await Promise.all(batches.map(batch => {
-        const query = batch.map(poolId => `poolIds=${encodeURIComponent(poolId)}`).join("&");
-        return get(`/integration/api/pools/pool-provider-types?${query}`);
-    }));
-    return typesPerBatch.flatMap(types => Array.isArray(types) ? types : []);
+const isOfferedEngine = (dataSources: any[]): boolean => {
+    const typed = dataSources.find(dataSource => dataSource?.primaryPoolProviderType || dataSource?.secondaryPoolProviderType);
+    return !typed || [typed.primaryPoolProviderType, typed.secondaryPoolProviderType].includes(STORIUM_POOL_PROVIDER_TYPE);
 };
 
 const loadSchemaCandidates = async (get: (url: string) => Promise<any>, poolsUrl: string): Promise<SchemaCandidate[]> => {
@@ -85,19 +74,8 @@ const loadSchemaCandidates = async (get: (url: string) => Promise<any>, poolsUrl
         return {pool, dataSources: Array.isArray(dataSources) ? dataSources : []};
     });
 
-    const typesByPool = new Map<string, any>();
-    for (const {pool, dataSources} of loadedPools) {
-        const typed = dataSources.find(dataSource => dataSource?.primaryPoolProviderType);
-        if (typed) {
-            typesByPool.set(pool.id, typed);
-        }
-    }
-    const untypedPoolIds = loadedPools.map(({pool}) => pool.id).filter(poolId => !typesByPool.has(poolId));
-    const loadedTypes = untypedPoolIds.length ? await loadMissingPoolProviderTypes(get, untypedPoolIds) : [];
-    loadedTypes.forEach(types => typesByPool.set(types?.poolId, types));
-
     return loadedPools
-        .filter(({pool}) => isStoriumBacked(typesByPool.get(pool.id)))
+        .filter(({dataSources}) => isOfferedEngine(dataSources))
         .flatMap(({pool, dataSources}) => toPoolSchemas(pool, dataSources))
         .sort((a, b) => (a.poolName ?? "").localeCompare(b.poolName ?? "") || a.name.localeCompare(b.name));
 };
