@@ -129,7 +129,8 @@ describe("List assignments", () => {
         mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
         mockAxiosGet(dataSourcesUrl(POOL_1), [
             {id: "sap", name: "SAP ECC", type: "sap", targetSchemaName: "shared_schema"},
-            {id: "pig", name: "PIG", type: "pig", targetSchemaName: "shared_schema"},
+            {id: "pig", name: "PIG", type: "PIG", targetSchemaName: "shared_schema"},
+            {id: "ccm", name: "My Context Model", type: "context-model"},
         ]);
 
         await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");

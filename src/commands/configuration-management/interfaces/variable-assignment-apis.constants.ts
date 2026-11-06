@@ -38,7 +38,7 @@ const toPoolSchemas = (pool: any, dataSources: any[]): SchemaCandidate[] => {
             schema,
             name: existing?.name ?? (dataSource?.name || schema),
             poolName: pool.name,
-            managed: !!existing?.managed || MANAGED_SCHEMA_SOURCE_TYPES.has(dataSource?.type),
+            managed: !!existing?.managed || MANAGED_SCHEMA_SOURCE_TYPES.has(String(dataSource?.type ?? "").toLowerCase()),
         });
     }
     const assignableSchemas = [...sourceSchemas.values()]
