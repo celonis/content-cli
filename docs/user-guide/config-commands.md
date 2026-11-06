@@ -257,6 +257,8 @@ Instead of writing to the current working directory, you can push the exported p
 
 The package is pushed in its unzipped [package layout](#package-layout), so `--zip` has no effect when `--gitBranch` is used.
 
+Other files on the branch, such as a README, are kept.
+
 ```bash
 content-cli config package export -p <sourceProfile> --packageKey <packageKey> --gitProfile myGitProfile --gitBranch feature-branch
 ```

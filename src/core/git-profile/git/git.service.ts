@@ -33,7 +33,7 @@ export class GitService {
         return targetDir;
     }
 
-    public async pushToBranch(sourceDir: string, branch: string): Promise<void> {
+    public async pushToBranch(sourceDir: string, branch: string, replacedEntries?: string[]): Promise<void> {
         this.validateGitProfileExistence();
 
         const workingDir = path.join(os.tmpdir(), `content-cli-${uuid()}`);
@@ -49,8 +49,13 @@ export class GitService {
             await repoGit.addConfig("user.name", this.gitProfile.username ?? "content-cli");
             await repoGit.addConfig("user.email", `${this.gitProfile.username ?? "cli"}@users.noreply.github.com`);
 
-            await this.cleanupNonGitFiles(workingDir);
-            await this.checkoutOrCreateLocalBranch(repoGit, branch);
+            if (replacedEntries) {
+                await this.checkoutOrCreateLocalBranch(repoGit, branch);
+                this.removeEntries(workingDir, replacedEntries);
+            } else {
+                await this.cleanupNonGitFiles(workingDir);
+                await this.checkoutOrCreateLocalBranch(repoGit, branch);
+            }
 
             fs.cpSync(sourceDir, workingDir, { recursive: true });
 
@@ -72,6 +77,12 @@ export class GitService {
             if (entry !== ".git") {
                 fs.rmSync(path.join(workingDir, entry), { recursive: true, force: true });
             }
+        }
+    }
+
+    private removeEntries(workingDir: string, entries: string[]): void {
+        for (const entry of entries) {
+            fs.rmSync(path.join(workingDir, entry), { recursive: true, force: true });
         }
     }
 

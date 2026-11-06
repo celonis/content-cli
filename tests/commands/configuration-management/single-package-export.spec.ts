@@ -11,6 +11,7 @@ import { accessSync, readFileSync } from "node:fs";
 
 const PACKAGE_KEY = "pkg-1";
 const EXPORT_URL = `https://myTeam.celonis.cloud/pacman/api/core/staging/packages/${PACKAGE_KEY}/export-file`;
+const PACKAGE_ENTRIES = ["package.json", "variables.json", "nodes"];
 
 function buildSinglePackageZip(): Buffer {
     const zip = new AdmZip();
@@ -88,7 +89,7 @@ describe("Single package export", () => {
         expect(mockedAxiosInstance.get).toHaveBeenCalledWith(EXPORT_URL, expect.anything());
         expect(extractTempSpy).toHaveBeenCalledTimes(1);
         expect((extractTempSpy.mock.calls[0][0] as Buffer).equals(packageData)).toBe(true);
-        expect(pushToBranchSpy).toHaveBeenCalledWith(extractedDirectory, "my-branch");
+        expect(pushToBranchSpy).toHaveBeenCalledWith(extractedDirectory, "my-branch", PACKAGE_ENTRIES);
         expect(rmSyncSpy).toHaveBeenCalledWith(extractedDirectory, { recursive: true, force: true });
         expect(loggingTestTransport.logMessages[0].message).toContain("Successfully exported package to branch: my-branch");
         expect(extractDirSpy).not.toHaveBeenCalled();
@@ -108,7 +109,7 @@ describe("Single package export", () => {
         await new SinglePackageExportService(testContext).exportPackage(PACKAGE_KEY, true, "my-branch");
 
         expect(extractTempSpy).toHaveBeenCalledTimes(1);
-        expect(pushToBranchSpy).toHaveBeenCalledWith(extractedDirectory, "my-branch");
+        expect(pushToBranchSpy).toHaveBeenCalledWith(extractedDirectory, "my-branch", PACKAGE_ENTRIES);
         expect(writeBufferSpy).not.toHaveBeenCalled();
         expect(loggingTestTransport.logMessages[0].message).toContain("Successfully exported package to branch: my-branch");
     });
