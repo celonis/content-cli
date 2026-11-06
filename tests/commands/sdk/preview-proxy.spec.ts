@@ -6,8 +6,19 @@ import { Duplex } from "node:stream";
 import { loadOrCreatePreviewCertificate, PreviewCertificate } from "../../../src/commands/sdk/preview-certificate";
 import { LOCAL_PREVIEW_HEADERS } from "../../../src/commands/sdk/preview-headers";
 import { PreviewProxy, PreviewProxyOptions, startPreviewProxy } from "../../../src/commands/sdk/preview-proxy";
+import { PREVIEW_ROUTE_OBSERVER } from "../../../src/commands/sdk/preview-route-observer";
 import { loggingTestTransport } from "../../jest.setup";
 import { makeTempDir, rmTempDir } from "../../utls/fs-utils";
+
+const observerHash = "'sha256-" + createHash("sha256").update(PREVIEW_ROUTE_OBSERVER).digest("base64") + "'";
+const observerCsp = LOCAL_PREVIEW_HEADERS["content-security-policy"].replace(
+    "script-src 'self'",
+    "script-src 'self' " + observerHash
+);
+function withObserver(html: string): string {
+    const script = "<script>" + PREVIEW_ROUTE_OBSERVER + "</script>";
+    return html.includes("<head>") ? html.replace("<head>", "<head>" + script) : script + html;
+}
 
 interface ProxyResponse {
     status: number;
@@ -143,16 +154,16 @@ describe("Preview proxy", () => {
 
         const response = await send(proxy, "/");
 
-        expect(response.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
+        expect(response.headers["content-security-policy"]).toBe(observerCsp);
         expect(response.headers["content-security-policy-report-only"]).toBeUndefined();
         expect(response.headers["x-frame-options"]).toBeUndefined();
         expect(response.headers["access-control-allow-origin"]).toBe("*");
         expect(response.headers["content-type"]).toBe("text/html");
         for (const [name, value] of Object.entries(LOCAL_PREVIEW_HEADERS)) {
             expect(headerCount(response.rawHeaders, name)).toBe(1);
-            expect(response.headers[name]).toBe(value);
+            expect(response.headers[name]).toBe(name === "content-security-policy" ? observerCsp : value);
         }
-        expect(response.body).toBe("<html></html>");
+        expect(response.body).toBe(withObserver("<html></html>"));
     });
 
     it("Should add the preview headers to responses without any headers of their own", async () => {
@@ -215,7 +226,7 @@ describe("Preview proxy", () => {
 
     it("Should cancel the target request when the client disconnects", async () => {
         let targetRequestClosed: () => void;
-        const closed = new Promise<void>(resolve => targetRequestClosed = resolve);
+        const closed = new Promise<void>(resolve => (targetRequestClosed = resolve));
         let clientRequest: http.ClientRequest;
         const target = await startTarget((req, res) => {
             res.writeHead(200);
@@ -239,8 +250,8 @@ describe("Preview proxy", () => {
     it("Should not report the target as unreachable when the client disconnects before it answers", async () => {
         let requestReceived: () => void;
         let targetRequestClosed: () => void;
-        const received = new Promise<void>(resolve => requestReceived = resolve);
-        const closed = new Promise<void>(resolve => targetRequestClosed = resolve);
+        const received = new Promise<void>(resolve => (requestReceived = resolve));
+        const closed = new Promise<void>(resolve => (targetRequestClosed = resolve));
         const target = await startTarget((req, res) => {
             res.on("close", () => targetRequestClosed());
             requestReceived();
@@ -307,9 +318,10 @@ describe("Preview proxy", () => {
             .map(entry => entry.message.trim());
     }
 
-    const reactPreamble = "import { injectIntoGlobalHook } from \"/@react-refresh\";";
-    const reactPage = `<html><head><script type="module">${reactPreamble}</script>` +
-        "<script type=\"module\" src=\"/@vite/client\"></script></head><body>Grüße</body></html>";
+    const reactPreamble = 'import { injectIntoGlobalHook } from "/@react-refresh";';
+    const reactPage =
+        `<html><head><script type="module">${reactPreamble}</script>` +
+        '<script type="module" src="/@vite/client"></script></head><body>Grüße</body></html>';
 
     function startHtmlTarget(html: string): Promise<http.Server> {
         return startTarget((req, res) => {
@@ -328,13 +340,13 @@ describe("Preview proxy", () => {
         const second = await send(proxy, "/index.html");
 
         for (const response of [first, second]) {
-            expect(response.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
-            expect(response.body).toBe(reactPage);
-            expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(reactPage)));
+            expect(response.headers["content-security-policy"]).toBe(observerCsp);
+            expect(response.body).toBe(withObserver(reactPage));
+            expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(withObserver(reactPage))));
         }
         expect(warnings()).toEqual([
             `Blocking an inline script in /index.html: "${reactPreamble}". Inline scripts are disabled for published apps. ` +
-            "You can allow inline scripts during development by passing --allow-inline-scripts.",
+                "You can allow inline scripts during development by passing --allow-inline-scripts.",
         ]);
     });
 
@@ -347,16 +359,17 @@ describe("Preview proxy", () => {
         const second = await send(proxy, "/index.html");
 
         for (const response of [first, second]) {
-            expect(scriptSrc(response)).toEqual(["'self'", sha256(inline)]);
-            expect((response.headers["content-security-policy"] as string).replace(` ${sha256(inline)}`, ""))
-                .toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
-            expect(response.body).toBe(html);
-            expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(html)));
+            expect(scriptSrc(response)).toEqual(["'self'", observerHash, sha256(inline)]);
+            expect((response.headers["content-security-policy"] as string).replace(` ${sha256(inline)}`, "")).toBe(
+                observerCsp
+            );
+            expect(response.body).toBe(withObserver(html));
+            expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(withObserver(html))));
             expect(response.headers["content-type"]).toBe("text/html; charset=utf-8");
         }
         expect(warnings()).toEqual([
             `Allowing an inline script in /index.html for the local preview: "${inline}". ` +
-            "Inline scripts are disabled for published apps, so they can only be used during development.",
+                "Inline scripts are disabled for published apps, so they can only be used during development.",
         ]);
     });
 
@@ -370,22 +383,22 @@ describe("Preview proxy", () => {
 
         const response = await send(proxy, "/");
 
-        expect(scriptSrc(response)).toEqual(["'self'", sha256("a()")]);
-        expect(response.body).toBe("<html><head><script>a()</script></head></html>");
-        expect(response.headers["content-length"]).toBeUndefined();
+        expect(scriptSrc(response)).toEqual(["'self'", observerHash, sha256("a()")]);
+        expect(response.body).toBe(withObserver("<html><head><script>a()</script></head></html>"));
+        expect(response.headers["content-length"]).toBe(String(Buffer.byteLength(response.body)));
     });
 
     it("Should leave the CSP of non-HTML responses unchanged", async () => {
         const target = await startTarget((req, res) => {
             res.writeHead(200, { "content-type": "text/javascript" });
-            res.end("document.write(\"<script>a()</script>\");");
+            res.end('document.write("<script>a()</script>");');
         });
         const proxy = await startProxy(targetUrl(target));
 
         const response = await send(proxy, "/main.js");
 
         expect(response.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
-        expect(response.body).toBe("document.write(\"<script>a()</script>\");");
+        expect(response.body).toBe('document.write("<script>a()</script>");');
         expect(warnings()).toEqual([]);
     });
 
@@ -396,7 +409,7 @@ describe("Preview proxy", () => {
                 res.end();
                 return;
             }
-            res.writeHead(304, { "content-type": "text/html", etag: "\"v1\"" });
+            res.writeHead(304, { "content-type": "text/html", etag: '"v1"' });
             res.end();
         });
         const proxy = await startProxy(targetUrl(target));
@@ -409,7 +422,7 @@ describe("Preview proxy", () => {
         expect(head.body).toBe("");
         expect(head.headers["content-security-policy"]).toBe(LOCAL_PREVIEW_HEADERS["content-security-policy"]);
         expect(notModified.status).toBe(304);
-        expect(notModified.headers.etag).toBe("\"v1\"");
+        expect(notModified.headers.etag).toBe('"v1"');
         expect(notModified.body).toBe("");
     });
 
@@ -431,7 +444,7 @@ describe("Preview proxy", () => {
         const next = await send(proxy, "/");
 
         expect(next.status).toBe(200);
-        expect(next.body).toBe("<html></html>");
+        expect(next.body).toBe(withObserver("<html></html>"));
         expect(warnings()).toEqual([]);
     });
 

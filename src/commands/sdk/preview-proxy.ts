@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import * as http from "node:http";
 import * as https from "node:https";
 import * as net from "node:net";
@@ -6,6 +7,9 @@ import * as tls from "node:tls";
 import { FatalError, logger } from "../../core/utils/logger";
 import { PreviewCertificate } from "./preview-certificate";
 import { allowInlineScripts, inlineScriptHashes } from "./preview-inline-scripts";
+import { PREVIEW_ROUTE_OBSERVER } from "./preview-route-observer";
+
+const ROUTE_OBSERVER_HASH = `'sha256-${createHash("sha256").update(PREVIEW_ROUTE_OBSERVER).digest("base64")}'`;
 
 export interface PreviewProxyOptions {
     target: URL;
@@ -90,24 +94,35 @@ export function startPreviewProxy(options: PreviewProxyOptions): Promise<Preview
                 if (res.destroyed) {
                     return;
                 }
-                const body = Buffer.concat(chunks);
-                const scripts = inlineScriptHashes(body.toString("utf8"));
+                const html = Buffer.concat(chunks).toString("utf8");
+                const scripts = inlineScriptHashes(html);
                 for (const { hash, excerpt } of scripts) {
                     if (!warnedInlineScripts.has(hash)) {
                         warnedInlineScripts.add(hash);
                         logger.warn(inlineScriptWarning(req.url, excerpt, allowInline));
                     }
                 }
-                if (proxyRes.headers["content-length"] !== undefined) {
-                    responseHeaders["content-length"] = body.length;
-                }
+                const bootstrap = `<script>${PREVIEW_ROUTE_OBSERVER}</script>`;
+                const body = Buffer.from(
+                    /<head(?:\s|>)/i.test(html)
+                        ? html.replace(/<head([^>]*)>/i, `<head$1>${bootstrap}`)
+                        : bootstrap + html
+                );
+                responseHeaders["content-length"] = body.length;
+                delete responseHeaders["transfer-encoding"];
+                delete responseHeaders.etag;
                 const csp = headers["content-security-policy"];
                 res.writeHead(proxyRes.statusCode, {
                     ...responseHeaders,
                     ...headers,
-                    ...(csp === undefined || !allowInline ? {} : {
-                        "content-security-policy": allowInlineScripts(csp, scripts.map(script => script.hash)),
-                    }),
+                    ...(csp === undefined
+                        ? {}
+                        : {
+                              "content-security-policy": allowInlineScripts(csp, [
+                                  ROUTE_OBSERVER_HASH,
+                                  ...(allowInline ? scripts.map(script => script.hash) : []),
+                              ]),
+                          }),
                 });
                 res.end(body);
             });
