@@ -1,3 +1,5 @@
+import { loadSchemaCandidates, toSchemaAssignment } from "../api/schema-reference-candidates";
+
 export interface VariableAssignment {
     value: string;
     name: string;
@@ -7,6 +9,7 @@ export interface VariableAssignmentApi {
     url: string;
     defaultParams?: { [key: string]: string };
     toAssignment: (candidate: any) => VariableAssignment;
+    loadCandidates?: (get: (url: string) => Promise<any>, url: string) => Promise<any[]>;
 }
 
 const connectionName = (connection: any): string => {
@@ -43,5 +46,10 @@ export const variableAssignmentApis: { [key: string]: VariableAssignmentApi } = 
             value: candidate?.key,
             name: candidate?.name ?? candidate?.key,
         }),
+    },
+    SCHEMA_REFERENCE: {
+        url: "/integration/api/pools",
+        loadCandidates: loadSchemaCandidates,
+        toAssignment: toSchemaAssignment,
     },
 };

@@ -408,10 +408,16 @@ The params argument should be passed in a key value format separated by commas w
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
-Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID` and `OBJECTS_EVENTS_PACKAGE_KEY`. `OBJECTS_EVENTS_PACKAGE_KEY` lists the OCDM packages of the team, with the package key as the value. Each returns a list of assignments:
+Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID`, `OBJECTS_EVENTS_PACKAGE_KEY` and `SCHEMA_REFERENCE`. `OBJECTS_EVENTS_PACKAGE_KEY` lists the OCDM packages of the team, with the package key as the value. Each returns a list of assignments:
 
 ```json
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
+```
+
+`SCHEMA_REFERENCE` lists the schemas of every data pool of the team:
+
+```json
+[{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a_sap", "name": "Order Management Pool / SAP ECC"}]
 ```
 
 ### Mapping Variables

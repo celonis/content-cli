@@ -1,4 +1,4 @@
-import { mockAxiosGet, mockedAxiosInstance } from "../../utls/http-requests-mock";
+import { mockAxiosGet, mockAxiosGetError, mockedAxiosInstance } from "../../utls/http-requests-mock";
 import { VariableCommandService } from "../../../src/commands/configuration-management/variable-command.service";
 import { testContext } from "../../utls/test-context";
 import { loggingTestTransport } from "../../jest.setup";
@@ -11,6 +11,13 @@ describe("List assignments", () => {
     const CONNECTIONS_URL = "https://myTeam.celonis.cloud/process-automation-v2/api/connections?param1=value1&param2=value2";
     const DATA_POOLS_URL = "https://myTeam.celonis.cloud/integration/api/pools";
     const OCDM_PACKAGES_URL = "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?flavors=OCDM&includeBranches=false";
+    const POOL_1 = "11111111-1111-1111-1111-111111111111";
+    const POOL_2 = "22222222-2222-2222-2222-222222222222";
+    const POOL_3 = "33333333-3333-3333-3333-333333333333";
+    const dataSourcesUrl = (poolId: string) =>
+        `https://myTeam.celonis.cloud/integration/api/pools/${poolId}/data-sources/slim-overview`;
+    const ON_STORIUM = {primaryPoolProviderType: "STORIUM"};
+    const ON_LEGACY_ENGINE = {primaryPoolProviderType: "HDFS"};
 
     const dataModelCandidate = (poolName: string, dataModelId: string, dataModelName: string) => ({
         pool: {id: "pool-" + dataModelId, name: poolName},
@@ -118,6 +125,119 @@ describe("List assignments", () => {
         await new VariableCommandService(testContext).listAssignments("DATA_POOL_ID", true, "");
 
         expect(getJsonFromDownloadedFile()).toEqual([{value: "pool-1", name: "Pool 1"}]);
+    })
+
+    it("Should list the global and data connection schemas of admin pools for the SCHEMA_REFERENCE type", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [
+            {id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]},
+            {id: POOL_2, name: "Pool 2", permissions: ["VIEW_DATA_POOL"]},
+            {id: POOL_3, name: "Pool 3", permissions: ["ADMIN", "VIEW_DATA_POOL"]},
+        ]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [
+            {id: "sap", name: "SAP ECC", type: "sap", targetSchemaName: `${POOL_1}_sap`, ...ON_STORIUM},
+            {id: "jdbc", name: "", type: "jdbc", ...ON_STORIUM},
+            {id: "custom", name: "Custom schema name", type: "jdbc", targetSchemaName: "sap_schema", ...ON_STORIUM},
+            {id: "ccm", name: "My Context Model", type: "context-model", ...ON_STORIUM},
+            {id: "imported", name: "Imported", type: "imported", targetSchemaName: `${POOL_2}_other`, ...ON_STORIUM},
+        ]);
+        mockAxiosGet(dataSourcesUrl(POOL_3), []);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(dataSourcesUrl(POOL_2), expect.anything());
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: `${POOL_1}_jdbc`, name: `Pool 1 / ${POOL_1}_jdbc`},
+            {value: POOL_1, name: "Pool 1 / Global schema"},
+            {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
+            {value: POOL_3, name: "Pool 3 / Global schema"},
+        ]);
+    })
+
+    it("Should not offer a schema that a managed data source shares", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [
+            {id: "sap", name: "SAP ECC", type: "sap", targetSchemaName: `${POOL_1}_shared`, ...ON_STORIUM},
+            {id: "pig", name: "PIG", type: "pig", targetSchemaName: `${POOL_1}_shared`, ...ON_STORIUM},
+            {id: "ccm", name: "My Context Model", type: "context-model", ...ON_STORIUM},
+        ]);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(getJsonFromDownloadedFile()).toEqual([{value: POOL_1, name: "Pool 1 / Global schema"}]);
+    })
+
+    it("Should offer the virtual global and OCDM entries of the slim overview like the schema picker", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [
+            {id: "sap", name: "SAP ECC", type: "sap", ...ON_STORIUM},
+            {id: null, name: "Global Data Connection", type: "global", targetSchemaName: POOL_1, ...ON_STORIUM},
+            {id: null, name: "Objects and events", type: "OCDM", targetSchemaName: `${POOL_1}_ocdm`, ...ON_STORIUM},
+        ]);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: POOL_1, name: "Pool 1 / Global Data Connection"},
+            {value: POOL_1, name: "Pool 1 / Global schema"},
+            {value: `${POOL_1}_ocdm`, name: "Pool 1 / Objects and events"},
+            {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
+        ]);
+    })
+
+    it("Should not offer schemas whose name does not start with the pool id, such as the legacy OCDM schema", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [
+            {id: "custom", name: "Custom schema name", type: "jdbc", targetSchemaName: "sap_schema", ...ON_STORIUM},
+            {id: null, name: "Objects and events", type: "OCDM", targetSchemaName: "business_graph_schema_tenant", ...ON_STORIUM},
+        ]);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(getJsonFromDownloadedFile()).toEqual([{value: POOL_1, name: "Pool 1 / Global schema"}]);
+    })
+
+    it("Should only offer schemas of pools on Storium, also while Storium is the secondary engine", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [
+            {id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]},
+            {id: POOL_3, name: "Pool 3", permissions: ["ADMIN"]},
+        ]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [{id: "sap", name: "SAP ECC", type: "sap", ...ON_LEGACY_ENGINE}]);
+        mockAxiosGet(dataSourcesUrl(POOL_3), [
+            {id: "jdbc", name: "Postgres", type: "jdbc", primaryPoolProviderType: "HDFS", secondaryPoolProviderType: "STORIUM"},
+        ]);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: POOL_3, name: "Pool 3 / Global schema"},
+            {value: `${POOL_3}_jdbc`, name: "Pool 3 / Postgres"},
+        ]);
+    })
+
+    it("Should offer the schemas of pools whose engine is not reported, without requesting it", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [
+            {id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]},
+            {id: POOL_3, name: "Pool 3", permissions: ["ADMIN"]},
+        ]);
+        mockAxiosGet(dataSourcesUrl(POOL_1), [{id: "sap", name: "SAP ECC", type: "sap"}]);
+        mockAxiosGet(dataSourcesUrl(POOL_3), []);
+
+        await new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, "");
+
+        expect(mockedAxiosInstance.get).not.toHaveBeenCalledWith(expect.stringContaining("pool-provider-types"), expect.anything());
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: POOL_1, name: "Pool 1 / Global schema"},
+            {value: `${POOL_1}_sap`, name: "Pool 1 / SAP ECC"},
+            {value: POOL_3, name: "Pool 3 / Global schema"},
+        ]);
+    })
+
+    it("Should fail when the data sources of a pool cannot be loaded", async () => {
+        mockAxiosGet(DATA_POOLS_URL, [{id: POOL_1, name: "Pool 1", permissions: ["ADMIN"]}]);
+        mockAxiosGetError(dataSourcesUrl(POOL_1), 500, "Internal Server Error");
+
+        await expect(new VariableCommandService(testContext).listAssignments("SCHEMA_REFERENCE", true, ""))
+            .rejects.toThrow("Problem getting variables assignment values for type SCHEMA_REFERENCE");
     })
 
     it("Should throw error for unsupported variable types", async () => {
