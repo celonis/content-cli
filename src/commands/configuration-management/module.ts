@@ -171,7 +171,7 @@ class Module extends IModule {
             .requiredOption("--packageKey <packageKey>", "Key of the package to export")
             .option("--zip", "Export the package as a single <packageKey>.zip file instead of an unzipped <packageKey> directory", false)
             .option("--gitProfile <gitProfile>", "Git profile which you want to use for the Git operations")
-            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported package. Files on the branch that aren't part of the package are kept")
+            .option("--gitBranch <gitBranch>", "Git branch in which you want to push the exported package")
             .action(this.exportSinglePackage);
 
         packageCommand.command("validate")
