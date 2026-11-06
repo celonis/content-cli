@@ -24,25 +24,19 @@ const connectionName = (connection: any): string => {
 const DATA_POOL_ADMIN_PERMISSION = "ADMIN";
 const MANAGED_SCHEMA_SOURCE_TYPES = new Set(["pig", "context-model", "context-model-semantic"]);
 const GLOBAL_SCHEMA_SOURCE_TYPE = "global";
-const OCDM_SCHEMA_SOURCE_TYPE = "ocdm";
 const MAX_PARALLEL_DATA_SOURCE_REQUESTS = 4;
 const MAX_POOL_IDS_PER_REQUEST = 100;
 const STORIUM_POOL_PROVIDER_TYPE = "STORIUM";
-const SCHEMA_POOL_PREFIX = /^([\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12})_/i;
 
 const toPoolSchemas = (pool: any, dataSources: any[]): SchemaCandidate[] => {
     const sourceSchemas = new Map<string, SchemaCandidate & { managed: boolean }>();
     for (const dataSource of dataSources) {
         const type = String(dataSource?.type ?? "").toLowerCase();
-        if (type === GLOBAL_SCHEMA_SOURCE_TYPE || type === OCDM_SCHEMA_SOURCE_TYPE) {
+        if (type === GLOBAL_SCHEMA_SOURCE_TYPE) {
             continue;
         }
         const schema = dataSource?.targetSchemaName || `${pool.id}_${dataSource?.id}`;
-        if (schema.toLowerCase() === pool.id.toLowerCase()) {
-            continue;
-        }
-        const schemaPoolId = SCHEMA_POOL_PREFIX.exec(schema)?.[1];
-        if (schemaPoolId && schemaPoolId.toLowerCase() !== pool.id.toLowerCase()) {
+        if (!schema.toLowerCase().startsWith(`${pool.id.toLowerCase()}_`)) {
             continue;
         }
         const existing = sourceSchemas.get(schema);
