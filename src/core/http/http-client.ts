@@ -123,13 +123,14 @@ export class HttpClient {
         })
     }
 
-    public async postBinary(url: string, body: Buffer, contentType: string): Promise<any> {
+    public async postBinary(url: string, body: Buffer, contentType: string, parameters?: {}): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.axios.post(
                 this.resolveUrl(url),
                 body,
                 {
-                    headers: this.buildHeaders(contentType)
+                    headers: this.buildHeaders(contentType),
+                    params: parameters
                 }
             ).then(response => {
                 this.handleResponse(response, resolve, reject);

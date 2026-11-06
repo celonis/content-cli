@@ -79,6 +79,15 @@ describe("HttpClient binary post", () => {
         expect(config.headers["Content-Type"]).toBe("application/zip");
     });
 
+    it("should send the given parameters as query parameters", async () => {
+        mockAxiosPost(TEAM_URL + RESOURCE_PATH, { result: "ok" });
+
+        await httpClientFor({ apiToken: "test-token" }).postBinary(RESOURCE_PATH, body, "application/zip", { version: "2.0.0" });
+
+        const [, , config] = (mockedAxiosInstance.post as jest.Mock).mock.calls[0];
+        expect(config.params).toEqual({ version: "2.0.0" });
+    });
+
     it("should reject with the response body when the backend responds with an error", async () => {
         mockAxiosPostError(TEAM_URL + RESOURCE_PATH, 400, "Invalid bundle");
 
