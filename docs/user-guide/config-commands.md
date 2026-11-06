@@ -414,7 +414,7 @@ Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID`, `OBJECTS_EVENTS_
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]
 ```
 
-`SCHEMA_REFERENCE` lists the schemas of every data pool you are an admin of:
+`SCHEMA_REFERENCE` lists the schemas of every data pool of the team:
 
 ```json
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a_sap", "name": "Order Management Pool / SAP ECC"}]
