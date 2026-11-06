@@ -18,7 +18,10 @@ export class VariableAssignmentCandidatesApi {
             throw new FatalError(`Variable type ${type} not supported.`);
         }
 
-        const apiUrl: string = assignmentApi.url + (params.toString().length ? `?${params.toString()}` : "");
+        const query = new URLSearchParams(assignmentApi.defaultParams ?? {});
+        params.forEach((_value, key) => query.delete(key));
+        params.forEach((value, key) => query.append(key, value));
+        const apiUrl: string = assignmentApi.url + (query.toString().length ? `?${query.toString()}` : "");
 
         const get = (url: string): Promise<any> => this.httpClient().get(url);
         const request = assignmentApi.loadCandidates ? assignmentApi.loadCandidates(get, apiUrl) : get(apiUrl);

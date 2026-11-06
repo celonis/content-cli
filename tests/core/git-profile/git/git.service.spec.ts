@@ -154,6 +154,35 @@ describe("GitService", () => {
             await gitService.pushToBranch(sourceDir, branch);
             assertFilesCommittedAndPushed(branch)
         });
+
+        it("should remove every non-git file before checkout when no replaced entries are given", async () => {
+            await gitService.pushToBranch(sourceDir, branch);
+
+            expect(fs.rmSync).toHaveBeenCalledWith(`${workingDir}/file1.txt`, { recursive: true, force: true });
+            expect(fs.rmSync).toHaveBeenCalledWith(`${workingDir}/file2.txt`, { recursive: true, force: true });
+            expect(fs.rmSync).not.toHaveBeenCalledWith(`${workingDir}/.git`, expect.anything());
+        });
+
+        it("should only replace the given entries and keep other files on the branch", async () => {
+            mockGit.branch.mockResolvedValue({ current: "main", all: ["main", `remotes/origin/${branch}`] });
+
+            await gitService.pushToBranch(sourceDir, branch, ["package.json", "variables.json", "nodes"]);
+
+            expect(mockGit.checkout).toHaveBeenCalledWith(["--track", `origin/${branch}`]);
+            expect(fs.rmSync).toHaveBeenCalledWith(`${workingDir}/package.json`, { recursive: true, force: true });
+            expect(fs.rmSync).toHaveBeenCalledWith(`${workingDir}/variables.json`, { recursive: true, force: true });
+            expect(fs.rmSync).toHaveBeenCalledWith(`${workingDir}/nodes`, { recursive: true, force: true });
+            expect(fs.rmSync).not.toHaveBeenCalledWith(`${workingDir}/file1.txt`, expect.anything());
+            expect(fs.rmSync).not.toHaveBeenCalledWith(`${workingDir}/file2.txt`, expect.anything());
+
+            const checkoutOrder = mockGit.checkout.mock.invocationCallOrder[0];
+            const firstRemoveOrder = (fs.rmSync as jest.Mock).mock.invocationCallOrder[0];
+            expect(checkoutOrder).toBeLessThan(firstRemoveOrder);
+
+            assertSourceCopiedToWorkingDirectory(sourceDir, workingDir);
+            assertFilesCommittedAndPushed(branch);
+            assertWorkingDirectoryCleanup(workingDir);
+        });
     });
 
     describe("URL generation", () => {

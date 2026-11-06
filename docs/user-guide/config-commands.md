@@ -145,6 +145,30 @@ content-cli config package import -p <sourceProfile> -f <file path> --overwrite
 
 When overwriting, variable assignments whose key is no longer declared in the imported `package.json` are ignored, keeping declarations and assignments consistent.
 
+#### Importing into Another Package
+
+Use `--packageKey` to import into an existing package. Its contents are replaced:
+
+```bash
+content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey>
+```
+
+To also set variable values on that package, pass a params file with `--paramsFile`:
+
+```json
+{
+  "variables": [
+    { "key": "dataPool", "type": "DATA_POOL", "value": "<data pool id>" }
+  ]
+}
+```
+
+```bash
+content-cli config package import -p <profile> -d <package directory path> --packageKey <packageKey> --paramsFile params.json
+```
+
+Only the listed variables are changed.
+
 #### Output
 
 On success, the command prints a summary of the imported package and its nodes to the console:
@@ -232,6 +256,8 @@ Instead of writing to the current working directory, you can push the exported p
 - `--gitBranch <branchName>` – the branch in the Git repository the exported package is pushed to.
 
 The package is pushed in its unzipped [package layout](#package-layout), so `--zip` has no effect when `--gitBranch` is used.
+
+Other files on the branch, such as a README, are kept.
 
 ```bash
 content-cli config package export -p <sourceProfile> --packageKey <packageKey> --gitProfile myGitProfile --gitBranch feature-branch
@@ -382,7 +408,7 @@ The params argument should be passed in a key value format separated by commas w
 --params key1=value1,key2=value2,...,keyN=valueN
 ```
 
-Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID` and `SCHEMA_REFERENCE`. Each returns a list of assignments:
+Supported types are `DATA_MODEL`, `CONNECTION`, `DATA_POOL_ID`, `OBJECTS_EVENTS_PACKAGE_KEY` and `SCHEMA_REFERENCE`. `OBJECTS_EVENTS_PACKAGE_KEY` lists the OCDM packages of the team, with the package key as the value. Each returns a list of assignments:
 
 ```json
 [{"value": "4b4f32c8-4529-43f1-9399-2a6de94ac13a", "name": "Order Management Pool"}]

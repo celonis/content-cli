@@ -5,6 +5,7 @@ export interface VariableAssignment {
 
 export interface VariableAssignmentApi {
     url: string;
+    defaultParams?: { [key: string]: string };
     toAssignment: (candidate: any) => VariableAssignment;
     loadCandidates?: (get: (url: string) => Promise<any>, url: string) => Promise<any[]>;
 }
@@ -91,6 +92,14 @@ export const variableAssignmentApis: { [key: string]: VariableAssignmentApi } = 
         toAssignment: candidate => ({
             value: candidate?.id,
             name: candidate?.name ?? candidate?.id,
+        }),
+    },
+    OBJECTS_EVENTS_PACKAGE_KEY: {
+        url: "/pacman/api/core/staging/packages/export/list",
+        defaultParams: { flavors: "OCDM", includeBranches: "false" },
+        toAssignment: candidate => ({
+            value: candidate?.key,
+            name: candidate?.name ?? candidate?.key,
         }),
     },
     SCHEMA_REFERENCE: {

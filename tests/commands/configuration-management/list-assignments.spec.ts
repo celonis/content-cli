@@ -10,6 +10,7 @@ describe("List assignments", () => {
     const DATA_MODEL_URL = "https://myTeam.celonis.cloud/package-manager/api/compute-pools/pools-with-data-models";
     const CONNECTIONS_URL = "https://myTeam.celonis.cloud/process-automation-v2/api/connections?param1=value1&param2=value2";
     const DATA_POOLS_URL = "https://myTeam.celonis.cloud/integration/api/pools";
+    const OCDM_PACKAGES_URL = "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?flavors=OCDM&includeBranches=false";
     const POOL_1 = "11111111-1111-1111-1111-111111111111";
     const POOL_2 = "22222222-2222-2222-2222-222222222222";
     const POOL_3 = "33333333-3333-3333-3333-333333333333";
@@ -90,6 +91,30 @@ describe("List assignments", () => {
             {value: "pool-1", name: "Pool 1"},
             {value: "pool-2", name: "Pool 2"},
         ]);
+    })
+
+    it("Should list OCDM packages as assignments for the OBJECTS_EVENTS_PACKAGE_KEY type", async () => {
+        mockAxiosGet(OCDM_PACKAGES_URL, [
+            {id: "id-1", key: "ocdm-package-1", name: "OCDM Package 1", flavor: "OCDM"},
+            {id: "id-2", key: "ocdm-package-2", flavor: "OCDM"},
+        ]);
+
+        await new VariableCommandService(testContext).listAssignments("OBJECTS_EVENTS_PACKAGE_KEY", true, "");
+
+        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(OCDM_PACKAGES_URL, expect.anything());
+        expect(getJsonFromDownloadedFile()).toEqual([
+            {value: "ocdm-package-1", name: "OCDM Package 1"},
+            {value: "ocdm-package-2", name: "ocdm-package-2"},
+        ]);
+    })
+
+    it("Should let url params override the default params of the type", async () => {
+        const url = "https://myTeam.celonis.cloud/pacman/api/core/staging/packages/export/list?flavors=OCDM&includeBranches=true";
+        mockAxiosGet(url, []);
+
+        await new VariableCommandService(testContext).listAssignments("OBJECTS_EVENTS_PACKAGE_KEY", false, "includeBranches=true");
+
+        expect(mockedAxiosInstance.get).toHaveBeenCalledWith(url, expect.anything());
     })
 
     it("Should skip candidates without a value", async () => {

@@ -8,6 +8,8 @@ import { CuiFileService } from "../../core/utils/cui-file-service";
 
 export class SinglePackageExportService {
 
+    private static readonly PACKAGE_ENTRIES = ["package.json", "variables.json", "nodes"];
+
     private readonly singlePackageExportApi: SinglePackageExportApi;
     private readonly gitService: GitService;
     private readonly cuiFileService: CuiFileService;
@@ -42,7 +44,7 @@ export class SinglePackageExportService {
     private async exportToGitBranch(packageData: Buffer, gitBranch: string): Promise<void> {
         const extractedDirectory = fileService.extractZipBufferToTempDirectory(packageData);
         try {
-            await this.gitService.pushToBranch(extractedDirectory, gitBranch);
+            await this.gitService.pushToBranch(extractedDirectory, gitBranch, SinglePackageExportService.PACKAGE_ENTRIES);
             logger.info("Successfully exported package to branch: " + gitBranch);
         } finally {
             fs.rmSync(extractedDirectory, { recursive: true, force: true });
